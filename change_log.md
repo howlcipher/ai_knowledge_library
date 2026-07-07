@@ -17,3 +17,4 @@ All notable changes to this project will be documented in this file.
 * Removed phone number from `USER_PROFILE.md` to protect Personally Identifiable Information.
 * Added `no_pii.md` global AGY rule and updated the `cyber_security` skill to strictly forbid handling sensitive PII like phone numbers.
 * Created `scripts/install_global.ps1` to allow Windows users to sync skills and rules globally using PowerShell Junctions and Hard Links.
+* Created `scripts/setup_profile.py` to allow individuals forking this repository to easily generate and swap in their own user profiles.

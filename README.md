@@ -81,6 +81,16 @@ Execute the PowerShell installation script.
 
 ***
 
+## Forking and Customization
+
+If you are forking this repository for your own use, you can easily customize the core user identity. Run the profile setup script to generate your own metadata while choosing to keep, supplement, or entirely replace the default William Elias profile.
+
+```bash
+python scripts/setup_profile.py
+```
+
+***
+
 ## Security and Automation
 
 This repository relies on several automated workflows to maintain structure and protect data autonomously.
