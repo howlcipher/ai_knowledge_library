@@ -25,3 +25,8 @@ All notable changes to this project will be documented in this file.
 * Created `tools/clean_logs.py` to automate infrastructure maintenance by dropping old health records.
 * Updated `GEMINI.md` to officially broaden language preferences to include Bash, while strictly requiring the right tool for the job.
 * Added a global AGY rule in `.agents/rules/architecture.md` mandating pros and cons evaluations before committing to any architectural or infrastructure decisions.
+* Built `tools/split_large_markdown.py` to automatically chunk large text files into 500 line segments, drastically improving AI reading speed and accuracy.
+* Built `tools/scaffold_project.py` to rapidly generate production ready project structures for Python and Go.
+* Created strict AGY rules in `.agents/rules/` to natively enforce Test Driven Development and automated code quality self reviews.
+* Established an Architecture Decision Records structure at `documentation/adr/` and logged the first architectural decision.
+* Deployed secure, ready to use Docker Compose templates inside `infrastructure/templates/`.
