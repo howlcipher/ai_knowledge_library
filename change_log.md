@@ -2,71 +2,51 @@
 
 All notable changes to this project will be documented in this file.
 
-## 2026_07_07
-* Created `change_log.md` and linked it in `README.md`.
-* Created a standard Homelab Postmortem template in the `documentation` directory to track outages and issues.
-* Created a Python script `github_profile_sync.py` in the `tools` directory to automatically fetch public GitHub repositories and keep the user profile updated.
-* Created `infrastructure/network_diagram.md` containing personal homelab architecture.
-* Created `tools/server_health_check.py` to monitor local system resources.
-* Added GitHub Actions workflow for Markdown validation.
-* Added Dependabot configuration for security vulnerability scanning on Python and Go dependencies.
+## [1.2.0] - 2026-07-07
+
+### 🚀 Added
+* **Automated Multi-Platform Releases**: Integrated `GoReleaser` with GitHub Actions (`release_installer.yml`) to automatically compile and release Windows, macOS, and Linux binaries (including `.deb` and `.rpm`) natively triggered on semantic version tags.
+* **ChromaDB Vector Integration**: Added `tools/build_vector_index.py` and `tools/semantic_search.py` to establish a local RAG system for intelligent, semantic knowledge retrieval.
+* **Data Science Capabilities**: Built `.agents/skills/data_analyst/SKILL.md` to mathematically enforce methodologies for Pandas data wrangling and Scikit-Learn pipelines.
+* **Automated API Documentation**: Configured GitHub Actions (`docs.yml`) utilizing `pdoc` to automatically build and deploy API documentation to a `gh-pages` branch.
+* **Standardized Makefile**: Introduced a root `Makefile` to establish standard entry points for installation, testing (`make test`), linting, building, and documentation generation.
+* **Automated Tool Testing Suite**: Created Python-based testing in `tests/test_tools.py` using `pytest`, integrated alongside a native `go test` suite in `cmd/installer/main_test.go`.
+
+### 🔄 Changed
+* **Go Installer OOP Refactor**: Re-engineered the interactive Go TUI Installer (`cmd/installer/main.go`) to utilize strictly Object-Oriented methodologies (`Installer` struct) for clean state management and maximum DRY compliance.
+* **GitHub Actions Workflows**: Upgraded all GitHub Actions (checkout, setup-go, setup-python) to their most modern versions via Dependabot integrations.
+* **Statistics Engine Updates**: Enhanced `library_statistics.py` and `update_badges.yml` to automatically rewrite the `README.md` sizing badge without failing on permission blocks.
+* **Dynamic Test Coverage**: Rewrote the Python testing suite to use `importlib` to dynamically discover and validate all modules within the `tools/` directory rather than relying on hardcoded imports.
+
+### 🛠 Fixed
+* **GoReleaser Dirty State Crashes**: Patched the GitHub Actions release pipeline to trigger flawlessly on git tags rather than manipulating tags via bash during a push-to-main workflow, preventing fatal Git state panics.
+* **GoReleaser Deprecations**: Completely rewrote `.goreleaser.yaml` to comply with the rigid version 2 schema requirements, removing deprecated archives and format overrides.
+* **Workflow Permissions**: Fixed authentication crashes in the `Update Badges` and `Docs` pipelines by explicitly declaring `contents: write` in the GitHub Actions configuration.
+* **Docs API Dependency Errors**: Fixed the API documentation generator by forcing `pip install -r requirements.txt` prior to `pdoc` execution, resolving missing `chromadb` import crashes.
+* **Google Docs OAuth Flow**: Updated the `setup_google_docs_auth.py` script instructions to accurately reflect the modernized Google Cloud Platform 'Audience' UI and test user whitelisting process.
+* **Server Health Checks**: Refactored the stub in `tools/server_health_check.py` to expose a proper `main()` entrypoint, satisfying the automated test suite.
+
+---
+
+## [1.0.0] - 2026-07-07 (Initial Setup & Base Architecture)
+
+### 🚀 Added
+* Created standard Homelab Postmortem templates, GitHub profile sync tools, and local network architecture diagrams.
+* Added standard GitHub Actions workflow for Markdown validation and Dependabot configuration.
 * Built boilerplate templates for Python FastAPI and Go backend services inside `projects/templates/`.
-* Created AGY formatting rule in `.agents/rules/strict_formatting.md` to automate constraints.
-* Created `scripts/install_global.sh` to symlink library skills and rules globally for any AGY instance.
-* Removed phone number from `USER_PROFILE.md` to protect Personally Identifiable Information.
-* Removed phone number from `USER_PROFILE.md` to protect Personally Identifiable Information.
-* Added `no_pii.md` global AGY rule and updated the `cyber_security` skill to strictly forbid handling sensitive PII like phone numbers.
-* Created `scripts/install_global.ps1` to allow Windows users to sync skills and rules globally using PowerShell Junctions and Hard Links.
-* Created `scripts/setup_profile.py` to allow individuals forking this repository to easily generate and swap in their own user profiles.
-* Filled `improvements.md` with new automation tasks.
-* Created `tools/sync_context.py` to map out local markdown files into a master index.
+* Engineered a beautiful, interactive Terminal User Interface (TUI) installer in Go using `charmbracelet/huh`.
+* Built `scripts/setup_google_docs_auth.py` to provide an interactive OAuth setup flow for Google Docs API integration.
 * Created `tools/fetch_security_news.py` to automatically update local docs with current cybersecurity threats.
-* Created `tools/generate_agent_summary.py` to inject condensed profile data directly into the agent rules.
-* Created `tools/clean_logs.py` to automate infrastructure maintenance by dropping old health records.
-* Updated `GEMINI.md` to officially broaden language preferences to include Bash, while strictly requiring the right tool for the job.
-* Added a global AGY rule in `.agents/rules/architecture.md` mandating pros and cons evaluations before committing to any architectural or infrastructure decisions.
-* Built `tools/split_large_markdown.py` to automatically chunk large text files into 500 line segments, drastically improving AI reading speed and accuracy.
-* Built `tools/scaffold_project.py` to rapidly generate production ready project structures for Python and Go.
-* Created strict AGY rules in `.agents/rules/` to natively enforce Test Driven Development and automated code quality self reviews.
-* Established an Architecture Decision Records structure at `documentation/adr/` and logged the first architectural decision.
-* Deployed secure, ready to use Docker Compose templates inside `infrastructure/templates/`.
-* Added `.agents/rules/documentation_enforcement.md` to guarantee the AI always updates the changelog and README prior to any git push.
-* Cleared completed tasks from `improvements.md` and added new spawned tasks for cron scheduling and Git hook integration.
-* Created `scripts/setup_cron.py` to seamlessly install the security news fetcher and log cleaner directly into the system crontab.
-* Created `scripts/install_git_hooks.py` to bind the context synchronization tool to all future code commits automatically.
-* Upgraded `tools/generate_agent_summary.py` to dynamically fetch live GitHub statistics via API to enrich the global system prompt.
-* Cleared `improvements.md` and added three new spawned automation tasks.
-* Executed Set 1: Implemented cron monitoring, advanced Git hooks, and multi source RSS aggregation.
-* Executed Set 2: Created system health HTML dashboards, Prometheus Docker templates, and native AGY zero trust rules.
-* Executed Set 3: Deployed automated library tarball backups, automated backup crons, and logged the Automation ADR.
-* Executed Set 4: Developed backup retention sweepers, native Conventional Commits rules, and library statistics generators.
-* Fully cleared the `improvements.md` backlog as all 4 conceptual sets were successfully implemented in bulk.
-* Added `.agents/skills/bug_bounty_hunter/SKILL.md` to establish strict methodologies for reconnaissance, safe exploitation, and professional vulnerability reporting.
-* Implemented Secrets Management Architecture by creating a strict AGY rule preventing hardcoded credentials.
-* Built `tools/brain.py` to allow offline CLI searching of the entire knowledge base.
-* Established `documentation/agent_memory/` for long term AI persistent memory retention.
-* Created `tools/generate_knowledge_graph.py` to automatically visualize directory structures via Mermaid diagrams.
-* Wrote `CONTRIBUTING.md` to officially guide external collaborators on formatting constraints.
-* Built `documentation/roadmaps/2026_goals.md` to track technical and academic milestones.
-* Added a new 'Purpose and Value' section to the README to clearly explain the project scope and why developers should adopt it.
-* Executed a full repository validation sweep confirming zero dead links and zero empty directories across the entire knowledge base.
-* Populated `improvements.md` with 4 new advanced infrastructure and testing automation tasks.
-* Created `.gitignore` and `.env.template` to establish a highly secure architecture for managing personal, off repository secrets and workspace links.
-* Built `.agents/skills/google_docs_writer/SKILL.md` to guide the AI in generating professional Google Docs content while enforcing strict local `.env` privacy protections.
-* Added `.agents/rules/epistemic_skepticism.md` to enforce rigorous multi source cross checking and protect the AI from single source poisoning.
-* Implemented Google Docs API Integration tool `push_to_docs.py`.
-* Created Automated Tool Testing Suite with `pytest` in `tests/`.
-* Updated `library_statistics.py` and created GitHub Action to update Dynamic Statistics Badges.
-* Added `docker` and `github-actions` ecosystems to Dependabot for Expanded Dependency Monitoring.
-* Developed Pre Commit Dead Link Prevention tool `check_dead_links.py` and hook script `install_pre_commit_hook.py`.
-* Cleared all items from the `improvements.md` backlog.
-* Updated global install scripts to automatically install Python dependencies via `requirements.txt`, with fallback instructions.
-* Created `scripts/setup_google_docs_auth.py` to provide an interactive OAuth setup flow for Google Docs API integration.
-* Engineered a beautiful, interactive Terminal User Interface (TUI) installer in Go using `charmbracelet/huh` to optionally bake in dependency installations, Google Docs auth, and global linking.
-* Upgraded the Go installer to act as a standalone binary that can automatically clone the repository, sync/update from upstream forks, and perform full uninstalls.
-* Integrated `goreleaser` with a GitHub Actions workflow to automatically compile and release Windows, macOS, and Linux (including .deb and .rpm) binaries on every push to main and weekly schedule.
-* Added `tools/build_vector_index.py` and `tools/semantic_search.py` to create a local ChromaDB Vector RAG system for intelligent, semantic knowledge retrieval.
-* Configured a GitHub Actions workflow (`docs.yml`) utilizing `pdoc` to automatically build and deploy API documentation to a `gh-pages` branch.
-* Built `.agents/skills/data_analyst/SKILL.md` to mathematically enforce methodologies for Pandas data wrangling and Scikit-Learn pipelines.
-* Introduced a root `Makefile` to establish standard entry points for installation, testing, linting, building, and documentation generation.
-* Cleared all items from the `improvements.md` backlog.
+* Added `.agents/skills/bug_bounty_hunter/SKILL.md` to establish strict methodologies for reconnaissance.
+
+### 🛡 Security & Privacy
+* Removed phone number from `USER_PROFILE.md` to protect Personally Identifiable Information (PII).
+* Added `no_pii.md` global AGY rule and updated the `cyber_security` skill to strictly forbid handling sensitive PII.
+* Implemented Secrets Management Architecture by creating strict AGY rules preventing hardcoded credentials.
+* Created `.gitignore` and `.env.template` to establish a highly secure architecture for managing personal, off-repository secrets.
+
+### 🤖 AGY Integrations & Memory
+* Established `documentation/agent_memory/` for long-term AI persistent memory retention.
+* Created `tools/brain.py` to allow offline CLI searching of the entire knowledge base.
+* Added `.agents/rules/epistemic_skepticism.md` to enforce rigorous multi-source cross-checking.
+* Built `.agents/rules/documentation_enforcement.md` to guarantee the AI always updates the changelog and README prior to any git push.

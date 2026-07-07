@@ -13,84 +13,48 @@
   <img src="https://img.shields.io/static/v1?label=OS&message=Linux&color=FCC624&style=flat_square&logo=linux" alt="Linux Badge" />
 </p>
 
+<p align="center">
+  <a href="https://github.com/howlcipher/ai_knowledge_library/actions/workflows/release_installer.yml"><img src="https://github.com/howlcipher/ai_knowledge_library/actions/workflows/release_installer.yml/badge.svg" alt="Release Installer" /></a>
+  <a href="https://github.com/howlcipher/ai_knowledge_library/actions/workflows/test.yml"><img src="https://github.com/howlcipher/ai_knowledge_library/actions/workflows/test.yml/badge.svg" alt="Tests" /></a>
+  <a href="https://github.com/howlcipher/ai_knowledge_library/actions/workflows/docs.yml"><img src="https://github.com/howlcipher/ai_knowledge_library/actions/workflows/docs.yml/badge.svg" alt="Docs" /></a>
+</p>
+
 ***
 
 > This repository serves as the central context layer for terminal AI agents. It maps directly into the CLI to enforce coding standards, eliminate hallucinations, and provide deep architectural context tailored specifically for William Elias.
 
 ***
 
-## Purpose and Value
+## 🧠 Purpose and Value
 
-**What it is:** A centralized, filesystem based knowledge library and execution environment specifically engineered for AI agents interacting within the terminal.
+**What it is:** A centralized, filesystem-based knowledge library and execution environment specifically engineered for AI agents operating within the terminal.
 
 **Why use it:** AI agents frequently hallucinate or generate generic boilerplate when operating blindly. By linking this structured library to your local environment, you mathematically force the AI to:
 * Inherit your specific engineering methodologies.
 * Execute tasks using strictly defined domain skills.
-* Automatically generate scaffolding, monitor infrastructure, and perform self reviews before committing code.
+* Automatically generate scaffolding, monitor infrastructure, and perform self-reviews before committing code.
 
 It transforms generic AI models into a personalized, highly disciplined engineering team that operates precisely the way you do.
 
 ***
 
-## Architecture and Structure
+## ⚙️ Global Installation
 
-The knowledge base is organized into specific domains that the AI agent natively understands and executes against.
+We provide a standalone, cross-platform binary installer featuring a robust Terminal User Interface (TUI). This single executable can automatically download the repository, install dependencies, configure Google Docs OAuth, and globally link your rules and skills to your AI agent.
 
-<table>
-  <tr>
-    <th align="left">Directory or File</th>
-    <th align="left">Primary Function</th>
-  </tr>
-  <tr>
-    <td><code>GEMINI.md</code></td>
-    <td>Global index and central rulebook for all agent interactions.</td>
-  </tr>
-  <tr>
-    <td><code>.agents/skills/</code></td>
-    <td>Domain specific behavioral instructions parsed natively by AGY.</td>
-  </tr>
-  <tr>
-    <td><code>.agents/rules/</code></td>
-    <td>Global constraints that actively shape system prompts.</td>
-  </tr>
-  <tr>
-    <td><code>scripts/</code></td>
-    <td>Utilities for syncing and bootstrapping environments globally.</td>
-  </tr>
-  <tr>
-    <td><code>projects/</code></td>
-    <td>Active personal development projects and boilerplate templates.</td>
-  </tr>
-  <tr>
-    <td><code>infrastructure/</code></td>
-    <td>Networking setups, Docker configs, and server details.</td>
-  </tr>
-  <tr>
-    <td><code>documentation/</code></td>
-    <td>Standardized workflows, guides, and homelab postmortems.</td>
-  </tr>
-  <tr>
-    <td><code>tools/</code></td>
-    <td>Automated scripts, health checks, and profile sync utilities.</td>
-  </tr>
-</table>
-
-***
-
-## Global Installation
-
-We provide a standalone, cross-platform binary installer featuring a robust Terminal User Interface (TUI). This single executable can automatically download the repository, install Python dependencies, configure Google Docs OAuth, and globally link your rules and skills to AGY.
-
-**Primary Installation (Recommended):**
-1. Download the latest `ai_installer` executable (Windows, macOS, Linux, .deb, .rpm) from the **[GitHub Releases](https://github.com/howlcipher/ai_knowledge_library/releases)** page.
+### 🚀 Primary Installation (Recommended)
+1. Download the latest `ai_installer` executable (Windows, macOS, Linux, `.deb`, `.rpm`) from the **[GitHub Releases](https://github.com/howlcipher/ai_knowledge_library/releases)** page.
 2. Run the executable in your terminal:
    ```bash
    ./ai_installer
    ```
 
-*The installer will automatically clone the repository if you are running it externally, and includes native options to **Sync/Update** or **Uninstall** the library.*
+*The installer includes native options to **Install**, **Sync/Update**, or **Uninstall** the library.*
 
-**Alternative Fallbacks (Non-Interactive):**
+<details>
+<summary><strong>Alternative Fallbacks (Non-Interactive)</strong></summary>
+<br>
+
 If you prefer not to use the compiled Go binaries, you can run the legacy setup scripts from within a cloned repository.
 
 **Linux or macOS:**
@@ -103,10 +67,42 @@ chmod +x scripts/install_global.sh
 ```powershell
 .\scripts\install_global.ps1
 ```
+</details>
 
 ***
 
-## Forking and Customization
+## 🏗️ Architecture and Structure
+
+The knowledge base is organized into specific domains that the AI agent natively understands and executes against.
+
+| Directory or File | Primary Function |
+| :--- | :--- |
+| `GEMINI.md` | Global index and central rulebook for all agent interactions. |
+| `.agents/skills/` | Domain-specific behavioral instructions (e.g., Data Analyst, Bug Bounty Hunter). |
+| `.agents/rules/` | Global constraints that actively shape system prompts. |
+| `scripts/` | Utilities for syncing and bootstrapping environments globally. |
+| `projects/` | Active personal development projects and boilerplate templates. |
+| `infrastructure/` | Networking setups, Docker configs, and server details. |
+| `documentation/` | Standardized workflows, guides, and homelab postmortems. |
+| `tools/` | Advanced tooling including ChromaDB vector indexers and Google Docs APIs. |
+| `Makefile` | Standardized root entrypoints for testing, linting, and building. |
+
+***
+
+## 🔒 Security and Automation
+
+This repository relies on several automated workflows to maintain structure and protect data autonomously:
+
+* **GoReleaser CI/CD:** Fully automated release pipelines for cross-platform binary distribution.
+* **Automated Test Suite:** Multi-language (Go and Python) testing matrix enforced on every push.
+* **Vector Semantic Search:** Local ChromaDB integration (`tools/build_vector_index.py`) for offline, secure RAG capabilities.
+* **Google Docs Sync:** Authenticated OAuth integrations (`tools/push_to_docs.py`) securely bridged to the local environment.
+* **Markdown Validation:** GitHub Actions workflow that ensures all documentation adheres strictly to required formatting constraints.
+* **Dependabot:** Automatically scans all connected Python and Go environments for known vulnerabilities weekly.
+
+***
+
+## 🧑‍💻 Forking and Customization
 
 If you are forking this repository for your own use, you can easily customize the core user identity. Run the profile setup script to generate your own metadata while choosing to keep, supplement, or entirely replace the default William Elias profile.
 
@@ -116,20 +112,4 @@ python scripts/setup_profile.py
 
 ***
 
-## Security and Automation
-
-This repository relies on several automated workflows to maintain structure and protect data autonomously.
-
-<details>
-<summary><strong>View Automated Protections</strong></summary>
-<br>
-
-* **Markdown Validation**: GitHub Actions workflow that ensures all documentation adheres strictly to required formatting constraints.
-* **Dependabot**: Automatically scans all connected Python and Go environments for known vulnerabilities weekly.
-* **AGY Rule Engine**: Employs global rules to actively prevent the leakage of Personally Identifiable Information anywhere within terminal outputs.
-
-</details>
-
-***
-
-Please review the [Change Log](change_log.md) for a historical record of all updates and modifications.
+Please review the **[Change Log](change_log.md)** for a historical record of all updates and modifications.
