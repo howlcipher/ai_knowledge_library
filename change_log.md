@@ -18,3 +18,8 @@ All notable changes to this project will be documented in this file.
 * Added `no_pii.md` global AGY rule and updated the `cyber_security` skill to strictly forbid handling sensitive PII like phone numbers.
 * Created `scripts/install_global.ps1` to allow Windows users to sync skills and rules globally using PowerShell Junctions and Hard Links.
 * Created `scripts/setup_profile.py` to allow individuals forking this repository to easily generate and swap in their own user profiles.
+* Filled `improvements.md` with new automation tasks.
+* Created `tools/sync_context.py` to map out local markdown files into a master index.
+* Created `tools/fetch_security_news.py` to automatically update local docs with current cybersecurity threats.
+* Created `tools/generate_agent_summary.py` to inject condensed profile data directly into the agent rules.
+* Created `tools/clean_logs.py` to automate infrastructure maintenance by dropping old health records.
