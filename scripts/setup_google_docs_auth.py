@@ -12,7 +12,10 @@ except ImportError:
     sys.exit(1)
 
 # If modifying these scopes, delete the file token.json.
-SCOPES = ['https://www.googleapis.com/auth/documents']
+SCOPES = [
+    'https://www.googleapis.com/auth/documents',
+    'https://www.googleapis.com/auth/drive.readonly'
+]
 
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))

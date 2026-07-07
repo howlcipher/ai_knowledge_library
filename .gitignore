@@ -7,3 +7,6 @@ credentials.json
 token.json
 client_secret.json
 *.json
+
+# Ignore synced personal Google Docs
+personal_docs/
