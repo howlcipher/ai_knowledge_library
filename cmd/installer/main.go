@@ -187,12 +187,12 @@ func (i *Installer) CustomizeProfile() {
 		huh.NewGroup(
 			huh.NewNote().
 				Title("Customize User Profile").
-				Description("This will generate a custom USER_PROFILE.md for your library."),
-			huh.NewInput().Title("Full Name").Value(&name),
-			huh.NewInput().Title("Email").Value(&email),
+				Description("Generates a custom USER_PROFILE.md. All fields are optional. Rerun anytime to update."),
+			huh.NewInput().Title("Full Name (optional)").Value(&name),
+			huh.NewInput().Title("Email (optional)").Value(&email),
 			huh.NewInput().Title("LinkedIn URL (optional)").Value(&linkedin),
 			huh.NewInput().Title("GitHub Username (optional)").Value(&github),
-			huh.NewText().Title("Professional Summary").Value(&summary),
+			huh.NewText().Title("Professional Summary (optional)").Value(&summary),
 		),
 	)
 
@@ -201,15 +201,33 @@ func (i *Installer) CustomizeProfile() {
 		return
 	}
 
-	content := fmt.Sprintf("# %s User Profile\n\n## Contact and Links\n* Email: %s\n", name, email)
-	if linkedin != "" {
-		content += fmt.Sprintf("* LinkedIn: %s\n", linkedin)
+	if name == "" {
+		name = "Anonymous"
 	}
-	if github != "" {
-		content += fmt.Sprintf("* GitHub: github.com/%s\n", github)
+
+	content := fmt.Sprintf("# %s User Profile\n", name)
+
+	if email != "" || linkedin != "" || github != "" {
+		content += "\n## Contact and Links\n"
+		if email != "" {
+			content += fmt.Sprintf("* Email: %s\n", email)
+		}
+		if linkedin != "" {
+			content += fmt.Sprintf("* LinkedIn: %s\n", linkedin)
+		}
+		if github != "" {
+			content += fmt.Sprintf("* GitHub: github.com/%s\n", github)
+		}
 	}
 	
-	content += fmt.Sprintf("\n## Professional Summary\n%s\n\n## Core Skills\n* Add your core skills here.\n\n## Professional Experience\n* Add your experience here.\n\n## Education and Certifications\n* Add your education here.\n", summary)
+	content += "\n## Professional Summary\n"
+	if summary != "" {
+		content += fmt.Sprintf("%s\n", summary)
+	} else {
+		content += "Add your professional summary here.\n"
+	}
+	
+	content += "\n## Core Skills\n* Add your core skills here.\n\n## Professional Experience\n* Add your experience here.\n\n## Education and Certifications\n* Add your education here.\n"
 
 	err := os.WriteFile("USER_PROFILE.md", []byte(content), 0644)
 	if err != nil {
