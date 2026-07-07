@@ -78,16 +78,22 @@ The knowledge base is organized into specific domains that the AI agent natively
 
 ## Global Installation
 
-To make this library accessible across your entire machine regardless of your current directory, run the provided setup scripts.
+We provide a robust, interactive Terminal User Interface (TUI) installer written in Go. To launch the installer and configure your environment (Python dependencies, optional Google Docs integration, and global AGY linking):
 
-**For Linux or macOS users:**
+```bash
+go run cmd/installer/main.go
+```
+
+**Alternative Fallbacks (Non-Interactive):**
+If you do not have Go installed, you can use the legacy setup scripts.
+
+**Linux or macOS:**
 ```bash
 chmod +x scripts/install_global.sh
 ./scripts/install_global.sh
 ```
 
-**For Windows users:**
-Execute the PowerShell installation script.
+**Windows:**
 ```powershell
 .\scripts\install_global.ps1
 ```

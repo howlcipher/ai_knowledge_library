@@ -62,3 +62,4 @@ All notable changes to this project will be documented in this file.
 * Cleared all items from the `improvements.md` backlog.
 * Updated global install scripts to automatically install Python dependencies via `requirements.txt`, with fallback instructions.
 * Created `scripts/setup_google_docs_auth.py` to provide an interactive OAuth setup flow for Google Docs API integration.
+* Engineered a beautiful, interactive Terminal User Interface (TUI) installer in Go using `charmbracelet/huh` to optionally bake in dependency installations, Google Docs auth, and global linking.
