@@ -11,3 +11,5 @@ All notable changes to this project will be documented in this file.
 * Added GitHub Actions workflow for Markdown validation.
 * Added Dependabot configuration for security vulnerability scanning on Python and Go dependencies.
 * Built boilerplate templates for Python FastAPI and Go backend services inside `projects/templates/`.
+* Created AGY formatting rule in `.agents/rules/strict_formatting.md` to automate constraints.
+* Created `scripts/install_global.sh` to symlink library skills and rules globally for any AGY instance.
