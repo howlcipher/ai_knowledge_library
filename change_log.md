@@ -48,3 +48,4 @@ All notable changes to this project will be documented in this file.
 * Created `tools/generate_knowledge_graph.py` to automatically visualize directory structures via Mermaid diagrams.
 * Wrote `CONTRIBUTING.md` to officially guide external collaborators on formatting constraints.
 * Built `documentation/roadmaps/2026_goals.md` to track technical and academic milestones.
+* Added a new 'Purpose and Value' section to the README to clearly explain the project scope and why developers should adopt it.

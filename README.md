@@ -18,6 +18,19 @@
 
 ***
 
+## Purpose and Value
+
+**What it is:** A centralized, filesystem based knowledge library and execution environment specifically engineered for AI agents interacting within the terminal.
+
+**Why use it:** AI agents frequently hallucinate or generate generic boilerplate when operating blindly. By linking this structured library to your local environment, you mathematically force the AI to:
+* Inherit your specific engineering methodologies.
+* Execute tasks using strictly defined domain skills.
+* Automatically generate scaffolding, monitor infrastructure, and perform self reviews before committing code.
+
+It transforms generic AI models into a personalized, highly disciplined engineering team that operates precisely the way you do.
+
+***
+
 ## Architecture and Structure
 
 The knowledge base is organized into specific domains that the AI agent natively understands and executes against.
