@@ -78,14 +78,19 @@ The knowledge base is organized into specific domains that the AI agent natively
 
 ## Global Installation
 
-We provide a robust, interactive Terminal User Interface (TUI) installer written in Go. To launch the installer and configure your environment (Python dependencies, optional Google Docs integration, and global AGY linking):
+We provide a standalone, cross-platform binary installer featuring a robust Terminal User Interface (TUI). This single executable can automatically download the repository, install Python dependencies, configure Google Docs OAuth, and globally link your rules and skills to AGY.
 
-```bash
-go run cmd/installer/main.go
-```
+**Primary Installation (Recommended):**
+1. Download the latest `ai_installer` executable (Windows, macOS, Linux, .deb, .rpm) from the **[GitHub Releases](https://github.com/howlcipher/ai_knowledge_library/releases)** page.
+2. Run the executable in your terminal:
+   ```bash
+   ./ai_installer
+   ```
+
+*The installer will automatically clone the repository if you are running it externally, and includes native options to **Sync/Update** or **Uninstall** the library.*
 
 **Alternative Fallbacks (Non-Interactive):**
-If you do not have Go installed, you can use the legacy setup scripts.
+If you prefer not to use the compiled Go binaries, you can run the legacy setup scripts from within a cloned repository.
 
 **Linux or macOS:**
 ```bash
