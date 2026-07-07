@@ -41,3 +41,4 @@ All notable changes to this project will be documented in this file.
 * Executed Set 3: Deployed automated library tarball backups, automated backup crons, and logged the Automation ADR.
 * Executed Set 4: Developed backup retention sweepers, native Conventional Commits rules, and library statistics generators.
 * Fully cleared the `improvements.md` backlog as all 4 conceptual sets were successfully implemented in bulk.
+* Added `.agents/skills/bug_bounty_hunter/SKILL.md` to establish strict methodologies for reconnaissance, safe exploitation, and professional vulnerability reporting.
