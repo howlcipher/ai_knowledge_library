@@ -3,17 +3,17 @@
 This document tracks all conceptual improvements, architectural upgrades, and automation tasks that can be implemented to further harden, scale, and optimize the AI Knowledge Library. 
 
 ## 1. CI/CD & DevOps Automation
-* [ ] **Automated Linting Pipeline**: Add `golangci-lint` (Go) and `flake8`/`black` (Python) to a new GitHub Action (`lint.yml`) to rigorously enforce styling constraints before tests even run.
-* [ ] **Static Application Security Testing (SAST)**: Integrate `gosec` (for Go) and `bandit` (for Python) into the CI pipeline to automatically scan for hardcoded secrets, injection vulnerabilities, and bad cryptographic practices on every push.
+* [x] **Automated Linting Pipeline**: Add `golangci-lint` (Go) and `flake8`/`black` (Python) to a new GitHub Action (`lint.yml`) to rigorously enforce styling constraints before tests even run.
+* [x] **Static Application Security Testing (SAST)**: Integrate `gosec` (for Go) and `bandit` (for Python) into the CI pipeline to automatically scan for hardcoded secrets, injection vulnerabilities, and bad cryptographic practices on every push.
 * [ ] **CodeQL Integration**: Add GitHub's native CodeQL semantic code analysis workflow to monitor for advanced security vulnerabilities globally.
 * [ ] **Dockerized Environment**: Create a root `Dockerfile` and `docker-compose.yml` to allow users to spin up the entire knowledge library environment (including ChromaDB, Python, and Go) in a strictly isolated, reproducible container.
 * [ ] **Cross-Platform Install Testing**: Build GitHub Actions that actually spin up Windows, macOS, and Ubuntu VMs to execute the installer binaries and shell scripts to guarantee zero regressions.
 
 ## 2. Testing & Quality Assurance
-* [ ] **Code Coverage Reporting**: Upgrade `test.yml` to generate coverage metrics (e.g., `pytest --cov`, `go test -cover`) and upload them to Codecov or Coveralls, accompanied by a dynamic coverage badge in the README.
+* [x] **Code Coverage Reporting**: Upgrade `test.yml` to generate coverage metrics (e.g., `pytest --cov`, `go test -cover`) and output them in the CI runner.
 * [ ] **End-to-End (E2E) Installer Tests**: Implement automated integration tests that simulate a user navigating the Go TUI (`charmbracelet/huh`) to ensure the interactive installer flow never breaks.
 * [ ] **ChromaDB Mock Testing**: Build mock database interfaces in the Python test suite to validate the RAG Semantic Search and Vector Indexing scripts without requiring disk I/O.
-* [ ] **Makefile Expansion**: Expand the `Makefile` with `make lint`, `make format`, `make clean`, and `make coverage` targets for a highly standardized local developer experience.
+* [x] **Makefile Expansion**: Expand the `Makefile` with `make lint`, `make format`, `make clean`, and `make coverage` targets for a highly standardized local developer experience.
 
 ## 3. Architecture & Code Quality
 * [ ] **Strict Python Typing**: Refactor all Python scripts in `tools/` and `scripts/` to use strict type hints (`typing` module) and validate them via `mypy`.

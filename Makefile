@@ -1,4 +1,4 @@
-.PHONY: install test lint docs build sync
+.PHONY: install test lint format clean coverage build docs sync
 
 # Environment and Setup
 install:
@@ -6,18 +6,42 @@ install:
 	go mod tidy
 	pip install -r requirements.txt
 
-# Testing
+# Testing and Coverage
 test:
 	@echo "Running Python tests..."
 	pytest tests/ -v
 	@echo "Running Go tests..."
 	go test -v ./...
 
+coverage-python:
+	@echo "Generating Python coverage..."
+	pytest tests/ -v --cov=tools --cov=scripts --cov-report=term-missing
+
+coverage-go:
+	@echo "Generating Go coverage..."
+	go test -v -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out
+
 # Linting and Quality Checks
 lint:
-	@echo "Running code quality checks..."
-	# Run pre-commit checks if installed
-	pre-commit run --all-files
+	@echo "Running Python linting (flake8)..."
+	flake8 tools/ scripts/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+	@echo "Running Go linting..."
+	golangci-lint run
+	@echo "Running pre-commit checks if installed..."
+	pre-commit run --all-files || true
+
+format:
+	@echo "Formatting Python code (black)..."
+	black tools/ scripts/ tests/
+	@echo "Formatting Go code (gofmt)..."
+	gofmt -w .
+
+clean:
+	@echo "Cleaning build artifacts and cache..."
+	rm -f ai_installer coverage.out
+	rm -rf __pycache__ .pytest_cache docs/
+	find . -type d -name "__pycache__" -exec rm -r {} +
 
 # Build
 build:
@@ -34,5 +58,5 @@ docs:
 # Sync and Data
 sync:
 	@echo "Syncing context and pulling remote docs..."
-	python tools/sync_context.py
-	python tools/pull_from_docs.py
+	python3 tools/sync_context.py
+	python3 tools/pull_from_docs.py

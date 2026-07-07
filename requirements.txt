@@ -1,4 +1,8 @@
 pytest
+pytest-cov
+flake8
+black
+bandit
 google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib

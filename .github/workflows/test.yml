@@ -23,8 +23,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Pytest
-        run: make test
+      - name: Run Pytest with Coverage
+        run: make coverage-python
 
   test-go:
     runs-on: ubuntu-latest
@@ -40,5 +40,5 @@ jobs:
       - name: Install dependencies
         run: go mod tidy
 
-      - name: Run Go tests
-        run: go test -v ./...
+      - name: Run Go tests with Coverage
+        run: make coverage-go

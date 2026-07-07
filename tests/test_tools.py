@@ -17,11 +17,21 @@ def test_tools_have_main_function():
     
     for tool_file in tool_files:
         path = os.path.join(tools_dir, tool_file)
-        # We wrap in try-except to avoid tests failing purely due to missing pip packages 
-        # in minimal test environments, but we still ensure the file is syntactically valid
         try:
             mod = load_module(tool_file[:-3], path)
             assert hasattr(mod, 'main'), f"{tool_file} is missing a main() entrypoint."
         except (ImportError, SystemExit):
-            pass # Skip if dependency is missing during minimal testing
+            pass
 
+def test_scripts_are_importable():
+    scripts_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+    script_files = [f for f in os.listdir(scripts_dir) if f.endswith('.py') and f != '__init__.py']
+    
+    assert len(script_files) > 0, "No scripts found in the scripts directory."
+    
+    for script_file in script_files:
+        path = os.path.join(scripts_dir, script_file)
+        try:
+            mod = load_module(script_file[:-3], path)
+        except (ImportError, SystemExit):
+            pass # Skip if dependency is missing during minimal testing

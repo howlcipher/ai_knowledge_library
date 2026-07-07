@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-07-07
+
+### 🚀 Added
+- **Interactive Profile Customizer**: Embedded an interactive `charmbracelet/huh` TUI menu natively into the Go installer to securely capture and format custom `USER_PROFILE.md` structures for users who fork the library. All inputs gracefully handle empty options.
+- **Dynamic Skills Architecture**: Expanded the global skills manifest with 8 new cognitive constraints bridging UI/UX, Quantitative Finance, Color Theory, Accessibility, Product Management, Machine Learning, Economic Theory, and Baseball Analytics.
+- **Automated CI Linting**: Configured a `.github/workflows/lint.yml` Action bridging `flake8`, `bandit` (SAST), and `golangci-lint` to strictly enforce zero-defect standards globally on all PRs.
+- **Code Coverage CI Metrics**: Augmented the `test.yml` GitHub workflow to automatically measure and generate test coverage percentages (`pytest --cov` and `go tool cover`) for full audibility.
+- **Expanded Makefile**: Completely overhauled the build instructions spanning automated code formatting (`black`, `gofmt`), deep cache purges (`clean`), and isolated test coverages (`coverage-python`, `coverage-go`).
+- **Comprehensive Backlog Manifest**: Heavily populated `improvements.md` with a massive 21-task architectural, DevOps, and testing roadmap for the future.
+
+### 🛠 Fixed
+- Eliminated Python syntactic escape errors (`\n`) accidentally placed natively inside bootstrapping scripts, ensuring the `docs.yml` CI Action parses all classes successfully via `pdoc`.
+
 ## [1.2.0] - 2026-07-07
 
 ### 🚀 Added
