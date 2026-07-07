@@ -26,4 +26,4 @@ def link_skills():
             print(f"Mapped context layer: {item}")
 
 if __name__ == "__main__":
-    link_skills()\n
+    link_skills()
