@@ -24,6 +24,7 @@ type Installer struct {
 	InstallDeps bool
 	SetupDocs   bool
 	LinkGlobal  bool
+	Language    string
 }
 
 // NewInstaller creates a new Installer instance with defaults.
@@ -35,6 +36,7 @@ func NewInstaller() *Installer {
 	return &Installer{
 		RepoURL:  DefaultRepoURL,
 		DestPath: filepath.Join(home, DefaultDirName),
+		Language: "en_US",
 	}
 }
 
@@ -191,7 +193,8 @@ func (i *Installer) Uninstall() {
 
 // CustomizeProfile walks the user through setting up a personalized profile.
 func (i *Installer) CustomizeProfile() {
-	var name, email, linkedin, github, summary string
+	var name, email, linkedin, github, summary, uiPreference, agentMode string
+	var langPreference = i.Language
 
 	form := huh.NewForm(
 		huh.NewGroup(
@@ -199,6 +202,28 @@ func (i *Installer) CustomizeProfile() {
 				Title("Customize User Profile").
 				Description("Generates a custom USER_PROFILE.md. All fields are optional. Rerun anytime to update."),
 			huh.NewInput().Title("Full Name (optional)").Value(&name),
+			huh.NewSelect[string]().
+				Title("Preferred Language Module?").
+				Options(
+					huh.NewOption("US English (Default)", "en_US"),
+					huh.NewOption("UK English", "en_UK"),
+					huh.NewOption("Australian English", "en_AU"),
+					huh.NewOption("Japanese", "ja_JP"),
+					huh.NewOption("Chinese (Simplified)", "zh_CN"),
+					huh.NewOption("Chinese (Traditional)", "zh_TW"),
+					huh.NewOption("Hindi", "hi_IN"),
+					huh.NewOption("Bengali", "bn_IN"),
+					huh.NewOption("German", "de_DE"),
+					huh.NewOption("French", "fr_FR"),
+					huh.NewOption("Spanish", "es_ES"),
+					huh.NewOption("Russian", "ru_RU"),
+					huh.NewOption("Polish", "pl_PL"),
+					huh.NewOption("Finnish", "fi_FI"),
+					huh.NewOption("Slovak", "sk_SK"),
+					huh.NewOption("Korean", "ko_KR"),
+					huh.NewOption("Arabic", "ar_SA"),
+				).
+				Value(&langPreference),
 			huh.NewInput().Title("Email (optional)").Value(&email),
 			huh.NewInput().Title("LinkedIn URL (optional)").Value(&linkedin),
 			huh.NewInput().Title("GitHub Username (optional)").Value(&github),
@@ -215,7 +240,15 @@ func (i *Installer) CustomizeProfile() {
 		name = "Anonymous"
 	}
 
-	content := fmt.Sprintf("# %s User Profile\n", name)
+	content := fmt.Sprintf(`---
+name: %s
+preferred_ui: %s
+agent_mode: %s
+language_module: %s
+---
+
+# %s User Profile
+`, name, uiPreference, agentMode, langPreference, name)
 
 	if email != "" || linkedin != "" || github != "" {
 		content += "\n## Contact and Links\n"
@@ -245,6 +278,7 @@ func (i *Installer) CustomizeProfile() {
 		return
 	}
 	
+	i.Language = langPreference
 	fmt.Println("\nSuccessfully generated your custom USER_PROFILE.md!")
 }
 

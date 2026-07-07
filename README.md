@@ -38,6 +38,17 @@ It transforms generic AI models into a personalized, highly disciplined engineer
 
 ***
 
+## 🌍 Localizations & Languages
+The AI Knowledge library supports language modules. The AI will translate operations and the Go TUI installer supports native execution in the following languages:
+
+* [🇺🇸 US English](documentation/languages/README_en_US.md) (Default)
+* [🇬🇧 UK English](documentation/languages/README_en_UK.md) | [🇦🇺 Australian English](documentation/languages/README_en_AU.md)
+* [🇯🇵 Japanese](documentation/languages/README_ja_JP.md) | [🇰🇷 Korean](documentation/languages/README_ko_KR.md) | [🇨🇳 Chinese (Simplified)](documentation/languages/README_zh_CN.md) | [🇹🇼 Chinese (Traditional)](documentation/languages/README_zh_TW.md)
+* [🇮🇳 Hindi](documentation/languages/README_hi_IN.md) | [🇧🇩 Bengali](documentation/languages/README_bn_IN.md)
+* [🇩🇪 German](documentation/languages/README_de_DE.md) | [🇫🇷 French](documentation/languages/README_fr_FR.md) | [🇪🇸 Spanish](documentation/languages/README_es_ES.md)
+* [🇷🇺 Russian](documentation/languages/README_ru_RU.md) | [🇵🇱 Polish](documentation/languages/README_pl_PL.md) | [🇫🇮 Finnish](documentation/languages/README_fi_FI.md) | [🇸🇰 Slovak](documentation/languages/README_sk_SK.md)
+* [🇸🇦 Arabic](documentation/languages/README_ar_SA.md)
+
 ## ⚙️ Global Installation
 
 We provide a standalone, cross-platform binary installer featuring a robust Terminal User Interface (TUI). This single executable can automatically download the repository, install dependencies, configure Google Docs OAuth, and globally link your rules and skills to your AI agent.
