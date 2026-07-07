@@ -1,0 +1,39 @@
+name: Generate API Documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'tools/**'
+      - 'scripts/**'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pdoc
+
+      - name: Generate API Docs
+        run: |
+          mkdir -p docs
+          pdoc ./tools ./scripts -o docs
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs

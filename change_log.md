@@ -65,3 +65,8 @@ All notable changes to this project will be documented in this file.
 * Engineered a beautiful, interactive Terminal User Interface (TUI) installer in Go using `charmbracelet/huh` to optionally bake in dependency installations, Google Docs auth, and global linking.
 * Upgraded the Go installer to act as a standalone binary that can automatically clone the repository, sync/update from upstream forks, and perform full uninstalls.
 * Integrated `goreleaser` with a GitHub Actions workflow to automatically compile and release Windows, macOS, and Linux (including .deb and .rpm) binaries on every push to main and weekly schedule.
+* Added `tools/build_vector_index.py` and `tools/semantic_search.py` to create a local ChromaDB Vector RAG system for intelligent, semantic knowledge retrieval.
+* Configured a GitHub Actions workflow (`docs.yml`) utilizing `pdoc` to automatically build and deploy API documentation to a `gh-pages` branch.
+* Built `.agents/skills/data_analyst/SKILL.md` to mathematically enforce methodologies for Pandas data wrangling and Scikit-Learn pipelines.
+* Introduced a root `Makefile` to establish standard entry points for installation, testing, linting, building, and documentation generation.
+* Cleared all items from the `improvements.md` backlog.

@@ -10,3 +10,6 @@ client_secret.json
 
 # Ignore synced personal Google Docs
 personal_docs/
+
+# Ignore local vector databases
+.chromadb/
