@@ -27,7 +27,9 @@ jobs:
         id: generate_tag
         run: |
           TAG="v1.0.$(date +%Y%m%d%H%M%S)"
-          git tag $TAG
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a $TAG -m "Release $TAG"
           git push origin $TAG
 
       - name: Run GoReleaser
