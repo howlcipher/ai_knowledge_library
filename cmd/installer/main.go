@@ -179,6 +179,47 @@ func (i *Installer) Uninstall() {
 	fmt.Println("Uninstall complete. The repository files remain on your disk; delete the directory manually if desired.")
 }
 
+// CustomizeProfile walks the user through setting up a personalized profile.
+func (i *Installer) CustomizeProfile() {
+	var name, email, linkedin, github, summary string
+
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewNote().
+				Title("Customize User Profile").
+				Description("This will generate a custom USER_PROFILE.md for your library."),
+			huh.NewInput().Title("Full Name").Value(&name),
+			huh.NewInput().Title("Email").Value(&email),
+			huh.NewInput().Title("LinkedIn URL (optional)").Value(&linkedin),
+			huh.NewInput().Title("GitHub Username (optional)").Value(&github),
+			huh.NewText().Title("Professional Summary").Value(&summary),
+		),
+	)
+
+	if err := form.Run(); err != nil {
+		fmt.Println("Customization aborted.")
+		return
+	}
+
+	content := fmt.Sprintf("# %s User Profile\n\n## Contact and Links\n* Email: %s\n", name, email)
+	if linkedin != "" {
+		content += fmt.Sprintf("* LinkedIn: %s\n", linkedin)
+	}
+	if github != "" {
+		content += fmt.Sprintf("* GitHub: github.com/%s\n", github)
+	}
+	
+	content += fmt.Sprintf("\n## Professional Summary\n%s\n\n## Core Skills\n* Add your core skills here.\n\n## Professional Experience\n* Add your experience here.\n\n## Education and Certifications\n* Add your education here.\n", summary)
+
+	err := os.WriteFile("USER_PROFILE.md", []byte(content), 0644)
+	if err != nil {
+		fmt.Println("Failed to save profile:", err)
+		return
+	}
+	
+	fmt.Println("\nSuccessfully generated your custom USER_PROFILE.md!")
+}
+
 // Install runs the setup processes based on user input.
 func (i *Installer) Install() {
 	i.InstallDeps = true
@@ -274,6 +315,7 @@ func main() {
 				Title("What would you like to do?").
 				Options(
 					huh.NewOption("Install / Setup Environment", "install"),
+					huh.NewOption("Customize Profile", "customize"),
 					huh.NewOption("Sync / Update Repository", "sync"),
 					huh.NewOption("Uninstall Global Links", "uninstall"),
 					huh.NewOption("Exit", "exit"),
@@ -291,6 +333,8 @@ func main() {
 	switch action {
 	case "install":
 		installer.Install()
+	case "customize":
+		installer.CustomizeProfile()
 	case "sync":
 		installer.SyncRepo()
 	case "uninstall":
