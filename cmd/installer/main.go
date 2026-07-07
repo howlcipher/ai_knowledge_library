@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/huh/spinner"
 )
 
 const (
@@ -71,7 +72,7 @@ func (i *Installer) CloneRepo() error {
 		return err
 	}
 
-	err := huh.NewSpinner().
+	err := spinner.New().
 		Title(fmt.Sprintf("Cloning %s into %s...", i.RepoURL, i.DestPath)).
 		Action(func() {
 			_ = exec.Command("git", "clone", i.RepoURL, i.DestPath).Run()
@@ -127,7 +128,7 @@ func (i *Installer) SyncRepo() {
 	}
 
 	var syncErr error
-	_ = huh.NewSpinner().
+	_ = spinner.New().
 		Title("Fetching latest changes...").
 		Action(func() {
 			syncErr = exec.Command("git", "pull", "origin", "main").Run()
@@ -284,7 +285,7 @@ func (i *Installer) ShowHelp() {
 		fmt.Println("- You need Go version 1.22+. Run `go version` to check.")
 		fmt.Println("- If 'go run' fails, try 'go mod tidy' to sync dependencies.")
 	}
-	fmt.Println("========================================\n")
+	fmt.Println("========================================")
 }
 
 // Install runs the setup processes based on user input.

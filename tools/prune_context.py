@@ -3,7 +3,7 @@ import os
 import chromadb
 from chromadb.config import Settings
 
-def prune_context():
+def main():
     db_path = os.path.join(os.getcwd(), ".chroma")
     if not os.path.exists(db_path):
         print("No ChromaDB found at .chroma, skipping prune.")
@@ -19,4 +19,4 @@ def prune_context():
     print("No severe contradictions found in the knowledge graph. Context is clean.")
 
 if __name__ == "__main__":
-    prune_context()
+    main()

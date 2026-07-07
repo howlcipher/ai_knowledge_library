@@ -18,6 +18,9 @@ def setup_logger(name):
         
     return logger
 
-if __name__ == "__main__":
+def main():
     log = setup_logger("test")
     log.info("Standardized logging system initialized.")
+
+if __name__ == "__main__":
+    main()

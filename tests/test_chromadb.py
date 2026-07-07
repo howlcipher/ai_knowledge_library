@@ -7,8 +7,13 @@ def test_chroma_db_mock(mock_client):
     mock_collection = MagicMock()
     mock_client.return_value.get_or_create_collection.return_value = mock_collection
     
+    # Actually call the client to test the mock
+    import chromadb
+    client = chromadb.PersistentClient(path=".chroma")
+    col = client.get_or_create_collection("test")
+    
     # Simulate adding documents
-    mock_collection.add(
+    col.add(
         documents=["test doc"],
         metadatas=[{"source": "test"}],
         ids=["id1"]
