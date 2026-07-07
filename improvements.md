@@ -3,10 +3,10 @@
 This document tracks all conceptual improvements, architectural upgrades, and automation tasks that can be implemented to further harden, scale, and optimize the AI Knowledge Library. 
 
 ## 1. Bug Fixes & Immediate Issues
-* [ ] **Test Pipeline Failures**: The initial `test_chromadb.py` mock test was structurally flawed, and `system_logger.py` was missing a `main()` entrypoint breaking `test_tools.py`. *(Update: Just fixed)*
-* [ ] **Crude Template Injector**: The `template_injector.py` uses crude Regex instead of the actual `Jinja2` templating engine requested.
-* [ ] **Go Spinner Output Suppression**: The TUI spinner suppresses standard error output on failures, making it hard for users to debug git cloning errors.
-* [ ] **ADR Naming Convention**: `generate_adr.py` doesn't enforce strict numerical ADR increments (e.g., ADR-001, ADR-002), risking naming collisions.
+* [x] **Test Pipeline Failures**: The initial `test_chromadb.py` mock test was structurally flawed, and `system_logger.py` was missing a `main()` entrypoint breaking `test_tools.py`. *(Update: Just fixed)*
+* [x] **Crude Template Injector**: The `template_injector.py` uses crude Regex instead of the actual `Jinja2` templating engine requested.
+* [x] **Go Spinner Output Suppression**: The TUI spinner suppresses standard error output on failures, making it hard for users to debug git cloning errors.
+* [x] **ADR Naming Convention**: `generate_adr.py` doesn't enforce strict numerical ADR increments (e.g., ADR-001, ADR-002), risking naming collisions.
 
 ## 2. Architecture & Ease of Use
 * [ ] **Cobra CLI Refactor**: Refactor the Go Installer to use the `cobra` framework so power users can run `ai_installer install` directly from the command line without navigating the visual TUI.

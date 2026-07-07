@@ -74,14 +74,18 @@ func (i *Installer) CloneRepo() error {
 		return err
 	}
 
-	err := spinner.New().
+	var output []byte
+	_ = spinner.New().
 		Title(fmt.Sprintf("Cloning %s into %s...", i.RepoURL, i.DestPath)).
 		Action(func() {
-			_ = exec.Command("git", "clone", i.RepoURL, i.DestPath).Run()
+			output, _ = exec.Command("git", "clone", i.RepoURL, i.DestPath).CombinedOutput()
 		}).
 		Run()
-	if err != nil {
-		return fmt.Errorf("failed to clone repository: %w", err)
+	
+	// Check if directory exists and has files (git clone succeeds if dest exists but we need to know if it failed)
+	if _, statErr := os.Stat(filepath.Join(i.DestPath, ".git")); statErr != nil {
+		fmt.Printf("\nClone failed with output:\n%s\n", string(output))
+		return fmt.Errorf("failed to clone repository")
 	}
 
 	if err := os.Chdir(i.DestPath); err != nil {
@@ -130,14 +134,15 @@ func (i *Installer) SyncRepo() {
 	}
 
 	var syncErr error
+	var output []byte
 	_ = spinner.New().
 		Title("Fetching latest changes...").
 		Action(func() {
-			syncErr = exec.Command("git", "pull", "origin", "main").Run()
+			output, syncErr = exec.Command("git", "pull", "origin", "main").CombinedOutput()
 		}).
 		Run()
 	if syncErr != nil {
-		fmt.Println("Error syncing repository. You might have local changes or the branch might differ.")
+		fmt.Printf("Error syncing repository. Output:\n%s\n", string(output))
 	} else {
 		fmt.Println("Repository is up to date!")
 	}

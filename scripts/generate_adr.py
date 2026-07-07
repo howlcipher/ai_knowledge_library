@@ -2,15 +2,23 @@
 import os
 import datetime
 import sys
+import glob
 
 def generate_adr(title):
     date_str = datetime.datetime.now().strftime("%Y-%m-%d")
     safe_title = title.lower().replace(" ", "-")
-    filename = f"documentation/architecture/adrs/{date_str}-{safe_title}.md"
     
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    adrs_dir = "documentation/architecture/adrs"
+    os.makedirs(adrs_dir, exist_ok=True)
     
-    content = f"""# {title}
+    # Calculate ADR number
+    existing_adrs = glob.glob(os.path.join(adrs_dir, "ADR-*.md"))
+    adr_number = len(existing_adrs) + 1
+    adr_id = f"ADR-{adr_number:03d}"
+    
+    filename = os.path.join(adrs_dir, f"{adr_id}-{safe_title}.md")
+    
+    content = f"""# {adr_id}: {title}
 
 ## Date: {date_str}
 

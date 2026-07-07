@@ -9,3 +9,4 @@ google-auth-oauthlib
 chromadb
 sentence-transformers
 pdoc
+Jinja2
