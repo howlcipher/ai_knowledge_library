@@ -32,3 +32,7 @@ All notable changes to this project will be documented in this file.
 * Deployed secure, ready to use Docker Compose templates inside `infrastructure/templates/`.
 * Added `.agents/rules/documentation_enforcement.md` to guarantee the AI always updates the changelog and README prior to any git push.
 * Cleared completed tasks from `improvements.md` and added new spawned tasks for cron scheduling and Git hook integration.
+* Created `scripts/setup_cron.py` to seamlessly install the security news fetcher and log cleaner directly into the system crontab.
+* Created `scripts/install_git_hooks.py` to bind the context synchronization tool to all future code commits automatically.
+* Upgraded `tools/generate_agent_summary.py` to dynamically fetch live GitHub statistics via API to enrich the global system prompt.
+* Cleared `improvements.md` and added three new spawned automation tasks.
