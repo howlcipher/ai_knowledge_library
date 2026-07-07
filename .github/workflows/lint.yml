@@ -19,12 +19,16 @@ jobs:
           
       - name: Install dependencies
         run: |
-          pip install flake8 bandit
+          pip install flake8 bandit mypy
           
       - name: Run Flake8
         run: |
           flake8 tools/ scripts/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 tools/ scripts/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Run Mypy (Type Checking)
+        run: |
+          mypy tools/ scripts/ --ignore-missing-imports || true
 
       - name: Run Bandit (SAST)
         run: |

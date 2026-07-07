@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  knowledge_library:
+    build: .
+    volumes:
+      - .:/app
+    environment:
+      - CHROMA_DB_DIR=/app/.chroma

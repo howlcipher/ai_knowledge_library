@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2026-07-07
+
+### 🚀 Major Features & Architectural Overhaul
+- **Docker & Cloud Ready**: Fully dockerized the knowledge library (`Dockerfile` and `docker-compose.yml`) and added a centralized HTTP Client-Server mode to ChromaDB (`tools/sync_context.py --host`).
+- **Dynamic Context Templating**: Implemented `scripts/template_injector.py` to automatically inject `USER_PROFILE.md` variables dynamically into Jinja2 templates for all AI skills at runtime.
+- **Context Pruning Engine**: Shipped `tools/prune_context.py` to proactively analyze ChromaDB embeddings for outdated or contradictory markdown files.
+- **Interactive TUI Enhancements**: 
+    - Added a natively embedded `Help / FAQ` menu to the Go TUI installer.
+    - Added beautiful `charmbracelet/bubbles/spinner` animations during long-running Git and Sync tasks.
+- **Automated PR Code Review**: Configured `.agents/rules/code_review.md` allowing the AI to act as an automated code reviewer on GitHub PRs.
+- **Web Research / Scraping Tool**: Added `tools/web_research.py` utilizing `BeautifulSoup` to autonomously scrape external documentation into the RAG vector index.
+- **Automated ADR Engine**: Built `scripts/generate_adr.py` to instantly scaffold timestamped Architecture Decision Records for the library.
+
+### 🛡️ Security & Privacy
+- **GitHub CodeQL Integration**: Added a native GitHub Action (`codeql.yml`) to perform deep semantic vulnerability monitoring globally.
+- **Pre-commit Environment Variable Audit**: Wrote `scripts/install_pre_commit_hook.py` to strictly prevent developers from accidentally pushing `.env` files or hardcoded keys.
+- **Google Docs OAuth Token Rotation**: Upgraded `push_to_docs.py` to transparently rotate `token.json` refresh tokens without manual user re-authentication.
+- **Strict GPG Signing**: Added a `.agents/rules/gpg_signatures.md` constraint mandating that AI agents only execute mathematically signed commits.
+
+### 📊 Testing & Quality Assurance
+- **End-to-End Go TUI Tests**: Expanded the test suite with `cmd/installer/main_test.go` to validate interactive terminal prompts on Ubuntu, Windows, and macOS via a new `cross_platform.yml` Action.
+- **ChromaDB Mock Testing**: Engineered `tests/test_chromadb.py` using `unittest.mock` to validate RAG vector indexing without incurring disk I/O.
+- **Strict Python Typing (Mypy)**: Standardized Python type-hinting across the repository and locked it down in CI using `mypy`.
+- **Standardized Python Logging**: Refactored raw standard output calls in favor of a new configurable `tools/system_logger.py` module.
+- **Cloud Architecture Diagrams**: Upgraded `infrastructure/network_diagram.md` with detailed AWS (EKS/RDS) and GCP (GKE/CloudSQL) topological maps.
+
 ## [1.3.0] - 2026-07-07
 
 ### 🚀 Added

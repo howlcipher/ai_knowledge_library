@@ -71,8 +71,12 @@ func (i *Installer) CloneRepo() error {
 		return err
 	}
 
-	fmt.Printf("\nCloning %s into %s...\n", i.RepoURL, i.DestPath)
-	err := i.runInteractiveCommand("git", "clone", i.RepoURL, i.DestPath)
+	err := huh.NewSpinner().
+		Title(fmt.Sprintf("Cloning %s into %s...", i.RepoURL, i.DestPath)).
+		Action(func() {
+			_ = exec.Command("git", "clone", i.RepoURL, i.DestPath).Run()
+		}).
+		Run()
 	if err != nil {
 		return fmt.Errorf("failed to clone repository: %w", err)
 	}
@@ -122,9 +126,14 @@ func (i *Installer) SyncRepo() {
 		}
 	}
 
-	fmt.Println("Fetching latest changes...")
-	err = i.runInteractiveCommand("git", "pull", "origin", "main")
-	if err != nil {
+	var syncErr error
+	_ = huh.NewSpinner().
+		Title("Fetching latest changes...").
+		Action(func() {
+			syncErr = exec.Command("git", "pull", "origin", "main").Run()
+		}).
+		Run()
+	if syncErr != nil {
 		fmt.Println("Error syncing repository. You might have local changes or the branch might differ.")
 	} else {
 		fmt.Println("Repository is up to date!")
@@ -238,6 +247,46 @@ func (i *Installer) CustomizeProfile() {
 	fmt.Println("\nSuccessfully generated your custom USER_PROFILE.md!")
 }
 
+// ShowHelp displays an interactive FAQ and troubleshooting guide.
+func (i *Installer) ShowHelp() {
+	var category string
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Help & Troubleshooting FAQ").
+				Description("Select a topic for immediate solutions").
+				Options(
+					huh.NewOption("Python Virtual Environment (venv) Errors", "venv"),
+					huh.NewOption("Git Rebase / Conflict Errors", "git"),
+					huh.NewOption("Go Binary Build Errors", "go"),
+					huh.NewOption("Go back to Main Menu", "back"),
+				).
+				Value(&category),
+		),
+	)
+
+	if err := form.Run(); err != nil {
+		return
+	}
+
+	fmt.Println("\n========================================")
+	switch category {
+	case "venv":
+		fmt.Println("VENV ERRORS:")
+		fmt.Println("- Ensure you run `source venv/bin/activate` before using python tools.")
+		fmt.Println("- If pdoc or pytest is missing, run `pip install -r requirements.txt` again.")
+	case "git":
+		fmt.Println("GIT ERRORS:")
+		fmt.Println("- If you get a 'divergent branches' error, run `git pull --rebase`.")
+		fmt.Println("- Automated badge updates may cause this if you push simultaneously.")
+	case "go":
+		fmt.Println("GO ERRORS:")
+		fmt.Println("- You need Go version 1.22+. Run `go version` to check.")
+		fmt.Println("- If 'go run' fails, try 'go mod tidy' to sync dependencies.")
+	}
+	fmt.Println("========================================\n")
+}
+
 // Install runs the setup processes based on user input.
 func (i *Installer) Install() {
 	i.InstallDeps = true
@@ -336,6 +385,7 @@ func main() {
 					huh.NewOption("Customize Profile", "customize"),
 					huh.NewOption("Sync / Update Repository", "sync"),
 					huh.NewOption("Uninstall Global Links", "uninstall"),
+					huh.NewOption("Help / FAQ", "help"),
 					huh.NewOption("Exit", "exit"),
 				).
 				Value(&action),
@@ -357,5 +407,8 @@ func main() {
 		installer.SyncRepo()
 	case "uninstall":
 		installer.Uninstall()
+	case "help":
+		installer.ShowHelp()
+		main() // Restart loop
 	}
 }
