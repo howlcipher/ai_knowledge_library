@@ -14,4 +14,6 @@ All notable changes to this project will be documented in this file.
 * Created AGY formatting rule in `.agents/rules/strict_formatting.md` to automate constraints.
 * Created `scripts/install_global.sh` to symlink library skills and rules globally for any AGY instance.
 * Removed phone number from `USER_PROFILE.md` to protect Personally Identifiable Information.
+* Removed phone number from `USER_PROFILE.md` to protect Personally Identifiable Information.
 * Added `no_pii.md` global AGY rule and updated the `cyber_security` skill to strictly forbid handling sensitive PII like phone numbers.
+* Created `scripts/install_global.ps1` to allow Windows users to sync skills and rules globally using PowerShell Junctions and Hard Links.
