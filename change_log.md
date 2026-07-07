@@ -23,3 +23,5 @@ All notable changes to this project will be documented in this file.
 * Created `tools/fetch_security_news.py` to automatically update local docs with current cybersecurity threats.
 * Created `tools/generate_agent_summary.py` to inject condensed profile data directly into the agent rules.
 * Created `tools/clean_logs.py` to automate infrastructure maintenance by dropping old health records.
+* Updated `GEMINI.md` to officially broaden language preferences to include Bash, while strictly requiring the right tool for the job.
+* Added a global AGY rule in `.agents/rules/architecture.md` mandating pros and cons evaluations before committing to any architectural or infrastructure decisions.

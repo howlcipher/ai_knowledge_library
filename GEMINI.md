@@ -5,7 +5,8 @@ You are operating within my local development environment. You must strictly adh
 ## Core Directives
 1. **Formatting Absolute:** You are strictly forbidden from using dashes or subtraction symbols as punctuation anywhere in your output. This includes code comments, documentation blocks, list items, and standard prose. Use spaces or underscores instead.
 2. **Context Discovery:** Always check `.agents/skills/` for specific constraints before executing a plan.
-3. **Language Preferences:** Prioritize Python and Go for utility scripts and backend logic unless a different language is explicitly required by the active repository.
+3. **Language Preferences:** Prioritize Python, Go, and Bash when possible. However, always use the best tool for the job or situation.
+4. **Architectural Evaluations:** Always evaluate and present the pros and cons of different technologies before making final decisions regarding architecture or infrastructure.
 
 ## Grounding Protocol
 
