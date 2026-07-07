@@ -4,14 +4,11 @@ This document outlines future enhancements for the AI Knowledge Library to maxim
 
 ## Suggested Improvements
 
-### Context Synchronization
-* Create a Python script in `tools/` that builds a master index of all Markdown files in the library, speeding up agent context retrieval.
+### Automated Execution Scheduling
+* Develop a setup script to install the security news fetcher and log cleaner into the local system crontab, ensuring they run automatically in the background without manual intervention.
 
-### Security Threat Intelligence
-* Build a script in `tools/` that fetches the latest security vulnerabilities via API and updates a local documentation file, aligning with Cyber Defense studies.
+### Git Hook Context Synchronization
+* Create a Git post commit hook that automatically executes the context sync tool so the master index is always perfectly synchronized with the latest file changes.
 
-### Agent Profile Summary
-* Develop a utility that condenses `USER_PROFILE.md` into a minimal system prompt format for extremely fast context injection.
-
-### Log Cleaner
-* Automate a cleanup script in `tools/` to purge old health check records and free up disk space across infrastructure nodes.
+### Dynamic Profile Expansion
+* Upgrade the agent profile generator to optionally fetch live professional data from external APIs, enriching the agent system prompt with realtime context.
