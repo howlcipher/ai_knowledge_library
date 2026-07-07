@@ -78,7 +78,7 @@ The knowledge base is organized into specific domains that the AI agent natively
 | Directory or File | Primary Function |
 | :--- | :--- |
 | `GEMINI.md` | Global index and central rulebook for all agent interactions. |
-| `.agents/skills/` | Domain-specific behavioral instructions (e.g., Data Analyst, Bug Bounty Hunter). |
+| [`.agents/skills/`](.agents/skills/README.md) | The **AI Skills Library**. Domain-specific behavioral instructions parsed natively. |
 | `.agents/rules/` | Global constraints that actively shape system prompts. |
 | `scripts/` | Utilities for syncing and bootstrapping environments globally. |
 | `projects/` | Active personal development projects and boilerplate templates. |
