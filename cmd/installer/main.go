@@ -191,6 +191,32 @@ func (i *Installer) Uninstall() {
 	fmt.Println("Uninstall complete. The repository files remain on your disk; delete the directory manually if desired.")
 }
 
+// SelectLanguage prompts the user to select their language at startup.
+func (i *Installer) SelectLanguage() {
+	var lang string = i.Language
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Select Language / 言語を選択 / 选择语言").
+				Options(
+					huh.NewOption("US English", "en_US"),
+					huh.NewOption("Japanese (日本語)", "ja_JP"),
+					huh.NewOption("Chinese Simplified (简体中文)", "zh_CN"),
+					huh.NewOption("Spanish (Español)", "es_ES"),
+					huh.NewOption("German (Deutsch)", "de_DE"),
+					huh.NewOption("French (Français)", "fr_FR"),
+					huh.NewOption("Russian (Русский)", "ru_RU"),
+					huh.NewOption("Korean (한국어)", "ko_KR"),
+					huh.NewOption("Hindi (हिन्दी)", "hi_IN"),
+					huh.NewOption("Arabic (العربية)", "ar_SA"),
+				).
+				Value(&lang),
+		),
+	)
+	_ = form.Run()
+	i.Language = lang
+}
+
 // CustomizeProfile walks the user through setting up a personalized profile.
 func (i *Installer) CustomizeProfile() {
 	var name, email, linkedin, github, summary, uiPreference, agentMode string
@@ -202,28 +228,6 @@ func (i *Installer) CustomizeProfile() {
 				Title("Customize User Profile").
 				Description("Generates a custom USER_PROFILE.md. All fields are optional. Rerun anytime to update."),
 			huh.NewInput().Title("Full Name (optional)").Value(&name),
-			huh.NewSelect[string]().
-				Title("Preferred Language Module?").
-				Options(
-					huh.NewOption("US English (Default)", "en_US"),
-					huh.NewOption("UK English", "en_UK"),
-					huh.NewOption("Australian English", "en_AU"),
-					huh.NewOption("Japanese", "ja_JP"),
-					huh.NewOption("Chinese (Simplified)", "zh_CN"),
-					huh.NewOption("Chinese (Traditional)", "zh_TW"),
-					huh.NewOption("Hindi", "hi_IN"),
-					huh.NewOption("Bengali", "bn_IN"),
-					huh.NewOption("German", "de_DE"),
-					huh.NewOption("French", "fr_FR"),
-					huh.NewOption("Spanish", "es_ES"),
-					huh.NewOption("Russian", "ru_RU"),
-					huh.NewOption("Polish", "pl_PL"),
-					huh.NewOption("Finnish", "fi_FI"),
-					huh.NewOption("Slovak", "sk_SK"),
-					huh.NewOption("Korean", "ko_KR"),
-					huh.NewOption("Arabic", "ar_SA"),
-				).
-				Value(&langPreference),
 			huh.NewInput().Title("Email (optional)").Value(&email),
 			huh.NewInput().Title("LinkedIn URL (optional)").Value(&linkedin),
 			huh.NewInput().Title("GitHub Username (optional)").Value(&github),
@@ -395,6 +399,11 @@ func (i *Installer) Install() {
 
 	fmt.Println("\n========================================")
 	fmt.Println("Installation finished successfully!")
+
+	if i.Language != "en_US" {
+		fmt.Println("\n[!] Triggering AI Language Translation for project files...")
+		_ = i.runInteractiveCommand("python3", "tools/translate_project.py", "--lang", i.Language)
+	}
 }
 
 func main() {
@@ -407,21 +416,23 @@ func main() {
 		}
 	}
 
+	installer.SelectLanguage()
+
 	var action string
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewNote().
-				Title("AI Knowledge Library").
+				Title(T(installer.Language, "Title")).
 				Description("Manage your local AI environment."),
 			huh.NewSelect[string]().
-				Title("What would you like to do?").
+				Title(T(installer.Language, "MenuTitle")).
 				Options(
-					huh.NewOption("Install / Setup Environment", "install"),
-					huh.NewOption("Customize Profile", "customize"),
-					huh.NewOption("Sync / Update Repository", "sync"),
-					huh.NewOption("Uninstall Global Links", "uninstall"),
-					huh.NewOption("Help / FAQ", "help"),
-					huh.NewOption("Exit", "exit"),
+					huh.NewOption(T(installer.Language, "Install"), "install"),
+					huh.NewOption(T(installer.Language, "Customize"), "customize"),
+					huh.NewOption(T(installer.Language, "Sync"), "sync"),
+					huh.NewOption(T(installer.Language, "Uninstall"), "uninstall"),
+					huh.NewOption(T(installer.Language, "Help"), "help"),
+					huh.NewOption(T(installer.Language, "Exit"), "exit"),
 				).
 				Value(&action),
 		),
