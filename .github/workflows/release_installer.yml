@@ -2,10 +2,8 @@ name: Release Installer
 
 on:
   push:
-    branches:
-      - main
-  schedule:
-    - cron: '0 0 * * 0' # Every Sunday at midnight
+    tags:
+      - 'v*'
 
 jobs:
   release:
@@ -22,15 +20,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-
-      - name: Generate Tag
-        id: generate_tag
-        run: |
-          TAG="v1.0.$(date +%Y%m%d%H%M%S)"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a $TAG -m "Release $TAG"
-          git push origin $TAG
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5
