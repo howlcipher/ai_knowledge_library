@@ -1,0 +1,20 @@
+name: Update Badges
+on:
+  push:
+    branches:
+      - main
+jobs:
+  update-badges:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Update Badges
+        run: python tools/library_statistics.py
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "chore: update library statistics badge"
