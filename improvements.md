@@ -4,6 +4,9 @@ This document outlines future enhancements for the AI Knowledge Library to maxim
 
 ## Suggested Improvements
 
+### Google Docs API Integration
+* Build a custom Python tool in `tools/` that leverages the official Google Docs API to automatically push drafted Markdown documents directly into the user's personal workspace, totally eliminating manual copying.
+
 ### Automated Tool Testing Suite
 * Establish a dedicated `tests/` directory leveraging `pytest` to automatically validate all custom Python utilities in the `tools/` and `scripts/` directories, preventing future regressions.
 
