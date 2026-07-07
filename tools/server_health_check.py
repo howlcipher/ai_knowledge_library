@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 # A lightweight stub for health checking without external dependencies
-def check_health():
+def main():
     health_data = {
         "timestamp": datetime.now().isoformat(),
         "cpu_status": "Healthy",
@@ -22,4 +22,4 @@ def check_health():
     print(f"Health check completed and logged to {log_file}.")
 
 if __name__ == "__main__":
-    check_health()
+    main()
