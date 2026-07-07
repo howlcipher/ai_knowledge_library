@@ -30,3 +30,4 @@ All notable changes to this project will be documented in this file.
 * Created strict AGY rules in `.agents/rules/` to natively enforce Test Driven Development and automated code quality self reviews.
 * Established an Architecture Decision Records structure at `documentation/adr/` and logged the first architectural decision.
 * Deployed secure, ready to use Docker Compose templates inside `infrastructure/templates/`.
+* Added `.agents/rules/documentation_enforcement.md` to guarantee the AI always updates the changelog and README prior to any git push.
