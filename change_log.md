@@ -61,3 +61,4 @@ All notable changes to this project will be documented in this file.
 * Developed Pre Commit Dead Link Prevention tool `check_dead_links.py` and hook script `install_pre_commit_hook.py`.
 * Cleared all items from the `improvements.md` backlog.
 * Updated global install scripts to automatically install Python dependencies via `requirements.txt`, with fallback instructions.
+* Created `scripts/setup_google_docs_auth.py` to provide an interactive OAuth setup flow for Google Docs API integration.
