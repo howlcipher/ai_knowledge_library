@@ -1,0 +1,14 @@
+# Centralized Configuration Loader
+database:
+  chroma_db_path: ".chroma"
+  pgvector_dsn: "postgresql://user:pass@localhost:5432/ai_knowledge"
+  mode: "sqlite" # 'sqlite' or 'pgvector'
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+  webhook_secret: "super_secret_webhook_token"
+
+agents:
+  default_language: "en_US"
+  max_context_tokens: 8192

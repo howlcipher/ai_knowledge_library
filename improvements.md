@@ -10,10 +10,10 @@ This document tracks all conceptual improvements, architectural upgrades, and au
 
 ## 2. Architecture & Ease of Use
 * [ ] **Cobra CLI Refactor**: Refactor the Go Installer to use the `cobra` framework so power users can run `ai_installer install` directly from the command line without navigating the visual TUI.
-* [ ] **Centralized Config Loader**: Build a central `config.yaml` or `.env` configuration loader in Python. Currently, ChromaDB paths are hardcoded randomly across multiple scripts.
+* [x] **Centralized Config Loader**: Build a central `config.yaml` or `.env` configuration loader in Python. Currently, ChromaDB paths are hardcoded randomly across multiple scripts.
 * [ ] **PgVector Migration**: Replace the local SQLite ChromaDB backend with a true PostgreSQL/pgvector database for production-level multi-agent concurrency.
 
 ## 3. Advanced Features & Tooling
 * [ ] **Streamlit / Gradio Web UI**: Build a visual browser-based chat interface connected directly to the RAG database, rather than relying exclusively on CLI agents.
-* [ ] **Automated Webhook Syncing**: Implement a FastAPI webhook endpoint that automatically triggers `sync_context.py` whenever the repository is pushed to.
-* [ ] **Web Scraping Upgrades**: The `web_research.py` tool is currently just a placeholder and needs real `BeautifulSoup` or `Selenium` logic implemented.
+* [x] **Automated Webhook Syncing**: Implement a FastAPI webhook endpoint that automatically triggers `sync_context.py` whenever the repository is pushed to.
+* [x] **Web Scraping Upgrades**: The `web_research.py` tool is currently just a placeholder and needs real `BeautifulSoup` or `Selenium` logic implemented.

@@ -10,3 +10,8 @@ chromadb
 sentence-transformers
 pdoc
 Jinja2
+pyyaml
+fastapi
+uvicorn
+beautifulsoup4
+requests
