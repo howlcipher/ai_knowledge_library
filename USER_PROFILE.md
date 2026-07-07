@@ -2,7 +2,6 @@
 
 ## Contact and Links
 * Email: WylElias.123@gmail.com
-* Phone: 586.438.6057
 * LinkedIn: linkedin.com/in/wylelias
 * GitHub: github.com/howlcipher
 
