@@ -11,7 +11,33 @@ import (
 	"github.com/charmbracelet/huh"
 )
 
-func runInteractiveCommand(name string, args ...string) error {
+const (
+	DefaultRepoURL = "https://github.com/howlcipher/ai_knowledge_library"
+	DefaultDirName = "ai_knowledge_library"
+)
+
+// Installer encapsulates the setup process.
+type Installer struct {
+	RepoURL     string
+	DestPath    string
+	InstallDeps bool
+	SetupDocs   bool
+	LinkGlobal  bool
+}
+
+// NewInstaller creates a new Installer instance with defaults.
+func NewInstaller() *Installer {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = "."
+	}
+	return &Installer{
+		RepoURL:  DefaultRepoURL,
+		DestPath: filepath.Join(home, DefaultDirName),
+	}
+}
+
+func (i *Installer) runInteractiveCommand(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -19,23 +45,14 @@ func runInteractiveCommand(name string, args ...string) error {
 	return cmd.Run()
 }
 
-func isRepoRoot() bool {
+// IsRepoRoot checks if the current directory is the root of the library.
+func (i *Installer) IsRepoRoot() bool {
 	_, err := os.Stat(".agents")
 	return err == nil
 }
 
-func getHomeDir() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "."
-	}
-	return home
-}
-
-func cloneRepo() error {
-	var repoURL string = "https://github.com/howlcipher/ai_knowledge_library"
-	var destPath string = filepath.Join(getHomeDir(), "ai_knowledge_library")
-
+// CloneRepo clones the repository into the designated destination.
+func (i *Installer) CloneRepo() error {
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewNote().
@@ -43,10 +60,10 @@ func cloneRepo() error {
 				Description("You are running the installer outside the library directory. Let's download it."),
 			huh.NewInput().
 				Title("Repository URL").
-				Value(&repoURL),
+				Value(&i.RepoURL),
 			huh.NewInput().
 				Title("Destination Path").
-				Value(&destPath),
+				Value(&i.DestPath),
 		),
 	)
 
@@ -54,20 +71,20 @@ func cloneRepo() error {
 		return err
 	}
 
-	fmt.Printf("\nCloning %s into %s...\n", repoURL, destPath)
-	err := runInteractiveCommand("git", "clone", repoURL, destPath)
+	fmt.Printf("\nCloning %s into %s...\n", i.RepoURL, i.DestPath)
+	err := i.runInteractiveCommand("git", "clone", i.RepoURL, i.DestPath)
 	if err != nil {
 		return fmt.Errorf("failed to clone repository: %w", err)
 	}
 
-	// Change working directory to the newly cloned repo so the rest of the script works
-	if err := os.Chdir(destPath); err != nil {
-		return fmt.Errorf("failed to change directory to %s: %w", destPath, err)
+	if err := os.Chdir(i.DestPath); err != nil {
+		return fmt.Errorf("failed to change directory to %s: %w", i.DestPath, err)
 	}
 	return nil
 }
 
-func syncRepo() {
+// SyncRepo updates the repository via git pull.
+func (i *Installer) SyncRepo() {
 	var currentRemote string
 	out, err := exec.Command("git", "config", "--get", "remote.origin.url").Output()
 	if err == nil {
@@ -76,7 +93,7 @@ func syncRepo() {
 
 	var newRemote string = currentRemote
 	if newRemote == "" {
-		newRemote = "https://github.com/howlcipher/ai_knowledge_library"
+		newRemote = i.RepoURL
 	}
 
 	form := huh.NewForm(
@@ -106,7 +123,7 @@ func syncRepo() {
 	}
 
 	fmt.Println("Fetching latest changes...")
-	err = runInteractiveCommand("git", "pull", "origin", "main")
+	err = i.runInteractiveCommand("git", "pull", "origin", "main")
 	if err != nil {
 		fmt.Println("Error syncing repository. You might have local changes or the branch might differ.")
 	} else {
@@ -114,7 +131,8 @@ func syncRepo() {
 	}
 }
 
-func uninstall() {
+// Uninstall safely removes the symlinks for the library skills and rules.
+func (i *Installer) Uninstall() {
 	var confirm bool
 	form := huh.NewForm(
 		huh.NewGroup(
@@ -131,26 +149,24 @@ func uninstall() {
 	}
 
 	fmt.Println("Uninstalling global links...")
-	agyDir := filepath.Join(getHomeDir(), ".gemini", "antigravity-cli")
+	home, _ := os.UserHomeDir()
+	agyDir := filepath.Join(home, ".gemini", "antigravity-cli")
 	
 	skillsDir := filepath.Join(agyDir, "skills")
 	rulesDir := filepath.Join(agyDir, "rules")
 
-	// Read source directories to know what to unlink
 	sourceSkills := ".agents/skills"
 	sourceRules := ".agents/rules"
 
-	// Remove skills
 	entries, _ := os.ReadDir(sourceSkills)
 	for _, entry := range entries {
 		if entry.IsDir() {
 			target := filepath.Join(skillsDir, entry.Name())
-			os.RemoveAll(target) // RemoveAll handles junctions on Windows and symlinks on Linux
+			os.RemoveAll(target)
 			fmt.Println("Removed skill link:", target)
 		}
 	}
 
-	// Remove rules
 	entries, _ = os.ReadDir(sourceRules)
 	for _, entry := range entries {
 		if !entry.IsDir() {
@@ -163,32 +179,30 @@ func uninstall() {
 	fmt.Println("Uninstall complete. The repository files remain on your disk; delete the directory manually if desired.")
 }
 
-func install() {
-	var (
-		installDeps    bool = true
-		setupDocs      bool = false
-		linkGlobal     bool = true
-	)
+// Install runs the setup processes based on user input.
+func (i *Installer) Install() {
+	i.InstallDeps = true
+	i.SetupDocs = false
+	i.LinkGlobal = true
 
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewConfirm().
 				Title("Install Python dependencies?").
 				Description("Installs requirements.txt (pytest, google-api, etc).").
-				Value(&installDeps),
+				Value(&i.InstallDeps),
 			huh.NewConfirm().
 				Title("Set up Google Docs integration? (Optional)").
 				Description("Requires a Google Cloud OAuth Client ID (credentials.json).").
-				Value(&setupDocs),
+				Value(&i.SetupDocs),
 			huh.NewConfirm().
 				Title("Link skills and rules globally?").
 				Description("Makes this library's rules available to all your AI agents.").
-				Value(&linkGlobal),
+				Value(&i.LinkGlobal),
 		),
 	)
 
-	err := form.Run()
-	if err != nil {
+	if err := form.Run(); err != nil {
 		fmt.Println("Installation aborted.")
 		return
 	}
@@ -197,11 +211,11 @@ func install() {
 	fmt.Println("Starting installation...")
 	fmt.Println("========================================")
 
-	if installDeps {
+	if i.InstallDeps {
 		fmt.Println("\n[+] Installing Python dependencies...")
-		err := runInteractiveCommand("pip3", "install", "-r", "requirements.txt")
+		err := i.runInteractiveCommand("pip3", "install", "-r", "requirements.txt")
 		if err != nil {
-			err = runInteractiveCommand("pip", "install", "-r", "requirements.txt")
+			err = i.runInteractiveCommand("pip", "install", "-r", "requirements.txt")
 		}
 		if err != nil {
 			fmt.Println("Failed to install dependencies. Please install Python and pip from python.org.")
@@ -210,24 +224,24 @@ func install() {
 		}
 	}
 
-	if setupDocs {
+	if i.SetupDocs {
 		fmt.Println("\n[+] Setting up Google Docs integration...")
-		err := runInteractiveCommand("python3", "scripts/setup_google_docs_auth.py")
+		err := i.runInteractiveCommand("python3", "scripts/setup_google_docs_auth.py")
 		if err != nil {
-			err = runInteractiveCommand("python", "scripts/setup_google_docs_auth.py")
+			err = i.runInteractiveCommand("python", "scripts/setup_google_docs_auth.py")
 		}
 		if err != nil {
 			fmt.Println("Google Docs setup encountered an error or was aborted.")
 		}
 	}
 
-	if linkGlobal {
+	if i.LinkGlobal {
 		fmt.Println("\n[+] Linking skills and rules globally...")
 		var err error
 		if runtime.GOOS == "windows" {
-			err = runInteractiveCommand("powershell", "-ExecutionPolicy", "Bypass", "-File", filepath.Join("scripts", "install_global.ps1"))
+			err = i.runInteractiveCommand("powershell", "-ExecutionPolicy", "Bypass", "-File", filepath.Join("scripts", "install_global.ps1"))
 		} else {
-			err = runInteractiveCommand("bash", filepath.Join("scripts", "install_global.sh"))
+			err = i.runInteractiveCommand("bash", filepath.Join("scripts", "install_global.sh"))
 		}
 		if err != nil {
 			fmt.Println("Failed to link globally:", err)
@@ -241,9 +255,10 @@ func install() {
 }
 
 func main() {
-	// If the user downloaded the binary and runs it outside the repo, help them clone it first.
-	if !isRepoRoot() {
-		if err := cloneRepo(); err != nil {
+	installer := NewInstaller()
+
+	if !installer.IsRepoRoot() {
+		if err := installer.CloneRepo(); err != nil {
 			fmt.Println("Error:", err)
 			os.Exit(1)
 		}
@@ -275,10 +290,10 @@ func main() {
 
 	switch action {
 	case "install":
-		install()
+		installer.Install()
 	case "sync":
-		syncRepo()
+		installer.SyncRepo()
 	case "uninstall":
-		uninstall()
+		installer.Uninstall()
 	}
 }

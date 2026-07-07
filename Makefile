@@ -10,6 +10,8 @@ install:
 test:
 	@echo "Running Python tests..."
 	pytest tests/ -v
+	@echo "Running Go tests..."
+	go test -v ./...
 
 # Linting and Quality Checks
 lint:
