@@ -60,3 +60,4 @@ All notable changes to this project will be documented in this file.
 * Added `docker` and `github-actions` ecosystems to Dependabot for Expanded Dependency Monitoring.
 * Developed Pre Commit Dead Link Prevention tool `check_dead_links.py` and hook script `install_pre_commit_hook.py`.
 * Cleared all items from the `improvements.md` backlog.
+* Updated global install scripts to automatically install Python dependencies via `requirements.txt`, with fallback instructions.

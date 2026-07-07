@@ -3,6 +3,30 @@
 Links the local skills and rules to the global AGY directory on Windows.
 #>
 
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$RepoRoot = Split-Path -Parent $ScriptDir
+$RequirementsPath = Join-Path -Path $RepoRoot -ChildPath "requirements.txt"
+
+Write-Host "Installing Python dependencies..."
+if (Get-Command pip -ErrorAction SilentlyContinue) {
+    try {
+        $process = Start-Process -FilePath pip -ArgumentList "install", "-r", "`"$RequirementsPath`"" -Wait -PassThru -NoNewWindow
+        if ($process.ExitCode -ne 0) {
+            Write-Host "Error: Failed to install dependencies." -ForegroundColor Red
+            Write-Host "Please download and install Python and pip from https://www.python.org/downloads/ and try again." -ForegroundColor Yellow
+            exit 1
+        }
+    } catch {
+        Write-Host "Error: Failed to install dependencies." -ForegroundColor Red
+        Write-Host "Please download and install Python and pip from https://www.python.org/downloads/ and try again." -ForegroundColor Yellow
+        exit 1
+    }
+} else {
+    Write-Host "Error: pip not found." -ForegroundColor Red
+    Write-Host "Please download and install Python and pip from https://www.python.org/downloads/ and try again." -ForegroundColor Yellow
+    exit 1
+}
+
 $AgyDir = Join-Path -Path $env:USERPROFILE -ChildPath ".gemini\antigravity-cli"
 $SkillsDir = Join-Path -Path $AgyDir -ChildPath "skills"
 $RulesDir = Join-Path -Path $AgyDir -ChildPath "rules"
@@ -13,9 +37,6 @@ if (-not (Test-Path -Path $SkillsDir)) {
 if (-not (Test-Path -Path $RulesDir)) {
     New-Item -ItemType Directory -Path $RulesDir | Out-Null
 }
-
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$RepoRoot = Split-Path -Parent $ScriptDir
 
 $SourceSkills = Join-Path -Path $RepoRoot -ChildPath ".agents\skills"
 $SourceRules = Join-Path -Path $RepoRoot -ChildPath ".agents\rules"
