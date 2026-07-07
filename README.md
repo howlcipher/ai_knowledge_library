@@ -1,7 +1,6 @@
 <div align="center">
   <img src="https://img.shields.io/static/v1?label=AI&message=Knowledge_Library&color=blueviolet&style=for_the_badge" alt="AI Library Badge" />
   <img src="https://img.shields.io/static/v1?label=Powered_By&message=Antigravity&color=blue&style=for_the_badge&logo=google" alt="Antigravity Badge" />
-  <img src="https://img.shields.io/static/v1?label=Cyber&message=Defense&color=red&style=for_the_badge" alt="Cyber Security Badge" />
 </div>
 
 <h1 align="center">Personal AI Knowledge Library</h1>
@@ -13,25 +12,89 @@
   <img src="https://img.shields.io/static/v1?label=OS&message=Linux&color=FCC624&style=flat_square&logo=linux" alt="Linux Badge" />
 </p>
 
-This repository serves as the central context layer for terminal agents. It maps directly into the CLI to enforce coding standards, eliminate hallucinations, and provide deep architectural context tailored specifically for William Elias.
+***
 
-Please review the [Change Log](change_log.md) for recent updates.
+> This repository serves as the central context layer for terminal AI agents. It maps directly into the CLI to enforce coding standards, eliminate hallucinations, and provide deep architectural context tailored specifically for William Elias.
 
-## 🗂️ Core Structure
+***
 
-* 🧠 **GEMINI.md**: The global index and rulebook for the agent.
-* 📜 **change_log.md**: The historical record of modifications to this library.
-* 🛠️ **.agents/skills/**: Domain specific behavioral instructions.
-* ⚙️ **scripts/**: Utilities for syncing and bootstrapping environments.
-* 🚀 **projects/**: Active personal development projects.
-* 🖥️ **infrastructure/**: Networking setups, Docker configs, and server details.
-* 📚 **documentation/**: Standardized workflows, guides, and templates.
-* 🔧 **tools/**: Automated scripts and custom utilities.
+## Architecture and Structure
 
-## 🛡️ Security and Automation
+The knowledge base is organized into specific domains that the AI agent natively understands and executes against.
 
-This repository relies on several automated workflows to maintain structure and protect data.
+<table>
+  <tr>
+    <th align="left">Directory or File</th>
+    <th align="left">Primary Function</th>
+  </tr>
+  <tr>
+    <td><code>GEMINI.md</code></td>
+    <td>Global index and central rulebook for all agent interactions.</td>
+  </tr>
+  <tr>
+    <td><code>.agents/skills/</code></td>
+    <td>Domain specific behavioral instructions parsed natively by AGY.</td>
+  </tr>
+  <tr>
+    <td><code>.agents/rules/</code></td>
+    <td>Global constraints that actively shape system prompts.</td>
+  </tr>
+  <tr>
+    <td><code>scripts/</code></td>
+    <td>Utilities for syncing and bootstrapping environments globally.</td>
+  </tr>
+  <tr>
+    <td><code>projects/</code></td>
+    <td>Active personal development projects and boilerplate templates.</td>
+  </tr>
+  <tr>
+    <td><code>infrastructure/</code></td>
+    <td>Networking setups, Docker configs, and server details.</td>
+  </tr>
+  <tr>
+    <td><code>documentation/</code></td>
+    <td>Standardized workflows, guides, and homelab postmortems.</td>
+  </tr>
+  <tr>
+    <td><code>tools/</code></td>
+    <td>Automated scripts, health checks, and profile sync utilities.</td>
+  </tr>
+</table>
 
-* **Markdown Validation**: Ensures all documentation adheres strictly to required formatting constraints.
+***
+
+## Global Installation
+
+To make this library accessible across your entire machine regardless of your current directory, run the provided setup scripts.
+
+**For Linux or macOS users:**
+```bash
+chmod +x scripts/install_global.sh
+./scripts/install_global.sh
+```
+
+**For Windows users:**
+Execute the PowerShell installation script.
+```powershell
+.\scripts\install_global.ps1
+```
+
+***
+
+## Security and Automation
+
+This repository relies on several automated workflows to maintain structure and protect data autonomously.
+
+<details>
+<summary><strong>View Automated Protections</strong></summary>
+<br>
+
+* **Markdown Validation**: GitHub Actions workflow that ensures all documentation adheres strictly to required formatting constraints.
 * **Dependabot**: Automatically scans all connected Python and Go environments for known vulnerabilities weekly.
 * **AGY Rule Engine**: Employs global rules to actively prevent the leakage of Personally Identifiable Information anywhere within terminal outputs.
+
+</details>
+
+***
+
+Please review the [Change Log](change_log.md) for a historical record of all updates and modifications.
