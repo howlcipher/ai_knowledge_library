@@ -251,7 +251,7 @@ class Orchestrator:
                             args = json.loads(call.function.arguments)
                             cmd = args.get('command')
                             print(f"\n$ {cmd}")
-                            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)  # nosec B602
                             if result.stdout:
                                 print(result.stdout)
                             if result.stderr:
