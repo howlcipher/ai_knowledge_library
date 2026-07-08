@@ -57,17 +57,65 @@ class KnowledgeUI:
 
     def render(self):
         """Render the Streamlit interface."""
-        st.set_page_config(page_title="AI Knowledge Library Chat", layout="wide")
+        st.set_page_config(page_title="AI Knowledge Library", layout="wide")
 
-        st.title("🤖 AI Knowledge Library - RAG Chat")
-        st.markdown(
-            "Search and chat with the repository context directly from your browser!"
-        )
+        st.title("🤖 AI Knowledge Library")
 
-        query = st.text_input("Enter your query to search the knowledge base:")
+        tab1, tab2 = st.tabs(["💬 RAG Chat", "📊 Telemetry Dashboard"])
 
-        if st.button("Search") and query:
-            self._handle_search(query)
+        with tab1:
+            st.markdown(
+                "Search and chat with the repository context directly from your browser!"
+            )
+            query = st.text_input("Enter your query to search the knowledge base:")
+
+            if st.button("Search") and query:
+                self._handle_search(query)
+                
+        with tab2:
+            self._render_telemetry()
+
+    def _render_telemetry(self):
+        """Render the telemetry dashboard."""
+        st.header("Token & Cost Analytics Dashboard")
+        st.markdown("Tracks token consumption, cost estimates across LLM providers, and query latency.")
+        
+        try:
+            from tools.telemetry_logger import get_telemetry_data
+            df = get_telemetry_data()
+            if len(df) == 0:
+                st.info("No telemetry data recorded yet. Try asking some questions in the chat!")
+                return
+                
+            import pandas as pd
+            
+            # High level metrics
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("Total API Calls", len(df))
+            col2.metric("Total Tokens", df["total_tokens"].sum())
+            col3.metric("Total Cost (USD)", f"${df['cost'].sum():.6f}")
+            col4.metric("Avg Latency", f"{df['latency_seconds'].mean():.2f}s")
+            
+            # Charts
+            st.subheader("Cost Over Time")
+            st.line_chart(df.set_index("timestamp")["cost"])
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.subheader("API Calls by Model")
+                model_counts = df["model"].value_counts()
+                st.bar_chart(model_counts)
+                
+            with col2:
+                st.subheader("Latency by Model")
+                latency_avg = df.groupby("model")["latency_seconds"].mean()
+                st.bar_chart(latency_avg)
+                
+            st.subheader("Raw Telemetry Logs")
+            st.dataframe(df)
+            
+        except Exception as e:
+            st.error(f"Failed to load telemetry data: {e}")
 
     def _handle_search(self, query: str):
         """Execute a search query and display results."""

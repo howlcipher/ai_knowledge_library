@@ -87,13 +87,33 @@ class ContentVerifier:
                 "anthropic/claude-3-5-sonnet-20240620",
                 "openai/gpt-4o-mini",
             ]
+            import time
+            start_time = time.time()
             response = litellm.completion(
                 model="gemini/gemini-1.5-flash",
                 messages=[{"role": "user", "content": prompt}],
                 fallbacks=fallbacks,
                 api_key=self.api_key
             )
+            latency = time.time() - start_time
             content = response.choices[0].message.content.strip()
+            
+            # Log telemetry
+            try:
+                from tools.telemetry_logger import log_telemetry
+                cost = litellm.completion_cost(completion_response=response)
+                usage = response.usage
+                log_telemetry(
+                    model=response.model,
+                    prompt_tokens=usage.prompt_tokens if usage else 0,
+                    completion_tokens=usage.completion_tokens if usage else 0,
+                    total_tokens=usage.total_tokens if usage else 0,
+                    cost=float(cost) if cost else 0.0,
+                    latency=latency
+                )
+            except Exception:
+                pass
+                
         except Exception as e:
             print(f"LiteLLM failover exhausted. Error: {e}")
             return False, 0, str(e)

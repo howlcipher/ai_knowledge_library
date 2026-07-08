@@ -13,10 +13,8 @@ This document tracks all conceptual improvements, architectural upgrades, and au
 * **Token & Cost Analytics Dashboard (`data_analyst`, `quantitative_finance`)**: Implement a telemetry tab in the Web UI that tracks token consumption, cost estimates across the 5 LLM providers, and query latency.
 * **End-to-End (E2E) UI Testing (`quality_assurance`, `test_and_verify`)**: We currently only have unit tests. We need Playwright/Cypress integration tests to verify that the RAG Web UI and Textual TUI render correctly without crashing.
 * **Multi-Agent Orchestration (Inspired by AutoGen)**: Expand the single-agent RAG into a collaborative multi-agent system (e.g., a Researcher agent communicating with a QA agent) with human-in-the-loop authorization for command execution.
-* **Intelligent Failover & Rate Limit Handling (Inspired by LiteLLM)**: Enhance our LiteLLM implementation to automatically cascade/failover to a fallback provider (e.g., jump to Claude if Gemini hits a 429 error) without interrupting the user's flow.
 
 ## 4. Security & Hardening (Cyber Security, Red/Blue Team)
-* **SAST Integration (`cyber_security`, `blue_team`)**: The current pre-push hook runs unit tests but misses security checks. We must integrate `bandit` (Python) and `gosec` (Go) into the `Makefile` linting suite to catch secret leaks or unsafe arbitrary code execution.
 * **Adversarial Hardening (`red_team`)**: Expand the `adversarial_tester.py` to specifically test the Web UI for prompt-injection vulnerabilities that could execute malicious JavaScript in the browser.
 
 ## 5. DevOps & Infrastructure (`devops`)
@@ -29,5 +27,7 @@ This document tracks all conceptual improvements, architectural upgrades, and au
 * **Gap 3: Prompt Engineering / AI Ops**: A dedicated skill for optimizing system prompts, managing token context windows, and refining few-shot examples for the LLM.
 
 ## ✅ Recently Completed
+* **Intelligent Failover & Rate Limit Handling:** Enhanced LiteLLM implementation across the library to automatically cascade and failover to backup LLMs (Claude, GPT-4o) when Gemini hits rate limits.
+* **SAST Integration & Security Hardening:** Integrated Bandit and GoSec into the CI/CD pipeline and patched 8 existing vulnerabilities (B108, B701, G204).
 * **Graphical Frontend (TUI or Web UI):** Built an interactive Textual TUI (`tui.py`) and integrated Streamlit Web UI launchers natively into the Go installer.
 * **Multi-LLM Integration Switch:** Implemented `litellm` routing and a configuration interface inside the TUI to dynamically swap between Claude, Gemini, GPT-4o, Grok, and Perplexity.

@@ -67,15 +67,11 @@ class TestContentVerifier:
         assert score == 0
         assert "LLM Error" in reason
 
-    @patch("google.generativeai.GenerativeModel")
-    @patch("google.generativeai.configure")
-    def test_llm_check(self, mock_configure, mock_model_class):
-        mock_model = MagicMock()
-        mock_model_class.return_value = mock_model
-        
+    @patch("litellm.completion")
+    def test_llm_check(self, mock_completion):
         mock_response = MagicMock()
-        mock_response.text = '```json\n{"verified": true, "confidence": 85, "reason": "good"}\n```'
-        mock_model.generate_content.return_value = mock_response
+        mock_response.choices = [MagicMock(message=MagicMock(content='```json\n{"verified": true, "confidence": 85, "reason": "good"}\n```'))]
+        mock_completion.return_value = mock_response
 
         verifier = ContentVerifier(api_key="key")
         is_verified, score, reason = verifier._llm_check("text", "url")
@@ -83,17 +79,13 @@ class TestContentVerifier:
         assert is_verified
         assert score == 85
         assert reason == "good"
-        mock_configure.assert_called_once_with(api_key="key")
+        mock_completion.assert_called_once()
 
-    @patch("google.generativeai.GenerativeModel")
-    @patch("google.generativeai.configure")
-    def test_llm_check_no_json_format(self, mock_configure, mock_model_class):
-        mock_model = MagicMock()
-        mock_model_class.return_value = mock_model
-        
+    @patch("litellm.completion")
+    def test_llm_check_no_json_format(self, mock_completion):
         mock_response = MagicMock()
-        mock_response.text = '{"verified": false, "confidence": 10, "reason": "spam"}'
-        mock_model.generate_content.return_value = mock_response
+        mock_response.choices = [MagicMock(message=MagicMock(content='{"verified": false, "confidence": 10, "reason": "spam"}'))]
+        mock_completion.return_value = mock_response
 
         verifier = ContentVerifier(api_key="key")
         is_verified, score, reason = verifier._llm_check("text", "url")

@@ -59,6 +59,14 @@ def test_knowledge_ui_render(mock_streamlit, mock_chromadb):
         mock_streamlit.text_input.return_value = "query"
         mock_streamlit.button.return_value = True
         
+        tab_mock1 = MagicMock()
+        tab_mock2 = MagicMock()
+        tab_mock1.__enter__ = MagicMock(return_value=tab_mock1)
+        tab_mock1.__exit__ = MagicMock(return_value=None)
+        tab_mock2.__enter__ = MagicMock(return_value=tab_mock2)
+        tab_mock2.__exit__ = MagicMock(return_value=None)
+        mock_streamlit.tabs.return_value = (tab_mock1, tab_mock2)
+        
         with patch.object(ui, '_handle_search') as mock_search:
             ui.render()
             mock_search.assert_called_with("query")
