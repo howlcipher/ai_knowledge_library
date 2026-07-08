@@ -4,14 +4,15 @@ import json
 import os
 from datetime import datetime
 
+
 def main():
     url = "https://api.first.org/data/v1/epss"
     req = urllib.request.Request(url)
-    
+
     script_dir = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.dirname(script_dir)
     news_path = os.path.join(repo_root, "documentation", "security_news.md")
-    
+
     try:
         with urllib.request.urlopen(req) as response:
             if response.status == 200:
@@ -28,6 +29,7 @@ def main():
                 print("Failed to fetch news.")
     except Exception as e:
         print(f"Error: {e}")
+
 
 if __name__ == "__main__":
     main()

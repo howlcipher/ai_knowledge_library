@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 import argparse
 import chromadb
-from chromadb.config import Settings
 import os
+
 
 def main():
     parser = argparse.ArgumentParser(description="Sync knowledge base to ChromaDB.")
-    parser.add_argument("--host", type=str, help="ChromaDB Host (for client-server mode)")
+    parser.add_argument(
+        "--host", type=str, help="ChromaDB Host (for client-server mode)"
+    )
     parser.add_argument("--port", type=str, help="ChromaDB Port")
     args = parser.parse_args()
 
@@ -15,16 +17,19 @@ def main():
         client = chromadb.HttpClient(host=args.host, port=args.port)
     else:
         import sys
+
         script_dir = os.path.dirname(os.path.abspath(__file__))
         repo_root = os.path.dirname(script_dir)
         sys.path.append(repo_root)
-        
+
         from config.loader import get_chroma_db_path
+
         db_path = get_chroma_db_path()
         print(f"Connecting to local ChromaDB at {db_path}")
         client = chromadb.PersistentClient(path=db_path)
 
     print("Sync complete.")
+
 
 if __name__ == "__main__":
     main()

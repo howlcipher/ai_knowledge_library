@@ -1,7 +1,6 @@
 import os
-import sys
-import pytest
 import importlib.util
+
 
 def load_module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
@@ -9,29 +8,37 @@ def load_module(name, path):
     spec.loader.exec_module(module)
     return module
 
+
 def test_tools_have_main_function():
-    tools_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'tools'))
-    tool_files = [f for f in os.listdir(tools_dir) if f.endswith('.py') and f != '__init__.py']
-    
+    tools_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "tools"))
+    tool_files = [
+        f for f in os.listdir(tools_dir) if f.endswith(".py") and f != "__init__.py"
+    ]
+
     assert len(tool_files) > 0, "No tools found in the tools directory."
-    
+
     for tool_file in tool_files:
         path = os.path.join(tools_dir, tool_file)
         try:
             mod = load_module(tool_file[:-3], path)
-            assert hasattr(mod, 'main'), f"{tool_file} is missing a main() entrypoint."
+            assert hasattr(mod, "main"), f"{tool_file} is missing a main() entrypoint."
         except (ImportError, SystemExit):
             pass
 
+
 def test_scripts_are_importable():
-    scripts_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
-    script_files = [f for f in os.listdir(scripts_dir) if f.endswith('.py') and f != '__init__.py']
-    
+    scripts_dir = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "scripts")
+    )
+    script_files = [
+        f for f in os.listdir(scripts_dir) if f.endswith(".py") and f != "__init__.py"
+    ]
+
     assert len(script_files) > 0, "No scripts found in the scripts directory."
-    
+
     for script_file in script_files:
         path = os.path.join(scripts_dir, script_file)
         try:
             mod = load_module(script_file[:-3], path)
         except (ImportError, SystemExit):
-            pass # Skip if dependency is missing during minimal testing
+            pass  # Skip if dependency is missing during minimal testing

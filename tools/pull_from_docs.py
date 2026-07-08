@@ -12,15 +12,16 @@ except ImportError:
     sys.exit(1)
 
 SCOPES = [
-    'https://www.googleapis.com/auth/documents',
-    'https://www.googleapis.com/auth/drive.readonly'
+    "https://www.googleapis.com/auth/documents",
+    "https://www.googleapis.com/auth/drive.readonly",
 ]
+
 
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.dirname(script_dir)
-    token_path = os.path.join(repo_root, 'token.json')
-    personal_docs_dir = os.path.join(repo_root, 'personal_docs')
+    token_path = os.path.join(repo_root, "token.json")
+    personal_docs_dir = os.path.join(repo_root, "personal_docs")
 
     if not os.path.exists(personal_docs_dir):
         os.makedirs(personal_docs_dir)
@@ -31,49 +32,62 @@ def main():
         sys.exit(1)
 
     creds = Credentials.from_authorized_user_file(token_path, SCOPES)
-    
+
     try:
-        drive_service = build('drive', 'v3', credentials=creds)
-        
+        drive_service = build("drive", "v3", credentials=creds)
+
         print("Fetching your most recent Google Docs...")
         # Search for Google Docs only
         query = "mimeType='application/vnd.google-apps.document'"
-        results = drive_service.files().list(
-            q=query,
-            pageSize=10,
-            fields="nextPageToken, files(id, name)",
-            orderBy="modifiedTime desc"
-        ).execute()
-        
-        items = results.get('files', [])
-        
+        results = (
+            drive_service.files()
+            .list(
+                q=query,
+                pageSize=10,
+                fields="nextPageToken, files(id, name)",
+                orderBy="modifiedTime desc",
+            )
+            .execute()
+        )
+
+        items = results.get("files", [])
+
         if not items:
             print("No Google Docs found.")
             return
-            
+
         print(f"Found {len(items)} documents. Syncing to 'personal_docs/' directory...")
-        
+
         for item in items:
-            doc_id = item['id']
-            doc_name = item['name'].replace('/', '_')
-            
+            doc_id = item["id"]
+            doc_name = item["name"].replace("/", "_")
+
             # Export the document as plain text
-            request = drive_service.files().export_media(fileId=doc_id, mimeType='text/plain')
+            request = drive_service.files().export_media(
+                fileId=doc_id, mimeType="text/plain"
+            )
             content = request.execute()
-            
+
             file_path = os.path.join(personal_docs_dir, f"{doc_name}.txt")
-            with open(file_path, 'wb') as f:
+            with open(file_path, "wb") as f:
                 f.write(content)
-            
+
             print(f"  ✓ Synced: {doc_name}")
-            
-        print(f"\nSuccess! Your documents have been safely synced to {personal_docs_dir}/")
-        print("This folder is explicitly git-ignored to guarantee your personal data is never pushed to GitHub.")
-        
+
+        print(
+            f"\nSuccess! Your documents have been safely synced to {personal_docs_dir}/"
+        )
+        print(
+            "This folder is explicitly git-ignored to guarantee your personal data is never pushed to GitHub."
+        )
+
     except HttpError as error:
         print(f"An error occurred: {error}")
-        print("If you recently updated scopes, you may need to delete 'token.json' and re-authenticate.")
+        print(
+            "If you recently updated scopes, you may need to delete 'token.json' and re-authenticate."
+        )
         sys.exit(1)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

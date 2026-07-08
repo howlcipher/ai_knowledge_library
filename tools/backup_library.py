@@ -2,6 +2,7 @@
 import os
 import tarfile
 
+
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.dirname(script_dir)
@@ -11,6 +12,7 @@ def main():
     with tarfile.open(out_path, "w:gz") as tar:
         tar.add(os.path.join(repo_root, "documentation"), arcname="documentation")
     print("Backup completed successfully.")
+
 
 if __name__ == "__main__":
     main()

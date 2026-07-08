@@ -11,10 +11,11 @@ from config.loader import load_config
 app = FastAPI(title="AI Knowledge Library Webhook Server")
 cfg = load_config()
 
+
 @app.post("/webhook/sync")
 async def trigger_sync(request: Request):
     expected_secret = cfg.get("server", {}).get("webhook_secret", "")
-    
+
     # Check X-Webhook-Secret header if configured
     if expected_secret:
         provided_secret = request.headers.get("X-Webhook-Secret")
@@ -28,11 +29,14 @@ async def trigger_sync(request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 def main():
     import uvicorn
+
     host = cfg.get("server", {}).get("host", "0.0.0.0")
     port = cfg.get("server", {}).get("port", 8000)
     uvicorn.run(app, host=host, port=port)
+
 
 if __name__ == "__main__":
     main()

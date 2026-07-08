@@ -5,9 +5,9 @@ import glob
 
 try:
     import chromadb
-    from chromadb.utils import embedding_functions
 except ImportError:
-    pass # Might not be needed if using pgvector
+    pass  # Might not be needed if using pgvector
+
 
 def chunk_text(text, max_len=1000):
     words = text.split()
@@ -26,40 +26,46 @@ def chunk_text(text, max_len=1000):
         chunks.append(" ".join(current_chunk))
     return chunks
 
+
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.dirname(script_dir)
     sys.path.append(repo_root)  # Ensure root is in path for imports
-    
+
     from config.loader import load_config, get_chroma_db_path
-    
+
     cfg = load_config()
     db_mode = cfg.get("database", {}).get("mode", "sqlite")
-    
+
     docs_to_insert = []
     metadata_to_insert = []
     ids_to_insert = []
-    
+
     print("Scanning for markdown files...")
     md_files = glob.glob(os.path.join(repo_root, "**", "*.md"), recursive=True)
-    
+
     for file_path in md_files:
-        if ".git" in file_path or (".agents" not in file_path and "documentation" not in file_path and "README" not in file_path):
+        if ".git" in file_path or (
+            ".agents" not in file_path
+            and "documentation" not in file_path
+            and "README" not in file_path
+        ):
             continue
-            
+
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
-                if not content.strip(): continue
-                
+                if not content.strip():
+                    continue
+
                 rel_path = os.path.relpath(file_path, repo_root)
                 chunks = chunk_text(content)
-                
+
                 for i, chunk in enumerate(chunks):
                     docs_to_insert.append(chunk)
                     metadata_to_insert.append({"source": rel_path, "chunk": i})
                     ids_to_insert.append(f"{rel_path}_{i}")
-                    
+
         except Exception as e:
             print(f"Skipping {file_path}: {e}")
 
@@ -72,12 +78,13 @@ def main():
 
     if db_mode == "pgvector":
         from tools.pgvector_backend import PgVectorStore
+
         store = PgVectorStore()
         store.init_db()
         for i in range(0, len(docs_to_insert), batch_size):
             store.upsert(
-                docs=docs_to_insert[i:i+batch_size],
-                metadatas=metadata_to_insert[i:i+batch_size]
+                docs=docs_to_insert[i : i + batch_size],
+                metadatas=metadata_to_insert[i : i + batch_size],
             )
     else:
         db_path = get_chroma_db_path()
@@ -86,12 +93,13 @@ def main():
         collection = client.get_or_create_collection(name="ai_library_knowledge")
         for i in range(0, len(docs_to_insert), batch_size):
             collection.upsert(
-                documents=docs_to_insert[i:i+batch_size],
-                metadatas=metadata_to_insert[i:i+batch_size],
-                ids=ids_to_insert[i:i+batch_size]
+                documents=docs_to_insert[i : i + batch_size],
+                metadatas=metadata_to_insert[i : i + batch_size],
+                ids=ids_to_insert[i : i + batch_size],
             )
-            
+
     print("Knowledge base indexing complete!")
+
 
 if __name__ == "__main__":
     main()
