@@ -13,6 +13,7 @@ import litellm
 import json
 from typing import TypedDict, Any, List, Optional
 from langgraph.graph import StateGraph, END
+from langgraph.checkpoint.memory import MemorySaver
 
 from src.infrastructure.config_loader import load_config
 from src.infrastructure.telemetry_logger import log_telemetry
@@ -190,7 +191,8 @@ class Orchestrator:
         workflow.add_edge("researcher", "qa")
         workflow.add_conditional_edges("qa", should_continue, {"researcher": "researcher", END: END})
         
-        return workflow.compile()
+        memory = MemorySaver()
+        return workflow.compile(checkpointer=memory)
         
     def human_proxy_intercept(self, tool_calls) -> bool:
         """Intercepts executable tool calls and requires human approval."""
@@ -221,9 +223,17 @@ class Orchestrator:
         print(f"\n=== Starting Multi-Agent Orchestration ===")
         print(f"Query: {user_query}\n")
         
+        config = {"configurable": {"thread_id": "default"}}
+        
+        # 1. Retrieve persistent memory from previous session if it exists
+        past_state = self.graph.get_state(config)
+        past_context = ""
+        if past_state and past_state.values:
+            past_context = past_state.values.get("draft_content", "")
+            
         initial_state = {
             "query": user_query,
-            "context": "",
+            "context": f"Previous conversation context:\n{past_context}" if past_context else "",
             "draft_content": "",
             "tool_calls": None,
             "iteration": 1,
@@ -231,7 +241,7 @@ class Orchestrator:
             "max_iterations": 3
         }
         
-        final_state = self.graph.invoke(initial_state)
+        final_state = self.graph.invoke(initial_state, config=config)
         
         current_draft_content = final_state.get("draft_content", "")
         current_tool_calls = final_state.get("tool_calls", None)
@@ -262,13 +272,29 @@ class Orchestrator:
             print("\n[Orchestrator] Task aborted due to human rejection.")
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: orchestrator.py <query>")
-        sys.exit(1)
-        
-    query = " ".join(sys.argv[1:])
+    print("Welcome to the AI Knowledge Library Orchestrator.")
+    print("Type 'exit' or 'quit' to stop.")
+    
     orchestrator = Orchestrator()
-    orchestrator.run_loop(query)
+    
+    # Check if a single query was passed via arguments
+    if len(sys.argv) > 1:
+        query = " ".join(sys.argv[1:])
+        orchestrator.run_loop(query)
+        return
+
+    # Otherwise enter interactive mode
+    while True:
+        try:
+            query = input("\nUser> ")
+            if query.lower() in ['exit', 'quit']:
+                break
+            if not query.strip():
+                continue
+            orchestrator.run_loop(query)
+        except (EOFError, KeyboardInterrupt):
+            print("\nExiting...")
+            break
 
 if __name__ == "__main__":
     main()
