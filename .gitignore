@@ -13,3 +13,20 @@ personal_docs/
 
 # Ignore local vector databases
 .chromadb/
+.chroma/
+
+# Python caching and environments
+__pycache__/
+*.pyc
+venv/
+.pytest_cache/
+.coverage
+coverage.out
+
+# Go binaries and builds
+ai_installer
+installer
+dist/
+
+# Auto-generated docs
+docs/api/

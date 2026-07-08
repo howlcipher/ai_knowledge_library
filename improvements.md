@@ -12,7 +12,6 @@ This document tracks all conceptual improvements, architectural upgrades, and au
 ## 3. Advanced Features & Tooling (Data Analytics & Automation)
 * **Token & Cost Analytics Dashboard (`data_analyst`, `quantitative_finance`)**: Implement a telemetry tab in the Web UI that tracks token consumption, cost estimates across the 5 LLM providers, and query latency.
 * **End-to-End (E2E) UI Testing (`quality_assurance`, `test_and_verify`)**: We currently only have unit tests. We need Playwright/Cypress integration tests to verify that the RAG Web UI and Textual TUI render correctly without crashing.
-* **Multi-Agent Orchestration (Inspired by AutoGen)**: Expand the single-agent RAG into a collaborative multi-agent system (e.g., a Researcher agent communicating with a QA agent) with human-in-the-loop authorization for command execution.
 
 ## 4. Security & Hardening (Cyber Security, Red/Blue Team)
 * **Adversarial Hardening (`red_team`)**: Expand the `adversarial_tester.py` to specifically test the Web UI for prompt-injection vulnerabilities that could execute malicious JavaScript in the browser.
@@ -27,6 +26,7 @@ This document tracks all conceptual improvements, architectural upgrades, and au
 * **Gap 3: Prompt Engineering / AI Ops**: A dedicated skill for optimizing system prompts, managing token context windows, and refining few-shot examples for the LLM.
 
 ## ✅ Recently Completed
+* **Multi-Agent Orchestration:** Created `tools/orchestrator.py` implementing a collaborative loop between Researcher and QA Reviewer personas with a strict Human Proxy interceptor for executable commands.
 * **Intelligent Failover & Rate Limit Handling:** Enhanced LiteLLM implementation across the library to automatically cascade and failover to backup LLMs (Claude, GPT-4o) when Gemini hits rate limits.
 * **SAST Integration & Security Hardening:** Integrated Bandit and GoSec into the CI/CD pipeline and patched 8 existing vulnerabilities (B108, B701, G204).
 * **Graphical Frontend (TUI or Web UI):** Built an interactive Textual TUI (`tui.py`) and integrated Streamlit Web UI launchers natively into the Go installer.
