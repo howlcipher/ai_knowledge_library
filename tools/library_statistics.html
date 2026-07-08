@@ -31,6 +31,33 @@
             <h2>API Documentation</h2>
                 <ul class="memberlist">
             <li>
+                    <a class="class" href="#LibraryStatisticsGenerator">LibraryStatisticsGenerator</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#LibraryStatisticsGenerator.__init__">LibraryStatisticsGenerator</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#LibraryStatisticsGenerator.readme_path">readme_path</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#LibraryStatisticsGenerator.badge_pattern">badge_pattern</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#LibraryStatisticsGenerator.first_badge_line">first_badge_line</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#LibraryStatisticsGenerator.count_files">count_files</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#LibraryStatisticsGenerator.update_readme">update_readme</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#LibraryStatisticsGenerator.run">run</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
                     <a class="function" href="#main">main</a>
             </li>
     </ul>
@@ -49,56 +76,389 @@
                     <h1 class="modulename">
 <a href="./../tools.html">tools</a><wbr>.library_statistics    </h1>
 
-                
+                        <div class="docstring"><p>Module for generating library statistics and updating the README with a badge.</p>
+</div>
+
                         <input id="mod-library_statistics-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 
                         <label class="view-source-button" for="mod-library_statistics-view-source"><span>View Source</span></label>
 
                         <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="ch">#!/usr/bin/env python3</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
-</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>
+</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="sd">Module for generating library statistics and updating the README with a badge.</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a>
-</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>    <span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s2">&quot;..&quot;</span><span class="p">))</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 </span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>    <span class="c1"># Count files</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>    <span class="n">file_count</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>    <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">repo_root</span><span class="p">):</span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>        <span class="k">if</span> <span class="s2">&quot;.git&quot;</span> <span class="ow">in</span> <span class="n">root</span><span class="p">:</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>            <span class="k">continue</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>        <span class="n">file_count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>    <span class="c1"># Read README</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>    <span class="n">readme_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;README.md&quot;</span><span class="p">)</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">readme_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>        <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>    <span class="c1"># Replace or add the badge</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>    <span class="n">badge_pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;&lt;img src=&quot;https://img\.shields\.io/static/v1\?label=Library_Size&amp;message=\d+&amp;color=success&amp;style=for_the_badge&quot; alt=&quot;Library Size Badge&quot; /&gt;&#39;</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>    <span class="n">new_badge</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;&lt;img src=&quot;https://img.shields.io/static/v1?label=Library_Size&amp;message=</span><span class="si">{</span><span class="n">file_count</span><span class="si">}</span><span class="s1">&amp;color=success&amp;style=for_the_badge&quot; alt=&quot;Library Size Badge&quot; /&gt;&#39;</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>    <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">badge_pattern</span><span class="p">,</span> <span class="n">content</span><span class="p">):</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>        <span class="n">content</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">badge_pattern</span><span class="p">,</span> <span class="n">new_badge</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>    <span class="k">else</span><span class="p">:</span>
-</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>        <span class="c1"># insert after the first badge line</span>
-</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>        <span class="n">first_badge_line</span> <span class="o">=</span> <span class="s1">&#39;&lt;img src=&quot;https://img.shields.io/static/v1?label=AI&amp;message=Knowledge_Library&amp;color=blueviolet&amp;style=for_the_badge&quot; alt=&quot;AI Library Badge&quot; /&gt;&#39;</span>
-</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>        <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>            <span class="n">first_badge_line</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">first_badge_line</span><span class="si">}</span><span class="se">\n</span><span class="s2">  </span><span class="si">{</span><span class="n">new_badge</span><span class="si">}</span><span class="s2">&quot;</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>        <span class="p">)</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="k">class</span><span class="w"> </span><span class="nc">LibraryStatisticsGenerator</span><span class="p">:</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="sd">    Handles calculating library statistics and updating the repository README.</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">repo_root</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a><span class="sd">        Initializes the LibraryStatisticsGenerator.</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a><span class="sd">        Args:</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a><span class="sd">            repo_root (str, optional): The root directory of the repository.</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a><span class="sd">                Defaults to the parent directory of this script&#39;s location.</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>        <span class="k">if</span> <span class="n">repo_root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>                <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s2">&quot;..&quot;</span><span class="p">)</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>            <span class="p">)</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">repo_root</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">readme_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;README.md&quot;</span><span class="p">)</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">badge_pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;&lt;img src=&quot;https://img\.shields\.io/static/v1\?label=Library_Size&amp;message=\d+&amp;color=success&amp;style=for_the_badge&quot; alt=&quot;Library Size Badge&quot; /&gt;&#39;</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">first_badge_line</span> <span class="o">=</span> <span class="s1">&#39;&lt;img src=&quot;https://img.shields.io/static/v1?label=AI&amp;message=Knowledge_Library&amp;color=blueviolet&amp;style=for_the_badge&quot; alt=&quot;AI Library Badge&quot; /&gt;&#39;</span>
 </span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>
-</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">readme_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
-</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>
-</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Library statistics generated: </span><span class="si">{</span><span class="n">file_count</span><span class="si">}</span><span class="s2"> files counted. README updated.&quot;</span><span class="p">)</span>
-</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>
-</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>
-</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>    <span class="n">main</span><span class="p">()</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">count_files</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a><span class="sd">        Counts the number of files in the repository, excluding &#39;.git&#39; directories.</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>
+</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a><span class="sd">        Returns:</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a><span class="sd">            int: The total number of files.</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>        <span class="n">file_count</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>        <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">):</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>            <span class="k">if</span> <span class="s2">&quot;.git&quot;</span> <span class="ow">in</span> <span class="n">root</span><span class="p">:</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>                <span class="k">continue</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>            <span class="n">file_count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>        <span class="k">return</span> <span class="n">file_count</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>
+</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">update_readme</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_count</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a><span class="sd">        Updates the README.md file with the new file count badge.</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>
+</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a><span class="sd">        Args:</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a><span class="sd">            file_count (int): The number of files to display in the badge.</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">readme_path</span><span class="p">):</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;README not found at </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">readme_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a>            <span class="k">return</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a>
+</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">readme_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a>            <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a>
+</span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a>        <span class="n">new_badge</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;&lt;img src=&quot;https://img.shields.io/static/v1?label=Library_Size&amp;message=</span><span class="si">{</span><span class="n">file_count</span><span class="si">}</span><span class="s1">&amp;color=success&amp;style=for_the_badge&quot; alt=&quot;Library Size Badge&quot; /&gt;&#39;</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos">63</span></a>
+</span><span id="L-64"><a href="#L-64"><span class="linenos">64</span></a>        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">badge_pattern</span><span class="p">,</span> <span class="n">content</span><span class="p">):</span>
+</span><span id="L-65"><a href="#L-65"><span class="linenos">65</span></a>            <span class="n">content</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">badge_pattern</span><span class="p">,</span> <span class="n">new_badge</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos">66</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos">67</span></a>            <span class="c1"># Insert after the first badge line</span>
+</span><span id="L-68"><a href="#L-68"><span class="linenos">68</span></a>            <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+</span><span id="L-69"><a href="#L-69"><span class="linenos">69</span></a>                <span class="bp">self</span><span class="o">.</span><span class="n">first_badge_line</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">first_badge_line</span><span class="si">}</span><span class="se">\n</span><span class="s2">  </span><span class="si">{</span><span class="n">new_badge</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="L-70"><a href="#L-70"><span class="linenos">70</span></a>            <span class="p">)</span>
+</span><span id="L-71"><a href="#L-71"><span class="linenos">71</span></a>
+</span><span id="L-72"><a href="#L-72"><span class="linenos">72</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">readme_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos">73</span></a>            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+</span><span id="L-74"><a href="#L-74"><span class="linenos">74</span></a>
+</span><span id="L-75"><a href="#L-75"><span class="linenos">75</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-76"><a href="#L-76"><span class="linenos">76</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-77"><a href="#L-77"><span class="linenos">77</span></a><span class="sd">        Executes the statistics generation and README update process.</span>
+</span><span id="L-78"><a href="#L-78"><span class="linenos">78</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-79"><a href="#L-79"><span class="linenos">79</span></a>        <span class="n">file_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">count_files</span><span class="p">()</span>
+</span><span id="L-80"><a href="#L-80"><span class="linenos">80</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">update_readme</span><span class="p">(</span><span class="n">file_count</span><span class="p">)</span>
+</span><span id="L-81"><a href="#L-81"><span class="linenos">81</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="L-82"><a href="#L-82"><span class="linenos">82</span></a>            <span class="sa">f</span><span class="s2">&quot;Library statistics generated: </span><span class="si">{</span><span class="n">file_count</span><span class="si">}</span><span class="s2"> files counted. README updated.&quot;</span>
+</span><span id="L-83"><a href="#L-83"><span class="linenos">83</span></a>        <span class="p">)</span>
+</span><span id="L-84"><a href="#L-84"><span class="linenos">84</span></a>
+</span><span id="L-85"><a href="#L-85"><span class="linenos">85</span></a>
+</span><span id="L-86"><a href="#L-86"><span class="linenos">86</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="L-87"><a href="#L-87"><span class="linenos">87</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-88"><a href="#L-88"><span class="linenos">88</span></a><span class="sd">    Main entry point for the script.</span>
+</span><span id="L-89"><a href="#L-89"><span class="linenos">89</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-90"><a href="#L-90"><span class="linenos">90</span></a>    <span class="n">generator</span> <span class="o">=</span> <span class="n">LibraryStatisticsGenerator</span><span class="p">()</span>
+</span><span id="L-91"><a href="#L-91"><span class="linenos">91</span></a>    <span class="n">generator</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</span><span id="L-92"><a href="#L-92"><span class="linenos">92</span></a>
+</span><span id="L-93"><a href="#L-93"><span class="linenos">93</span></a>
+</span><span id="L-94"><a href="#L-94"><span class="linenos">94</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+</span><span id="L-95"><a href="#L-95"><span class="linenos">95</span></a>    <span class="n">main</span><span class="p">()</span>
 </span></pre></div>
 
 
             </section>
+                <section id="LibraryStatisticsGenerator">
+                            <input id="LibraryStatisticsGenerator-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">LibraryStatisticsGenerator</span>:
+
+                <label class="view-source-button" for="LibraryStatisticsGenerator-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#LibraryStatisticsGenerator"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="LibraryStatisticsGenerator-11"><a href="#LibraryStatisticsGenerator-11"><span class="linenos">11</span></a><span class="k">class</span><span class="w"> </span><span class="nc">LibraryStatisticsGenerator</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator-12"><a href="#LibraryStatisticsGenerator-12"><span class="linenos">12</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="LibraryStatisticsGenerator-13"><a href="#LibraryStatisticsGenerator-13"><span class="linenos">13</span></a><span class="sd">    Handles calculating library statistics and updating the repository README.</span>
+</span><span id="LibraryStatisticsGenerator-14"><a href="#LibraryStatisticsGenerator-14"><span class="linenos">14</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="LibraryStatisticsGenerator-15"><a href="#LibraryStatisticsGenerator-15"><span class="linenos">15</span></a>
+</span><span id="LibraryStatisticsGenerator-16"><a href="#LibraryStatisticsGenerator-16"><span class="linenos">16</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">repo_root</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="LibraryStatisticsGenerator-17"><a href="#LibraryStatisticsGenerator-17"><span class="linenos">17</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="LibraryStatisticsGenerator-18"><a href="#LibraryStatisticsGenerator-18"><span class="linenos">18</span></a><span class="sd">        Initializes the LibraryStatisticsGenerator.</span>
+</span><span id="LibraryStatisticsGenerator-19"><a href="#LibraryStatisticsGenerator-19"><span class="linenos">19</span></a>
+</span><span id="LibraryStatisticsGenerator-20"><a href="#LibraryStatisticsGenerator-20"><span class="linenos">20</span></a><span class="sd">        Args:</span>
+</span><span id="LibraryStatisticsGenerator-21"><a href="#LibraryStatisticsGenerator-21"><span class="linenos">21</span></a><span class="sd">            repo_root (str, optional): The root directory of the repository.</span>
+</span><span id="LibraryStatisticsGenerator-22"><a href="#LibraryStatisticsGenerator-22"><span class="linenos">22</span></a><span class="sd">                Defaults to the parent directory of this script&#39;s location.</span>
+</span><span id="LibraryStatisticsGenerator-23"><a href="#LibraryStatisticsGenerator-23"><span class="linenos">23</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="LibraryStatisticsGenerator-24"><a href="#LibraryStatisticsGenerator-24"><span class="linenos">24</span></a>        <span class="k">if</span> <span class="n">repo_root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator-25"><a href="#LibraryStatisticsGenerator-25"><span class="linenos">25</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span>
+</span><span id="LibraryStatisticsGenerator-26"><a href="#LibraryStatisticsGenerator-26"><span class="linenos">26</span></a>                <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s2">&quot;..&quot;</span><span class="p">)</span>
+</span><span id="LibraryStatisticsGenerator-27"><a href="#LibraryStatisticsGenerator-27"><span class="linenos">27</span></a>            <span class="p">)</span>
+</span><span id="LibraryStatisticsGenerator-28"><a href="#LibraryStatisticsGenerator-28"><span class="linenos">28</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator-29"><a href="#LibraryStatisticsGenerator-29"><span class="linenos">29</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">repo_root</span>
+</span><span id="LibraryStatisticsGenerator-30"><a href="#LibraryStatisticsGenerator-30"><span class="linenos">30</span></a>
+</span><span id="LibraryStatisticsGenerator-31"><a href="#LibraryStatisticsGenerator-31"><span class="linenos">31</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">readme_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;README.md&quot;</span><span class="p">)</span>
+</span><span id="LibraryStatisticsGenerator-32"><a href="#LibraryStatisticsGenerator-32"><span class="linenos">32</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">badge_pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;&lt;img src=&quot;https://img\.shields\.io/static/v1\?label=Library_Size&amp;message=\d+&amp;color=success&amp;style=for_the_badge&quot; alt=&quot;Library Size Badge&quot; /&gt;&#39;</span>
+</span><span id="LibraryStatisticsGenerator-33"><a href="#LibraryStatisticsGenerator-33"><span class="linenos">33</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">first_badge_line</span> <span class="o">=</span> <span class="s1">&#39;&lt;img src=&quot;https://img.shields.io/static/v1?label=AI&amp;message=Knowledge_Library&amp;color=blueviolet&amp;style=for_the_badge&quot; alt=&quot;AI Library Badge&quot; /&gt;&#39;</span>
+</span><span id="LibraryStatisticsGenerator-34"><a href="#LibraryStatisticsGenerator-34"><span class="linenos">34</span></a>
+</span><span id="LibraryStatisticsGenerator-35"><a href="#LibraryStatisticsGenerator-35"><span class="linenos">35</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">count_files</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator-36"><a href="#LibraryStatisticsGenerator-36"><span class="linenos">36</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="LibraryStatisticsGenerator-37"><a href="#LibraryStatisticsGenerator-37"><span class="linenos">37</span></a><span class="sd">        Counts the number of files in the repository, excluding &#39;.git&#39; directories.</span>
+</span><span id="LibraryStatisticsGenerator-38"><a href="#LibraryStatisticsGenerator-38"><span class="linenos">38</span></a>
+</span><span id="LibraryStatisticsGenerator-39"><a href="#LibraryStatisticsGenerator-39"><span class="linenos">39</span></a><span class="sd">        Returns:</span>
+</span><span id="LibraryStatisticsGenerator-40"><a href="#LibraryStatisticsGenerator-40"><span class="linenos">40</span></a><span class="sd">            int: The total number of files.</span>
+</span><span id="LibraryStatisticsGenerator-41"><a href="#LibraryStatisticsGenerator-41"><span class="linenos">41</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="LibraryStatisticsGenerator-42"><a href="#LibraryStatisticsGenerator-42"><span class="linenos">42</span></a>        <span class="n">file_count</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="LibraryStatisticsGenerator-43"><a href="#LibraryStatisticsGenerator-43"><span class="linenos">43</span></a>        <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">):</span>
+</span><span id="LibraryStatisticsGenerator-44"><a href="#LibraryStatisticsGenerator-44"><span class="linenos">44</span></a>            <span class="k">if</span> <span class="s2">&quot;.git&quot;</span> <span class="ow">in</span> <span class="n">root</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator-45"><a href="#LibraryStatisticsGenerator-45"><span class="linenos">45</span></a>                <span class="k">continue</span>
+</span><span id="LibraryStatisticsGenerator-46"><a href="#LibraryStatisticsGenerator-46"><span class="linenos">46</span></a>            <span class="n">file_count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+</span><span id="LibraryStatisticsGenerator-47"><a href="#LibraryStatisticsGenerator-47"><span class="linenos">47</span></a>        <span class="k">return</span> <span class="n">file_count</span>
+</span><span id="LibraryStatisticsGenerator-48"><a href="#LibraryStatisticsGenerator-48"><span class="linenos">48</span></a>
+</span><span id="LibraryStatisticsGenerator-49"><a href="#LibraryStatisticsGenerator-49"><span class="linenos">49</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">update_readme</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_count</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator-50"><a href="#LibraryStatisticsGenerator-50"><span class="linenos">50</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="LibraryStatisticsGenerator-51"><a href="#LibraryStatisticsGenerator-51"><span class="linenos">51</span></a><span class="sd">        Updates the README.md file with the new file count badge.</span>
+</span><span id="LibraryStatisticsGenerator-52"><a href="#LibraryStatisticsGenerator-52"><span class="linenos">52</span></a>
+</span><span id="LibraryStatisticsGenerator-53"><a href="#LibraryStatisticsGenerator-53"><span class="linenos">53</span></a><span class="sd">        Args:</span>
+</span><span id="LibraryStatisticsGenerator-54"><a href="#LibraryStatisticsGenerator-54"><span class="linenos">54</span></a><span class="sd">            file_count (int): The number of files to display in the badge.</span>
+</span><span id="LibraryStatisticsGenerator-55"><a href="#LibraryStatisticsGenerator-55"><span class="linenos">55</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="LibraryStatisticsGenerator-56"><a href="#LibraryStatisticsGenerator-56"><span class="linenos">56</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">readme_path</span><span class="p">):</span>
+</span><span id="LibraryStatisticsGenerator-57"><a href="#LibraryStatisticsGenerator-57"><span class="linenos">57</span></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;README not found at </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">readme_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="LibraryStatisticsGenerator-58"><a href="#LibraryStatisticsGenerator-58"><span class="linenos">58</span></a>            <span class="k">return</span>
+</span><span id="LibraryStatisticsGenerator-59"><a href="#LibraryStatisticsGenerator-59"><span class="linenos">59</span></a>
+</span><span id="LibraryStatisticsGenerator-60"><a href="#LibraryStatisticsGenerator-60"><span class="linenos">60</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">readme_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator-61"><a href="#LibraryStatisticsGenerator-61"><span class="linenos">61</span></a>            <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</span><span id="LibraryStatisticsGenerator-62"><a href="#LibraryStatisticsGenerator-62"><span class="linenos">62</span></a>
+</span><span id="LibraryStatisticsGenerator-63"><a href="#LibraryStatisticsGenerator-63"><span class="linenos">63</span></a>        <span class="n">new_badge</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;&lt;img src=&quot;https://img.shields.io/static/v1?label=Library_Size&amp;message=</span><span class="si">{</span><span class="n">file_count</span><span class="si">}</span><span class="s1">&amp;color=success&amp;style=for_the_badge&quot; alt=&quot;Library Size Badge&quot; /&gt;&#39;</span>
+</span><span id="LibraryStatisticsGenerator-64"><a href="#LibraryStatisticsGenerator-64"><span class="linenos">64</span></a>
+</span><span id="LibraryStatisticsGenerator-65"><a href="#LibraryStatisticsGenerator-65"><span class="linenos">65</span></a>        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">badge_pattern</span><span class="p">,</span> <span class="n">content</span><span class="p">):</span>
+</span><span id="LibraryStatisticsGenerator-66"><a href="#LibraryStatisticsGenerator-66"><span class="linenos">66</span></a>            <span class="n">content</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">badge_pattern</span><span class="p">,</span> <span class="n">new_badge</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
+</span><span id="LibraryStatisticsGenerator-67"><a href="#LibraryStatisticsGenerator-67"><span class="linenos">67</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator-68"><a href="#LibraryStatisticsGenerator-68"><span class="linenos">68</span></a>            <span class="c1"># Insert after the first badge line</span>
+</span><span id="LibraryStatisticsGenerator-69"><a href="#LibraryStatisticsGenerator-69"><span class="linenos">69</span></a>            <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+</span><span id="LibraryStatisticsGenerator-70"><a href="#LibraryStatisticsGenerator-70"><span class="linenos">70</span></a>                <span class="bp">self</span><span class="o">.</span><span class="n">first_badge_line</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">first_badge_line</span><span class="si">}</span><span class="se">\n</span><span class="s2">  </span><span class="si">{</span><span class="n">new_badge</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="LibraryStatisticsGenerator-71"><a href="#LibraryStatisticsGenerator-71"><span class="linenos">71</span></a>            <span class="p">)</span>
+</span><span id="LibraryStatisticsGenerator-72"><a href="#LibraryStatisticsGenerator-72"><span class="linenos">72</span></a>
+</span><span id="LibraryStatisticsGenerator-73"><a href="#LibraryStatisticsGenerator-73"><span class="linenos">73</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">readme_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator-74"><a href="#LibraryStatisticsGenerator-74"><span class="linenos">74</span></a>            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+</span><span id="LibraryStatisticsGenerator-75"><a href="#LibraryStatisticsGenerator-75"><span class="linenos">75</span></a>
+</span><span id="LibraryStatisticsGenerator-76"><a href="#LibraryStatisticsGenerator-76"><span class="linenos">76</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator-77"><a href="#LibraryStatisticsGenerator-77"><span class="linenos">77</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="LibraryStatisticsGenerator-78"><a href="#LibraryStatisticsGenerator-78"><span class="linenos">78</span></a><span class="sd">        Executes the statistics generation and README update process.</span>
+</span><span id="LibraryStatisticsGenerator-79"><a href="#LibraryStatisticsGenerator-79"><span class="linenos">79</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="LibraryStatisticsGenerator-80"><a href="#LibraryStatisticsGenerator-80"><span class="linenos">80</span></a>        <span class="n">file_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">count_files</span><span class="p">()</span>
+</span><span id="LibraryStatisticsGenerator-81"><a href="#LibraryStatisticsGenerator-81"><span class="linenos">81</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">update_readme</span><span class="p">(</span><span class="n">file_count</span><span class="p">)</span>
+</span><span id="LibraryStatisticsGenerator-82"><a href="#LibraryStatisticsGenerator-82"><span class="linenos">82</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="LibraryStatisticsGenerator-83"><a href="#LibraryStatisticsGenerator-83"><span class="linenos">83</span></a>            <span class="sa">f</span><span class="s2">&quot;Library statistics generated: </span><span class="si">{</span><span class="n">file_count</span><span class="si">}</span><span class="s2"> files counted. README updated.&quot;</span>
+</span><span id="LibraryStatisticsGenerator-84"><a href="#LibraryStatisticsGenerator-84"><span class="linenos">84</span></a>        <span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Handles calculating library statistics and updating the repository README.</p>
+</div>
+
+
+                            <div id="LibraryStatisticsGenerator.__init__" class="classattr">
+                                        <input id="LibraryStatisticsGenerator.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="name">LibraryStatisticsGenerator</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">repo_root</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span></span>)</span>
+
+                <label class="view-source-button" for="LibraryStatisticsGenerator.__init__-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#LibraryStatisticsGenerator.__init__"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="LibraryStatisticsGenerator.__init__-16"><a href="#LibraryStatisticsGenerator.__init__-16"><span class="linenos">16</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">repo_root</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="LibraryStatisticsGenerator.__init__-17"><a href="#LibraryStatisticsGenerator.__init__-17"><span class="linenos">17</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="LibraryStatisticsGenerator.__init__-18"><a href="#LibraryStatisticsGenerator.__init__-18"><span class="linenos">18</span></a><span class="sd">        Initializes the LibraryStatisticsGenerator.</span>
+</span><span id="LibraryStatisticsGenerator.__init__-19"><a href="#LibraryStatisticsGenerator.__init__-19"><span class="linenos">19</span></a>
+</span><span id="LibraryStatisticsGenerator.__init__-20"><a href="#LibraryStatisticsGenerator.__init__-20"><span class="linenos">20</span></a><span class="sd">        Args:</span>
+</span><span id="LibraryStatisticsGenerator.__init__-21"><a href="#LibraryStatisticsGenerator.__init__-21"><span class="linenos">21</span></a><span class="sd">            repo_root (str, optional): The root directory of the repository.</span>
+</span><span id="LibraryStatisticsGenerator.__init__-22"><a href="#LibraryStatisticsGenerator.__init__-22"><span class="linenos">22</span></a><span class="sd">                Defaults to the parent directory of this script&#39;s location.</span>
+</span><span id="LibraryStatisticsGenerator.__init__-23"><a href="#LibraryStatisticsGenerator.__init__-23"><span class="linenos">23</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="LibraryStatisticsGenerator.__init__-24"><a href="#LibraryStatisticsGenerator.__init__-24"><span class="linenos">24</span></a>        <span class="k">if</span> <span class="n">repo_root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator.__init__-25"><a href="#LibraryStatisticsGenerator.__init__-25"><span class="linenos">25</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span>
+</span><span id="LibraryStatisticsGenerator.__init__-26"><a href="#LibraryStatisticsGenerator.__init__-26"><span class="linenos">26</span></a>                <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s2">&quot;..&quot;</span><span class="p">)</span>
+</span><span id="LibraryStatisticsGenerator.__init__-27"><a href="#LibraryStatisticsGenerator.__init__-27"><span class="linenos">27</span></a>            <span class="p">)</span>
+</span><span id="LibraryStatisticsGenerator.__init__-28"><a href="#LibraryStatisticsGenerator.__init__-28"><span class="linenos">28</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator.__init__-29"><a href="#LibraryStatisticsGenerator.__init__-29"><span class="linenos">29</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">repo_root</span>
+</span><span id="LibraryStatisticsGenerator.__init__-30"><a href="#LibraryStatisticsGenerator.__init__-30"><span class="linenos">30</span></a>
+</span><span id="LibraryStatisticsGenerator.__init__-31"><a href="#LibraryStatisticsGenerator.__init__-31"><span class="linenos">31</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">readme_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;README.md&quot;</span><span class="p">)</span>
+</span><span id="LibraryStatisticsGenerator.__init__-32"><a href="#LibraryStatisticsGenerator.__init__-32"><span class="linenos">32</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">badge_pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;&lt;img src=&quot;https://img\.shields\.io/static/v1\?label=Library_Size&amp;message=\d+&amp;color=success&amp;style=for_the_badge&quot; alt=&quot;Library Size Badge&quot; /&gt;&#39;</span>
+</span><span id="LibraryStatisticsGenerator.__init__-33"><a href="#LibraryStatisticsGenerator.__init__-33"><span class="linenos">33</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">first_badge_line</span> <span class="o">=</span> <span class="s1">&#39;&lt;img src=&quot;https://img.shields.io/static/v1?label=AI&amp;message=Knowledge_Library&amp;color=blueviolet&amp;style=for_the_badge&quot; alt=&quot;AI Library Badge&quot; /&gt;&#39;</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Initializes the LibraryStatisticsGenerator.</p>
+
+<p>Args:
+    repo_root (str, optional): The root directory of the repository.
+        Defaults to the parent directory of this script's location.</p>
+</div>
+
+
+                            </div>
+                            <div id="LibraryStatisticsGenerator.readme_path" class="classattr">
+                                <div class="attr variable">
+            <span class="name">readme_path</span>
+
+        
+    </div>
+    <a class="headerlink" href="#LibraryStatisticsGenerator.readme_path"></a>
+    
+    
+
+                            </div>
+                            <div id="LibraryStatisticsGenerator.badge_pattern" class="classattr">
+                                <div class="attr variable">
+            <span class="name">badge_pattern</span>
+
+        
+    </div>
+    <a class="headerlink" href="#LibraryStatisticsGenerator.badge_pattern"></a>
+    
+    
+
+                            </div>
+                            <div id="LibraryStatisticsGenerator.first_badge_line" class="classattr">
+                                <div class="attr variable">
+            <span class="name">first_badge_line</span>
+
+        
+    </div>
+    <a class="headerlink" href="#LibraryStatisticsGenerator.first_badge_line"></a>
+    
+    
+
+                            </div>
+                            <div id="LibraryStatisticsGenerator.count_files" class="classattr">
+                                        <input id="LibraryStatisticsGenerator.count_files-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">count_files</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">) -> <span class="nb">int</span>:</span></span>
+
+                <label class="view-source-button" for="LibraryStatisticsGenerator.count_files-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#LibraryStatisticsGenerator.count_files"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="LibraryStatisticsGenerator.count_files-35"><a href="#LibraryStatisticsGenerator.count_files-35"><span class="linenos">35</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">count_files</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator.count_files-36"><a href="#LibraryStatisticsGenerator.count_files-36"><span class="linenos">36</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="LibraryStatisticsGenerator.count_files-37"><a href="#LibraryStatisticsGenerator.count_files-37"><span class="linenos">37</span></a><span class="sd">        Counts the number of files in the repository, excluding &#39;.git&#39; directories.</span>
+</span><span id="LibraryStatisticsGenerator.count_files-38"><a href="#LibraryStatisticsGenerator.count_files-38"><span class="linenos">38</span></a>
+</span><span id="LibraryStatisticsGenerator.count_files-39"><a href="#LibraryStatisticsGenerator.count_files-39"><span class="linenos">39</span></a><span class="sd">        Returns:</span>
+</span><span id="LibraryStatisticsGenerator.count_files-40"><a href="#LibraryStatisticsGenerator.count_files-40"><span class="linenos">40</span></a><span class="sd">            int: The total number of files.</span>
+</span><span id="LibraryStatisticsGenerator.count_files-41"><a href="#LibraryStatisticsGenerator.count_files-41"><span class="linenos">41</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="LibraryStatisticsGenerator.count_files-42"><a href="#LibraryStatisticsGenerator.count_files-42"><span class="linenos">42</span></a>        <span class="n">file_count</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="LibraryStatisticsGenerator.count_files-43"><a href="#LibraryStatisticsGenerator.count_files-43"><span class="linenos">43</span></a>        <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">):</span>
+</span><span id="LibraryStatisticsGenerator.count_files-44"><a href="#LibraryStatisticsGenerator.count_files-44"><span class="linenos">44</span></a>            <span class="k">if</span> <span class="s2">&quot;.git&quot;</span> <span class="ow">in</span> <span class="n">root</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator.count_files-45"><a href="#LibraryStatisticsGenerator.count_files-45"><span class="linenos">45</span></a>                <span class="k">continue</span>
+</span><span id="LibraryStatisticsGenerator.count_files-46"><a href="#LibraryStatisticsGenerator.count_files-46"><span class="linenos">46</span></a>            <span class="n">file_count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+</span><span id="LibraryStatisticsGenerator.count_files-47"><a href="#LibraryStatisticsGenerator.count_files-47"><span class="linenos">47</span></a>        <span class="k">return</span> <span class="n">file_count</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Counts the number of files in the repository, excluding '.git' directories.</p>
+
+<p>Returns:
+    int: The total number of files.</p>
+</div>
+
+
+                            </div>
+                            <div id="LibraryStatisticsGenerator.update_readme" class="classattr">
+                                        <input id="LibraryStatisticsGenerator.update_readme-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">update_readme</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">file_count</span><span class="p">:</span> <span class="nb">int</span></span><span class="return-annotation">) -> <span class="kc">None</span>:</span></span>
+
+                <label class="view-source-button" for="LibraryStatisticsGenerator.update_readme-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#LibraryStatisticsGenerator.update_readme"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="LibraryStatisticsGenerator.update_readme-49"><a href="#LibraryStatisticsGenerator.update_readme-49"><span class="linenos">49</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">update_readme</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_count</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-50"><a href="#LibraryStatisticsGenerator.update_readme-50"><span class="linenos">50</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-51"><a href="#LibraryStatisticsGenerator.update_readme-51"><span class="linenos">51</span></a><span class="sd">        Updates the README.md file with the new file count badge.</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-52"><a href="#LibraryStatisticsGenerator.update_readme-52"><span class="linenos">52</span></a>
+</span><span id="LibraryStatisticsGenerator.update_readme-53"><a href="#LibraryStatisticsGenerator.update_readme-53"><span class="linenos">53</span></a><span class="sd">        Args:</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-54"><a href="#LibraryStatisticsGenerator.update_readme-54"><span class="linenos">54</span></a><span class="sd">            file_count (int): The number of files to display in the badge.</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-55"><a href="#LibraryStatisticsGenerator.update_readme-55"><span class="linenos">55</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-56"><a href="#LibraryStatisticsGenerator.update_readme-56"><span class="linenos">56</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">readme_path</span><span class="p">):</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-57"><a href="#LibraryStatisticsGenerator.update_readme-57"><span class="linenos">57</span></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;README not found at </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">readme_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-58"><a href="#LibraryStatisticsGenerator.update_readme-58"><span class="linenos">58</span></a>            <span class="k">return</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-59"><a href="#LibraryStatisticsGenerator.update_readme-59"><span class="linenos">59</span></a>
+</span><span id="LibraryStatisticsGenerator.update_readme-60"><a href="#LibraryStatisticsGenerator.update_readme-60"><span class="linenos">60</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">readme_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-61"><a href="#LibraryStatisticsGenerator.update_readme-61"><span class="linenos">61</span></a>            <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-62"><a href="#LibraryStatisticsGenerator.update_readme-62"><span class="linenos">62</span></a>
+</span><span id="LibraryStatisticsGenerator.update_readme-63"><a href="#LibraryStatisticsGenerator.update_readme-63"><span class="linenos">63</span></a>        <span class="n">new_badge</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;&lt;img src=&quot;https://img.shields.io/static/v1?label=Library_Size&amp;message=</span><span class="si">{</span><span class="n">file_count</span><span class="si">}</span><span class="s1">&amp;color=success&amp;style=for_the_badge&quot; alt=&quot;Library Size Badge&quot; /&gt;&#39;</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-64"><a href="#LibraryStatisticsGenerator.update_readme-64"><span class="linenos">64</span></a>
+</span><span id="LibraryStatisticsGenerator.update_readme-65"><a href="#LibraryStatisticsGenerator.update_readme-65"><span class="linenos">65</span></a>        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">badge_pattern</span><span class="p">,</span> <span class="n">content</span><span class="p">):</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-66"><a href="#LibraryStatisticsGenerator.update_readme-66"><span class="linenos">66</span></a>            <span class="n">content</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">badge_pattern</span><span class="p">,</span> <span class="n">new_badge</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-67"><a href="#LibraryStatisticsGenerator.update_readme-67"><span class="linenos">67</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-68"><a href="#LibraryStatisticsGenerator.update_readme-68"><span class="linenos">68</span></a>            <span class="c1"># Insert after the first badge line</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-69"><a href="#LibraryStatisticsGenerator.update_readme-69"><span class="linenos">69</span></a>            <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-70"><a href="#LibraryStatisticsGenerator.update_readme-70"><span class="linenos">70</span></a>                <span class="bp">self</span><span class="o">.</span><span class="n">first_badge_line</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">first_badge_line</span><span class="si">}</span><span class="se">\n</span><span class="s2">  </span><span class="si">{</span><span class="n">new_badge</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-71"><a href="#LibraryStatisticsGenerator.update_readme-71"><span class="linenos">71</span></a>            <span class="p">)</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-72"><a href="#LibraryStatisticsGenerator.update_readme-72"><span class="linenos">72</span></a>
+</span><span id="LibraryStatisticsGenerator.update_readme-73"><a href="#LibraryStatisticsGenerator.update_readme-73"><span class="linenos">73</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">readme_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator.update_readme-74"><a href="#LibraryStatisticsGenerator.update_readme-74"><span class="linenos">74</span></a>            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Updates the README.md file with the new file count badge.</p>
+
+<p>Args:
+    file_count (int): The number of files to display in the badge.</p>
+</div>
+
+
+                            </div>
+                            <div id="LibraryStatisticsGenerator.run" class="classattr">
+                                        <input id="LibraryStatisticsGenerator.run-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">run</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">) -> <span class="kc">None</span>:</span></span>
+
+                <label class="view-source-button" for="LibraryStatisticsGenerator.run-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#LibraryStatisticsGenerator.run"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="LibraryStatisticsGenerator.run-76"><a href="#LibraryStatisticsGenerator.run-76"><span class="linenos">76</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="LibraryStatisticsGenerator.run-77"><a href="#LibraryStatisticsGenerator.run-77"><span class="linenos">77</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="LibraryStatisticsGenerator.run-78"><a href="#LibraryStatisticsGenerator.run-78"><span class="linenos">78</span></a><span class="sd">        Executes the statistics generation and README update process.</span>
+</span><span id="LibraryStatisticsGenerator.run-79"><a href="#LibraryStatisticsGenerator.run-79"><span class="linenos">79</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="LibraryStatisticsGenerator.run-80"><a href="#LibraryStatisticsGenerator.run-80"><span class="linenos">80</span></a>        <span class="n">file_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">count_files</span><span class="p">()</span>
+</span><span id="LibraryStatisticsGenerator.run-81"><a href="#LibraryStatisticsGenerator.run-81"><span class="linenos">81</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">update_readme</span><span class="p">(</span><span class="n">file_count</span><span class="p">)</span>
+</span><span id="LibraryStatisticsGenerator.run-82"><a href="#LibraryStatisticsGenerator.run-82"><span class="linenos">82</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="LibraryStatisticsGenerator.run-83"><a href="#LibraryStatisticsGenerator.run-83"><span class="linenos">83</span></a>            <span class="sa">f</span><span class="s2">&quot;Library statistics generated: </span><span class="si">{</span><span class="n">file_count</span><span class="si">}</span><span class="s2"> files counted. README updated.&quot;</span>
+</span><span id="LibraryStatisticsGenerator.run-84"><a href="#LibraryStatisticsGenerator.run-84"><span class="linenos">84</span></a>        <span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Executes the statistics generation and README update process.</p>
+</div>
+
+
+                            </div>
+                </section>
                 <section id="main">
                             <input id="main-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -110,42 +470,18 @@
 
     </div>
     <a class="headerlink" href="#main"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="main-7"><a href="#main-7"><span class="linenos"> 7</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="main-8"><a href="#main-8"><span class="linenos"> 8</span></a>    <span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s2">&quot;..&quot;</span><span class="p">))</span>
-</span><span id="main-9"><a href="#main-9"><span class="linenos"> 9</span></a>
-</span><span id="main-10"><a href="#main-10"><span class="linenos">10</span></a>    <span class="c1"># Count files</span>
-</span><span id="main-11"><a href="#main-11"><span class="linenos">11</span></a>    <span class="n">file_count</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="main-12"><a href="#main-12"><span class="linenos">12</span></a>    <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">repo_root</span><span class="p">):</span>
-</span><span id="main-13"><a href="#main-13"><span class="linenos">13</span></a>        <span class="k">if</span> <span class="s2">&quot;.git&quot;</span> <span class="ow">in</span> <span class="n">root</span><span class="p">:</span>
-</span><span id="main-14"><a href="#main-14"><span class="linenos">14</span></a>            <span class="k">continue</span>
-</span><span id="main-15"><a href="#main-15"><span class="linenos">15</span></a>        <span class="n">file_count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
-</span><span id="main-16"><a href="#main-16"><span class="linenos">16</span></a>
-</span><span id="main-17"><a href="#main-17"><span class="linenos">17</span></a>    <span class="c1"># Read README</span>
-</span><span id="main-18"><a href="#main-18"><span class="linenos">18</span></a>    <span class="n">readme_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;README.md&quot;</span><span class="p">)</span>
-</span><span id="main-19"><a href="#main-19"><span class="linenos">19</span></a>    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">readme_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="main-20"><a href="#main-20"><span class="linenos">20</span></a>        <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-</span><span id="main-21"><a href="#main-21"><span class="linenos">21</span></a>
-</span><span id="main-22"><a href="#main-22"><span class="linenos">22</span></a>    <span class="c1"># Replace or add the badge</span>
-</span><span id="main-23"><a href="#main-23"><span class="linenos">23</span></a>    <span class="n">badge_pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;&lt;img src=&quot;https://img\.shields\.io/static/v1\?label=Library_Size&amp;message=\d+&amp;color=success&amp;style=for_the_badge&quot; alt=&quot;Library Size Badge&quot; /&gt;&#39;</span>
-</span><span id="main-24"><a href="#main-24"><span class="linenos">24</span></a>    <span class="n">new_badge</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;&lt;img src=&quot;https://img.shields.io/static/v1?label=Library_Size&amp;message=</span><span class="si">{</span><span class="n">file_count</span><span class="si">}</span><span class="s1">&amp;color=success&amp;style=for_the_badge&quot; alt=&quot;Library Size Badge&quot; /&gt;&#39;</span>
-</span><span id="main-25"><a href="#main-25"><span class="linenos">25</span></a>
-</span><span id="main-26"><a href="#main-26"><span class="linenos">26</span></a>    <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">badge_pattern</span><span class="p">,</span> <span class="n">content</span><span class="p">):</span>
-</span><span id="main-27"><a href="#main-27"><span class="linenos">27</span></a>        <span class="n">content</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">badge_pattern</span><span class="p">,</span> <span class="n">new_badge</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
-</span><span id="main-28"><a href="#main-28"><span class="linenos">28</span></a>    <span class="k">else</span><span class="p">:</span>
-</span><span id="main-29"><a href="#main-29"><span class="linenos">29</span></a>        <span class="c1"># insert after the first badge line</span>
-</span><span id="main-30"><a href="#main-30"><span class="linenos">30</span></a>        <span class="n">first_badge_line</span> <span class="o">=</span> <span class="s1">&#39;&lt;img src=&quot;https://img.shields.io/static/v1?label=AI&amp;message=Knowledge_Library&amp;color=blueviolet&amp;style=for_the_badge&quot; alt=&quot;AI Library Badge&quot; /&gt;&#39;</span>
-</span><span id="main-31"><a href="#main-31"><span class="linenos">31</span></a>        <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
-</span><span id="main-32"><a href="#main-32"><span class="linenos">32</span></a>            <span class="n">first_badge_line</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">first_badge_line</span><span class="si">}</span><span class="se">\n</span><span class="s2">  </span><span class="si">{</span><span class="n">new_badge</span><span class="si">}</span><span class="s2">&quot;</span>
-</span><span id="main-33"><a href="#main-33"><span class="linenos">33</span></a>        <span class="p">)</span>
-</span><span id="main-34"><a href="#main-34"><span class="linenos">34</span></a>
-</span><span id="main-35"><a href="#main-35"><span class="linenos">35</span></a>    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">readme_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="main-36"><a href="#main-36"><span class="linenos">36</span></a>        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
-</span><span id="main-37"><a href="#main-37"><span class="linenos">37</span></a>
-</span><span id="main-38"><a href="#main-38"><span class="linenos">38</span></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Library statistics generated: </span><span class="si">{</span><span class="n">file_count</span><span class="si">}</span><span class="s2"> files counted. README updated.&quot;</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="main-87"><a href="#main-87"><span class="linenos">87</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="main-88"><a href="#main-88"><span class="linenos">88</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="main-89"><a href="#main-89"><span class="linenos">89</span></a><span class="sd">    Main entry point for the script.</span>
+</span><span id="main-90"><a href="#main-90"><span class="linenos">90</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="main-91"><a href="#main-91"><span class="linenos">91</span></a>    <span class="n">generator</span> <span class="o">=</span> <span class="n">LibraryStatisticsGenerator</span><span class="p">()</span>
+</span><span id="main-92"><a href="#main-92"><span class="linenos">92</span></a>    <span class="n">generator</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>Main entry point for the script.</p>
+</div>
+
 
                 </section>
     </main>

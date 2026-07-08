@@ -31,7 +31,76 @@
             <h2>API Documentation</h2>
                 <ul class="memberlist">
             <li>
-                    <a class="function" href="#chunk_text">chunk_text</a>
+                    <a class="variable" href="#script_dir">script_dir</a>
+            </li>
+            <li>
+                    <a class="variable" href="#repo_root">repo_root</a>
+            </li>
+            <li>
+                    <a class="class" href="#TextChunker">TextChunker</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#TextChunker.__init__">TextChunker</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TextChunker.max_len">max_len</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#TextChunker.chunk_text">chunk_text</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#VectorIndexBuilder">VectorIndexBuilder</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#VectorIndexBuilder.__init__">VectorIndexBuilder</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#VectorIndexBuilder.repo_root">repo_root</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#VectorIndexBuilder.cfg">cfg</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#VectorIndexBuilder.db_mode">db_mode</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#VectorIndexBuilder.index_config">index_config</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#VectorIndexBuilder.max_chunk_len">max_chunk_len</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#VectorIndexBuilder.batch_size">batch_size</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#VectorIndexBuilder.collection_name">collection_name</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#VectorIndexBuilder.chunker">chunker</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#VectorIndexBuilder.docs_to_insert">docs_to_insert</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#VectorIndexBuilder.metadata_to_insert">metadata_to_insert</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#VectorIndexBuilder.ids_to_insert">ids_to_insert</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#VectorIndexBuilder.scan_files">scan_files</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#VectorIndexBuilder.insert_chunks">insert_chunks</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#VectorIndexBuilder.run">run</a>
+                        </li>
+                </ul>
+
             </li>
             <li>
                     <a class="function" href="#main">main</a>
@@ -52,152 +121,819 @@
                     <h1 class="modulename">
 <a href="./../tools.html">tools</a><wbr>.build_vector_index    </h1>
 
-                
+                        <div class="docstring"><p>Vector Index Builder Tool.</p>
+
+<p>This module provides an object oriented approach to building a vector database
+index from the markdown documentation in the repository. It chunks the text
+and stores it in the configured vector store.</p>
+</div>
+
                         <input id="mod-build_vector_index-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 
                         <label class="view-source-button" for="mod-build_vector_index-view-source"><span>View Source</span></label>
 
                         <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="ch">#!/usr/bin/env python3</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-</span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">glob</span>
-</span><span id="L-5"><a href="#L-5"><span class="linenos">  5</span></a>
-</span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a><span class="k">try</span><span class="p">:</span>
-</span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">chromadb</span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a>    <span class="k">pass</span>  <span class="c1"># Might not be needed if using pgvector</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a>
-</span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a>
-</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="k">def</span><span class="w"> </span><span class="nf">chunk_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a>    <span class="n">words</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a>    <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a>    <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a>    <span class="n">current_len</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a>    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a>        <span class="k">if</span> <span class="n">current_len</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_len</span><span class="p">:</span>
-</span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a>            <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
-</span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a>            <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span><span class="p">]</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a>            <span class="n">current_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a>            <span class="n">current_chunk</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a>            <span class="n">current_len</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
-</span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a>    <span class="k">if</span> <span class="n">current_chunk</span><span class="p">:</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a>        <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a>    <span class="k">return</span> <span class="n">chunks</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a><span class="sd">Vector Index Builder Tool.</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a>
+</span><span id="L-5"><a href="#L-5"><span class="linenos">  5</span></a><span class="sd">This module provides an object oriented approach to building a vector database</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a><span class="sd">index from the markdown documentation in the repository. It chunks the text</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a><span class="sd">and stores it in the configured vector store.</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a>
+</span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">glob</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a>
+</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a><span class="k">try</span><span class="p">:</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">chromadb</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a>    <span class="k">pass</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a>
+</span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a>
+</span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a><span class="c1"># Ensure repo root is in sys.path to import from config</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a><span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a><span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">script_dir</span><span class="p">,</span> <span class="s2">&quot;..&quot;</span><span class="p">))</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a><span class="k">if</span> <span class="n">repo_root</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a>    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">repo_root</span><span class="p">)</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a>
+</span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">config.loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span><span class="p">,</span> <span class="n">get_chroma_db_path</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a>
 </span><span id="L-28"><a href="#L-28"><span class="linenos"> 28</span></a>
-</span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a>
-</span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a>    <span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a>    <span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">script_dir</span><span class="p">)</span>
-</span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a>    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">repo_root</span><span class="p">)</span>  <span class="c1"># Ensure root is in path for imports</span>
-</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a>
-</span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">config.loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span><span class="p">,</span> <span class="n">get_chroma_db_path</span>
-</span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a>
-</span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a>    <span class="n">cfg</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span>
-</span><span id="L-38"><a href="#L-38"><span class="linenos"> 38</span></a>    <span class="n">db_mode</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;database&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="s2">&quot;sqlite&quot;</span><span class="p">)</span>
-</span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a>
-</span><span id="L-40"><a href="#L-40"><span class="linenos"> 40</span></a>    <span class="n">docs_to_insert</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a>    <span class="n">metadata_to_insert</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a>    <span class="n">ids_to_insert</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a>
-</span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Scanning for markdown files...&quot;</span><span class="p">)</span>
-</span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a>    <span class="n">md_files</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;**&quot;</span><span class="p">,</span> <span class="s2">&quot;*.md&quot;</span><span class="p">),</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a>
-</span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a>    <span class="k">for</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="n">md_files</span><span class="p">:</span>
-</span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a>        <span class="k">if</span> <span class="s2">&quot;.git&quot;</span> <span class="ow">in</span> <span class="n">file_path</span> <span class="ow">or</span> <span class="p">(</span>
-</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a>            <span class="s2">&quot;.agents&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">file_path</span>
-</span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a>            <span class="ow">and</span> <span class="s2">&quot;documentation&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">file_path</span>
-</span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a>            <span class="ow">and</span> <span class="s2">&quot;README&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">file_path</span>
-</span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a>        <span class="p">):</span>
-</span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a>            <span class="k">continue</span>
-</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a>
-</span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a>        <span class="k">try</span><span class="p">:</span>
-</span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a>            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a>                <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-</span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a>                <span class="k">if</span> <span class="ow">not</span> <span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
-</span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a>                    <span class="k">continue</span>
-</span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a>
-</span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a>                <span class="n">rel_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">repo_root</span><span class="p">)</span>
-</span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a>                <span class="n">chunks</span> <span class="o">=</span> <span class="n">chunk_text</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
-</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a>
-</span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a>                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunks</span><span class="p">):</span>
-</span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a>                    <span class="n">docs_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
-</span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a>                    <span class="n">metadata_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="n">rel_path</span><span class="p">,</span> <span class="s2">&quot;chunk&quot;</span><span class="p">:</span> <span class="n">i</span><span class="p">})</span>
-</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a>                    <span class="n">ids_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">rel_path</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a>
-</span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipping </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>
-</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">docs_to_insert</span><span class="p">:</span>
-</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No markdown content found to index.&quot;</span><span class="p">)</span>
-</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>        <span class="k">return</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a><span class="k">class</span><span class="w"> </span><span class="nc">TextChunker</span><span class="p">:</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a><span class="sd">    Helper class responsible for chunking text content.</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a>
+</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">):</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a><span class="sd">        Args:</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a><span class="sd">            max_len (int): Maximum character length per chunk.</span>
+</span><span id="L-38"><a href="#L-38"><span class="linenos"> 38</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span> <span class="o">=</span> <span class="n">max_len</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos"> 40</span></a>
+</span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">chunk_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a><span class="sd">        Splits text into smaller chunks based on word count and max length.</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a>
+</span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a><span class="sd">        Args:</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a><span class="sd">            text (str): The input text to chunk.</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a>
+</span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a><span class="sd">        Returns:</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a><span class="sd">            list: A list of text chunks.</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a>        <span class="n">words</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a>        <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a>        <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a>        <span class="n">current_len</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a>
+</span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a>        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a>            <span class="k">if</span> <span class="n">current_len</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">:</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a>                <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a>                <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span><span class="p">]</span>
+</span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a>                <span class="n">current_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+</span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a>            <span class="k">else</span><span class="p">:</span>
+</span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a>                <span class="n">current_chunk</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a>                <span class="n">current_len</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a>
+</span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a>        <span class="k">if</span> <span class="n">current_chunk</span><span class="p">:</span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a>            <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a>
+</span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a>        <span class="k">return</span> <span class="n">chunks</span>
+</span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a>
+</span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a>
+</span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a><span class="k">class</span><span class="w"> </span><span class="nc">VectorIndexBuilder</span><span class="p">:</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a><span class="sd">    Manages the indexing of markdown files into the configured vector store.</span>
+</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>
-</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Inserting </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">docs_to_insert</span><span class="p">)</span><span class="si">}</span><span class="s2"> chunks into </span><span class="si">{</span><span class="n">db_mode</span><span class="si">}</span><span class="s2"> database...&quot;</span><span class="p">)</span>
-</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a>    <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">100</span>
-</span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a>
-</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a>    <span class="k">if</span> <span class="n">db_mode</span> <span class="o">==</span> <span class="s2">&quot;pgvector&quot;</span><span class="p">:</span>
-</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">tools.pgvector_backend</span><span class="w"> </span><span class="kn">import</span> <span class="n">PgVectorStore</span>
-</span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a>
-</span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a>        <span class="n">store</span> <span class="o">=</span> <span class="n">PgVectorStore</span><span class="p">()</span>
-</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a>        <span class="n">store</span><span class="o">.</span><span class="n">init_db</span><span class="p">()</span>
-</span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="n">batch_size</span><span class="p">):</span>
-</span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a>            <span class="n">store</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
-</span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a>                <span class="n">docs</span><span class="o">=</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">],</span>
-</span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">],</span>
-</span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a>            <span class="p">)</span>
-</span><span id="L-89"><a href="#L-89"><span class="linenos"> 89</span></a>    <span class="k">else</span><span class="p">:</span>
-</span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a>        <span class="n">db_path</span> <span class="o">=</span> <span class="n">get_chroma_db_path</span><span class="p">()</span>
-</span><span id="L-91"><a href="#L-91"><span class="linenos"> 91</span></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initializing ChromaDB at </span><span class="si">{</span><span class="n">db_path</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
-</span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a>        <span class="n">client</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">db_path</span><span class="p">)</span>
-</span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a>        <span class="n">collection</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_or_create_collection</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;ai_library_knowledge&quot;</span><span class="p">)</span>
-</span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="n">batch_size</span><span class="p">):</span>
-</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a>            <span class="n">collection</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
-</span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a>                <span class="n">documents</span><span class="o">=</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">],</span>
-</span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">],</span>
-</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a>                <span class="n">ids</span><span class="o">=</span><span class="n">ids_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">],</span>
-</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a>            <span class="p">)</span>
-</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a>
-</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Knowledge base indexing complete!&quot;</span><span class="p">)</span>
-</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a>
-</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a>
-</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>    <span class="n">main</span><span class="p">()</span>
+</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a><span class="sd">        Initializes the index builder, loading configuration and setting up chunking.</span>
+</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">repo_root</span>
+</span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span>
+</span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">db_mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;database&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="s2">&quot;sqlite&quot;</span><span class="p">)</span>
+</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a>
+</span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a>        <span class="c1"># Load indexing config</span>
+</span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">index_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;indexing&quot;</span><span class="p">,</span> <span class="p">{})</span>
+</span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_chunk_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_chunk_length&quot;</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+</span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;batch_size&quot;</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+</span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">collection_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+</span><span id="L-89"><a href="#L-89"><span class="linenos"> 89</span></a>            <span class="s2">&quot;collection_name&quot;</span><span class="p">,</span> <span class="s2">&quot;ai_library_knowledge&quot;</span>
+</span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a>        <span class="p">)</span>
+</span><span id="L-91"><a href="#L-91"><span class="linenos"> 91</span></a>
+</span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">chunker</span> <span class="o">=</span> <span class="n">TextChunker</span><span class="p">(</span><span class="n">max_len</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_chunk_len</span><span class="p">)</span>
+</span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a>
+</span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a>
+</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_should_skip_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a><span class="sd">        Determines whether a given file path should be skipped during indexing.</span>
+</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a>
+</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a><span class="sd">        Args:</span>
+</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a><span class="sd">            file_path (str): The absolute path to the file.</span>
+</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>
+</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a><span class="sd">        Returns:</span>
+</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a><span class="sd">            bool: True if the file should be skipped, False otherwise.</span>
+</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>        <span class="k">if</span> <span class="s2">&quot;.git&quot;</span> <span class="ow">in</span> <span class="n">file_path</span> <span class="ow">or</span> <span class="p">(</span>
+</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a>            <span class="s2">&quot;.agents&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">file_path</span>
+</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a>            <span class="ow">and</span> <span class="s2">&quot;documentation&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">file_path</span>
+</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>            <span class="ow">and</span> <span class="s2">&quot;README&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">file_path</span>
+</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a>        <span class="p">):</span>
+</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a>            <span class="k">return</span> <span class="kc">True</span>
+</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a>        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a>
+</span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">scan_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a><span class="sd">        Scans the repository for markdown files, reads them, and prepares chunks.</span>
+</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Scanning for markdown files...&quot;</span><span class="p">)</span>
+</span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a>        <span class="n">md_files</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;**&quot;</span><span class="p">,</span> <span class="s2">&quot;*.md&quot;</span><span class="p">),</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a>
+</span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a>        <span class="k">for</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="n">md_files</span><span class="p">:</span>
+</span><span id="L-124"><a href="#L-124"><span class="linenos">124</span></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_should_skip_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+</span><span id="L-125"><a href="#L-125"><span class="linenos">125</span></a>                <span class="k">continue</span>
+</span><span id="L-126"><a href="#L-126"><span class="linenos">126</span></a>
+</span><span id="L-127"><a href="#L-127"><span class="linenos">127</span></a>            <span class="k">try</span><span class="p">:</span>
+</span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a>                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a>                    <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a>                    <span class="k">if</span> <span class="ow">not</span> <span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a>                        <span class="k">continue</span>
+</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a>
+</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a>                    <span class="n">rel_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">)</span>
+</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a>                    <span class="n">chunks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">chunker</span><span class="o">.</span><span class="n">chunk_text</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+</span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a>
+</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a>                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunks</span><span class="p">):</span>
+</span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a>                        <span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+</span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a>                        <span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="n">rel_path</span><span class="p">,</span> <span class="s2">&quot;chunk&quot;</span><span class="p">:</span> <span class="n">i</span><span class="p">})</span>
+</span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a>                        <span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">rel_path</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="L-140"><a href="#L-140"><span class="linenos">140</span></a>
+</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a>            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="L-142"><a href="#L-142"><span class="linenos">142</span></a>                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipping </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="L-143"><a href="#L-143"><span class="linenos">143</span></a>
+</span><span id="L-144"><a href="#L-144"><span class="linenos">144</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">insert_chunks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-145"><a href="#L-145"><span class="linenos">145</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-146"><a href="#L-146"><span class="linenos">146</span></a><span class="sd">        Inserts the processed chunks into the configured database.</span>
+</span><span id="L-147"><a href="#L-147"><span class="linenos">147</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-148"><a href="#L-148"><span class="linenos">148</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">:</span>
+</span><span id="L-149"><a href="#L-149"><span class="linenos">149</span></a>            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No markdown content found to index.&quot;</span><span class="p">)</span>
+</span><span id="L-150"><a href="#L-150"><span class="linenos">150</span></a>            <span class="k">return</span>
+</span><span id="L-151"><a href="#L-151"><span class="linenos">151</span></a>
+</span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a>            <span class="sa">f</span><span class="s2">&quot;Inserting </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">)</span><span class="si">}</span><span class="s2"> chunks into </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">db_mode</span><span class="si">}</span><span class="s2"> database...&quot;</span>
+</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a>        <span class="p">)</span>
+</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a>
+</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_mode</span> <span class="o">==</span> <span class="s2">&quot;pgvector&quot;</span><span class="p">:</span>
+</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_insert_pgvector</span><span class="p">()</span>
+</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_insert_chromadb</span><span class="p">()</span>
+</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a>
+</span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Knowledge base indexing complete!&quot;</span><span class="p">)</span>
+</span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a>
+</span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_insert_pgvector</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a><span class="sd">        Inserts chunks into PgVector backend.</span>
+</span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">tools.pgvector_backend</span><span class="w"> </span><span class="kn">import</span> <span class="n">PgVectorStore</span>
+</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a>
+</span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a>        <span class="n">store</span> <span class="o">=</span> <span class="n">PgVectorStore</span><span class="p">()</span>
+</span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a>        <span class="n">store</span><span class="o">.</span><span class="n">init_db</span><span class="p">()</span>
+</span><span id="L-171"><a href="#L-171"><span class="linenos">171</span></a>
+</span><span id="L-172"><a href="#L-172"><span class="linenos">172</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
+</span><span id="L-173"><a href="#L-173"><span class="linenos">173</span></a>            <span class="n">store</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
+</span><span id="L-174"><a href="#L-174"><span class="linenos">174</span></a>                <span class="n">docs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a>            <span class="p">)</span>
+</span><span id="L-177"><a href="#L-177"><span class="linenos">177</span></a>
+</span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_insert_chromadb</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-179"><a href="#L-179"><span class="linenos">179</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a><span class="sd">        Inserts chunks into ChromaDB backend.</span>
+</span><span id="L-181"><a href="#L-181"><span class="linenos">181</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-182"><a href="#L-182"><span class="linenos">182</span></a>        <span class="n">db_path</span> <span class="o">=</span> <span class="n">get_chroma_db_path</span><span class="p">()</span>
+</span><span id="L-183"><a href="#L-183"><span class="linenos">183</span></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initializing ChromaDB at </span><span class="si">{</span><span class="n">db_path</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+</span><span id="L-184"><a href="#L-184"><span class="linenos">184</span></a>        <span class="n">client</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">db_path</span><span class="p">)</span>
+</span><span id="L-185"><a href="#L-185"><span class="linenos">185</span></a>        <span class="n">collection</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_or_create_collection</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">collection_name</span><span class="p">)</span>
+</span><span id="L-186"><a href="#L-186"><span class="linenos">186</span></a>
+</span><span id="L-187"><a href="#L-187"><span class="linenos">187</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
+</span><span id="L-188"><a href="#L-188"><span class="linenos">188</span></a>            <span class="n">collection</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
+</span><span id="L-189"><a href="#L-189"><span class="linenos">189</span></a>                <span class="n">documents</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="L-190"><a href="#L-190"><span class="linenos">190</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="L-191"><a href="#L-191"><span class="linenos">191</span></a>                <span class="n">ids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="L-192"><a href="#L-192"><span class="linenos">192</span></a>            <span class="p">)</span>
+</span><span id="L-193"><a href="#L-193"><span class="linenos">193</span></a>
+</span><span id="L-194"><a href="#L-194"><span class="linenos">194</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-195"><a href="#L-195"><span class="linenos">195</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-196"><a href="#L-196"><span class="linenos">196</span></a><span class="sd">        Executes the entire indexing pipeline.</span>
+</span><span id="L-197"><a href="#L-197"><span class="linenos">197</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-198"><a href="#L-198"><span class="linenos">198</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">scan_files</span><span class="p">()</span>
+</span><span id="L-199"><a href="#L-199"><span class="linenos">199</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">insert_chunks</span><span class="p">()</span>
+</span><span id="L-200"><a href="#L-200"><span class="linenos">200</span></a>
+</span><span id="L-201"><a href="#L-201"><span class="linenos">201</span></a>
+</span><span id="L-202"><a href="#L-202"><span class="linenos">202</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="L-203"><a href="#L-203"><span class="linenos">203</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-204"><a href="#L-204"><span class="linenos">204</span></a><span class="sd">    Main entry point for the vector indexing script.</span>
+</span><span id="L-205"><a href="#L-205"><span class="linenos">205</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-206"><a href="#L-206"><span class="linenos">206</span></a>    <span class="n">builder</span> <span class="o">=</span> <span class="n">VectorIndexBuilder</span><span class="p">()</span>
+</span><span id="L-207"><a href="#L-207"><span class="linenos">207</span></a>    <span class="n">builder</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</span><span id="L-208"><a href="#L-208"><span class="linenos">208</span></a>
+</span><span id="L-209"><a href="#L-209"><span class="linenos">209</span></a>
+</span><span id="L-210"><a href="#L-210"><span class="linenos">210</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+</span><span id="L-211"><a href="#L-211"><span class="linenos">211</span></a>    <span class="n">main</span><span class="p">()</span>
 </span></pre></div>
 
 
             </section>
-                <section id="chunk_text">
-                            <input id="chunk_text-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-<div class="attr function">
-            
-        <span class="def">def</span>
-        <span class="name">chunk_text</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">text</span>, </span><span class="param"><span class="n">max_len</span><span class="o">=</span><span class="mi">1000</span></span><span class="return-annotation">):</span></span>
+                <section id="script_dir">
+                    <div class="attr variable">
+            <span class="name">script_dir</span>        =
+<span class="default_value">&#39;/home/runner/work/ai_knowledge_library/ai_knowledge_library/tools&#39;</span>
 
-                <label class="view-source-button" for="chunk_text-view-source"><span>View Source</span></label>
+        
+    </div>
+    <a class="headerlink" href="#script_dir"></a>
+    
+    
+
+                </section>
+                <section id="repo_root">
+                    <div class="attr variable">
+            <span class="name">repo_root</span>        =
+<span class="default_value">$PWD</span>
+
+        
+    </div>
+    <a class="headerlink" href="#repo_root"></a>
+    
+    
+
+                </section>
+                <section id="TextChunker">
+                            <input id="TextChunker-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">TextChunker</span>:
+
+                <label class="view-source-button" for="TextChunker-view-source"><span>View Source</span></label>
 
     </div>
-    <a class="headerlink" href="#chunk_text"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="chunk_text-13"><a href="#chunk_text-13"><span class="linenos">13</span></a><span class="k">def</span><span class="w"> </span><span class="nf">chunk_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
-</span><span id="chunk_text-14"><a href="#chunk_text-14"><span class="linenos">14</span></a>    <span class="n">words</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-</span><span id="chunk_text-15"><a href="#chunk_text-15"><span class="linenos">15</span></a>    <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="chunk_text-16"><a href="#chunk_text-16"><span class="linenos">16</span></a>    <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="chunk_text-17"><a href="#chunk_text-17"><span class="linenos">17</span></a>    <span class="n">current_len</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="chunk_text-18"><a href="#chunk_text-18"><span class="linenos">18</span></a>    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
-</span><span id="chunk_text-19"><a href="#chunk_text-19"><span class="linenos">19</span></a>        <span class="k">if</span> <span class="n">current_len</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_len</span><span class="p">:</span>
-</span><span id="chunk_text-20"><a href="#chunk_text-20"><span class="linenos">20</span></a>            <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
-</span><span id="chunk_text-21"><a href="#chunk_text-21"><span class="linenos">21</span></a>            <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span><span class="p">]</span>
-</span><span id="chunk_text-22"><a href="#chunk_text-22"><span class="linenos">22</span></a>            <span class="n">current_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
-</span><span id="chunk_text-23"><a href="#chunk_text-23"><span class="linenos">23</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="chunk_text-24"><a href="#chunk_text-24"><span class="linenos">24</span></a>            <span class="n">current_chunk</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
-</span><span id="chunk_text-25"><a href="#chunk_text-25"><span class="linenos">25</span></a>            <span class="n">current_len</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
-</span><span id="chunk_text-26"><a href="#chunk_text-26"><span class="linenos">26</span></a>    <span class="k">if</span> <span class="n">current_chunk</span><span class="p">:</span>
-</span><span id="chunk_text-27"><a href="#chunk_text-27"><span class="linenos">27</span></a>        <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
-</span><span id="chunk_text-28"><a href="#chunk_text-28"><span class="linenos">28</span></a>    <span class="k">return</span> <span class="n">chunks</span>
+    <a class="headerlink" href="#TextChunker"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="TextChunker-30"><a href="#TextChunker-30"><span class="linenos">30</span></a><span class="k">class</span><span class="w"> </span><span class="nc">TextChunker</span><span class="p">:</span>
+</span><span id="TextChunker-31"><a href="#TextChunker-31"><span class="linenos">31</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="TextChunker-32"><a href="#TextChunker-32"><span class="linenos">32</span></a><span class="sd">    Helper class responsible for chunking text content.</span>
+</span><span id="TextChunker-33"><a href="#TextChunker-33"><span class="linenos">33</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="TextChunker-34"><a href="#TextChunker-34"><span class="linenos">34</span></a>
+</span><span id="TextChunker-35"><a href="#TextChunker-35"><span class="linenos">35</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">):</span>
+</span><span id="TextChunker-36"><a href="#TextChunker-36"><span class="linenos">36</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="TextChunker-37"><a href="#TextChunker-37"><span class="linenos">37</span></a><span class="sd">        Args:</span>
+</span><span id="TextChunker-38"><a href="#TextChunker-38"><span class="linenos">38</span></a><span class="sd">            max_len (int): Maximum character length per chunk.</span>
+</span><span id="TextChunker-39"><a href="#TextChunker-39"><span class="linenos">39</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="TextChunker-40"><a href="#TextChunker-40"><span class="linenos">40</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span> <span class="o">=</span> <span class="n">max_len</span>
+</span><span id="TextChunker-41"><a href="#TextChunker-41"><span class="linenos">41</span></a>
+</span><span id="TextChunker-42"><a href="#TextChunker-42"><span class="linenos">42</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">chunk_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+</span><span id="TextChunker-43"><a href="#TextChunker-43"><span class="linenos">43</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="TextChunker-44"><a href="#TextChunker-44"><span class="linenos">44</span></a><span class="sd">        Splits text into smaller chunks based on word count and max length.</span>
+</span><span id="TextChunker-45"><a href="#TextChunker-45"><span class="linenos">45</span></a>
+</span><span id="TextChunker-46"><a href="#TextChunker-46"><span class="linenos">46</span></a><span class="sd">        Args:</span>
+</span><span id="TextChunker-47"><a href="#TextChunker-47"><span class="linenos">47</span></a><span class="sd">            text (str): The input text to chunk.</span>
+</span><span id="TextChunker-48"><a href="#TextChunker-48"><span class="linenos">48</span></a>
+</span><span id="TextChunker-49"><a href="#TextChunker-49"><span class="linenos">49</span></a><span class="sd">        Returns:</span>
+</span><span id="TextChunker-50"><a href="#TextChunker-50"><span class="linenos">50</span></a><span class="sd">            list: A list of text chunks.</span>
+</span><span id="TextChunker-51"><a href="#TextChunker-51"><span class="linenos">51</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="TextChunker-52"><a href="#TextChunker-52"><span class="linenos">52</span></a>        <span class="n">words</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+</span><span id="TextChunker-53"><a href="#TextChunker-53"><span class="linenos">53</span></a>        <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="TextChunker-54"><a href="#TextChunker-54"><span class="linenos">54</span></a>        <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="TextChunker-55"><a href="#TextChunker-55"><span class="linenos">55</span></a>        <span class="n">current_len</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="TextChunker-56"><a href="#TextChunker-56"><span class="linenos">56</span></a>
+</span><span id="TextChunker-57"><a href="#TextChunker-57"><span class="linenos">57</span></a>        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+</span><span id="TextChunker-58"><a href="#TextChunker-58"><span class="linenos">58</span></a>            <span class="k">if</span> <span class="n">current_len</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">:</span>
+</span><span id="TextChunker-59"><a href="#TextChunker-59"><span class="linenos">59</span></a>                <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
+</span><span id="TextChunker-60"><a href="#TextChunker-60"><span class="linenos">60</span></a>                <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span><span class="p">]</span>
+</span><span id="TextChunker-61"><a href="#TextChunker-61"><span class="linenos">61</span></a>                <span class="n">current_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+</span><span id="TextChunker-62"><a href="#TextChunker-62"><span class="linenos">62</span></a>            <span class="k">else</span><span class="p">:</span>
+</span><span id="TextChunker-63"><a href="#TextChunker-63"><span class="linenos">63</span></a>                <span class="n">current_chunk</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+</span><span id="TextChunker-64"><a href="#TextChunker-64"><span class="linenos">64</span></a>                <span class="n">current_len</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span id="TextChunker-65"><a href="#TextChunker-65"><span class="linenos">65</span></a>
+</span><span id="TextChunker-66"><a href="#TextChunker-66"><span class="linenos">66</span></a>        <span class="k">if</span> <span class="n">current_chunk</span><span class="p">:</span>
+</span><span id="TextChunker-67"><a href="#TextChunker-67"><span class="linenos">67</span></a>            <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
+</span><span id="TextChunker-68"><a href="#TextChunker-68"><span class="linenos">68</span></a>
+</span><span id="TextChunker-69"><a href="#TextChunker-69"><span class="linenos">69</span></a>        <span class="k">return</span> <span class="n">chunks</span>
 </span></pre></div>
 
 
+            <div class="docstring"><p>Helper class responsible for chunking text content.</p>
+</div>
+
+
+                            <div id="TextChunker.__init__" class="classattr">
+                                        <input id="TextChunker.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="name">TextChunker</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">max_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span></span>)</span>
+
+                <label class="view-source-button" for="TextChunker.__init__-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#TextChunker.__init__"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="TextChunker.__init__-35"><a href="#TextChunker.__init__-35"><span class="linenos">35</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">):</span>
+</span><span id="TextChunker.__init__-36"><a href="#TextChunker.__init__-36"><span class="linenos">36</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="TextChunker.__init__-37"><a href="#TextChunker.__init__-37"><span class="linenos">37</span></a><span class="sd">        Args:</span>
+</span><span id="TextChunker.__init__-38"><a href="#TextChunker.__init__-38"><span class="linenos">38</span></a><span class="sd">            max_len (int): Maximum character length per chunk.</span>
+</span><span id="TextChunker.__init__-39"><a href="#TextChunker.__init__-39"><span class="linenos">39</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="TextChunker.__init__-40"><a href="#TextChunker.__init__-40"><span class="linenos">40</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span> <span class="o">=</span> <span class="n">max_len</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Args:
+    max_len (int): Maximum character length per chunk.</p>
+</div>
+
+
+                            </div>
+                            <div id="TextChunker.max_len" class="classattr">
+                                <div class="attr variable">
+            <span class="name">max_len</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TextChunker.max_len"></a>
+    
     
 
+                            </div>
+                            <div id="TextChunker.chunk_text" class="classattr">
+                                        <input id="TextChunker.chunk_text-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">chunk_text</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">text</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">) -> <span class="nb">list</span>:</span></span>
+
+                <label class="view-source-button" for="TextChunker.chunk_text-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#TextChunker.chunk_text"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="TextChunker.chunk_text-42"><a href="#TextChunker.chunk_text-42"><span class="linenos">42</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">chunk_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+</span><span id="TextChunker.chunk_text-43"><a href="#TextChunker.chunk_text-43"><span class="linenos">43</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="TextChunker.chunk_text-44"><a href="#TextChunker.chunk_text-44"><span class="linenos">44</span></a><span class="sd">        Splits text into smaller chunks based on word count and max length.</span>
+</span><span id="TextChunker.chunk_text-45"><a href="#TextChunker.chunk_text-45"><span class="linenos">45</span></a>
+</span><span id="TextChunker.chunk_text-46"><a href="#TextChunker.chunk_text-46"><span class="linenos">46</span></a><span class="sd">        Args:</span>
+</span><span id="TextChunker.chunk_text-47"><a href="#TextChunker.chunk_text-47"><span class="linenos">47</span></a><span class="sd">            text (str): The input text to chunk.</span>
+</span><span id="TextChunker.chunk_text-48"><a href="#TextChunker.chunk_text-48"><span class="linenos">48</span></a>
+</span><span id="TextChunker.chunk_text-49"><a href="#TextChunker.chunk_text-49"><span class="linenos">49</span></a><span class="sd">        Returns:</span>
+</span><span id="TextChunker.chunk_text-50"><a href="#TextChunker.chunk_text-50"><span class="linenos">50</span></a><span class="sd">            list: A list of text chunks.</span>
+</span><span id="TextChunker.chunk_text-51"><a href="#TextChunker.chunk_text-51"><span class="linenos">51</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="TextChunker.chunk_text-52"><a href="#TextChunker.chunk_text-52"><span class="linenos">52</span></a>        <span class="n">words</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+</span><span id="TextChunker.chunk_text-53"><a href="#TextChunker.chunk_text-53"><span class="linenos">53</span></a>        <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="TextChunker.chunk_text-54"><a href="#TextChunker.chunk_text-54"><span class="linenos">54</span></a>        <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="TextChunker.chunk_text-55"><a href="#TextChunker.chunk_text-55"><span class="linenos">55</span></a>        <span class="n">current_len</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="TextChunker.chunk_text-56"><a href="#TextChunker.chunk_text-56"><span class="linenos">56</span></a>
+</span><span id="TextChunker.chunk_text-57"><a href="#TextChunker.chunk_text-57"><span class="linenos">57</span></a>        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+</span><span id="TextChunker.chunk_text-58"><a href="#TextChunker.chunk_text-58"><span class="linenos">58</span></a>            <span class="k">if</span> <span class="n">current_len</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">:</span>
+</span><span id="TextChunker.chunk_text-59"><a href="#TextChunker.chunk_text-59"><span class="linenos">59</span></a>                <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
+</span><span id="TextChunker.chunk_text-60"><a href="#TextChunker.chunk_text-60"><span class="linenos">60</span></a>                <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span><span class="p">]</span>
+</span><span id="TextChunker.chunk_text-61"><a href="#TextChunker.chunk_text-61"><span class="linenos">61</span></a>                <span class="n">current_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+</span><span id="TextChunker.chunk_text-62"><a href="#TextChunker.chunk_text-62"><span class="linenos">62</span></a>            <span class="k">else</span><span class="p">:</span>
+</span><span id="TextChunker.chunk_text-63"><a href="#TextChunker.chunk_text-63"><span class="linenos">63</span></a>                <span class="n">current_chunk</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+</span><span id="TextChunker.chunk_text-64"><a href="#TextChunker.chunk_text-64"><span class="linenos">64</span></a>                <span class="n">current_len</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span id="TextChunker.chunk_text-65"><a href="#TextChunker.chunk_text-65"><span class="linenos">65</span></a>
+</span><span id="TextChunker.chunk_text-66"><a href="#TextChunker.chunk_text-66"><span class="linenos">66</span></a>        <span class="k">if</span> <span class="n">current_chunk</span><span class="p">:</span>
+</span><span id="TextChunker.chunk_text-67"><a href="#TextChunker.chunk_text-67"><span class="linenos">67</span></a>            <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
+</span><span id="TextChunker.chunk_text-68"><a href="#TextChunker.chunk_text-68"><span class="linenos">68</span></a>
+</span><span id="TextChunker.chunk_text-69"><a href="#TextChunker.chunk_text-69"><span class="linenos">69</span></a>        <span class="k">return</span> <span class="n">chunks</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Splits text into smaller chunks based on word count and max length.</p>
+
+<p>Args:
+    text (str): The input text to chunk.</p>
+
+<p>Returns:
+    list: A list of text chunks.</p>
+</div>
+
+
+                            </div>
+                </section>
+                <section id="VectorIndexBuilder">
+                            <input id="VectorIndexBuilder-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">VectorIndexBuilder</span>:
+
+                <label class="view-source-button" for="VectorIndexBuilder-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#VectorIndexBuilder"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="VectorIndexBuilder-72"><a href="#VectorIndexBuilder-72"><span class="linenos"> 72</span></a><span class="k">class</span><span class="w"> </span><span class="nc">VectorIndexBuilder</span><span class="p">:</span>
+</span><span id="VectorIndexBuilder-73"><a href="#VectorIndexBuilder-73"><span class="linenos"> 73</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-74"><a href="#VectorIndexBuilder-74"><span class="linenos"> 74</span></a><span class="sd">    Manages the indexing of markdown files into the configured vector store.</span>
+</span><span id="VectorIndexBuilder-75"><a href="#VectorIndexBuilder-75"><span class="linenos"> 75</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-76"><a href="#VectorIndexBuilder-76"><span class="linenos"> 76</span></a>
+</span><span id="VectorIndexBuilder-77"><a href="#VectorIndexBuilder-77"><span class="linenos"> 77</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder-78"><a href="#VectorIndexBuilder-78"><span class="linenos"> 78</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-79"><a href="#VectorIndexBuilder-79"><span class="linenos"> 79</span></a><span class="sd">        Initializes the index builder, loading configuration and setting up chunking.</span>
+</span><span id="VectorIndexBuilder-80"><a href="#VectorIndexBuilder-80"><span class="linenos"> 80</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-81"><a href="#VectorIndexBuilder-81"><span class="linenos"> 81</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">repo_root</span>
+</span><span id="VectorIndexBuilder-82"><a href="#VectorIndexBuilder-82"><span class="linenos"> 82</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder-83"><a href="#VectorIndexBuilder-83"><span class="linenos"> 83</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">db_mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;database&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="s2">&quot;sqlite&quot;</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder-84"><a href="#VectorIndexBuilder-84"><span class="linenos"> 84</span></a>
+</span><span id="VectorIndexBuilder-85"><a href="#VectorIndexBuilder-85"><span class="linenos"> 85</span></a>        <span class="c1"># Load indexing config</span>
+</span><span id="VectorIndexBuilder-86"><a href="#VectorIndexBuilder-86"><span class="linenos"> 86</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">index_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;indexing&quot;</span><span class="p">,</span> <span class="p">{})</span>
+</span><span id="VectorIndexBuilder-87"><a href="#VectorIndexBuilder-87"><span class="linenos"> 87</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_chunk_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_chunk_length&quot;</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder-88"><a href="#VectorIndexBuilder-88"><span class="linenos"> 88</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;batch_size&quot;</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder-89"><a href="#VectorIndexBuilder-89"><span class="linenos"> 89</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">collection_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+</span><span id="VectorIndexBuilder-90"><a href="#VectorIndexBuilder-90"><span class="linenos"> 90</span></a>            <span class="s2">&quot;collection_name&quot;</span><span class="p">,</span> <span class="s2">&quot;ai_library_knowledge&quot;</span>
+</span><span id="VectorIndexBuilder-91"><a href="#VectorIndexBuilder-91"><span class="linenos"> 91</span></a>        <span class="p">)</span>
+</span><span id="VectorIndexBuilder-92"><a href="#VectorIndexBuilder-92"><span class="linenos"> 92</span></a>
+</span><span id="VectorIndexBuilder-93"><a href="#VectorIndexBuilder-93"><span class="linenos"> 93</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">chunker</span> <span class="o">=</span> <span class="n">TextChunker</span><span class="p">(</span><span class="n">max_len</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_chunk_len</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder-94"><a href="#VectorIndexBuilder-94"><span class="linenos"> 94</span></a>
+</span><span id="VectorIndexBuilder-95"><a href="#VectorIndexBuilder-95"><span class="linenos"> 95</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="VectorIndexBuilder-96"><a href="#VectorIndexBuilder-96"><span class="linenos"> 96</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="VectorIndexBuilder-97"><a href="#VectorIndexBuilder-97"><span class="linenos"> 97</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="VectorIndexBuilder-98"><a href="#VectorIndexBuilder-98"><span class="linenos"> 98</span></a>
+</span><span id="VectorIndexBuilder-99"><a href="#VectorIndexBuilder-99"><span class="linenos"> 99</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_should_skip_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="VectorIndexBuilder-100"><a href="#VectorIndexBuilder-100"><span class="linenos">100</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-101"><a href="#VectorIndexBuilder-101"><span class="linenos">101</span></a><span class="sd">        Determines whether a given file path should be skipped during indexing.</span>
+</span><span id="VectorIndexBuilder-102"><a href="#VectorIndexBuilder-102"><span class="linenos">102</span></a>
+</span><span id="VectorIndexBuilder-103"><a href="#VectorIndexBuilder-103"><span class="linenos">103</span></a><span class="sd">        Args:</span>
+</span><span id="VectorIndexBuilder-104"><a href="#VectorIndexBuilder-104"><span class="linenos">104</span></a><span class="sd">            file_path (str): The absolute path to the file.</span>
+</span><span id="VectorIndexBuilder-105"><a href="#VectorIndexBuilder-105"><span class="linenos">105</span></a>
+</span><span id="VectorIndexBuilder-106"><a href="#VectorIndexBuilder-106"><span class="linenos">106</span></a><span class="sd">        Returns:</span>
+</span><span id="VectorIndexBuilder-107"><a href="#VectorIndexBuilder-107"><span class="linenos">107</span></a><span class="sd">            bool: True if the file should be skipped, False otherwise.</span>
+</span><span id="VectorIndexBuilder-108"><a href="#VectorIndexBuilder-108"><span class="linenos">108</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-109"><a href="#VectorIndexBuilder-109"><span class="linenos">109</span></a>        <span class="k">if</span> <span class="s2">&quot;.git&quot;</span> <span class="ow">in</span> <span class="n">file_path</span> <span class="ow">or</span> <span class="p">(</span>
+</span><span id="VectorIndexBuilder-110"><a href="#VectorIndexBuilder-110"><span class="linenos">110</span></a>            <span class="s2">&quot;.agents&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">file_path</span>
+</span><span id="VectorIndexBuilder-111"><a href="#VectorIndexBuilder-111"><span class="linenos">111</span></a>            <span class="ow">and</span> <span class="s2">&quot;documentation&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">file_path</span>
+</span><span id="VectorIndexBuilder-112"><a href="#VectorIndexBuilder-112"><span class="linenos">112</span></a>            <span class="ow">and</span> <span class="s2">&quot;README&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">file_path</span>
+</span><span id="VectorIndexBuilder-113"><a href="#VectorIndexBuilder-113"><span class="linenos">113</span></a>        <span class="p">):</span>
+</span><span id="VectorIndexBuilder-114"><a href="#VectorIndexBuilder-114"><span class="linenos">114</span></a>            <span class="k">return</span> <span class="kc">True</span>
+</span><span id="VectorIndexBuilder-115"><a href="#VectorIndexBuilder-115"><span class="linenos">115</span></a>        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="VectorIndexBuilder-116"><a href="#VectorIndexBuilder-116"><span class="linenos">116</span></a>
+</span><span id="VectorIndexBuilder-117"><a href="#VectorIndexBuilder-117"><span class="linenos">117</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">scan_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder-118"><a href="#VectorIndexBuilder-118"><span class="linenos">118</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-119"><a href="#VectorIndexBuilder-119"><span class="linenos">119</span></a><span class="sd">        Scans the repository for markdown files, reads them, and prepares chunks.</span>
+</span><span id="VectorIndexBuilder-120"><a href="#VectorIndexBuilder-120"><span class="linenos">120</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-121"><a href="#VectorIndexBuilder-121"><span class="linenos">121</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Scanning for markdown files...&quot;</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder-122"><a href="#VectorIndexBuilder-122"><span class="linenos">122</span></a>        <span class="n">md_files</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;**&quot;</span><span class="p">,</span> <span class="s2">&quot;*.md&quot;</span><span class="p">),</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder-123"><a href="#VectorIndexBuilder-123"><span class="linenos">123</span></a>
+</span><span id="VectorIndexBuilder-124"><a href="#VectorIndexBuilder-124"><span class="linenos">124</span></a>        <span class="k">for</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="n">md_files</span><span class="p">:</span>
+</span><span id="VectorIndexBuilder-125"><a href="#VectorIndexBuilder-125"><span class="linenos">125</span></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_should_skip_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder-126"><a href="#VectorIndexBuilder-126"><span class="linenos">126</span></a>                <span class="k">continue</span>
+</span><span id="VectorIndexBuilder-127"><a href="#VectorIndexBuilder-127"><span class="linenos">127</span></a>
+</span><span id="VectorIndexBuilder-128"><a href="#VectorIndexBuilder-128"><span class="linenos">128</span></a>            <span class="k">try</span><span class="p">:</span>
+</span><span id="VectorIndexBuilder-129"><a href="#VectorIndexBuilder-129"><span class="linenos">129</span></a>                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="VectorIndexBuilder-130"><a href="#VectorIndexBuilder-130"><span class="linenos">130</span></a>                    <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder-131"><a href="#VectorIndexBuilder-131"><span class="linenos">131</span></a>                    <span class="k">if</span> <span class="ow">not</span> <span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+</span><span id="VectorIndexBuilder-132"><a href="#VectorIndexBuilder-132"><span class="linenos">132</span></a>                        <span class="k">continue</span>
+</span><span id="VectorIndexBuilder-133"><a href="#VectorIndexBuilder-133"><span class="linenos">133</span></a>
+</span><span id="VectorIndexBuilder-134"><a href="#VectorIndexBuilder-134"><span class="linenos">134</span></a>                    <span class="n">rel_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder-135"><a href="#VectorIndexBuilder-135"><span class="linenos">135</span></a>                    <span class="n">chunks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">chunker</span><span class="o">.</span><span class="n">chunk_text</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder-136"><a href="#VectorIndexBuilder-136"><span class="linenos">136</span></a>
+</span><span id="VectorIndexBuilder-137"><a href="#VectorIndexBuilder-137"><span class="linenos">137</span></a>                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunks</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder-138"><a href="#VectorIndexBuilder-138"><span class="linenos">138</span></a>                        <span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder-139"><a href="#VectorIndexBuilder-139"><span class="linenos">139</span></a>                        <span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="n">rel_path</span><span class="p">,</span> <span class="s2">&quot;chunk&quot;</span><span class="p">:</span> <span class="n">i</span><span class="p">})</span>
+</span><span id="VectorIndexBuilder-140"><a href="#VectorIndexBuilder-140"><span class="linenos">140</span></a>                        <span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">rel_path</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder-141"><a href="#VectorIndexBuilder-141"><span class="linenos">141</span></a>
+</span><span id="VectorIndexBuilder-142"><a href="#VectorIndexBuilder-142"><span class="linenos">142</span></a>            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="VectorIndexBuilder-143"><a href="#VectorIndexBuilder-143"><span class="linenos">143</span></a>                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipping </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder-144"><a href="#VectorIndexBuilder-144"><span class="linenos">144</span></a>
+</span><span id="VectorIndexBuilder-145"><a href="#VectorIndexBuilder-145"><span class="linenos">145</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">insert_chunks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder-146"><a href="#VectorIndexBuilder-146"><span class="linenos">146</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-147"><a href="#VectorIndexBuilder-147"><span class="linenos">147</span></a><span class="sd">        Inserts the processed chunks into the configured database.</span>
+</span><span id="VectorIndexBuilder-148"><a href="#VectorIndexBuilder-148"><span class="linenos">148</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-149"><a href="#VectorIndexBuilder-149"><span class="linenos">149</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">:</span>
+</span><span id="VectorIndexBuilder-150"><a href="#VectorIndexBuilder-150"><span class="linenos">150</span></a>            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No markdown content found to index.&quot;</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder-151"><a href="#VectorIndexBuilder-151"><span class="linenos">151</span></a>            <span class="k">return</span>
+</span><span id="VectorIndexBuilder-152"><a href="#VectorIndexBuilder-152"><span class="linenos">152</span></a>
+</span><span id="VectorIndexBuilder-153"><a href="#VectorIndexBuilder-153"><span class="linenos">153</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="VectorIndexBuilder-154"><a href="#VectorIndexBuilder-154"><span class="linenos">154</span></a>            <span class="sa">f</span><span class="s2">&quot;Inserting </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">)</span><span class="si">}</span><span class="s2"> chunks into </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">db_mode</span><span class="si">}</span><span class="s2"> database...&quot;</span>
+</span><span id="VectorIndexBuilder-155"><a href="#VectorIndexBuilder-155"><span class="linenos">155</span></a>        <span class="p">)</span>
+</span><span id="VectorIndexBuilder-156"><a href="#VectorIndexBuilder-156"><span class="linenos">156</span></a>
+</span><span id="VectorIndexBuilder-157"><a href="#VectorIndexBuilder-157"><span class="linenos">157</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_mode</span> <span class="o">==</span> <span class="s2">&quot;pgvector&quot;</span><span class="p">:</span>
+</span><span id="VectorIndexBuilder-158"><a href="#VectorIndexBuilder-158"><span class="linenos">158</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_insert_pgvector</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder-159"><a href="#VectorIndexBuilder-159"><span class="linenos">159</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="VectorIndexBuilder-160"><a href="#VectorIndexBuilder-160"><span class="linenos">160</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_insert_chromadb</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder-161"><a href="#VectorIndexBuilder-161"><span class="linenos">161</span></a>
+</span><span id="VectorIndexBuilder-162"><a href="#VectorIndexBuilder-162"><span class="linenos">162</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Knowledge base indexing complete!&quot;</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder-163"><a href="#VectorIndexBuilder-163"><span class="linenos">163</span></a>
+</span><span id="VectorIndexBuilder-164"><a href="#VectorIndexBuilder-164"><span class="linenos">164</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_insert_pgvector</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder-165"><a href="#VectorIndexBuilder-165"><span class="linenos">165</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-166"><a href="#VectorIndexBuilder-166"><span class="linenos">166</span></a><span class="sd">        Inserts chunks into PgVector backend.</span>
+</span><span id="VectorIndexBuilder-167"><a href="#VectorIndexBuilder-167"><span class="linenos">167</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-168"><a href="#VectorIndexBuilder-168"><span class="linenos">168</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">tools.pgvector_backend</span><span class="w"> </span><span class="kn">import</span> <span class="n">PgVectorStore</span>
+</span><span id="VectorIndexBuilder-169"><a href="#VectorIndexBuilder-169"><span class="linenos">169</span></a>
+</span><span id="VectorIndexBuilder-170"><a href="#VectorIndexBuilder-170"><span class="linenos">170</span></a>        <span class="n">store</span> <span class="o">=</span> <span class="n">PgVectorStore</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder-171"><a href="#VectorIndexBuilder-171"><span class="linenos">171</span></a>        <span class="n">store</span><span class="o">.</span><span class="n">init_db</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder-172"><a href="#VectorIndexBuilder-172"><span class="linenos">172</span></a>
+</span><span id="VectorIndexBuilder-173"><a href="#VectorIndexBuilder-173"><span class="linenos">173</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder-174"><a href="#VectorIndexBuilder-174"><span class="linenos">174</span></a>            <span class="n">store</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
+</span><span id="VectorIndexBuilder-175"><a href="#VectorIndexBuilder-175"><span class="linenos">175</span></a>                <span class="n">docs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="VectorIndexBuilder-176"><a href="#VectorIndexBuilder-176"><span class="linenos">176</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="VectorIndexBuilder-177"><a href="#VectorIndexBuilder-177"><span class="linenos">177</span></a>            <span class="p">)</span>
+</span><span id="VectorIndexBuilder-178"><a href="#VectorIndexBuilder-178"><span class="linenos">178</span></a>
+</span><span id="VectorIndexBuilder-179"><a href="#VectorIndexBuilder-179"><span class="linenos">179</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_insert_chromadb</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder-180"><a href="#VectorIndexBuilder-180"><span class="linenos">180</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-181"><a href="#VectorIndexBuilder-181"><span class="linenos">181</span></a><span class="sd">        Inserts chunks into ChromaDB backend.</span>
+</span><span id="VectorIndexBuilder-182"><a href="#VectorIndexBuilder-182"><span class="linenos">182</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-183"><a href="#VectorIndexBuilder-183"><span class="linenos">183</span></a>        <span class="n">db_path</span> <span class="o">=</span> <span class="n">get_chroma_db_path</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder-184"><a href="#VectorIndexBuilder-184"><span class="linenos">184</span></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initializing ChromaDB at </span><span class="si">{</span><span class="n">db_path</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder-185"><a href="#VectorIndexBuilder-185"><span class="linenos">185</span></a>        <span class="n">client</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">db_path</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder-186"><a href="#VectorIndexBuilder-186"><span class="linenos">186</span></a>        <span class="n">collection</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_or_create_collection</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">collection_name</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder-187"><a href="#VectorIndexBuilder-187"><span class="linenos">187</span></a>
+</span><span id="VectorIndexBuilder-188"><a href="#VectorIndexBuilder-188"><span class="linenos">188</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder-189"><a href="#VectorIndexBuilder-189"><span class="linenos">189</span></a>            <span class="n">collection</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
+</span><span id="VectorIndexBuilder-190"><a href="#VectorIndexBuilder-190"><span class="linenos">190</span></a>                <span class="n">documents</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="VectorIndexBuilder-191"><a href="#VectorIndexBuilder-191"><span class="linenos">191</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="VectorIndexBuilder-192"><a href="#VectorIndexBuilder-192"><span class="linenos">192</span></a>                <span class="n">ids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="VectorIndexBuilder-193"><a href="#VectorIndexBuilder-193"><span class="linenos">193</span></a>            <span class="p">)</span>
+</span><span id="VectorIndexBuilder-194"><a href="#VectorIndexBuilder-194"><span class="linenos">194</span></a>
+</span><span id="VectorIndexBuilder-195"><a href="#VectorIndexBuilder-195"><span class="linenos">195</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder-196"><a href="#VectorIndexBuilder-196"><span class="linenos">196</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-197"><a href="#VectorIndexBuilder-197"><span class="linenos">197</span></a><span class="sd">        Executes the entire indexing pipeline.</span>
+</span><span id="VectorIndexBuilder-198"><a href="#VectorIndexBuilder-198"><span class="linenos">198</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-199"><a href="#VectorIndexBuilder-199"><span class="linenos">199</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">scan_files</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder-200"><a href="#VectorIndexBuilder-200"><span class="linenos">200</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">insert_chunks</span><span class="p">()</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Manages the indexing of markdown files into the configured vector store.</p>
+</div>
+
+
+                            <div id="VectorIndexBuilder.__init__" class="classattr">
+                                        <input id="VectorIndexBuilder.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="name">VectorIndexBuilder</span><span class="signature pdoc-code condensed">()</span>
+
+                <label class="view-source-button" for="VectorIndexBuilder.__init__-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#VectorIndexBuilder.__init__"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="VectorIndexBuilder.__init__-77"><a href="#VectorIndexBuilder.__init__-77"><span class="linenos">77</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder.__init__-78"><a href="#VectorIndexBuilder.__init__-78"><span class="linenos">78</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder.__init__-79"><a href="#VectorIndexBuilder.__init__-79"><span class="linenos">79</span></a><span class="sd">        Initializes the index builder, loading configuration and setting up chunking.</span>
+</span><span id="VectorIndexBuilder.__init__-80"><a href="#VectorIndexBuilder.__init__-80"><span class="linenos">80</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder.__init__-81"><a href="#VectorIndexBuilder.__init__-81"><span class="linenos">81</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">repo_root</span>
+</span><span id="VectorIndexBuilder.__init__-82"><a href="#VectorIndexBuilder.__init__-82"><span class="linenos">82</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder.__init__-83"><a href="#VectorIndexBuilder.__init__-83"><span class="linenos">83</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">db_mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;database&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="s2">&quot;sqlite&quot;</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder.__init__-84"><a href="#VectorIndexBuilder.__init__-84"><span class="linenos">84</span></a>
+</span><span id="VectorIndexBuilder.__init__-85"><a href="#VectorIndexBuilder.__init__-85"><span class="linenos">85</span></a>        <span class="c1"># Load indexing config</span>
+</span><span id="VectorIndexBuilder.__init__-86"><a href="#VectorIndexBuilder.__init__-86"><span class="linenos">86</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">index_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;indexing&quot;</span><span class="p">,</span> <span class="p">{})</span>
+</span><span id="VectorIndexBuilder.__init__-87"><a href="#VectorIndexBuilder.__init__-87"><span class="linenos">87</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_chunk_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_chunk_length&quot;</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder.__init__-88"><a href="#VectorIndexBuilder.__init__-88"><span class="linenos">88</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;batch_size&quot;</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder.__init__-89"><a href="#VectorIndexBuilder.__init__-89"><span class="linenos">89</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">collection_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+</span><span id="VectorIndexBuilder.__init__-90"><a href="#VectorIndexBuilder.__init__-90"><span class="linenos">90</span></a>            <span class="s2">&quot;collection_name&quot;</span><span class="p">,</span> <span class="s2">&quot;ai_library_knowledge&quot;</span>
+</span><span id="VectorIndexBuilder.__init__-91"><a href="#VectorIndexBuilder.__init__-91"><span class="linenos">91</span></a>        <span class="p">)</span>
+</span><span id="VectorIndexBuilder.__init__-92"><a href="#VectorIndexBuilder.__init__-92"><span class="linenos">92</span></a>
+</span><span id="VectorIndexBuilder.__init__-93"><a href="#VectorIndexBuilder.__init__-93"><span class="linenos">93</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">chunker</span> <span class="o">=</span> <span class="n">TextChunker</span><span class="p">(</span><span class="n">max_len</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_chunk_len</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder.__init__-94"><a href="#VectorIndexBuilder.__init__-94"><span class="linenos">94</span></a>
+</span><span id="VectorIndexBuilder.__init__-95"><a href="#VectorIndexBuilder.__init__-95"><span class="linenos">95</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="VectorIndexBuilder.__init__-96"><a href="#VectorIndexBuilder.__init__-96"><span class="linenos">96</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="VectorIndexBuilder.__init__-97"><a href="#VectorIndexBuilder.__init__-97"><span class="linenos">97</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span> <span class="o">=</span> <span class="p">[]</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Initializes the index builder, loading configuration and setting up chunking.</p>
+</div>
+
+
+                            </div>
+                            <div id="VectorIndexBuilder.repo_root" class="classattr">
+                                <div class="attr variable">
+            <span class="name">repo_root</span>
+
+        
+    </div>
+    <a class="headerlink" href="#VectorIndexBuilder.repo_root"></a>
+    
+    
+
+                            </div>
+                            <div id="VectorIndexBuilder.cfg" class="classattr">
+                                <div class="attr variable">
+            <span class="name">cfg</span>
+
+        
+    </div>
+    <a class="headerlink" href="#VectorIndexBuilder.cfg"></a>
+    
+    
+
+                            </div>
+                            <div id="VectorIndexBuilder.db_mode" class="classattr">
+                                <div class="attr variable">
+            <span class="name">db_mode</span>
+
+        
+    </div>
+    <a class="headerlink" href="#VectorIndexBuilder.db_mode"></a>
+    
+    
+
+                            </div>
+                            <div id="VectorIndexBuilder.index_config" class="classattr">
+                                <div class="attr variable">
+            <span class="name">index_config</span>
+
+        
+    </div>
+    <a class="headerlink" href="#VectorIndexBuilder.index_config"></a>
+    
+    
+
+                            </div>
+                            <div id="VectorIndexBuilder.max_chunk_len" class="classattr">
+                                <div class="attr variable">
+            <span class="name">max_chunk_len</span>
+
+        
+    </div>
+    <a class="headerlink" href="#VectorIndexBuilder.max_chunk_len"></a>
+    
+    
+
+                            </div>
+                            <div id="VectorIndexBuilder.batch_size" class="classattr">
+                                <div class="attr variable">
+            <span class="name">batch_size</span>
+
+        
+    </div>
+    <a class="headerlink" href="#VectorIndexBuilder.batch_size"></a>
+    
+    
+
+                            </div>
+                            <div id="VectorIndexBuilder.collection_name" class="classattr">
+                                <div class="attr variable">
+            <span class="name">collection_name</span>
+
+        
+    </div>
+    <a class="headerlink" href="#VectorIndexBuilder.collection_name"></a>
+    
+    
+
+                            </div>
+                            <div id="VectorIndexBuilder.chunker" class="classattr">
+                                <div class="attr variable">
+            <span class="name">chunker</span>
+
+        
+    </div>
+    <a class="headerlink" href="#VectorIndexBuilder.chunker"></a>
+    
+    
+
+                            </div>
+                            <div id="VectorIndexBuilder.docs_to_insert" class="classattr">
+                                <div class="attr variable">
+            <span class="name">docs_to_insert</span>
+
+        
+    </div>
+    <a class="headerlink" href="#VectorIndexBuilder.docs_to_insert"></a>
+    
+    
+
+                            </div>
+                            <div id="VectorIndexBuilder.metadata_to_insert" class="classattr">
+                                <div class="attr variable">
+            <span class="name">metadata_to_insert</span>
+
+        
+    </div>
+    <a class="headerlink" href="#VectorIndexBuilder.metadata_to_insert"></a>
+    
+    
+
+                            </div>
+                            <div id="VectorIndexBuilder.ids_to_insert" class="classattr">
+                                <div class="attr variable">
+            <span class="name">ids_to_insert</span>
+
+        
+    </div>
+    <a class="headerlink" href="#VectorIndexBuilder.ids_to_insert"></a>
+    
+    
+
+                            </div>
+                            <div id="VectorIndexBuilder.scan_files" class="classattr">
+                                        <input id="VectorIndexBuilder.scan_files-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">scan_files</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="VectorIndexBuilder.scan_files-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#VectorIndexBuilder.scan_files"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="VectorIndexBuilder.scan_files-117"><a href="#VectorIndexBuilder.scan_files-117"><span class="linenos">117</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">scan_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder.scan_files-118"><a href="#VectorIndexBuilder.scan_files-118"><span class="linenos">118</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder.scan_files-119"><a href="#VectorIndexBuilder.scan_files-119"><span class="linenos">119</span></a><span class="sd">        Scans the repository for markdown files, reads them, and prepares chunks.</span>
+</span><span id="VectorIndexBuilder.scan_files-120"><a href="#VectorIndexBuilder.scan_files-120"><span class="linenos">120</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder.scan_files-121"><a href="#VectorIndexBuilder.scan_files-121"><span class="linenos">121</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Scanning for markdown files...&quot;</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder.scan_files-122"><a href="#VectorIndexBuilder.scan_files-122"><span class="linenos">122</span></a>        <span class="n">md_files</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;**&quot;</span><span class="p">,</span> <span class="s2">&quot;*.md&quot;</span><span class="p">),</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder.scan_files-123"><a href="#VectorIndexBuilder.scan_files-123"><span class="linenos">123</span></a>
+</span><span id="VectorIndexBuilder.scan_files-124"><a href="#VectorIndexBuilder.scan_files-124"><span class="linenos">124</span></a>        <span class="k">for</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="n">md_files</span><span class="p">:</span>
+</span><span id="VectorIndexBuilder.scan_files-125"><a href="#VectorIndexBuilder.scan_files-125"><span class="linenos">125</span></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_should_skip_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder.scan_files-126"><a href="#VectorIndexBuilder.scan_files-126"><span class="linenos">126</span></a>                <span class="k">continue</span>
+</span><span id="VectorIndexBuilder.scan_files-127"><a href="#VectorIndexBuilder.scan_files-127"><span class="linenos">127</span></a>
+</span><span id="VectorIndexBuilder.scan_files-128"><a href="#VectorIndexBuilder.scan_files-128"><span class="linenos">128</span></a>            <span class="k">try</span><span class="p">:</span>
+</span><span id="VectorIndexBuilder.scan_files-129"><a href="#VectorIndexBuilder.scan_files-129"><span class="linenos">129</span></a>                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="VectorIndexBuilder.scan_files-130"><a href="#VectorIndexBuilder.scan_files-130"><span class="linenos">130</span></a>                    <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder.scan_files-131"><a href="#VectorIndexBuilder.scan_files-131"><span class="linenos">131</span></a>                    <span class="k">if</span> <span class="ow">not</span> <span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+</span><span id="VectorIndexBuilder.scan_files-132"><a href="#VectorIndexBuilder.scan_files-132"><span class="linenos">132</span></a>                        <span class="k">continue</span>
+</span><span id="VectorIndexBuilder.scan_files-133"><a href="#VectorIndexBuilder.scan_files-133"><span class="linenos">133</span></a>
+</span><span id="VectorIndexBuilder.scan_files-134"><a href="#VectorIndexBuilder.scan_files-134"><span class="linenos">134</span></a>                    <span class="n">rel_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder.scan_files-135"><a href="#VectorIndexBuilder.scan_files-135"><span class="linenos">135</span></a>                    <span class="n">chunks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">chunker</span><span class="o">.</span><span class="n">chunk_text</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder.scan_files-136"><a href="#VectorIndexBuilder.scan_files-136"><span class="linenos">136</span></a>
+</span><span id="VectorIndexBuilder.scan_files-137"><a href="#VectorIndexBuilder.scan_files-137"><span class="linenos">137</span></a>                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunks</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder.scan_files-138"><a href="#VectorIndexBuilder.scan_files-138"><span class="linenos">138</span></a>                        <span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder.scan_files-139"><a href="#VectorIndexBuilder.scan_files-139"><span class="linenos">139</span></a>                        <span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="n">rel_path</span><span class="p">,</span> <span class="s2">&quot;chunk&quot;</span><span class="p">:</span> <span class="n">i</span><span class="p">})</span>
+</span><span id="VectorIndexBuilder.scan_files-140"><a href="#VectorIndexBuilder.scan_files-140"><span class="linenos">140</span></a>                        <span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">rel_path</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder.scan_files-141"><a href="#VectorIndexBuilder.scan_files-141"><span class="linenos">141</span></a>
+</span><span id="VectorIndexBuilder.scan_files-142"><a href="#VectorIndexBuilder.scan_files-142"><span class="linenos">142</span></a>            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="VectorIndexBuilder.scan_files-143"><a href="#VectorIndexBuilder.scan_files-143"><span class="linenos">143</span></a>                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipping </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Scans the repository for markdown files, reads them, and prepares chunks.</p>
+</div>
+
+
+                            </div>
+                            <div id="VectorIndexBuilder.insert_chunks" class="classattr">
+                                        <input id="VectorIndexBuilder.insert_chunks-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">insert_chunks</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="VectorIndexBuilder.insert_chunks-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#VectorIndexBuilder.insert_chunks"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="VectorIndexBuilder.insert_chunks-145"><a href="#VectorIndexBuilder.insert_chunks-145"><span class="linenos">145</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">insert_chunks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder.insert_chunks-146"><a href="#VectorIndexBuilder.insert_chunks-146"><span class="linenos">146</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder.insert_chunks-147"><a href="#VectorIndexBuilder.insert_chunks-147"><span class="linenos">147</span></a><span class="sd">        Inserts the processed chunks into the configured database.</span>
+</span><span id="VectorIndexBuilder.insert_chunks-148"><a href="#VectorIndexBuilder.insert_chunks-148"><span class="linenos">148</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder.insert_chunks-149"><a href="#VectorIndexBuilder.insert_chunks-149"><span class="linenos">149</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">:</span>
+</span><span id="VectorIndexBuilder.insert_chunks-150"><a href="#VectorIndexBuilder.insert_chunks-150"><span class="linenos">150</span></a>            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No markdown content found to index.&quot;</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder.insert_chunks-151"><a href="#VectorIndexBuilder.insert_chunks-151"><span class="linenos">151</span></a>            <span class="k">return</span>
+</span><span id="VectorIndexBuilder.insert_chunks-152"><a href="#VectorIndexBuilder.insert_chunks-152"><span class="linenos">152</span></a>
+</span><span id="VectorIndexBuilder.insert_chunks-153"><a href="#VectorIndexBuilder.insert_chunks-153"><span class="linenos">153</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="VectorIndexBuilder.insert_chunks-154"><a href="#VectorIndexBuilder.insert_chunks-154"><span class="linenos">154</span></a>            <span class="sa">f</span><span class="s2">&quot;Inserting </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">)</span><span class="si">}</span><span class="s2"> chunks into </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">db_mode</span><span class="si">}</span><span class="s2"> database...&quot;</span>
+</span><span id="VectorIndexBuilder.insert_chunks-155"><a href="#VectorIndexBuilder.insert_chunks-155"><span class="linenos">155</span></a>        <span class="p">)</span>
+</span><span id="VectorIndexBuilder.insert_chunks-156"><a href="#VectorIndexBuilder.insert_chunks-156"><span class="linenos">156</span></a>
+</span><span id="VectorIndexBuilder.insert_chunks-157"><a href="#VectorIndexBuilder.insert_chunks-157"><span class="linenos">157</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_mode</span> <span class="o">==</span> <span class="s2">&quot;pgvector&quot;</span><span class="p">:</span>
+</span><span id="VectorIndexBuilder.insert_chunks-158"><a href="#VectorIndexBuilder.insert_chunks-158"><span class="linenos">158</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_insert_pgvector</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder.insert_chunks-159"><a href="#VectorIndexBuilder.insert_chunks-159"><span class="linenos">159</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="VectorIndexBuilder.insert_chunks-160"><a href="#VectorIndexBuilder.insert_chunks-160"><span class="linenos">160</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_insert_chromadb</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder.insert_chunks-161"><a href="#VectorIndexBuilder.insert_chunks-161"><span class="linenos">161</span></a>
+</span><span id="VectorIndexBuilder.insert_chunks-162"><a href="#VectorIndexBuilder.insert_chunks-162"><span class="linenos">162</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Knowledge base indexing complete!&quot;</span><span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Inserts the processed chunks into the configured database.</p>
+</div>
+
+
+                            </div>
+                            <div id="VectorIndexBuilder.run" class="classattr">
+                                        <input id="VectorIndexBuilder.run-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">run</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="VectorIndexBuilder.run-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#VectorIndexBuilder.run"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="VectorIndexBuilder.run-195"><a href="#VectorIndexBuilder.run-195"><span class="linenos">195</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder.run-196"><a href="#VectorIndexBuilder.run-196"><span class="linenos">196</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder.run-197"><a href="#VectorIndexBuilder.run-197"><span class="linenos">197</span></a><span class="sd">        Executes the entire indexing pipeline.</span>
+</span><span id="VectorIndexBuilder.run-198"><a href="#VectorIndexBuilder.run-198"><span class="linenos">198</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder.run-199"><a href="#VectorIndexBuilder.run-199"><span class="linenos">199</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">scan_files</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder.run-200"><a href="#VectorIndexBuilder.run-200"><span class="linenos">200</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">insert_chunks</span><span class="p">()</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Executes the entire indexing pipeline.</p>
+</div>
+
+
+                            </div>
                 </section>
                 <section id="main">
                             <input id="main-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
@@ -210,82 +946,18 @@
 
     </div>
     <a class="headerlink" href="#main"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="main-31"><a href="#main-31"><span class="linenos"> 31</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="main-32"><a href="#main-32"><span class="linenos"> 32</span></a>    <span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
-</span><span id="main-33"><a href="#main-33"><span class="linenos"> 33</span></a>    <span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">script_dir</span><span class="p">)</span>
-</span><span id="main-34"><a href="#main-34"><span class="linenos"> 34</span></a>    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">repo_root</span><span class="p">)</span>  <span class="c1"># Ensure root is in path for imports</span>
-</span><span id="main-35"><a href="#main-35"><span class="linenos"> 35</span></a>
-</span><span id="main-36"><a href="#main-36"><span class="linenos"> 36</span></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">config.loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span><span class="p">,</span> <span class="n">get_chroma_db_path</span>
-</span><span id="main-37"><a href="#main-37"><span class="linenos"> 37</span></a>
-</span><span id="main-38"><a href="#main-38"><span class="linenos"> 38</span></a>    <span class="n">cfg</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span>
-</span><span id="main-39"><a href="#main-39"><span class="linenos"> 39</span></a>    <span class="n">db_mode</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;database&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="s2">&quot;sqlite&quot;</span><span class="p">)</span>
-</span><span id="main-40"><a href="#main-40"><span class="linenos"> 40</span></a>
-</span><span id="main-41"><a href="#main-41"><span class="linenos"> 41</span></a>    <span class="n">docs_to_insert</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="main-42"><a href="#main-42"><span class="linenos"> 42</span></a>    <span class="n">metadata_to_insert</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="main-43"><a href="#main-43"><span class="linenos"> 43</span></a>    <span class="n">ids_to_insert</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="main-44"><a href="#main-44"><span class="linenos"> 44</span></a>
-</span><span id="main-45"><a href="#main-45"><span class="linenos"> 45</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Scanning for markdown files...&quot;</span><span class="p">)</span>
-</span><span id="main-46"><a href="#main-46"><span class="linenos"> 46</span></a>    <span class="n">md_files</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;**&quot;</span><span class="p">,</span> <span class="s2">&quot;*.md&quot;</span><span class="p">),</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="main-47"><a href="#main-47"><span class="linenos"> 47</span></a>
-</span><span id="main-48"><a href="#main-48"><span class="linenos"> 48</span></a>    <span class="k">for</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="n">md_files</span><span class="p">:</span>
-</span><span id="main-49"><a href="#main-49"><span class="linenos"> 49</span></a>        <span class="k">if</span> <span class="s2">&quot;.git&quot;</span> <span class="ow">in</span> <span class="n">file_path</span> <span class="ow">or</span> <span class="p">(</span>
-</span><span id="main-50"><a href="#main-50"><span class="linenos"> 50</span></a>            <span class="s2">&quot;.agents&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">file_path</span>
-</span><span id="main-51"><a href="#main-51"><span class="linenos"> 51</span></a>            <span class="ow">and</span> <span class="s2">&quot;documentation&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">file_path</span>
-</span><span id="main-52"><a href="#main-52"><span class="linenos"> 52</span></a>            <span class="ow">and</span> <span class="s2">&quot;README&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">file_path</span>
-</span><span id="main-53"><a href="#main-53"><span class="linenos"> 53</span></a>        <span class="p">):</span>
-</span><span id="main-54"><a href="#main-54"><span class="linenos"> 54</span></a>            <span class="k">continue</span>
-</span><span id="main-55"><a href="#main-55"><span class="linenos"> 55</span></a>
-</span><span id="main-56"><a href="#main-56"><span class="linenos"> 56</span></a>        <span class="k">try</span><span class="p">:</span>
-</span><span id="main-57"><a href="#main-57"><span class="linenos"> 57</span></a>            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="main-58"><a href="#main-58"><span class="linenos"> 58</span></a>                <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-</span><span id="main-59"><a href="#main-59"><span class="linenos"> 59</span></a>                <span class="k">if</span> <span class="ow">not</span> <span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
-</span><span id="main-60"><a href="#main-60"><span class="linenos"> 60</span></a>                    <span class="k">continue</span>
-</span><span id="main-61"><a href="#main-61"><span class="linenos"> 61</span></a>
-</span><span id="main-62"><a href="#main-62"><span class="linenos"> 62</span></a>                <span class="n">rel_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">repo_root</span><span class="p">)</span>
-</span><span id="main-63"><a href="#main-63"><span class="linenos"> 63</span></a>                <span class="n">chunks</span> <span class="o">=</span> <span class="n">chunk_text</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
-</span><span id="main-64"><a href="#main-64"><span class="linenos"> 64</span></a>
-</span><span id="main-65"><a href="#main-65"><span class="linenos"> 65</span></a>                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunks</span><span class="p">):</span>
-</span><span id="main-66"><a href="#main-66"><span class="linenos"> 66</span></a>                    <span class="n">docs_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
-</span><span id="main-67"><a href="#main-67"><span class="linenos"> 67</span></a>                    <span class="n">metadata_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="n">rel_path</span><span class="p">,</span> <span class="s2">&quot;chunk&quot;</span><span class="p">:</span> <span class="n">i</span><span class="p">})</span>
-</span><span id="main-68"><a href="#main-68"><span class="linenos"> 68</span></a>                    <span class="n">ids_to_insert</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">rel_path</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="main-69"><a href="#main-69"><span class="linenos"> 69</span></a>
-</span><span id="main-70"><a href="#main-70"><span class="linenos"> 70</span></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="main-71"><a href="#main-71"><span class="linenos"> 71</span></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipping </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="main-72"><a href="#main-72"><span class="linenos"> 72</span></a>
-</span><span id="main-73"><a href="#main-73"><span class="linenos"> 73</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">docs_to_insert</span><span class="p">:</span>
-</span><span id="main-74"><a href="#main-74"><span class="linenos"> 74</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No markdown content found to index.&quot;</span><span class="p">)</span>
-</span><span id="main-75"><a href="#main-75"><span class="linenos"> 75</span></a>        <span class="k">return</span>
-</span><span id="main-76"><a href="#main-76"><span class="linenos"> 76</span></a>
-</span><span id="main-77"><a href="#main-77"><span class="linenos"> 77</span></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Inserting </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">docs_to_insert</span><span class="p">)</span><span class="si">}</span><span class="s2"> chunks into </span><span class="si">{</span><span class="n">db_mode</span><span class="si">}</span><span class="s2"> database...&quot;</span><span class="p">)</span>
-</span><span id="main-78"><a href="#main-78"><span class="linenos"> 78</span></a>    <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">100</span>
-</span><span id="main-79"><a href="#main-79"><span class="linenos"> 79</span></a>
-</span><span id="main-80"><a href="#main-80"><span class="linenos"> 80</span></a>    <span class="k">if</span> <span class="n">db_mode</span> <span class="o">==</span> <span class="s2">&quot;pgvector&quot;</span><span class="p">:</span>
-</span><span id="main-81"><a href="#main-81"><span class="linenos"> 81</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">tools.pgvector_backend</span><span class="w"> </span><span class="kn">import</span> <span class="n">PgVectorStore</span>
-</span><span id="main-82"><a href="#main-82"><span class="linenos"> 82</span></a>
-</span><span id="main-83"><a href="#main-83"><span class="linenos"> 83</span></a>        <span class="n">store</span> <span class="o">=</span> <span class="n">PgVectorStore</span><span class="p">()</span>
-</span><span id="main-84"><a href="#main-84"><span class="linenos"> 84</span></a>        <span class="n">store</span><span class="o">.</span><span class="n">init_db</span><span class="p">()</span>
-</span><span id="main-85"><a href="#main-85"><span class="linenos"> 85</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="n">batch_size</span><span class="p">):</span>
-</span><span id="main-86"><a href="#main-86"><span class="linenos"> 86</span></a>            <span class="n">store</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
-</span><span id="main-87"><a href="#main-87"><span class="linenos"> 87</span></a>                <span class="n">docs</span><span class="o">=</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">],</span>
-</span><span id="main-88"><a href="#main-88"><span class="linenos"> 88</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">],</span>
-</span><span id="main-89"><a href="#main-89"><span class="linenos"> 89</span></a>            <span class="p">)</span>
-</span><span id="main-90"><a href="#main-90"><span class="linenos"> 90</span></a>    <span class="k">else</span><span class="p">:</span>
-</span><span id="main-91"><a href="#main-91"><span class="linenos"> 91</span></a>        <span class="n">db_path</span> <span class="o">=</span> <span class="n">get_chroma_db_path</span><span class="p">()</span>
-</span><span id="main-92"><a href="#main-92"><span class="linenos"> 92</span></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initializing ChromaDB at </span><span class="si">{</span><span class="n">db_path</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
-</span><span id="main-93"><a href="#main-93"><span class="linenos"> 93</span></a>        <span class="n">client</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">db_path</span><span class="p">)</span>
-</span><span id="main-94"><a href="#main-94"><span class="linenos"> 94</span></a>        <span class="n">collection</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_or_create_collection</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;ai_library_knowledge&quot;</span><span class="p">)</span>
-</span><span id="main-95"><a href="#main-95"><span class="linenos"> 95</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="n">batch_size</span><span class="p">):</span>
-</span><span id="main-96"><a href="#main-96"><span class="linenos"> 96</span></a>            <span class="n">collection</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
-</span><span id="main-97"><a href="#main-97"><span class="linenos"> 97</span></a>                <span class="n">documents</span><span class="o">=</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">],</span>
-</span><span id="main-98"><a href="#main-98"><span class="linenos"> 98</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">],</span>
-</span><span id="main-99"><a href="#main-99"><span class="linenos"> 99</span></a>                <span class="n">ids</span><span class="o">=</span><span class="n">ids_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">],</span>
-</span><span id="main-100"><a href="#main-100"><span class="linenos">100</span></a>            <span class="p">)</span>
-</span><span id="main-101"><a href="#main-101"><span class="linenos">101</span></a>
-</span><span id="main-102"><a href="#main-102"><span class="linenos">102</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Knowledge base indexing complete!&quot;</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="main-203"><a href="#main-203"><span class="linenos">203</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="main-204"><a href="#main-204"><span class="linenos">204</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="main-205"><a href="#main-205"><span class="linenos">205</span></a><span class="sd">    Main entry point for the vector indexing script.</span>
+</span><span id="main-206"><a href="#main-206"><span class="linenos">206</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="main-207"><a href="#main-207"><span class="linenos">207</span></a>    <span class="n">builder</span> <span class="o">=</span> <span class="n">VectorIndexBuilder</span><span class="p">()</span>
+</span><span id="main-208"><a href="#main-208"><span class="linenos">208</span></a>    <span class="n">builder</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>Main entry point for the vector indexing script.</p>
+</div>
+
 
                 </section>
     </main>
