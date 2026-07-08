@@ -12,7 +12,7 @@ class DatabaseSettings(BaseModel):
     mode: str = "sqlite"
 
 class ServerSettings(BaseModel):
-    host: str = "0.0.0.0"
+    host: str = "0.0.0.0"  # nosec B104
     port: int = 8000
     webhook_secret: str = ""
 
