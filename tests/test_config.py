@@ -2,7 +2,7 @@ import os
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from config.loader import load_config, get_chroma_db_path
+from src.infrastructure.config_loader import load_config, get_chroma_db_path
 
 
 def test_load_config():

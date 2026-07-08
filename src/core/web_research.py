@@ -14,13 +14,7 @@ import json
 from bs4 import BeautifulSoup
 from typing import Tuple, List, Dict, Optional
 
-# Ensure root is in path for imports
-script_dir = os.path.dirname(os.path.abspath(__file__))
-repo_root = os.path.dirname(script_dir)
-if repo_root not in sys.path:
-    sys.path.append(repo_root)
-
-from config.loader import load_config, get_chroma_db_path
+from src.infrastructure.config_loader import load_config, get_chroma_db_path
 
 
 class ContentVerifier:
@@ -33,7 +27,8 @@ class ContentVerifier:
         Args:
             api_key (Optional[str]): The Gemini API key. If None, falls back to heuristics.
         """
-        self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
+        cfg = load_config()
+        self.api_key = api_key or cfg.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY")
 
     def verify(self, text: str, source_url: str) -> Tuple[bool, int, str]:
         """
@@ -192,61 +187,60 @@ class VectorStoreManager:
         """
         print(f"Injecting {len(docs)} chunks into {self.db_mode} context...")
 
-        if self.db_mode == "pgvector":
-            self._insert_pgvector(docs, metadatas)
-        else:
-            self._insert_chroma(docs, metadatas, ids)
+        from src.infrastructure.vector_store_factory import VectorStoreFactory
+        store = VectorStoreFactory.get_store()
+        store.init_db()
 
-    def _insert_pgvector(self, docs: List[str], metadatas: List[Dict]):
-        from src.infrastructure.pgvector_backend import PgVectorStore
-
-        store = PgVectorStore()
         for i in range(0, len(docs), self.batch_size):
             store.upsert(
                 docs=docs[i : i + self.batch_size],
-                metadatas=metadatas[i : i + self.batch_size],
-            )
-
-    def _insert_chroma(self, docs: List[str], metadatas: List[Dict], ids: List[str]):
-        try:
-            import chromadb
-        except ImportError:
-            print("Error: chromadb not installed.")
-            sys.exit(1)
-
-        db_path = get_chroma_db_path()
-        client = chromadb.PersistentClient(path=db_path)
-        collection = client.get_or_create_collection(name=self.collection_name)
-
-        for i in range(0, len(docs), self.batch_size):
-            collection.upsert(
-                documents=docs[i : i + self.batch_size],
                 metadatas=metadatas[i : i + self.batch_size],
                 ids=ids[i : i + self.batch_size],
             )
 
 
 class TextChunker:
-    """Handles splitting text into manageable chunks."""
+    """Handles splitting text into manageable, semantically coherent chunks."""
 
     @staticmethod
-    def chunk(text: str, max_len: int = 1000) -> List[str]:
-        """Split text into chunks of roughly max_len characters."""
-        words = text.split()
-        chunks = []
-        current_chunk = []
-        current_len = 0
-        for word in words:
-            if current_len + len(word) > max_len:
+    def chunk(text: str, chunk_size: int = 1000, chunk_overlap: int = 200) -> List[str]:
+        """
+        Split text into chunks using LangChain's RecursiveCharacterTextSplitter.
+        This provides much better semantic preservation and overlap than naive word counting.
+        """
+        try:
+            from langchain_text_splitters import RecursiveCharacterTextSplitter
+            
+            splitter = RecursiveCharacterTextSplitter(
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+                length_function=len,
+                separators=["\n\n", "\n", " ", ""]
+            )
+            return splitter.split_text(text)
+            
+        except ImportError:
+            print("Warning: langchain-text-splitters not installed. Falling back to naive word chunking.")
+            # Fallback to naive implementation if not installed
+            words = text.split()
+            chunks = []
+            current_chunk = []
+            current_len = 0
+            # Naive word counting (approx 5 chars per word roughly maps to max_len)
+            max_len = chunk_size // 5 
+            
+            for word in words:
+                if current_len + 1 > max_len:
+                    chunks.append(" ".join(current_chunk))
+                    current_chunk = [word]
+                    current_len = 1
+                else:
+                    current_chunk.append(word)
+                    current_len += 1
+                    
+            if current_chunk:
                 chunks.append(" ".join(current_chunk))
-                current_chunk = [word]
-                current_len = len(word)
-            else:
-                current_chunk.append(word)
-                current_len += len(word) + 1
-        if current_chunk:
-            chunks.append(" ".join(current_chunk))
-        return chunks
+            return chunks
 
 
 def main():

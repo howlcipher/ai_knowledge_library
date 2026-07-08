@@ -29,18 +29,18 @@ func (i *Installer) LaunchUI() {
 	fmt.Println("\n========================================")
 	if uiType == "tui" {
 		fmt.Println("Launching Terminal UI (TUI)...")
-		err := i.runInteractiveCommand("python3", "tools/tui.py")
+		err := i.runInteractiveCommand("python3", "src/ui/tui.py")
 		if err != nil {
-			err = i.runInteractiveCommand("python", "tools/tui.py")
+			err = i.runInteractiveCommand("python", "src/ui/tui.py")
 			if err != nil {
 				fmt.Println("Error launching TUI:", err)
 			}
 		}
 	} else if uiType == "web" {
 		fmt.Println("Launching Web UI (Streamlit)...")
-		err := i.runInteractiveCommand("python3", "-m", "streamlit", "run", "tools/web_ui.py")
+		err := i.runInteractiveCommand("python3", "-m", "streamlit", "run", "src/ui/web_ui.py")
 		if err != nil {
-			err = i.runInteractiveCommand("python", "-m", "streamlit", "run", "tools/web_ui.py")
+			err = i.runInteractiveCommand("python", "-m", "streamlit", "run", "src/ui/web_ui.py")
 			if err != nil {
 				fmt.Println("Error launching Web UI:", err)
 			}

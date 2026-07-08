@@ -24,7 +24,7 @@ def main():
     )
     hook_path = os.path.join(hooks_dir, hook_name)
 
-    sync_script = os.path.join(repo_root, "tools", "sync_context.py")
+    sync_script = os.path.join(repo_root, "scripts", "sync_context.py")
 
     hook_content = f"#!/usr/bin/env bash\n\npython3 {sync_script}\n"
 

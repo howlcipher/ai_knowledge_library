@@ -16,7 +16,7 @@ repo_root = os.path.abspath(os.path.join(script_dir, ".."))
 if repo_root not in sys.path:
     sys.path.append(repo_root)
 
-from config.loader import load_config
+from src.infrastructure.config_loader import load_config
 
 
 class LibrarySearcher:

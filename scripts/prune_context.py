@@ -29,7 +29,7 @@ class ContextPruner:
         Returns:
             str: The path to the ChromaDB directory.
         """
-        from config.loader import get_chroma_db_path
+        from src.infrastructure.config_loader import get_chroma_db_path
 
         return get_chroma_db_path()
 

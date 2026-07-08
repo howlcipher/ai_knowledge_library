@@ -8,15 +8,14 @@ import os
 import sqlite3
 import time
 from datetime import datetime
-from config.loader import load_config
+from src.infrastructure.config_loader import load_config
 
 def get_telemetry_db_path() -> str:
     """Returns the path to the telemetry SQLite database."""
-    cfg = load_config()
-    db_mode = cfg.get("database", {}).get("mode", "sqlite")
+    from src.infrastructure.config_loader import default_loader
     
-    # Store next to chromadb if local
-    data_dir = os.path.expanduser("~/.ai_knowledge_library")
+    # Store in repo root's .telemetry dir by default
+    data_dir = os.path.join(default_loader.get_repo_root(), ".telemetry")
     if not os.path.exists(data_dir):
         os.makedirs(data_dir, exist_ok=True)
         

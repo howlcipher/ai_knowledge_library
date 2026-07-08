@@ -398,7 +398,7 @@ func (i *Installer) Install() {
 
 	if i.Language != "en_US" {
 		fmt.Println("\n[!] Triggering AI Language Translation for project files...")
-		_ = i.runInteractiveCommand("python3", "tools/translate_project.py", "--lang", i.Language)
+		_ = i.runInteractiveCommand("python3", "scripts/translate_project.py", "--lang", i.Language)
 	}
 }
 

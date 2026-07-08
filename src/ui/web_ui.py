@@ -24,36 +24,8 @@ class KnowledgeUI:
 
     def __init__(self, collection_name: str = "ai_library_knowledge"):
         """Initialize the UI with a specific collection name."""
-        self.collection_name = collection_name
-        self.client = self._init_chroma_client()
-        self.collection = self._get_collection()
-
-    def _init_chroma_client(self) -> chromadb.PersistentClient:
-        """Initialize and return the ChromaDB client."""
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        repo_root = os.path.dirname(script_dir)
-        if repo_root not in sys.path:
-            sys.path.append(repo_root)
-
-        from config.loader import get_chroma_db_path
-
-        db_path = get_chroma_db_path()
-
-        if not os.path.exists(db_path):
-            st.error(
-                "Vector database not found. Please run src/infrastructure/build_vector_index.py first."
-            )
-            st.stop()
-
-        return chromadb.PersistentClient(path=db_path)
-
-    def _get_collection(self) -> chromadb.Collection:
-        """Retrieve the ChromaDB collection."""
-        try:
-            return self.client.get_collection(name=self.collection_name)
-        except Exception:
-            st.error("Collection not found. Please rebuild the index.")
-            st.stop()
+        from src.infrastructure.vector_store_factory import VectorStoreFactory
+        self.store = VectorStoreFactory.get_store()
 
     def render(self):
         """Render the Streamlit interface."""
@@ -121,34 +93,25 @@ class KnowledgeUI:
     def _handle_search(self, query: str):
         """Execute a search query and display results."""
         with st.spinner("Searching..."):
-            results = self.collection.query(query_texts=[query], n_results=5)
+            results = self.store.query(query, n_results=5)
 
-            documents = results.get("documents", [[]])[0]
-            metadatas = results.get("metadatas", [[]])[0]
-            distances = results.get("distances", [[]])[0]
-
-            if not documents:
+            if not results:
                 st.warning("No relevant results found.")
                 return
 
             st.success("Found relevant context!")
-            self._display_results(documents, metadatas, distances)
+            self._display_results(results)
 
-    def _display_results(self, documents: list, metadatas: list, distances: list):
+    def _display_results(self, results: list):
         """Format and display search results."""
-        for i in range(len(documents)):
-            source = (
-                metadatas[i].get("source", "Unknown")
-                if metadatas and metadatas[i]
-                else "Unknown"
-            )
-            dist = distances[i] if distances and i < len(distances) else 0.0
-            text = documents[i] if documents and i < len(documents) else ""
-
+        for i, row in enumerate(results):
+            content, source, dist = row
             with st.expander(
                 f"Result {i+1} | Source: {source} (Confidence: {1 - dist:.2f})"
             ):
-                st.write(text)
+                st.write(content)
+
+
 
 
 def main():

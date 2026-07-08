@@ -25,8 +25,8 @@ class CronManager:
 
     def get_jobs(self) -> List[str]:
         """Define the cron jobs to be installed."""
-        fetch_news = os.path.join(self.repo_root, "tools", "fetch_security_news.py")
-        clean_logs = os.path.join(self.repo_root, "tools", "clean_logs.py")
+        fetch_news = os.path.join(self.repo_root, "scripts", "fetch_security_news.py")
+        clean_logs = os.path.join(self.repo_root, "scripts", "clean_logs.py")
 
         return [
             f"0 8 * * * python3 {fetch_news}\n",

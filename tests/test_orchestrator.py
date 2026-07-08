@@ -1,6 +1,20 @@
 import pytest
+import json
 from unittest.mock import patch, MagicMock
 from src.core.orchestrator import Agent, Orchestrator
+
+class MockMessage:
+    def __init__(self, content, tool_calls=None):
+        self.content = content
+        self.tool_calls = tool_calls
+
+class MockToolCall:
+    def __init__(self, name, arguments):
+        class Function:
+            def __init__(self, n, a):
+                self.name = n
+                self.arguments = a
+        self.function = Function(name, arguments)
 
 def test_agent_initialization():
     agent = Agent("TestAgent", "You are a test.", "gemini/gemini-1.5-pro")
@@ -23,27 +37,28 @@ def test_agent_generate_response(mock_completion, mock_cost):
     
     with patch("src.core.orchestrator.log_telemetry") as mock_log:
         response = agent.generate_response("Hello", context="Some context")
-        assert response == "Mocked answer"
+        assert response.content == "Mocked answer"
         mock_log.assert_called_once()
         args, kwargs = mock_log.call_args
         assert kwargs["prompt_tokens"] == 10
 
 def test_human_proxy_no_command():
     orchestrator = Orchestrator()
-    # Should automatically return True since no ```bash is present
-    result = orchestrator.human_proxy_intercept("Here is a normal response without commands.")
+    result = orchestrator.human_proxy_intercept(None)
     assert result is True
 
 @patch("builtins.input", return_value="y")
 def test_human_proxy_authorized(mock_input):
     orchestrator = Orchestrator()
-    result = orchestrator.human_proxy_intercept("Here is a command:\n```bash\necho hello\n```")
+    tool_calls = [MockToolCall("execute_bash_command", json.dumps({"command": "echo hello"}))]
+    result = orchestrator.human_proxy_intercept(tool_calls)
     assert result is True
 
 @patch("builtins.input", return_value="n")
 def test_human_proxy_rejected(mock_input):
     orchestrator = Orchestrator()
-    result = orchestrator.human_proxy_intercept("Here is a command:\n```bash\necho hello\n```")
+    tool_calls = [MockToolCall("execute_bash_command", json.dumps({"command": "echo hello"}))]
+    result = orchestrator.human_proxy_intercept(tool_calls)
     assert result is False
 
 @patch("src.core.orchestrator.Agent.generate_response")
@@ -51,13 +66,13 @@ def test_human_proxy_rejected(mock_input):
 def test_orchestrator_run_loop_approved_immediately(mock_proxy, mock_generate):
     orchestrator = Orchestrator()
     
-    # Setup mocks
-    # First call is Researcher, second is QA
-    mock_generate.side_effect = ["Here is my research draft", "APPROVED"]
+    mock_generate.side_effect = [
+        MockMessage("Here is my research draft"), 
+        MockMessage("APPROVED")
+    ]
     
     orchestrator.run_loop("Test query")
     
-    # Should have called Researcher and QA exactly once
     assert mock_generate.call_count == 2
     mock_proxy.assert_called_once()
 
@@ -66,11 +81,9 @@ def test_orchestrator_run_loop_approved_immediately(mock_proxy, mock_generate):
 def test_orchestrator_run_loop_rejected_then_approved(mock_proxy, mock_generate):
     orchestrator = Orchestrator()
     
-    # First iteration: Researcher -> QA rejects
-    # Second iteration: Researcher -> QA approves
     mock_generate.side_effect = [
-        "First draft", "REJECTED. Fix it.",
-        "Second draft", "APPROVED"
+        MockMessage("First draft"), MockMessage("REJECTED. Fix it."),
+        MockMessage("Second draft"), MockMessage("APPROVED")
     ]
     
     orchestrator.run_loop("Test query")

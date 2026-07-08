@@ -11,13 +11,8 @@ import sys
 import subprocess
 from fastapi import FastAPI, Request, HTTPException
 
-# Ensure project root is in the path for module loading
-script_dir = os.path.dirname(os.path.abspath(__file__))
-repo_root = os.path.dirname(script_dir)
-if repo_root not in sys.path:
-    sys.path.append(repo_root)
 
-from config.loader import load_config
+from src.infrastructure.config_loader import load_config
 
 
 class WebhookServer:
@@ -55,9 +50,10 @@ class WebhookServer:
 
         print("Webhook received! Triggering context synchronization...")
         try:
-            # Execute the sync tool asynchronously as a subprocess
-            subprocess.Popen(["python3", "scripts/sync_context.py"])
-            return {"status": "success", "message": "Sync triggered in background"}
+            from src.infrastructure.celery_worker import sync_context_task
+            # Dispatch to Celery background worker
+            task = sync_context_task.delay()
+            return {"status": "success", "message": f"Sync queued in background. Task ID: {task.id}"}
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 

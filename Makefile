@@ -25,9 +25,9 @@ coverage-go:
 # Linting and Quality Checks
 lint:
 	@echo "Running Python linting (flake8)..."
-	flake8 src/ scripts/ scripts/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+	flake8 src/ scripts/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
 	@echo "Running Python SAST (bandit)..."
-	bandit -r src/ scripts/ scripts/ tests/ -ll -ii
+	bandit -r src/ scripts/ tests/ -ll -ii
 	@echo "Running Go linting..."
 	if command -v golangci-lint >/dev/null 2>&1; then golangci-lint run; else echo "golangci-lint not installed, skipping..."; fi
 	@echo "Running Go SAST (gosec)..."
@@ -37,7 +37,7 @@ lint:
 
 format:
 	@echo "Formatting Python code (black)..."
-	black src/ scripts/ scripts/ tests/
+	black src/ scripts/ tests/
 	@echo "Formatting Go code (gofmt)..."
 	gofmt -w .
 
@@ -57,7 +57,7 @@ build:
 docs:
 	@echo "Generating API documentation via pdoc..."
 	mkdir -p docs/api
-	pdoc ./tools ./scripts -o docs/api
+	pdoc ./src ./scripts -o docs/api
 
 # Sync and Data
 sync:

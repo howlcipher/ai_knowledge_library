@@ -28,7 +28,7 @@ class ChromaDBSyncer:
         repo_root = os.path.dirname(script_dir)
         if repo_root not in sys.path:
             sys.path.append(repo_root)
-        from config.loader import get_chroma_db_path
+        from src.infrastructure.config_loader import get_chroma_db_path
 
         return get_chroma_db_path
 

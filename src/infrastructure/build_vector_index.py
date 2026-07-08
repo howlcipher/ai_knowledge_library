@@ -17,13 +17,9 @@ except ImportError:
     pass
 
 
-# Ensure repo root is in sys.path to import from config
-script_dir = os.path.dirname(os.path.abspath(__file__))
-repo_root = os.path.abspath(os.path.join(script_dir, ".."))
-if repo_root not in sys.path:
-    sys.path.append(repo_root)
+# Removed boilerplate
 
-from config.loader import load_config, get_chroma_db_path
+from src.infrastructure.config_loader import load_config, get_chroma_db_path
 
 
 class TextChunker:
@@ -77,7 +73,8 @@ class VectorIndexBuilder:
         """
         Initializes the index builder, loading configuration and setting up chunking.
         """
-        self.repo_root = repo_root
+        from src.infrastructure.config_loader import default_loader
+        self.repo_root = default_loader.get_repo_root()
         self.cfg = load_config()
         self.db_mode = self.cfg.get("database", {}).get("mode", "sqlite")
 
@@ -153,43 +150,18 @@ class VectorIndexBuilder:
             f"Inserting {len(self.docs_to_insert)} chunks into {self.db_mode} database..."
         )
 
-        if self.db_mode == "pgvector":
-            self._insert_pgvector()
-        else:
-            self._insert_chromadb()
-
-        print("Knowledge base indexing complete!")
-
-    def _insert_pgvector(self):
-        """
-        Inserts chunks into PgVector backend.
-        """
-        from src.infrastructure.pgvector_backend import PgVectorStore
-
-        store = PgVectorStore()
+        from src.infrastructure.vector_store_factory import VectorStoreFactory
+        store = VectorStoreFactory.get_store()
         store.init_db()
-
+        
         for i in range(0, len(self.docs_to_insert), self.batch_size):
             store.upsert(
                 docs=self.docs_to_insert[i : i + self.batch_size],
                 metadatas=self.metadata_to_insert[i : i + self.batch_size],
-            )
-
-    def _insert_chromadb(self):
-        """
-        Inserts chunks into ChromaDB backend.
-        """
-        db_path = get_chroma_db_path()
-        print(f"Initializing ChromaDB at {db_path}...")
-        client = chromadb.PersistentClient(path=db_path)
-        collection = client.get_or_create_collection(name=self.collection_name)
-
-        for i in range(0, len(self.docs_to_insert), self.batch_size):
-            collection.upsert(
-                documents=self.docs_to_insert[i : i + self.batch_size],
-                metadatas=self.metadata_to_insert[i : i + self.batch_size],
                 ids=self.ids_to_insert[i : i + self.batch_size],
             )
+
+        print("Knowledge base indexing complete!")
 
     def run(self):
         """

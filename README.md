@@ -116,9 +116,9 @@ This repository relies on several automated workflows to maintain structure and 
 
 * **GoReleaser CI/CD:** Fully automated release pipelines for cross-platform binary distribution.
 * **Automated Test Suite:** Multi-language (Go and Python) testing matrix enforced on every push.
-* **Vector Semantic Search:** Local ChromaDB integration (`tools/build_vector_index.py`) for offline, secure RAG capabilities.
-* **Adversarial & Negative Testing:** Automated prompt-injection safety suites (`tools/adversarial_tester.py`) enforced on the LLM ruleset.
-* **Google Docs Sync:** Authenticated OAuth integrations (`tools/push_to_docs.py`) securely bridged to the local environment.
+* **Vector Semantic Search:** Local ChromaDB integration (`src/infrastructure/build_vector_index.py`) for offline, secure RAG capabilities.
+* **Adversarial & Negative Testing:** Automated prompt-injection safety suites (`src/core/adversarial_tester.py`) enforced on the LLM ruleset.
+* **Google Docs Sync:** Authenticated OAuth integrations (`scripts/push_to_docs.py`) securely bridged to the local environment.
 * **Markdown Validation:** GitHub Actions workflow that ensures all documentation adheres strictly to required formatting constraints.
 * **Dependabot:** Automatically scans all connected Python and Go environments for known vulnerabilities weekly.
 

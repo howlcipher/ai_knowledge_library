@@ -9,94 +9,120 @@ across the configured vector database backend (PgVector or ChromaDB).
 import os
 import sys
 
-# Ensure project root is in the path for module loading
-script_dir = os.path.dirname(os.path.abspath(__file__))
-repo_root = os.path.dirname(script_dir)
-if repo_root not in sys.path:
-    sys.path.append(repo_root)
 
-from config.loader import load_config, get_chroma_db_path
+from src.infrastructure.config_loader import load_config, get_chroma_db_path
 
 
 class SemanticSearcher:
     """
     Handles semantic search queries by delegating to the appropriate
-    vector database backend based on configuration.
+    vector database backend, and implements advanced RAG techniques:
+    Query Expansion and Cross-Encoder Re-ranking.
     """
 
     def __init__(self):
-        """Initializes the searcher and configures the database connection."""
+        """Initializes the searcher, configuration, and advanced models."""
         self.cfg = load_config()
         self.db_mode = self.cfg.get("database", {}).get("mode", "sqlite")
+        
+        # Initialize Re-ranker lazily to save memory if not immediately used
+        self.reranker = None
+        
+    def _expand_query(self, query: str) -> list[str]:
+        """Uses LLM to expand the query to catch synonyms and different phrasings."""
+        import litellm
+        print(f"Expanding query: '{query}'...")
+        prompt = f"Expand the following search query into 3 similar but distinct semantic queries to improve database retrieval. Output exactly one query per line, no bullet points, no extra text. Original query: {query}"
+        
+        api_key = self.cfg.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            # Fallback to single query if no API key is available
+            return [query]
+            
+        try:
+            response = litellm.completion(
+                model="gemini/gemini-1.5-flash",
+                messages=[{"role": "user", "content": prompt}],
+                api_key=api_key
+            )
+            content = response.choices[0].message.content.strip()
+            queries = [q.strip() for q in content.split('\n') if q.strip()]
+            return queries[:3] + [query]
+        except Exception as e:
+            print(f"Query expansion failed: {e}. Proceeding with original query.")
+            return [query]
+
+    def _rerank_results(self, query: str, results: list) -> list:
+        """Uses a Cross-Encoder to re-rank retrieved documents."""
+        if not results:
+            return results
+            
+        if self.reranker is None:
+            from sentence_transformers import CrossEncoder
+            # BGE/MS-Marco style lightweight cross-encoder for local re-ranking
+            self.reranker = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
+            
+        print("Re-ranking results with Cross-Encoder...")
+        
+        # Prepare pairs of (query, document_content)
+        # Results structure is [(content, source, distance), ...]
+        pairs = [[query, row[0]] for row in results]
+        
+        # Predict relevance scores
+        scores = self.reranker.predict(pairs)
+        
+        # Attach scores and sort (higher is better for CrossEncoder)
+        scored_results = []
+        for i, score in enumerate(scores):
+            # Repackage as (content, source, rerank_score)
+            scored_results.append((results[i][0], results[i][1], float(score)))
+            
+        scored_results.sort(key=lambda x: x[2], reverse=True)
+        return scored_results
 
     def search(self, query: str, n_results: int = 3):
         """
-        Executes a semantic search against the database.
-
-        Args:
-            query (str): The search string.
-            n_results (int): Number of top results to return.
+        Executes an advanced semantic search.
         """
-        print(f"Searching for: '{query}' using {self.db_mode} backend...\n")
+        print(f"\nInitiating Advanced Search for: '{query}' using {self.db_mode} backend...\n")
 
-        if self.db_mode == "pgvector":
-            self._search_pgvector(query, n_results)
-        else:
-            self._search_chromadb(query, n_results)
-
-    def _search_pgvector(self, query: str, n_results: int):
-        """Handles searching using PostgreSQL/PgVector."""
-        from src.infrastructure.pgvector_backend import PgVectorStore
-
-        store = PgVectorStore()
-        results = store.query(query, n_results=n_results)
-        if not results:
+        from src.infrastructure.vector_store_factory import VectorStoreFactory
+        store = VectorStoreFactory.get_store()
+        
+        # Step 1: Query Expansion
+        expanded_queries = self._expand_query(query)
+        print(f"Expanded Queries: {expanded_queries}\n")
+        
+        # Step 2: Retrieve from Vector DB (Oversample by fetching more results)
+        raw_results = []
+        seen_contents = set()
+        
+        for q in expanded_queries:
+            # Oversample: fetch 5 per query instead of 3
+            res = store.query(q, n_results=5) 
+            for row in res:
+                content = row[0]
+                if content not in seen_contents:
+                    seen_contents.add(content)
+                    raw_results.append(row)
+                    
+        if not raw_results:
             print("No relevant results found.")
-            return
+            return []
 
-        for i, row in enumerate(results):
-            content, source, distance = row
+        # Step 3: Re-rank using Cross-Encoder
+        reranked_results = self._rerank_results(query, raw_results)
+        
+        # Step 4: Truncate to final top N
+        final_results = reranked_results[:n_results]
+
+        for i, row in enumerate(final_results):
+            content, source, score = row
             text = content[:300] + "..."
-            print(f"[{i+1}] Source: {source} (Distance: {distance:.4f})")
+            print(f"[{i+1}] Source: {source} (Re-rank Score: {score:.4f})")
             print(f"Snippet: {text}\n")
-
-    def _search_chromadb(self, query: str, n_results: int):
-        """Handles searching using the local ChromaDB SQLite backend."""
-        try:
-            import chromadb
-        except ImportError:
-            print("Error: chromadb not installed.")
-            sys.exit(1)
-
-        db_path = get_chroma_db_path()
-        if not os.path.exists(db_path):
-            print(
-                "Vector database not found. Please run src/infrastructure/build_vector_index.py first."
-            )
-            sys.exit(1)
-
-        client = chromadb.PersistentClient(path=db_path)
-        try:
-            collection = client.get_collection(name="ai_library_knowledge")
-        except Exception:
-            print("Collection not found. Please rebuild the index.")
-            sys.exit(1)
-
-        results = collection.query(query_texts=[query], n_results=n_results)
-        documents = results.get("documents", [[]])[0]
-        metadatas = results.get("metadatas", [[]])[0]
-        distances = results.get("distances", [[]])[0]
-
-        if not documents:
-            print("No relevant results found.")
-            return
-
-        for i in range(len(documents)):
-            source = metadatas[i].get("source", "Unknown") if metadatas else "Unknown"
-            dist = distances[i] if distances else 0.0
-            text = documents[i][:300] + "..."
-            print(f"[{i+1}] Source: {source} (Distance: {dist:.4f})")
-            print(f"Snippet: {text}\n")
+            
+        return final_results
 
 
 def main():

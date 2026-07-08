@@ -152,10 +152,12 @@ def main():
     )
     args = parser.parse_args()
 
-    api_key = args.api_key or os.environ.get("GEMINI_API_KEY")
+    from src.infrastructure.config_loader import load_config
+    cfg = load_config()
+    api_key = args.api_key or cfg.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY")
     if not api_key:
         print(
-            "Error: Gemini API Key is required. Set GEMINI_API_KEY environment variable or pass --api-key."
+            "Error: Gemini API Key is required. Set it in .env, GEMINI_API_KEY environment variable, or pass --api-key."
         )
         sys.exit(1)
 

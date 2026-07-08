@@ -119,35 +119,33 @@ class TestWebScraper:
 
 
 class TestVectorStoreManager:
-    @patch("src.infrastructure.pgvector_backend.PgVectorStore")
-    def test_insert_pgvector(self, mock_store_class):
+    @patch("src.infrastructure.vector_store_factory.VectorStoreFactory")
+    def test_insert_pgvector(self, mock_factory):
         mock_store = MagicMock()
-        mock_store_class.return_value = mock_store
+        mock_factory.get_store.return_value = mock_store
         
         manager = VectorStoreManager(db_mode="pgvector")
         manager.insert(["doc1"], [{"meta": 1}], ["id1"])
         
-        mock_store.upsert.assert_called_once_with(docs=["doc1"], metadatas=[{"meta": 1}])
+        mock_store.init_db.assert_called_once()
+        mock_store.upsert.assert_called_once_with(docs=["doc1"], metadatas=[{"meta": 1}], ids=["id1"])
 
-    @patch("chromadb.PersistentClient")
-    @patch("src.core.web_research.get_chroma_db_path")
-    def test_insert_chroma(self, mock_get_path, mock_client_class):
-        mock_get_path.return_value = "/tmp/db"  # nosec B108
-        mock_client = MagicMock()
-        mock_client_class.return_value = mock_client
-        mock_collection = MagicMock()
-        mock_client.get_or_create_collection.return_value = mock_collection
+    @patch("src.infrastructure.vector_store_factory.VectorStoreFactory")
+    def test_insert_chroma(self, mock_factory):
+        mock_store = MagicMock()
+        mock_factory.get_store.return_value = mock_store
         
         manager = VectorStoreManager(db_mode="chroma")
         manager.insert(["doc1", "doc2"], [{"meta": 1}, {"meta": 2}], ["id1", "id2"])
         
-        mock_collection.upsert.assert_called_once()
+        mock_store.init_db.assert_called_once()
+        mock_store.upsert.assert_called_once()
 
 
 class TestTextChunker:
     def test_chunk(self):
         text = "word " * 50 # 50 words
-        chunks = TextChunker.chunk(text, max_len=20)
+        chunks = TextChunker.chunk(text, chunk_size=20, chunk_overlap=5)
         assert len(chunks) > 1
         assert "word word word" in chunks[0]
 

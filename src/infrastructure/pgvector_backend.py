@@ -18,29 +18,10 @@ except ImportError:
     sys.exit(1)
 
 
-class ConfigLoader:
-    """
-    Utility class for loading configuration settings.
-    """
+from src.infrastructure.vector_store_base import BaseVectorStore
+from src.infrastructure.config_loader import load_config
 
-    @staticmethod
-    def get_config() -> dict:
-        """
-        Loads the settings.yaml configuration file.
-
-        Returns:
-            dict: The configuration settings.
-        """
-        config_path = os.path.join(
-            os.path.dirname(__file__), "..", "config", "settings.yaml"
-        )
-        if not os.path.exists(config_path):
-            return {}
-        with open(config_path, "r") as f:
-            return yaml.safe_load(f)
-
-
-class PgVectorStore:
+class PgVectorStore(BaseVectorStore):
     """
     Handles operations for the PostgreSQL vector database.
     """
@@ -50,7 +31,7 @@ class PgVectorStore:
         Initializes the PgVectorStore, establishing a database connection
         and loading the sentence transformer model.
         """
-        config = ConfigLoader.get_config()
+        config = load_config()
         dsn = config.get("database", {}).get(
             "pgvector_dsn", "postgresql://localhost:5432/ai_knowledge"
         )
@@ -65,7 +46,8 @@ class PgVectorStore:
 
     def init_db(self) -> None:
         """
-        Initializes the database by creating the necessary extension and table.
+        Initializes the database by creating the necessary extension and table,
+        and adds an HNSW index for high-performance approximate nearest neighbor search.
         """
         with self.conn.cursor() as cur:
             cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
@@ -77,15 +59,21 @@ class PgVectorStore:
                     embedding vector(384)
                 )
             """)
+            # Create HNSW index for optimal search performance using cosine distance
+            cur.execute("""
+                CREATE INDEX IF NOT EXISTS documents_embedding_hnsw_idx 
+                ON documents USING hnsw (embedding vector_cosine_ops)
+            """)
         self.conn.commit()
 
-    def upsert(self, docs: list, metadatas: list) -> None:
+    def upsert(self, docs: list, metadatas: list, ids: list = None) -> None:
         """
         Encodes documents into embeddings and inserts them into the database.
 
         Args:
             docs (list): A list of document strings.
             metadatas (list): A list of metadata dictionaries corresponding to the documents.
+            ids (list, optional): A list of document IDs.
         """
         embeddings = self.model.encode(docs)
         with self.conn.cursor() as cur:
