@@ -1,0 +1,188 @@
+From 07d21466e121b4c08c013ef6e298a3702b7adc03 Mon Sep 17 00:00:00 2001
+From: howlcipher <wylelias.123@gmail.com>
+Date: Tue, 7 Jul 2026 17:22:37 -0400
+Subject: [PATCH] fix: resolve test failures and go spinner compilation bug
+
+---
+ cmd/installer/main.go  |  7 ++++---
+ go.mod                 |  1 +
+ go.sum                 |  2 ++
+ improvements.md        | 46 ++++++++++++------------------------------
+ tests/test_chromadb.py |  7 ++++++-
+ tools/prune_context.py |  4 ++--
+ tools/system_logger.py |  5 ++++-
+ 7 files changed, 32 insertions(+), 40 deletions(-)
+
+diff --git a/cmd/installer/main.go b/cmd/installer/main.go
+index 9efbd00..5f1cbb2 100644
+--- a/cmd/installer/main.go
++++ b/cmd/installer/main.go
+@@ -9,6 +9,7 @@ import (
+ 	"strings"
+ 
+ 	"github.com/charmbracelet/huh"
++	"github.com/charmbracelet/huh/spinner"
+ )
+ 
+ const (
+@@ -71,7 +72,7 @@ func (i *Installer) CloneRepo() error {
+ 		return err
+ 	}
+ 
+-	err := huh.NewSpinner().
++	err := spinner.New().
+ 		Title(fmt.Sprintf("Cloning %s into %s...", i.RepoURL, i.DestPath)).
+ 		Action(func() {
+ 			_ = exec.Command("git", "clone", i.RepoURL, i.DestPath).Run()
+@@ -127,7 +128,7 @@ func (i *Installer) SyncRepo() {
+ 	}
+ 
+ 	var syncErr error
+-	_ = huh.NewSpinner().
++	_ = spinner.New().
+ 		Title("Fetching latest changes...").
+ 		Action(func() {
+ 			syncErr = exec.Command("git", "pull", "origin", "main").Run()
+@@ -284,7 +285,7 @@ func (i *Installer) ShowHelp() {
+ 		fmt.Println("- You need Go version 1.22+. Run `go version` to check.")
+ 		fmt.Println("- If 'go run' fails, try 'go mod tidy' to sync dependencies.")
+ 	}
+-	fmt.Println("========================================\n")
++	fmt.Println("========================================")
+ }
+ 
+ // Install runs the setup processes based on user input.
+diff --git a/go.mod b/go.mod
+index 35e55a3..8be3fb6 100644
+--- a/go.mod
++++ b/go.mod
+@@ -11,6 +11,7 @@ require (
+ 	github.com/charmbracelet/bubbles v1.0.0 // indirect
+ 	github.com/charmbracelet/bubbletea v1.3.10 // indirect
+ 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
++	github.com/charmbracelet/huh/spinner v0.0.0-20260223110133-9dc45e34a40b // indirect
+ 	github.com/charmbracelet/lipgloss v1.1.0 // indirect
+ 	github.com/charmbracelet/x/ansi v0.11.7 // indirect
+ 	github.com/charmbracelet/x/cellbuf v0.0.15 // indirect
+diff --git a/go.sum b/go.sum
+index 582ec18..37446df 100644
+--- a/go.sum
++++ b/go.sum
+@@ -22,6 +22,8 @@ github.com/charmbracelet/colorprofile v0.4.3 h1:QPa1IWkYI+AOB+fE+mg/5/4HRMZcaXex
+ github.com/charmbracelet/colorprofile v0.4.3/go.mod h1:/zT4BhpD5aGFpqQQqw7a+VtHCzu+zrQtt1zhMt9mR4Q=
+ github.com/charmbracelet/huh v1.0.0 h1:wOnedH8G4qzJbmhftTqrpppyqHakl/zbbNdXIWJyIxw=
+ github.com/charmbracelet/huh v1.0.0/go.mod h1:5YVc+SlZ1IhQALxRPpkGwwEKftN/+OlJlnJYlDRFqN4=
++github.com/charmbracelet/huh/spinner v0.0.0-20260223110133-9dc45e34a40b h1:deQbW7eR/gYwkXonGX6a1now6H6f8v4kfv0OIKECu0I=
++github.com/charmbracelet/huh/spinner v0.0.0-20260223110133-9dc45e34a40b/go.mod h1:Y68nuKJuC/Q2lmiq18EkHWkVWi2VGLrwaOfOyPKLkkE=
+ github.com/charmbracelet/lipgloss v1.1.0 h1:vYXsiLHVkK7fp74RkV7b2kq9+zDLoEU4MZoFqR/noCY=
+ github.com/charmbracelet/lipgloss v1.1.0/go.mod h1:/6Q8FR2o+kj8rz4Dq0zQc3vYf7X+B0binUUBwA0aL30=
+ github.com/charmbracelet/x/ansi v0.9.3 h1:BXt5DHS/MKF+LjuK4huWrC6NCvHtexww7dMayh6GXd0=
+diff --git a/improvements.md b/improvements.md
+index 77b4f20..f5d5a5d 100644
+--- a/improvements.md
++++ b/improvements.md
+@@ -2,38 +2,18 @@
+ 
+ This document tracks all conceptual improvements, architectural upgrades, and automation tasks that can be implemented to further harden, scale, and optimize the AI Knowledge Library. 
+ 
+-## 1. CI/CD & DevOps Automation
+-* [x] **Automated Linting Pipeline**: Add `golangci-lint` (Go) and `flake8`/`black` (Python) to a new GitHub Action (`lint.yml`) to rigorously enforce styling constraints before tests even run.
+-* [x] **Static Application Security Testing (SAST)**: Integrate `gosec` (for Go) and `bandit` (for Python) into the CI pipeline to automatically scan for hardcoded secrets, injection vulnerabilities, and bad cryptographic practices on every push.
+-* [x] **CodeQL Integration**: Add GitHub's native CodeQL semantic code analysis workflow to monitor for advanced security vulnerabilities globally.
+-* [x] **Dockerized Environment**: Create a root `Dockerfile` and `docker-compose.yml` to allow users to spin up the entire knowledge library environment (including ChromaDB, Python, and Go) in a strictly isolated, reproducible container.
+-* [x] **Cross-Platform Install Testing**: Build GitHub Actions that actually spin up Windows, macOS, and Ubuntu VMs to execute the installer binaries and shell scripts to guarantee zero regressions.
++## 1. Bug Fixes & Immediate Issues
++* [ ] **Test Pipeline Failures**: The initial `test_chromadb.py` mock test was structurally flawed, and `system_logger.py` was missing a `main()` entrypoint breaking `test_tools.py`. *(Update: Just fixed)*
++* [ ] **Crude Template Injector**: The `template_injector.py` uses crude Regex instead of the actual `Jinja2` templating engine requested.
++* [ ] **Go Spinner Output Suppression**: The TUI spinner suppresses standard error output on failures, making it hard for users to debug git cloning errors.
++* [ ] **ADR Naming Convention**: `generate_adr.py` doesn't enforce strict numerical ADR increments (e.g., ADR-001, ADR-002), risking naming collisions.
+ 
+-## 2. Testing & Quality Assurance
+-* [x] **Code Coverage Reporting**: Upgrade `test.yml` to generate coverage metrics (e.g., `pytest --cov`, `go test -cover`) and output them in the CI runner.
+-* [x] **End-to-End (E2E) Installer Tests**: Implement automated integration tests that simulate a user navigating the Go TUI (`charmbracelet/huh`) to ensure the interactive installer flow never breaks.
+-* [x] **ChromaDB Mock Testing**: Build mock database interfaces in the Python test suite to validate the RAG Semantic Search and Vector Indexing scripts without requiring disk I/O.
+-* [x] **Makefile Expansion**: Expand the `Makefile` with `make lint`, `make format`, `make clean`, and `make coverage` targets for a highly standardized local developer experience.
++## 2. Architecture & Ease of Use
++* [ ] **Cobra CLI Refactor**: Refactor the Go Installer to use the `cobra` framework so power users can run `ai_installer install` directly from the command line without navigating the visual TUI.
++* [ ] **Centralized Config Loader**: Build a central `config.yaml` or `.env` configuration loader in Python. Currently, ChromaDB paths are hardcoded randomly across multiple scripts.
++* [ ] **PgVector Migration**: Replace the local SQLite ChromaDB backend with a true PostgreSQL/pgvector database for production-level multi-agent concurrency.
+ 
+-## 3. Architecture & Code Quality
+-* [x] **Strict Python Typing**: Refactor all Python scripts in `tools/` and `scripts/` to use strict type hints (`typing` module) and validate them via `mypy`.
+-* [x] **Standardized Logging**: Replace all raw `print()` statements in Python scripts with the native `logging` module, allowing for configurable log levels (INFO, DEBUG, ERROR) and file-based log rotation.
+-* [x] **Go TUI Spinners**: Integrate `charmbracelet/bubbles/spinner` into the Go installer to display beautiful loading animations during long-running tasks like cloning and downloading dependencies.
+-* [x] **Client-Server ChromaDB**: Upgrade the vector indexing tool to support connecting to a centralized, containerized ChromaDB server via HTTP, rather than relying solely on local SQLite files. This allows multiple machines to query the same brain.
+-
+-## 4. Agent Tooling & RAG (Retrieval-Augmented Generation)
+-* [x] **Dynamic Context Templating**: Build a Jinja2 script that dynamically injects data from `USER_PROFILE.md` directly into the agent `SKILL.md` files at runtime, so the AI never reads placeholder variables.
+-* [x] **Automated PR Review Bot**: Create a `.agents/rules/code_review.md` rule and wire the AI to automatically review and comment on Pull Requests when integrated as a GitHub App.
+-* [x] **Web Scraping / Research Tool**: Add a Python tool (`tools/web_research.py`) utilizing `BeautifulSoup` to allow the AI to scrape external documentation and automatically append it to the vector database.
+-* [x] **Context Pruning Engine**: Develop a script that analyzes the ChromaDB vector embeddings and automatically flags redundant, contradictory, or outdated markdown files for manual review.
+-
+-## 5. Security & Privacy
+-* [x] **Google Docs OAuth Token Rotation**: Enhance `push_to_docs.py` with automatic, silent refresh token rotation logic so the user never has to re-authenticate manually when the token expires.
+-* [x] **Environment Variable Auditing**: Build a pre-commit hook that explicitly searches for accidental `.env` file additions or high-entropy strings (potential API keys) before allowing a `git push`.
+-* [x] **GPG Signature Enforcement**: Configure the repository and the AI agent's commit rules to strictly require mathematically signed (GPG/SSH) commits for identity verification.
+-
+-## 6. Documentation & Onboarding
+-* [x] **Interactive Troubleshooting Guide**: Add a `documentation/troubleshooting.md` file cataloging solutions to common Python virtual environment (venv) failures, Go binary execution errors, and Git rebase conflicts.
+-* [x] **Cloud Architecture Diagrams**: Expand `infrastructure/network_diagram.md` to map out cloud environments (AWS/GCP/Terraform) rather than just the local homelab.
+-* [x] **Automated ADR Generation**: Build a script that scaffolds out blank Architecture Decision Records (ADRs) with timestamped metadata and auto-updates an ADR index whenever a new decision is logged.
+-* [x] **TUI "Help" Menu**: Add an interactive Help/FAQ tab natively within the Go installer TUI so users can debug issues directly from the terminal without opening a browser.
++## 3. Advanced Features & Tooling
++* [ ] **Streamlit / Gradio Web UI**: Build a visual browser-based chat interface connected directly to the RAG database, rather than relying exclusively on CLI agents.
++* [ ] **Automated Webhook Syncing**: Implement a FastAPI webhook endpoint that automatically triggers `sync_context.py` whenever the repository is pushed to.
++* [ ] **Web Scraping Upgrades**: The `web_research.py` tool is currently just a placeholder and needs real `BeautifulSoup` or `Selenium` logic implemented.
+diff --git a/tests/test_chromadb.py b/tests/test_chromadb.py
+index 64494e6..db28ba6 100644
+--- a/tests/test_chromadb.py
++++ b/tests/test_chromadb.py
+@@ -7,8 +7,13 @@ def test_chroma_db_mock(mock_client):
+     mock_collection = MagicMock()
+     mock_client.return_value.get_or_create_collection.return_value = mock_collection
+     
++    # Actually call the client to test the mock
++    import chromadb
++    client = chromadb.PersistentClient(path=".chroma")
++    col = client.get_or_create_collection("test")
++    
+     # Simulate adding documents
+-    mock_collection.add(
++    col.add(
+         documents=["test doc"],
+         metadatas=[{"source": "test"}],
+         ids=["id1"]
+diff --git a/tools/prune_context.py b/tools/prune_context.py
+index 6118a6c..a32eb39 100644
+--- a/tools/prune_context.py
++++ b/tools/prune_context.py
+@@ -3,7 +3,7 @@
+ import chromadb
+ from chromadb.config import Settings
+ 
+-def prune_context():
++def main():
+     db_path = os.path.join(os.getcwd(), ".chroma")
+     if not os.path.exists(db_path):
+         print("No ChromaDB found at .chroma, skipping prune.")
+@@ -19,4 +19,4 @@ def prune_context():
+     print("No severe contradictions found in the knowledge graph. Context is clean.")
+ 
+ if __name__ == "__main__":
+-    prune_context()
++    main()
+diff --git a/tools/system_logger.py b/tools/system_logger.py
+index 7d20cf3..28b29e3 100644
+--- a/tools/system_logger.py
++++ b/tools/system_logger.py
+@@ -18,6 +18,9 @@ def setup_logger(name):
+         
+     return logger
+ 
+-if __name__ == "__main__":
++def main():
+     log = setup_logger("test")
+     log.info("Standardized logging system initialized.")
++
++if __name__ == "__main__":
++    main()
