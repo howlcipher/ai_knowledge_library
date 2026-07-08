@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/huh/spinner"
 	"github.com/spf13/cobra"
 )
 
@@ -129,7 +128,7 @@ func (i *Installer) SyncRepo() {
 	}
 
 	fmt.Println("Fetching latest changes...")
-	err := i.runInteractiveCommand("git", "pull", "origin", "main")
+	err = i.runInteractiveCommand("git", "pull", "origin", "main")
 	if err != nil {
 		fmt.Printf("Error syncing repository: %v\n", err)
 	} else {
