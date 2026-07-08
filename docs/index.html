@@ -3,152 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Knowledge Library</title>
+    <title>AI Knowledge Library // MECHA_OS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="background-elements">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-        <div class="blob blob-3"></div>
-    </div>
+    <!-- CRT Scanline Effect Overlay -->
+    <div class="scanlines"></div>
+    
+    <!-- HUD Decorative Elements -->
+    <div class="hud-top-left">[SYS.OP.NORMAL]</div>
+    <div class="hud-top-right">PWR: 100%</div>
+    <div class="hud-bottom-left">ID: TYPE-01</div>
+    <div class="hud-bottom-right">SYNC_RATE: 99.8%</div>
 
-    <nav class="glass-nav">
-        <div class="logo">AI Library<span>.</span></div>
+    <nav class="mecha-nav">
+        <div class="logo">AI_LIB<span class="blinking-cursor">_</span></div>
         <ul class="nav-links">
-            <li><a href="#features" data-i18n="nav_features">Features</a></li>
-            <li><a href="api/index.html" data-i18n="nav_docs">API Docs</a></li>
-            <li><a href="https://github.com/howlcipher/ai_knowledge_library">GitHub</a></li>
+            <li><a href="#features" data-i18n="nav_features">[FEATURES]</a></li>
+            <li><a href="api/index.html" data-i18n="nav_docs">[API_DOCS]</a></li>
+            <li><a href="https://github.com/howlcipher/ai_knowledge_library">[GITHUB]</a></li>
         </ul>
         <div class="controls">
-            <select id="langSelect" class="lang-select">
-                <option value="en">🇺🇸 English</option>
-                <option value="ja">🇯🇵 日本語</option>
-                <option value="es">🇪🇸 Español</option>
-                <option value="zh">🇨🇳 简体中文</option>
-                <option value="fr">🇫🇷 Français</option>
-                <option value="de">🇩🇪 Deutsch</option>
+            <select id="langSelect" class="lang-select hud-box">
+                <option value="en">🇺🇸 EN</option>
+                <option value="ja">🇯🇵 JA</option>
+                <option value="es">🇪🇸 ES</option>
+                <option value="zh">🇨🇳 ZH</option>
+                <option value="fr">🇫🇷 FR</option>
+                <option value="de">🇩🇪 DE</option>
             </select>
-            <button id="themeToggle" class="theme-toggle">🌓</button>
+            <button id="themeToggle" class="theme-toggle hud-box">NIGHT</button>
         </div>
     </nav>
 
     <main class="hero-container">
-        <div class="hero-content glass-panel">
-            <h1 class="gradient-text" data-i18n="hero_title">Supercharge Your AI Context.</h1>
+        <div class="hero-content mecha-panel">
+            <div class="panel-header">
+                <span>/// INIT_SEQUENCE ///</span>
+            </div>
+            <h1 class="mecha-title" data-i18n="hero_title">SUPERCHARGE YOUR AI CONTEXT</h1>
             <p class="subtitle" data-i18n="hero_subtitle">
-                A highly structured, locally hosted knowledge graph and vector database built for advanced autonomous agents. 
-                Complete with PgVector integration and native Go installers.
+                > A HIGHLY STRUCTURED, LOCALLY HOSTED KNOWLEDGE GRAPH AND VECTOR DATABASE BUILT FOR ADVANCED AUTONOMOUS AGENTS. COMPLETE WITH PGVECTOR INTEGRATION AND NATIVE GO INSTALLERS.
             </p>
             <div class="cta-buttons">
-                <a href="#download" class="btn btn-primary" data-i18n="hero_btn_download">Download Installer</a>
-                <a href="api/index.html" class="btn btn-secondary" data-i18n="hero_btn_docs">View Documentation</a>
+                <a href="#download" class="btn btn-primary" data-i18n="hero_btn_download">EXECUTE INSTALL</a>
+                <a href="api/index.html" class="btn btn-secondary" data-i18n="hero_btn_docs">READ MANUAL</a>
             </div>
         </div>
 
         <div class="features-grid" id="features">
-            <div class="feature-card glass-panel">
-                <div class="icon">🧠</div>
-                <h3 data-i18n="feat_1_title">Advanced RAG</h3>
-                <p data-i18n="feat_1_desc">Seamless PgVector and ChromaDB integration for deep semantic search and context retrieval.</p>
+            <div class="feature-card mecha-panel">
+                <div class="icon">TARGET_LOCK</div>
+                <h3 data-i18n="feat_1_title">ADVANCED RAG</h3>
+                <p data-i18n="feat_1_desc">> Seamless PgVector and ChromaDB integration for deep semantic search and context retrieval.</p>
             </div>
-            <div class="feature-card glass-panel">
-                <div class="icon">⚡</div>
-                <h3 data-i18n="feat_2_title">Go CLI Installer</h3>
-                <p data-i18n="feat_2_desc">Lightning-fast native Cobra CLI installer to seamlessly manage dependencies and global links.</p>
+            <div class="feature-card mecha-panel">
+                <div class="icon">HYPER_SPEED</div>
+                <h3 data-i18n="feat_2_title">GO CLI INSTALLER</h3>
+                <p data-i18n="feat_2_desc">> Lightning-fast native Cobra CLI installer to seamlessly manage dependencies and global links.</p>
             </div>
-            <div class="feature-card glass-panel">
-                <div class="icon">🌐</div>
-                <h3 data-i18n="feat_3_title">Automated Webhooks</h3>
-                <p data-i18n="feat_3_desc">Background FastAPI servers that automatically sync and embed incoming repository changes.</p>
+            <div class="feature-card mecha-panel">
+                <div class="icon">AUTO_SYNC</div>
+                <h3 data-i18n="feat_3_title">AUTOMATED WEBHOOKS</h3>
+                <p data-i18n="feat_3_desc">> Background FastAPI servers that automatically sync and embed incoming repository changes.</p>
             </div>
         </div>
         
-        <div class="download-section glass-panel" id="download">
-            <h2 data-i18n="download_title">Quick Start</h2>
-            <p data-i18n="download_subtitle">Run the installer directly from your terminal to get started in seconds:</p>
+        <div class="download-section mecha-panel" id="download">
+            <div class="panel-header warning-stripes">
+                <span>/// DEPLOYMENT_MODULE ///</span>
+            </div>
+            <h2 data-i18n="download_title">QUICK START</h2>
+            <p data-i18n="download_subtitle">> Run the installer directly from your terminal to get started in seconds:</p>
             <div class="code-block">
-                <code>go run cmd/installer/main.go install</code>
-                <button class="copy-btn" onclick="copyCode()" data-i18n="btn_copy">Copy</button>
+                <code>> go run cmd/installer/main.go install</code>
+                <button class="copy-btn" onclick="copyCode()" data-i18n="btn_copy">COPY</button>
             </div>
         </div>
     </main>
 
-    <footer>
-        <p><span data-i18n="footer_text">Built for the open-source agentic community. Open sourced on </span><a href="https://github.com/howlcipher/ai_knowledge_library">GitHub</a>.</p>
+    <footer class="mecha-footer">
+        <p><span data-i18n="footer_text">> Built for the open-source agentic community. Open sourced on </span><a href="https://github.com/howlcipher/ai_knowledge_library">GitHub</a>.</p>
     </footer>
 
     <script>
         // Translations Dictionary
         const i18n = {
             en: {
-                nav_features: "Features", nav_docs: "API Docs",
-                hero_title: "Supercharge Your AI Context.",
-                hero_subtitle: "A highly structured, locally hosted knowledge graph and vector database built for advanced autonomous agents. Complete with PgVector integration and native Go installers.",
-                hero_btn_download: "Download Installer", hero_btn_docs: "View Documentation",
-                feat_1_title: "Advanced RAG", feat_1_desc: "Seamless PgVector and ChromaDB integration for deep semantic search and context retrieval.",
-                feat_2_title: "Go CLI Installer", feat_2_desc: "Lightning-fast native Cobra CLI installer to seamlessly manage dependencies and global links.",
-                feat_3_title: "Automated Webhooks", feat_3_desc: "Background FastAPI servers that automatically sync and embed incoming repository changes.",
-                download_title: "Quick Start", download_subtitle: "Run the installer directly from your terminal to get started in seconds:",
-                btn_copy: "Copy", footer_text: "Built for the open-source agentic community. Open sourced on "
+                nav_features: "[FEATURES]", nav_docs: "[API_DOCS]",
+                hero_title: "SUPERCHARGE YOUR AI CONTEXT",
+                hero_subtitle: "> A HIGHLY STRUCTURED, LOCALLY HOSTED KNOWLEDGE GRAPH AND VECTOR DATABASE BUILT FOR ADVANCED AUTONOMOUS AGENTS. COMPLETE WITH PGVECTOR INTEGRATION AND NATIVE GO INSTALLERS.",
+                hero_btn_download: "EXECUTE INSTALL", hero_btn_docs: "READ MANUAL",
+                feat_1_title: "ADVANCED RAG", feat_1_desc: "> Seamless PgVector and ChromaDB integration for deep semantic search and context retrieval.",
+                feat_2_title: "GO CLI INSTALLER", feat_2_desc: "> Lightning-fast native Cobra CLI installer to seamlessly manage dependencies and global links.",
+                feat_3_title: "AUTOMATED WEBHOOKS", feat_3_desc: "> Background FastAPI servers that automatically sync and embed incoming repository changes.",
+                download_title: "QUICK START", download_subtitle: "> Run the installer directly from your terminal to get started in seconds:",
+                btn_copy: "COPY", footer_text: "> Built for the open-source agentic community. Open sourced on "
             },
             ja: {
-                nav_features: "機能", nav_docs: "APIドキュメント",
-                hero_title: "AIのコンテキストを強化。",
-                hero_subtitle: "高度な自律エージェント向けに構築された、構造化されたローカルホストのナレッジグラフおよびベクトルデータベース。PgVector統合とGoインストーラーを完備。",
-                hero_btn_download: "インストーラーをダウンロード", hero_btn_docs: "ドキュメントを見る",
-                feat_1_title: "高度なRAG", feat_1_desc: "PgVectorとChromaDBのシームレスな統合により、深い意味検索とコンテキスト抽出を実現します。",
-                feat_2_title: "Go CLIインストーラー", feat_2_desc: "依存関係とグローバルリンクをシームレスに管理する、超高速のネイティブCobra CLIインストーラー。",
-                feat_3_title: "自動化されたWebhook", feat_3_desc: "受信したリポジトリの変更を自動的に同期し、埋め込むバックグラウンドのFastAPIサーバー。",
-                download_title: "クイックスタート", download_subtitle: "ターミナルから直接インストーラーを実行して、数秒で開始できます：",
-                btn_copy: "コピー", footer_text: "オープンソースのエージェンティックコミュニティのために構築されました。オープンソースは"
+                nav_features: "[機能]", nav_docs: "[API_仕様]",
+                hero_title: "AIコンテキストを起動せよ",
+                hero_subtitle: "> 高度な自律型エージェントのために構築された、ローカルホストのナレッジグラフおよびベクトルデータベース。PGVECTOR統合とGOインストーラーを完全装備。",
+                hero_btn_download: "インストール実行", hero_btn_docs: "マニュアル参照",
+                feat_1_title: "高度なRAG", feat_1_desc: "> PgVectorとChromaDBのシームレスな統合による、深層意味検索とコンテキスト抽出。",
+                feat_2_title: "GO CLI インストーラー", feat_2_desc: "> 依存関係を管理する超高速ネイティブCobra CLIインストーラー。",
+                feat_3_title: "自動化WEBHOOK", feat_3_desc: "> バックグラウンドのFastAPIサーバーが、リポジトリの変更を自動同期。",
+                download_title: "クイックスタート", download_subtitle: "> ターミナルから直接インストーラーを実行して起動：",
+                btn_copy: "コピー", footer_text: "> オープンソースのエージェントコミュニティへ。提供元："
             },
             es: {
-                nav_features: "Características", nav_docs: "Docs API",
-                hero_title: "Potencia el contexto de tu IA.",
-                hero_subtitle: "Un gráfico de conocimiento altamente estructurado y una base de datos vectorial local para agentes autónomos avanzados. Con integración PgVector e instaladores nativos en Go.",
-                hero_btn_download: "Descargar Instalador", hero_btn_docs: "Ver Documentación",
-                feat_1_title: "RAG Avanzado", feat_1_desc: "Integración perfecta de PgVector y ChromaDB para búsqueda semántica profunda y recuperación de contexto.",
-                feat_2_title: "Instalador CLI Go", feat_2_desc: "Instalador CLI nativo Cobra ultrarrápido para gestionar dependencias y enlaces globales de forma transparente.",
-                feat_3_title: "Webhooks Automatizados", feat_3_desc: "Servidores FastAPI en segundo plano que sincronizan e integran automáticamente los cambios del repositorio.",
-                download_title: "Inicio Rápido", download_subtitle: "Ejecuta el instalador directamente desde tu terminal para empezar en segundos:",
-                btn_copy: "Copiar", footer_text: "Creado para la comunidad de agentes de código abierto. Código abierto en "
+                nav_features: "[CARACTERÍSTICAS]", nav_docs: "[DOCS_API]",
+                hero_title: "SOBRECARGA TU CONTEXTO IA",
+                hero_subtitle: "> UN GRAFO DE CONOCIMIENTO Y BASE DE DATOS VECTORIAL ALOJADA LOCALMENTE PARA AGENTES AUTÓNOMOS AVANZADOS. INTEGRACIÓN PGVECTOR E INSTALADORES GO.",
+                hero_btn_download: "EJECUTAR INSTALACIÓN", hero_btn_docs: "LEER MANUAL",
+                feat_1_title: "RAG AVANZADO", feat_1_desc: "> Integración de PgVector y ChromaDB para búsqueda semántica profunda.",
+                feat_2_title: "INSTALADOR GO CLI", feat_2_desc: "> Instalador nativo ultrarrápido para gestionar dependencias.",
+                feat_3_title: "WEBHOOKS AUTOMATIZADOS", feat_3_desc: "> Servidores FastAPI en segundo plano para sincronizar cambios.",
+                download_title: "INICIO RÁPIDO", download_subtitle: "> Ejecuta el instalador directamente desde tu terminal:",
+                btn_copy: "COPIAR", footer_text: "> Construido para la comunidad de código abierto. Código fuente en "
             },
             zh: {
-                nav_features: "功能", nav_docs: "API文档",
-                hero_title: "增强您的AI上下文。",
-                hero_subtitle: "专为高级自主代理构建的高度结构化、本地托管的知识图谱和向量数据库。具备PgVector集成和原生Go安装程序。",
-                hero_btn_download: "下载安装程序", hero_btn_docs: "查看文档",
-                feat_1_title: "高级RAG", feat_1_desc: "无缝集成PgVector和ChromaDB，用于深度语义搜索和上下文检索。",
-                feat_2_title: "Go CLI 安装程序", feat_2_desc: "闪电般快速的原生Cobra CLI安装程序，无缝管理依赖项和全局链接。",
-                feat_3_title: "自动Webhook", feat_3_desc: "后台FastAPI服务器，可自动同步并嵌入传入的存储库更改。",
-                download_title: "快速开始", download_subtitle: "直接从您的终端运行安装程序，几秒钟即可开始：",
-                btn_copy: "复制", footer_text: "为开源代理社区构建。开源于 "
+                nav_features: "[功能]", nav_docs: "[API文档]",
+                hero_title: "增强AI上下文",
+                hero_subtitle: "> 专为高级自主代理构建的本地托管知识图谱和向量数据库。集成PGVECTOR和原生GO安装程序。",
+                hero_btn_download: "执行安装", hero_btn_docs: "阅读手册",
+                feat_1_title: "高级RAG", feat_1_desc: "> 无缝集成PgVector和ChromaDB，用于深度语义搜索。",
+                feat_2_title: "GO CLI 安装程序", feat_2_desc: "> 极速原生CLI安装程序，无缝管理依赖项。",
+                feat_3_title: "自动WEBHOOK", feat_3_desc: "> 后台FastAPI服务器自动同步存储库更改。",
+                download_title: "快速开始", download_subtitle: "> 从终端运行安装程序即可开始：",
+                btn_copy: "复制", footer_text: "> 为开源代理社区构建。开源于 "
             },
             fr: {
-                nav_features: "Caractéristiques", nav_docs: "Docs API",
-                hero_title: "Boostez le contexte de votre IA.",
-                hero_subtitle: "Un graphe de connaissances hautement structuré et une base de données vectorielle hébergée localement pour des agents autonomes avancés. Avec intégration PgVector et installateurs Go.",
-                hero_btn_download: "Télécharger", hero_btn_docs: "Voir la Documentation",
-                feat_1_title: "RAG Avancé", feat_1_desc: "Intégration transparente de PgVector et ChromaDB pour une recherche sémantique profonde.",
-                feat_2_title: "Installateur CLI Go", feat_2_desc: "Installateur CLI Cobra natif ultra-rapide pour gérer facilement les dépendances et les liens globaux.",
-                feat_3_title: "Webhooks Automatisés", feat_3_desc: "Serveurs FastAPI en arrière-plan qui synchronisent et intègrent automatiquement les modifications du dépôt.",
-                download_title: "Démarrage Rapide", download_subtitle: "Exécutez l'installateur directement depuis votre terminal pour démarrer en quelques secondes :",
-                btn_copy: "Copier", footer_text: "Conçu pour la communauté agentique open source. Open source sur "
+                nav_features: "[FONCTIONNALITÉS]", nav_docs: "[DOCS_API]",
+                hero_title: "SURCHARGEZ VOTRE CONTEXTE IA",
+                hero_subtitle: "> UN GRAPHE DE CONNAISSANCES ET UNE BASE VECTORIELLE HÉBERGÉS LOCALEMENT POUR LES AGENTS AUTONOMES AVANCÉS. INTÉGRATION PGVECTOR ET INSTALLATEURS GO.",
+                hero_btn_download: "EXÉCUTER INSTALLATION", hero_btn_docs: "LIRE MANUEL",
+                feat_1_title: "RAG AVANCÉ", feat_1_desc: "> Intégration PgVector et ChromaDB pour la recherche sémantique profonde.",
+                feat_2_title: "INSTALLATEUR GO CLI", feat_2_desc: "> Installateur natif ultra-rapide pour gérer les dépendances.",
+                feat_3_title: "WEBHOOKS AUTOMATISÉS", feat_3_desc: "> Serveurs FastAPI en arrière-plan pour synchroniser les changements.",
+                download_title: "DÉMARRAGE RAPIDE", download_subtitle: "> Exécutez l'installateur depuis votre terminal :",
+                btn_copy: "COPIER", footer_text: "> Construit pour la communauté open source. Code source sur "
             },
             de: {
-                nav_features: "Funktionen", nav_docs: "API Doku",
-                hero_title: "Supercharge Deinen KI-Kontext.",
-                hero_subtitle: "Ein hochstrukturierter, lokal gehosteter Wissensgraph und eine Vektordatenbank für fortschrittliche autonome Agenten. Komplett mit PgVector-Integration und nativen Go-Installern.",
-                hero_btn_download: "Installer Herunterladen", hero_btn_docs: "Dokumentation Ansehen",
-                feat_1_title: "Fortgeschrittenes RAG", feat_1_desc: "Nahtlose PgVector- und ChromaDB-Integration für tiefe semantische Suche und Kontextabruf.",
-                feat_2_title: "Go CLI Installer", feat_2_desc: "Blitzschneller nativer Cobra CLI-Installer zur nahtlosen Verwaltung von Abhängigkeiten.",
-                feat_3_title: "Automatisierte Webhooks", feat_3_desc: "Hintergrund-FastAPI-Server, die eingehende Repository-Änderungen automatisch synchronisieren.",
-                download_title: "Schnellstart", download_subtitle: "Führen Sie den Installer direkt von Ihrem Terminal aus, um in Sekunden zu starten:",
-                btn_copy: "Kopieren", footer_text: "Gebaut für die Open-Source-Agenten-Community. Open-Source auf "
+                nav_features: "[FUNKTIONEN]", nav_docs: "[API_DOKU]",
+                hero_title: "SUPERCHARGE DEINEN KI-KONTEXT",
+                hero_subtitle: "> EIN HOCHSTRUKTURIERTER, LOKAL GEHOSTETER WISSENSGRAPH UND EINE VEKTORDATENBANK FÜR AUTONOME AGENTEN. MIT PGVECTOR-INTEGRATION UND GO-INSTALLERN.",
+                hero_btn_download: "INSTALLATION AUSFÜHREN", hero_btn_docs: "HANDBUCH LESEN",
+                feat_1_title: "FORTSCHRITTLICHES RAG", feat_1_desc: "> Nahtlose PgVector- und ChromaDB-Integration für tiefe semantische Suche.",
+                feat_2_title: "GO CLI INSTALLER", feat_2_desc: "> Blitzschneller nativer CLI-Installer zur Verwaltung von Abhängigkeiten.",
+                feat_3_title: "AUTOMATISIERTE WEBHOOKS", feat_3_desc: "> Hintergrund-FastAPI-Server zur automatischen Synchronisierung.",
+                download_title: "SCHNELLSTART", download_subtitle: "> Führen Sie den Installer direkt vom Terminal aus:",
+                btn_copy: "KOPIEREN", footer_text: "> Gebaut für die Open-Source-Community. Quellcode auf "
             }
         };
 
@@ -159,10 +167,10 @@
         function setTheme(theme) {
             if (theme === 'light') {
                 root.setAttribute('data-theme', 'light');
-                themeToggle.textContent = '🌙';
+                themeToggle.textContent = 'DAY';
             } else {
                 root.setAttribute('data-theme', 'dark');
-                themeToggle.textContent = '☀️';
+                themeToggle.textContent = 'NIGHT';
             }
         }
 
@@ -211,11 +219,11 @@
             const lang = langSelect.value;
             const originalText = i18n[lang].btn_copy;
             
-            btn.textContent = lang === 'ja' ? 'コピーしました！' : 
-                             lang === 'es' ? '¡Copiado!' : 
-                             lang === 'zh' ? '已复制！' : 
-                             lang === 'fr' ? 'Copié !' : 
-                             lang === 'de' ? 'Kopiert!' : 'Copied!';
+            btn.textContent = lang === 'ja' ? 'コピー完了' : 
+                             lang === 'es' ? 'COPIADO' : 
+                             lang === 'zh' ? '已复制' : 
+                             lang === 'fr' ? 'COPIÉ' : 
+                             lang === 'de' ? 'KOPIERT' : 'COPIED';
             
             btn.classList.add('copied');
             setTimeout(() => {
