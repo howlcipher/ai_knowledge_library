@@ -10,6 +10,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -411,16 +412,7 @@ func (i *Installer) Install() {
 	}
 }
 
-func main() {
-	installer := NewInstaller()
-
-	if !installer.IsRepoRoot() {
-		if err := installer.CloneRepo(); err != nil {
-			fmt.Println("Error:", err)
-			os.Exit(1)
-		}
-	}
-
+func interactiveMenu(installer *Installer) {
 	installer.SelectLanguage()
 
 	var action string
@@ -460,6 +452,63 @@ func main() {
 		installer.Uninstall()
 	case "help":
 		installer.ShowHelp()
-		main() // Restart loop
+		interactiveMenu(installer) // Restart loop
+	}
+}
+
+func main() {
+	installer := NewInstaller()
+
+	var rootCmd = &cobra.Command{
+		Use:   "ai_installer",
+		Short: "AI Knowledge Library Installer",
+		Run: func(cmd *cobra.Command, args []string) {
+			if !installer.IsRepoRoot() {
+				if err := installer.CloneRepo(); err != nil {
+					fmt.Println("Error:", err)
+					os.Exit(1)
+				}
+			}
+			interactiveMenu(installer)
+		},
+	}
+
+	var installCmd = &cobra.Command{
+		Use:   "install",
+		Short: "Install the AI environment and dependencies",
+		Run: func(cmd *cobra.Command, args []string) {
+			installer.Install()
+		},
+	}
+
+	var customizeCmd = &cobra.Command{
+		Use:   "customize",
+		Short: "Customize your USER_PROFILE.md",
+		Run: func(cmd *cobra.Command, args []string) {
+			installer.CustomizeProfile()
+		},
+	}
+
+	var syncCmd = &cobra.Command{
+		Use:   "sync",
+		Short: "Sync and update the repository",
+		Run: func(cmd *cobra.Command, args []string) {
+			installer.SyncRepo()
+		},
+	}
+
+	var uninstallCmd = &cobra.Command{
+		Use:   "uninstall",
+		Short: "Uninstall global AGY links",
+		Run: func(cmd *cobra.Command, args []string) {
+			installer.Uninstall()
+		},
+	}
+	
+	rootCmd.AddCommand(installCmd, customizeCmd, syncCmd, uninstallCmd)
+
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
