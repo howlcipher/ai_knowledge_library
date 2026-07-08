@@ -17,7 +17,7 @@ def main():
         + chr(104)
     )
     hook_path = os.path.join(repo_root, ".git", "hooks", hook_name)
-    hook_content = "#!/usr/bin/env bash\necho 'Running pre push unit tests'\n"
+    hook_content = "#!/usr/bin/env bash\necho 'Running pre-push regression test suite...'\nmake test lint build docs\nif [ $? -ne 0 ]; then\n    echo 'Regression tests failed! Push aborted.'\n    exit 1\nfi\n"
     with open(hook_path, "w") as f:
         f.write(hook_content)
     os.chmod(hook_path, os.stat(hook_path).st_mode | stat.S_IEXEC)
