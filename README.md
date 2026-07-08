@@ -82,6 +82,16 @@ chmod +x scripts/install_global.sh
 
 ***
 
+## 📖 User Guide & Wiki
+
+Once you have installed the library, what's next? We have prepared a comprehensive **[User Wiki & Guide](documentation/USER_GUIDE.md)** that explains:
+* How to use the `ai_installer` control panel.
+* How to launch the Multi-LLM Terminal UI or Web RAG interfaces.
+* How to execute the embedded developer tools.
+* How to utilize the local CI/CD regression guard.
+
+***
+
 ## 🏗️ Architecture and Structure
 
 The knowledge base is organized into specific domains that the AI agent natively understands and executes against.
