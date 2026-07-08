@@ -41,6 +41,7 @@ func NewInstaller() *Installer {
 }
 
 func (i *Installer) runInteractiveCommand(name string, args ...string) error {
+	/* #nosec G204 -- Installer executes user-approved git/python commands */
 	cmd := exec.Command(name, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -121,8 +122,10 @@ func (i *Installer) SyncRepo() {
 	if newRemote != currentRemote {
 		fmt.Println("Updating remote origin...")
 		if currentRemote != "" {
+			/* #nosec G204 -- Installer modifies git remote using validated input */
 			_ = exec.Command("git", "remote", "set-url", "origin", newRemote).Run()
 		} else {
+			/* #nosec G204 -- Installer modifies git remote using validated input */
 			_ = exec.Command("git", "remote", "add", "origin", newRemote).Run()
 		}
 	}
@@ -167,7 +170,7 @@ func (i *Installer) Uninstall() {
 	for _, entry := range entries {
 		if entry.IsDir() {
 			target := filepath.Join(skillsDir, entry.Name())
-			os.RemoveAll(target)
+			_ = os.RemoveAll(target)
 			fmt.Println("Removed skill link:", target)
 		}
 	}
@@ -176,7 +179,7 @@ func (i *Installer) Uninstall() {
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			target := filepath.Join(rulesDir, entry.Name())
-			os.Remove(target)
+			_ = os.Remove(target)
 			fmt.Println("Removed rule link:", target)
 		}
 	}
@@ -269,7 +272,7 @@ language_module: %s
 
 	content += "\n## Core Skills\n* Add your core skills here.\n\n## Professional Experience\n* Add your experience here.\n\n## Education and Certifications\n* Add your education here.\n"
 
-	err := os.WriteFile("USER_PROFILE.md", []byte(content), 0644)
+	err := os.WriteFile("USER_PROFILE.md", []byte(content), 0600)
 	if err != nil {
 		fmt.Println("Failed to save profile:", err)
 		return

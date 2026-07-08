@@ -9,13 +9,13 @@ install:
 # Testing and Coverage
 test:
 	@echo "Running Python tests..."
-	pytest tests/ -v
+	PYTHONPATH=. pytest tests/ -v
 	@echo "Running Go tests..."
 	go test -v ./...
 
 coverage-python:
 	@echo "Generating Python coverage..."
-	pytest tests/ -v --cov=tools --cov=scripts --cov-report=term-missing
+	PYTHONPATH=. pytest tests/ -v --cov=tools --cov=scripts --cov-report=term-missing --cov-fail-under=42
 
 coverage-go:
 	@echo "Generating Go coverage..."
