@@ -75,17 +75,11 @@ func (i *Installer) CloneRepo() error {
 		return err
 	}
 
-	var output []byte
-	_ = spinner.New().
-		Title(fmt.Sprintf("Cloning %s into %s...", i.RepoURL, i.DestPath)).
-		Action(func() {
-			output, _ = exec.Command("git", "clone", i.RepoURL, i.DestPath).CombinedOutput()
-		}).
-		Run()
+	fmt.Printf("Cloning %s into %s...\n", i.RepoURL, i.DestPath)
+	err := i.runInteractiveCommand("git", "clone", i.RepoURL, i.DestPath)
 	
-	// Check if directory exists and has files (git clone succeeds if dest exists but we need to know if it failed)
-	if _, statErr := os.Stat(filepath.Join(i.DestPath, ".git")); statErr != nil {
-		fmt.Printf("\nClone failed with output:\n%s\n", string(output))
+	if err != nil {
+		fmt.Printf("\nClone failed: %v\n", err)
 		return fmt.Errorf("failed to clone repository")
 	}
 
@@ -134,16 +128,10 @@ func (i *Installer) SyncRepo() {
 		}
 	}
 
-	var syncErr error
-	var output []byte
-	_ = spinner.New().
-		Title("Fetching latest changes...").
-		Action(func() {
-			output, syncErr = exec.Command("git", "pull", "origin", "main").CombinedOutput()
-		}).
-		Run()
-	if syncErr != nil {
-		fmt.Printf("Error syncing repository. Output:\n%s\n", string(output))
+	fmt.Println("Fetching latest changes...")
+	err := i.runInteractiveCommand("git", "pull", "origin", "main")
+	if err != nil {
+		fmt.Printf("Error syncing repository: %v\n", err)
 	} else {
 		fmt.Println("Repository is up to date!")
 	}

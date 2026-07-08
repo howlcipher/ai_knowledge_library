@@ -7,8 +7,7 @@ try:
     import chromadb
     from chromadb.utils import embedding_functions
 except ImportError:
-    print("Error: chromadb not installed. Run 'pip install chromadb sentence-transformers'")
-    sys.exit(1)
+    pass # Might not be needed if using pgvector
 
 def chunk_text(text, max_len=1000):
     words = text.split()
@@ -28,31 +27,25 @@ def chunk_text(text, max_len=1000):
     return chunks
 
 def main():
-    from config.loader import get_chroma_db_path
-    
     script_dir = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.dirname(script_dir)
     sys.path.append(repo_root)  # Ensure root is in path for imports
     
-    db_path = get_chroma_db_path()
+    from config.loader import load_config, get_chroma_db_path
     
-    print(f"Initializing ChromaDB at {db_path}...")
-    client = chromadb.PersistentClient(path=db_path)
-    
-    # We use the default sentence-transformers model
-    collection = client.get_or_create_collection(name="ai_library_knowledge")
-    
-    print("Scanning for markdown files...")
-    md_files = glob.glob(os.path.join(repo_root, "**", "*.md"), recursive=True)
+    cfg = load_config()
+    db_mode = cfg.get("database", {}).get("mode", "sqlite")
     
     docs_to_insert = []
     metadata_to_insert = []
     ids_to_insert = []
     
+    print("Scanning for markdown files...")
+    md_files = glob.glob(os.path.join(repo_root, "**", "*.md"), recursive=True)
+    
     for file_path in md_files:
-        if ".git" in file_path or ".agents" not in file_path and "documentation" not in file_path and "README" not in file_path:
-            # Let's index .agents, documentation, and root md files.
-            pass
+        if ".git" in file_path or (".agents" not in file_path and "documentation" not in file_path and "README" not in file_path):
+            continue
             
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
@@ -70,19 +63,35 @@ def main():
         except Exception as e:
             print(f"Skipping {file_path}: {e}")
 
-    if docs_to_insert:
-        print(f"Inserting {len(docs_to_insert)} chunks into the vector database...")
-        # Batch insert to avoid huge payloads
-        batch_size = 100
+    if not docs_to_insert:
+        print("No markdown content found to index.")
+        return
+
+    print(f"Inserting {len(docs_to_insert)} chunks into {db_mode} database...")
+    batch_size = 100
+
+    if db_mode == "pgvector":
+        from tools.pgvector_backend import PgVectorStore
+        store = PgVectorStore()
+        store.init_db()
+        for i in range(0, len(docs_to_insert), batch_size):
+            store.upsert(
+                docs=docs_to_insert[i:i+batch_size],
+                metadatas=metadata_to_insert[i:i+batch_size]
+            )
+    else:
+        db_path = get_chroma_db_path()
+        print(f"Initializing ChromaDB at {db_path}...")
+        client = chromadb.PersistentClient(path=db_path)
+        collection = client.get_or_create_collection(name="ai_library_knowledge")
         for i in range(0, len(docs_to_insert), batch_size):
             collection.upsert(
                 documents=docs_to_insert[i:i+batch_size],
                 metadatas=metadata_to_insert[i:i+batch_size],
                 ids=ids_to_insert[i:i+batch_size]
             )
-        print("Knowledge base indexing complete!")
-    else:
-        print("No markdown content found to index.")
+            
+    print("Knowledge base indexing complete!")
 
 if __name__ == "__main__":
     main()
