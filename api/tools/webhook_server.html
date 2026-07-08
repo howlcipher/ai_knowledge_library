@@ -31,13 +31,37 @@
             <h2>API Documentation</h2>
                 <ul class="memberlist">
             <li>
-                    <a class="variable" href="#app">app</a>
+                    <a class="variable" href="#script_dir">script_dir</a>
             </li>
             <li>
-                    <a class="variable" href="#cfg">cfg</a>
+                    <a class="variable" href="#repo_root">repo_root</a>
             </li>
             <li>
-                    <a class="function" href="#trigger_sync">trigger_sync</a>
+                    <a class="class" href="#WebhookServer">WebhookServer</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#WebhookServer.__init__">WebhookServer</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#WebhookServer.app">app</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#WebhookServer.cfg">cfg</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#WebhookServer.expected_secret">expected_secret</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#WebhookServer.host">host</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#WebhookServer.port">port</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#WebhookServer.run">run</a>
+                        </li>
+                </ul>
+
             </li>
             <li>
                     <a class="function" href="#main">main</a>
@@ -58,111 +82,293 @@
                     <h1 class="modulename">
 <a href="./../tools.html">tools</a><wbr>.webhook_server    </h1>
 
-                
+                        <div class="docstring"><p>webhook_server.py</p>
+
+<p>Provides a FastAPI-based server for handling incoming webhooks
+(e.g., from GitHub) and triggering background synchronization of the knowledge graph.</p>
+</div>
+
                         <input id="mod-webhook_server-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 
                         <label class="view-source-button" for="mod-webhook_server-view-source"><span>View Source</span></label>
 
                         <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="ch">#!/usr/bin/env python3</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">Request</span><span class="p">,</span> <span class="n">HTTPException</span>
-</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="c1"># Add the project root to sys.path so we can import config</span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))))</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">config.loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;AI Knowledge Library Webhook Server&quot;</span><span class="p">)</span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="sd">webhook_server.py</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>
+</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="sd">Provides a FastAPI-based server for handling incoming webhooks</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="sd">(e.g., from GitHub) and triggering background synchronization of the knowledge graph.</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>
+</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">Request</span><span class="p">,</span> <span class="n">HTTPException</span>
 </span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/webhook/sync&quot;</span><span class="p">)</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">trigger_sync</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">):</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>    <span class="n">expected_secret</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;webhook_secret&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>    
-</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>    <span class="c1"># Check X-Webhook-Secret header if configured</span>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>    <span class="k">if</span> <span class="n">expected_secret</span><span class="p">:</span>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>        <span class="n">provided_secret</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;X-Webhook-Secret&quot;</span><span class="p">)</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>        <span class="k">if</span> <span class="n">provided_secret</span> <span class="o">!=</span> <span class="n">expected_secret</span><span class="p">:</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">403</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Invalid webhook secret&quot;</span><span class="p">)</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>
-</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Webhook received! Triggering context synchronization...&quot;</span><span class="p">)</span>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>        <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span><span class="s2">&quot;python3&quot;</span><span class="p">,</span> <span class="s2">&quot;tools/sync_context.py&quot;</span><span class="p">])</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span> <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Sync triggered in background&quot;</span><span class="p">}</span>
-</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
-</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>
-</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
-</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>    <span class="n">host</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;host&quot;</span><span class="p">,</span> <span class="s2">&quot;0.0.0.0&quot;</span><span class="p">)</span>
-</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>    <span class="n">port</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;port&quot;</span><span class="p">,</span> <span class="mi">8000</span><span class="p">)</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">)</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="c1"># Ensure project root is in the path for module loading</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a><span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">script_dir</span><span class="p">)</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a><span class="k">if</span> <span class="n">repo_root</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">repo_root</span><span class="p">)</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">config.loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a><span class="k">class</span><span class="w"> </span><span class="nc">WebhookServer</span><span class="p">:</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a><span class="sd">    Manages the FastAPI application and webhook routes.</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a><span class="sd">    Encapsulates configuration and dependency management.</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the server application and loads configuration.&quot;&quot;&quot;</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;AI Knowledge Library Webhook Server&quot;</span><span class="p">)</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">expected_secret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;webhook_secret&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">host</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;host&quot;</span><span class="p">,</span> <span class="s2">&quot;0.0.0.0&quot;</span><span class="p">)</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;port&quot;</span><span class="p">,</span> <span class="mi">8000</span><span class="p">)</span>
 </span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>
-</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>    <span class="n">main</span><span class="p">()</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>        <span class="c1"># Register routes</span>
+</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_setup_routes</span><span class="p">()</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>
+</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_setup_routes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers all HTTP routes for the FastAPI app.&quot;&quot;&quot;</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>
+</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>        <span class="nd">@self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/webhook/sync&quot;</span><span class="p">)</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">trigger_sync</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">):</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_sync_request</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>
+</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_handle_sync_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">):</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a><span class="sd">        Validates the incoming webhook payload and triggers the sync process.</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">expected_secret</span><span class="p">:</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a>            <span class="n">provided_secret</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;X-Webhook-Secret&quot;</span><span class="p">)</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a>            <span class="k">if</span> <span class="n">provided_secret</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expected_secret</span><span class="p">:</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a>                <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">403</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Invalid webhook secret&quot;</span><span class="p">)</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a>
+</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Webhook received! Triggering context synchronization...&quot;</span><span class="p">)</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a>        <span class="k">try</span><span class="p">:</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a>            <span class="c1"># Execute the sync tool asynchronously as a subprocess</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a>            <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span><span class="s2">&quot;python3&quot;</span><span class="p">,</span> <span class="s2">&quot;tools/sync_context.py&quot;</span><span class="p">])</span>
+</span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a>            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span> <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Sync triggered in background&quot;</span><span class="p">}</span>
+</span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a>            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos">63</span></a>
+</span><span id="L-64"><a href="#L-64"><span class="linenos">64</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-65"><a href="#L-65"><span class="linenos">65</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Starts the Uvicorn ASGI server.&quot;&quot;&quot;</span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos">66</span></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos">67</span></a>
+</span><span id="L-68"><a href="#L-68"><span class="linenos">68</span></a>        <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">)</span>
+</span><span id="L-69"><a href="#L-69"><span class="linenos">69</span></a>
+</span><span id="L-70"><a href="#L-70"><span class="linenos">70</span></a>
+</span><span id="L-71"><a href="#L-71"><span class="linenos">71</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos">72</span></a>    <span class="n">server</span> <span class="o">=</span> <span class="n">WebhookServer</span><span class="p">()</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos">73</span></a>    <span class="n">server</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</span><span id="L-74"><a href="#L-74"><span class="linenos">74</span></a>
+</span><span id="L-75"><a href="#L-75"><span class="linenos">75</span></a>
+</span><span id="L-76"><a href="#L-76"><span class="linenos">76</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+</span><span id="L-77"><a href="#L-77"><span class="linenos">77</span></a>    <span class="n">main</span><span class="p">()</span>
 </span></pre></div>
 
 
             </section>
-                <section id="app">
+                <section id="script_dir">
                     <div class="attr variable">
-            <span class="name">app</span>        =
-<span class="default_value">&lt;fastapi.applications.FastAPI object&gt;</span>
+            <span class="name">script_dir</span>        =
+<span class="default_value">&#39;/home/runner/work/ai_knowledge_library/ai_knowledge_library/tools&#39;</span>
 
         
     </div>
-    <a class="headerlink" href="#app"></a>
+    <a class="headerlink" href="#script_dir"></a>
     
     
 
                 </section>
-                <section id="cfg">
+                <section id="repo_root">
                     <div class="attr variable">
-            <span class="name">cfg</span>        =
-<input id="cfg-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="cfg-view-value"></label><span class="default_value">{&#39;database&#39;: {&#39;chroma_db_path&#39;: &#39;.chroma&#39;, &#39;pgvector_dsn&#39;: &#39;postgresql://user:pass@localhost:5432/ai_knowledge&#39;, &#39;mode&#39;: &#39;sqlite&#39;}, &#39;server&#39;: {&#39;host&#39;: &#39;0.0.0.0&#39;, &#39;port&#39;: 8000, &#39;webhook_secret&#39;: &#39;super_secret_webhook_token&#39;}, &#39;agents&#39;: {&#39;default_language&#39;: &#39;en_US&#39;, &#39;max_context_tokens&#39;: 8192}}</span>
+            <span class="name">repo_root</span>        =
+<span class="default_value">$GITHUB_WORKSPACE</span>
 
         
     </div>
-    <a class="headerlink" href="#cfg"></a>
+    <a class="headerlink" href="#repo_root"></a>
     
     
 
                 </section>
-                <section id="trigger_sync">
-                            <input id="trigger_sync-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-<div class="attr function">
-                    <div class="decorator decorator-app.post">@app.post(&#39;/webhook/sync&#39;)</div>
+                <section id="WebhookServer">
+                            <input id="WebhookServer-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">WebhookServer</span>:
 
-        <span class="def">async def</span>
-        <span class="name">trigger_sync</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">request</span><span class="p">:</span> <span class="n">starlette</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">Request</span></span><span class="return-annotation">):</span></span>
-
-                <label class="view-source-button" for="trigger_sync-view-source"><span>View Source</span></label>
+                <label class="view-source-button" for="WebhookServer-view-source"><span>View Source</span></label>
 
     </div>
-    <a class="headerlink" href="#trigger_sync"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="trigger_sync-15"><a href="#trigger_sync-15"><span class="linenos">15</span></a><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/webhook/sync&quot;</span><span class="p">)</span>
-</span><span id="trigger_sync-16"><a href="#trigger_sync-16"><span class="linenos">16</span></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">trigger_sync</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">):</span>
-</span><span id="trigger_sync-17"><a href="#trigger_sync-17"><span class="linenos">17</span></a>    <span class="n">expected_secret</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;webhook_secret&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-</span><span id="trigger_sync-18"><a href="#trigger_sync-18"><span class="linenos">18</span></a>    
-</span><span id="trigger_sync-19"><a href="#trigger_sync-19"><span class="linenos">19</span></a>    <span class="c1"># Check X-Webhook-Secret header if configured</span>
-</span><span id="trigger_sync-20"><a href="#trigger_sync-20"><span class="linenos">20</span></a>    <span class="k">if</span> <span class="n">expected_secret</span><span class="p">:</span>
-</span><span id="trigger_sync-21"><a href="#trigger_sync-21"><span class="linenos">21</span></a>        <span class="n">provided_secret</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;X-Webhook-Secret&quot;</span><span class="p">)</span>
-</span><span id="trigger_sync-22"><a href="#trigger_sync-22"><span class="linenos">22</span></a>        <span class="k">if</span> <span class="n">provided_secret</span> <span class="o">!=</span> <span class="n">expected_secret</span><span class="p">:</span>
-</span><span id="trigger_sync-23"><a href="#trigger_sync-23"><span class="linenos">23</span></a>            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">403</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Invalid webhook secret&quot;</span><span class="p">)</span>
-</span><span id="trigger_sync-24"><a href="#trigger_sync-24"><span class="linenos">24</span></a>
-</span><span id="trigger_sync-25"><a href="#trigger_sync-25"><span class="linenos">25</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Webhook received! Triggering context synchronization...&quot;</span><span class="p">)</span>
-</span><span id="trigger_sync-26"><a href="#trigger_sync-26"><span class="linenos">26</span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="trigger_sync-27"><a href="#trigger_sync-27"><span class="linenos">27</span></a>        <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span><span class="s2">&quot;python3&quot;</span><span class="p">,</span> <span class="s2">&quot;tools/sync_context.py&quot;</span><span class="p">])</span>
-</span><span id="trigger_sync-28"><a href="#trigger_sync-28"><span class="linenos">28</span></a>        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span> <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Sync triggered in background&quot;</span><span class="p">}</span>
-</span><span id="trigger_sync-29"><a href="#trigger_sync-29"><span class="linenos">29</span></a>    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="trigger_sync-30"><a href="#trigger_sync-30"><span class="linenos">30</span></a>        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+    <a class="headerlink" href="#WebhookServer"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="WebhookServer-24"><a href="#WebhookServer-24"><span class="linenos">24</span></a><span class="k">class</span><span class="w"> </span><span class="nc">WebhookServer</span><span class="p">:</span>
+</span><span id="WebhookServer-25"><a href="#WebhookServer-25"><span class="linenos">25</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="WebhookServer-26"><a href="#WebhookServer-26"><span class="linenos">26</span></a><span class="sd">    Manages the FastAPI application and webhook routes.</span>
+</span><span id="WebhookServer-27"><a href="#WebhookServer-27"><span class="linenos">27</span></a><span class="sd">    Encapsulates configuration and dependency management.</span>
+</span><span id="WebhookServer-28"><a href="#WebhookServer-28"><span class="linenos">28</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="WebhookServer-29"><a href="#WebhookServer-29"><span class="linenos">29</span></a>
+</span><span id="WebhookServer-30"><a href="#WebhookServer-30"><span class="linenos">30</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="WebhookServer-31"><a href="#WebhookServer-31"><span class="linenos">31</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the server application and loads configuration.&quot;&quot;&quot;</span>
+</span><span id="WebhookServer-32"><a href="#WebhookServer-32"><span class="linenos">32</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;AI Knowledge Library Webhook Server&quot;</span><span class="p">)</span>
+</span><span id="WebhookServer-33"><a href="#WebhookServer-33"><span class="linenos">33</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span>
+</span><span id="WebhookServer-34"><a href="#WebhookServer-34"><span class="linenos">34</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">expected_secret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;webhook_secret&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+</span><span id="WebhookServer-35"><a href="#WebhookServer-35"><span class="linenos">35</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">host</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;host&quot;</span><span class="p">,</span> <span class="s2">&quot;0.0.0.0&quot;</span><span class="p">)</span>
+</span><span id="WebhookServer-36"><a href="#WebhookServer-36"><span class="linenos">36</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;port&quot;</span><span class="p">,</span> <span class="mi">8000</span><span class="p">)</span>
+</span><span id="WebhookServer-37"><a href="#WebhookServer-37"><span class="linenos">37</span></a>
+</span><span id="WebhookServer-38"><a href="#WebhookServer-38"><span class="linenos">38</span></a>        <span class="c1"># Register routes</span>
+</span><span id="WebhookServer-39"><a href="#WebhookServer-39"><span class="linenos">39</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_setup_routes</span><span class="p">()</span>
+</span><span id="WebhookServer-40"><a href="#WebhookServer-40"><span class="linenos">40</span></a>
+</span><span id="WebhookServer-41"><a href="#WebhookServer-41"><span class="linenos">41</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_setup_routes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="WebhookServer-42"><a href="#WebhookServer-42"><span class="linenos">42</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers all HTTP routes for the FastAPI app.&quot;&quot;&quot;</span>
+</span><span id="WebhookServer-43"><a href="#WebhookServer-43"><span class="linenos">43</span></a>
+</span><span id="WebhookServer-44"><a href="#WebhookServer-44"><span class="linenos">44</span></a>        <span class="nd">@self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/webhook/sync&quot;</span><span class="p">)</span>
+</span><span id="WebhookServer-45"><a href="#WebhookServer-45"><span class="linenos">45</span></a>        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">trigger_sync</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">):</span>
+</span><span id="WebhookServer-46"><a href="#WebhookServer-46"><span class="linenos">46</span></a>            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_sync_request</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+</span><span id="WebhookServer-47"><a href="#WebhookServer-47"><span class="linenos">47</span></a>
+</span><span id="WebhookServer-48"><a href="#WebhookServer-48"><span class="linenos">48</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_handle_sync_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">):</span>
+</span><span id="WebhookServer-49"><a href="#WebhookServer-49"><span class="linenos">49</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="WebhookServer-50"><a href="#WebhookServer-50"><span class="linenos">50</span></a><span class="sd">        Validates the incoming webhook payload and triggers the sync process.</span>
+</span><span id="WebhookServer-51"><a href="#WebhookServer-51"><span class="linenos">51</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="WebhookServer-52"><a href="#WebhookServer-52"><span class="linenos">52</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">expected_secret</span><span class="p">:</span>
+</span><span id="WebhookServer-53"><a href="#WebhookServer-53"><span class="linenos">53</span></a>            <span class="n">provided_secret</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;X-Webhook-Secret&quot;</span><span class="p">)</span>
+</span><span id="WebhookServer-54"><a href="#WebhookServer-54"><span class="linenos">54</span></a>            <span class="k">if</span> <span class="n">provided_secret</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expected_secret</span><span class="p">:</span>
+</span><span id="WebhookServer-55"><a href="#WebhookServer-55"><span class="linenos">55</span></a>                <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">403</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Invalid webhook secret&quot;</span><span class="p">)</span>
+</span><span id="WebhookServer-56"><a href="#WebhookServer-56"><span class="linenos">56</span></a>
+</span><span id="WebhookServer-57"><a href="#WebhookServer-57"><span class="linenos">57</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Webhook received! Triggering context synchronization...&quot;</span><span class="p">)</span>
+</span><span id="WebhookServer-58"><a href="#WebhookServer-58"><span class="linenos">58</span></a>        <span class="k">try</span><span class="p">:</span>
+</span><span id="WebhookServer-59"><a href="#WebhookServer-59"><span class="linenos">59</span></a>            <span class="c1"># Execute the sync tool asynchronously as a subprocess</span>
+</span><span id="WebhookServer-60"><a href="#WebhookServer-60"><span class="linenos">60</span></a>            <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span><span class="s2">&quot;python3&quot;</span><span class="p">,</span> <span class="s2">&quot;tools/sync_context.py&quot;</span><span class="p">])</span>
+</span><span id="WebhookServer-61"><a href="#WebhookServer-61"><span class="linenos">61</span></a>            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span> <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Sync triggered in background&quot;</span><span class="p">}</span>
+</span><span id="WebhookServer-62"><a href="#WebhookServer-62"><span class="linenos">62</span></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="WebhookServer-63"><a href="#WebhookServer-63"><span class="linenos">63</span></a>            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+</span><span id="WebhookServer-64"><a href="#WebhookServer-64"><span class="linenos">64</span></a>
+</span><span id="WebhookServer-65"><a href="#WebhookServer-65"><span class="linenos">65</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="WebhookServer-66"><a href="#WebhookServer-66"><span class="linenos">66</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Starts the Uvicorn ASGI server.&quot;&quot;&quot;</span>
+</span><span id="WebhookServer-67"><a href="#WebhookServer-67"><span class="linenos">67</span></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
+</span><span id="WebhookServer-68"><a href="#WebhookServer-68"><span class="linenos">68</span></a>
+</span><span id="WebhookServer-69"><a href="#WebhookServer-69"><span class="linenos">69</span></a>        <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">)</span>
 </span></pre></div>
 
 
+            <div class="docstring"><p>Manages the FastAPI application and webhook routes.
+Encapsulates configuration and dependency management.</p>
+</div>
+
+
+                            <div id="WebhookServer.__init__" class="classattr">
+                                        <input id="WebhookServer.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="name">WebhookServer</span><span class="signature pdoc-code condensed">()</span>
+
+                <label class="view-source-button" for="WebhookServer.__init__-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#WebhookServer.__init__"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="WebhookServer.__init__-30"><a href="#WebhookServer.__init__-30"><span class="linenos">30</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="WebhookServer.__init__-31"><a href="#WebhookServer.__init__-31"><span class="linenos">31</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the server application and loads configuration.&quot;&quot;&quot;</span>
+</span><span id="WebhookServer.__init__-32"><a href="#WebhookServer.__init__-32"><span class="linenos">32</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;AI Knowledge Library Webhook Server&quot;</span><span class="p">)</span>
+</span><span id="WebhookServer.__init__-33"><a href="#WebhookServer.__init__-33"><span class="linenos">33</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span>
+</span><span id="WebhookServer.__init__-34"><a href="#WebhookServer.__init__-34"><span class="linenos">34</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">expected_secret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;webhook_secret&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+</span><span id="WebhookServer.__init__-35"><a href="#WebhookServer.__init__-35"><span class="linenos">35</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">host</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;host&quot;</span><span class="p">,</span> <span class="s2">&quot;0.0.0.0&quot;</span><span class="p">)</span>
+</span><span id="WebhookServer.__init__-36"><a href="#WebhookServer.__init__-36"><span class="linenos">36</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;port&quot;</span><span class="p">,</span> <span class="mi">8000</span><span class="p">)</span>
+</span><span id="WebhookServer.__init__-37"><a href="#WebhookServer.__init__-37"><span class="linenos">37</span></a>
+</span><span id="WebhookServer.__init__-38"><a href="#WebhookServer.__init__-38"><span class="linenos">38</span></a>        <span class="c1"># Register routes</span>
+</span><span id="WebhookServer.__init__-39"><a href="#WebhookServer.__init__-39"><span class="linenos">39</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_setup_routes</span><span class="p">()</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Initializes the server application and loads configuration.</p>
+</div>
+
+
+                            </div>
+                            <div id="WebhookServer.app" class="classattr">
+                                <div class="attr variable">
+            <span class="name">app</span>
+
+        
+    </div>
+    <a class="headerlink" href="#WebhookServer.app"></a>
+    
     
 
+                            </div>
+                            <div id="WebhookServer.cfg" class="classattr">
+                                <div class="attr variable">
+            <span class="name">cfg</span>
+
+        
+    </div>
+    <a class="headerlink" href="#WebhookServer.cfg"></a>
+    
+    
+
+                            </div>
+                            <div id="WebhookServer.expected_secret" class="classattr">
+                                <div class="attr variable">
+            <span class="name">expected_secret</span>
+
+        
+    </div>
+    <a class="headerlink" href="#WebhookServer.expected_secret"></a>
+    
+    
+
+                            </div>
+                            <div id="WebhookServer.host" class="classattr">
+                                <div class="attr variable">
+            <span class="name">host</span>
+
+        
+    </div>
+    <a class="headerlink" href="#WebhookServer.host"></a>
+    
+    
+
+                            </div>
+                            <div id="WebhookServer.port" class="classattr">
+                                <div class="attr variable">
+            <span class="name">port</span>
+
+        
+    </div>
+    <a class="headerlink" href="#WebhookServer.port"></a>
+    
+    
+
+                            </div>
+                            <div id="WebhookServer.run" class="classattr">
+                                        <input id="WebhookServer.run-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">run</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="WebhookServer.run-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#WebhookServer.run"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="WebhookServer.run-65"><a href="#WebhookServer.run-65"><span class="linenos">65</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="WebhookServer.run-66"><a href="#WebhookServer.run-66"><span class="linenos">66</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Starts the Uvicorn ASGI server.&quot;&quot;&quot;</span>
+</span><span id="WebhookServer.run-67"><a href="#WebhookServer.run-67"><span class="linenos">67</span></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
+</span><span id="WebhookServer.run-68"><a href="#WebhookServer.run-68"><span class="linenos">68</span></a>
+</span><span id="WebhookServer.run-69"><a href="#WebhookServer.run-69"><span class="linenos">69</span></a>        <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Starts the Uvicorn ASGI server.</p>
+</div>
+
+
+                            </div>
                 </section>
                 <section id="main">
                             <input id="main-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
@@ -175,11 +381,9 @@
 
     </div>
     <a class="headerlink" href="#main"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="main-32"><a href="#main-32"><span class="linenos">32</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="main-33"><a href="#main-33"><span class="linenos">33</span></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
-</span><span id="main-34"><a href="#main-34"><span class="linenos">34</span></a>    <span class="n">host</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;host&quot;</span><span class="p">,</span> <span class="s2">&quot;0.0.0.0&quot;</span><span class="p">)</span>
-</span><span id="main-35"><a href="#main-35"><span class="linenos">35</span></a>    <span class="n">port</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;port&quot;</span><span class="p">,</span> <span class="mi">8000</span><span class="p">)</span>
-</span><span id="main-36"><a href="#main-36"><span class="linenos">36</span></a>    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="main-72"><a href="#main-72"><span class="linenos">72</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="main-73"><a href="#main-73"><span class="linenos">73</span></a>    <span class="n">server</span> <span class="o">=</span> <span class="n">WebhookServer</span><span class="p">()</span>
+</span><span id="main-74"><a href="#main-74"><span class="linenos">74</span></a>    <span class="n">server</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </span></pre></div>
 
 
