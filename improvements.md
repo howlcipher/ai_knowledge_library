@@ -6,7 +6,7 @@ This document tracks all conceptual improvements, architectural upgrades, and au
 * (No open items)
 
 ## 2. Architecture & Ease of Use
-* (No open items)
+* **Graphical Frontend (TUI or Web UI):** Build an interactive TUI or a fully-featured Web application to manage the library, configure agents, and execute tools without requiring the user to rely entirely on the CLI.
 
 ## 3. Advanced Features & Tooling
-* (No open items)
+* **Multi-LLM Integration Switch:** Implement a configuration interface allowing users to dynamically select their desired AI service provider (e.g., Claude, Gemini, ChatGPT, Grok, Perplexity, Copilot) for agentic workflows rather than being locked to a single provider.
