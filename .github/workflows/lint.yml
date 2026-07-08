@@ -40,8 +40,4 @@ jobs:
           go-version: '1.26'
           
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          working-directory: .
-          args: --timeout=5m
+        run: go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --timeout=5m
