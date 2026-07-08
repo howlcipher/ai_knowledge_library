@@ -76,7 +76,7 @@ func (i *Installer) CloneRepo() error {
 
 	fmt.Printf("Cloning %s into %s...\n", i.RepoURL, i.DestPath)
 	err := i.runInteractiveCommand("git", "clone", i.RepoURL, i.DestPath)
-	
+
 	if err != nil {
 		fmt.Printf("\nClone failed: %v\n", err)
 		return fmt.Errorf("failed to clone repository")
@@ -156,7 +156,7 @@ func (i *Installer) Uninstall() {
 	fmt.Println("Uninstalling global links...")
 	home, _ := os.UserHomeDir()
 	agyDir := filepath.Join(home, ".gemini", "antigravity-cli")
-	
+
 	skillsDir := filepath.Join(agyDir, "skills")
 	rulesDir := filepath.Join(agyDir, "rules")
 
@@ -259,14 +259,14 @@ language_module: %s
 			content += fmt.Sprintf("* GitHub: github.com/%s\n", github)
 		}
 	}
-	
+
 	content += "\n## Professional Summary\n"
 	if summary != "" {
 		content += fmt.Sprintf("%s\n", summary)
 	} else {
 		content += "Add your professional summary here.\n"
 	}
-	
+
 	content += "\n## Core Skills\n* Add your core skills here.\n\n## Professional Experience\n* Add your experience here.\n\n## Education and Certifications\n* Add your education here.\n"
 
 	err := os.WriteFile("USER_PROFILE.md", []byte(content), 0644)
@@ -274,7 +274,7 @@ language_module: %s
 		fmt.Println("Failed to save profile:", err)
 		return
 	}
-	
+
 	i.Language = langPreference
 	fmt.Println("\nSuccessfully generated your custom USER_PROFILE.md!")
 }
@@ -491,7 +491,7 @@ func main() {
 			installer.Uninstall()
 		},
 	}
-	
+
 	rootCmd.AddCommand(installCmd, customizeCmd, syncCmd, uninstallCmd)
 
 	if err := rootCmd.Execute(); err != nil {

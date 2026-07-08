@@ -46,7 +46,7 @@ clean:
 # Build
 build:
 	@echo "Building Go binary installer..."
-	go build -o ai_installer cmd/installer/main.go
+	go build -o ai_installer ./cmd/installer
 	@echo "Build complete: ./ai_installer"
 
 # Documentation
