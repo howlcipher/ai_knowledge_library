@@ -23,6 +23,8 @@ dependencies = [
     "streamlit",
     "psycopg2-binary",
     "pgvector",
+    "redis",
+    "boto3",
     "google-genai",
     "textual",
     "litellm",

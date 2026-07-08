@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ai-knowledge-library.fullname" . }}-celery
+  labels:
+    app: {{ include "ai-knowledge-library.name" . }}-celery
+spec:
+  replicas: {{ .Values.replicaCount.celery }}
+  selector:
+    matchLabels:
+      app: {{ include "ai-knowledge-library.name" . }}-celery
+  template:
+    metadata:
+      labels:
+        app: {{ include "ai-knowledge-library.name" . }}-celery
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}-celery
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["celery", "-A", "src.infrastructure.celery_worker.celery_app", "worker", "--loglevel=info"]
+          env:
+            - name: USE_AWS_SECRETS_MANAGER
+              value: {{ .Values.env.USE_AWS_SECRETS_MANAGER | quote }}
+            - name: REDIS_URL
+              value: {{ .Values.env.REDIS_URL | quote }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

@@ -3,8 +3,9 @@ import yaml
 import os
 
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from src.infrastructure.secret_manager import SecretManager
 
 class DatabaseSettings(BaseModel):
     chroma_db_path: str = ".chroma"
@@ -80,6 +81,18 @@ class ConfigLoader:
 
         # Load pydantic settings prioritizing .env over yaml_data
         self.settings = AppSettings(**yaml_data)
+        
+        # Override with Secret Manager if configured
+        secret_mgr = SecretManager()
+        if os.environ.get("USE_AWS_SECRETS_MANAGER") == "true":
+            aws_api_key = secret_mgr.get_secret("GEMINI_API_KEY")
+            if aws_api_key:
+                self.settings.gemini_api_key = aws_api_key
+            
+            aws_webhook = secret_mgr.get_secret("WEBHOOK_SECRET")
+            if aws_webhook:
+                self.settings.server.webhook_secret = aws_webhook
+                
         self.config = self.settings.model_dump()
 
     def get(self, key, default=None):

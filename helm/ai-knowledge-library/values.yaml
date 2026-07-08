@@ -1,0 +1,25 @@
+replicaCount:
+  api: 2
+  celery: 2
+
+image:
+  repository: ghcr.io/howlcipher/ai_knowledge_library
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 8000
+
+env:
+  USE_AWS_SECRETS_MANAGER: "true"
+  AWS_REGION: "us-east-1"
+  REDIS_URL: "redis://redis-master.default.svc.cluster.local:6379/0"
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi

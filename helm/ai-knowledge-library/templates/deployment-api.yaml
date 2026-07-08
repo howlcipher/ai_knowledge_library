@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ai-knowledge-library.fullname" . }}-api
+  labels:
+    app: {{ include "ai-knowledge-library.name" . }}-api
+spec:
+  replicas: {{ .Values.replicaCount.api }}
+  selector:
+    matchLabels:
+      app: {{ include "ai-knowledge-library.name" . }}-api
+  template:
+    metadata:
+      labels:
+        app: {{ include "ai-knowledge-library.name" . }}-api
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}-api
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["uvicorn", "src.infrastructure.webhook_server:app", "--host", "0.0.0.0", "--port", "8000"]
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          env:
+            - name: USE_AWS_SECRETS_MANAGER
+              value: {{ .Values.env.USE_AWS_SECRETS_MANAGER | quote }}
+            - name: REDIS_URL
+              value: {{ .Values.env.REDIS_URL | quote }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
