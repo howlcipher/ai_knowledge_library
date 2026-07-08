@@ -411,6 +411,7 @@ func interactiveMenu(installer *Installer) {
 			huh.NewSelect[string]().
 				Title(T(installer.Language, "MenuTitle")).
 				Options(
+					huh.NewOption("Launch RAG Interface (TUI/Web)", "launch_ui"),
 					huh.NewOption(T(installer.Language, "Install"), "install"),
 					huh.NewOption(T(installer.Language, "Customize"), "customize"),
 					huh.NewOption(T(installer.Language, "Sync"), "sync"),
@@ -429,6 +430,8 @@ func interactiveMenu(installer *Installer) {
 	}
 
 	switch action {
+	case "launch_ui":
+		installer.LaunchUI()
 	case "install":
 		installer.Install()
 	case "customize":

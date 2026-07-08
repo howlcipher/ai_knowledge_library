@@ -31,10 +31,37 @@
             <h2>API Documentation</h2>
                 <ul class="memberlist">
             <li>
-                    <a class="function" href="#load_config">load_config</a>
+                    <a class="class" href="#ConfigLoader">ConfigLoader</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#ConfigLoader.__init__">ConfigLoader</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#ConfigLoader.script_dir">script_dir</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#ConfigLoader.repo_root">repo_root</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#ConfigLoader.config">config</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#ConfigLoader.get">get</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#ConfigLoader.get_repo_root">get_repo_root</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="variable" href="#default_loader">default_loader</a>
             </li>
             <li>
                     <a class="variable" href="#config">config</a>
+            </li>
+            <li>
+                    <a class="function" href="#load_config">load_config</a>
             </li>
             <li>
                     <a class="function" href="#main">main</a>
@@ -64,44 +91,257 @@
 </span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
 </span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 </span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="k">def</span><span class="w"> </span><span class="nf">load_config</span><span class="p">():</span>
-</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>    <span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;config&#39;</span><span class="p">,</span> <span class="s1">&#39;settings.yaml&#39;</span><span class="p">)</span>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">config_path</span><span class="p">):</span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>        <span class="k">return</span> <span class="p">{}</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>        <span class="k">return</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a>
+</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="k">class</span><span class="w"> </span><span class="nc">ConfigLoader</span><span class="p">:</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="sd">    A class to load and provide access to configuration settings,</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="sd">    as well as common directory paths to apply DRY principles.</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded config: </span><span class="si">{</span><span class="n">config</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>    <span class="n">main</span><span class="p">()</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="sd">        Initializes the ConfigLoader and calculates common paths.</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">script_dir</span><span class="p">)</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>        <span class="k">if</span> <span class="n">config_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="s2">&quot;settings.yaml&quot;</span><span class="p">)</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">config_path</span> <span class="o">=</span> <span class="n">config_path</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_config</span><span class="p">()</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_load_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a><span class="sd">        Loads the configuration from the specified YAML file.</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a><span class="sd">        Returns an empty dictionary if the file does not exist.</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_path</span><span class="p">):</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>            <span class="k">return</span> <span class="p">{}</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>            <span class="k">return</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>
+</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a><span class="sd">        Retrieves a value from the configuration using the provided key.</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>
+</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_repo_root</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a><span class="sd">        Returns the root directory of the repository.</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>
+</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a>
+</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a><span class="c1"># Provide a default instance and config dictionary for backward compatibility</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a><span class="n">default_loader</span> <span class="o">=</span> <span class="n">ConfigLoader</span><span class="p">()</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a><span class="n">config</span> <span class="o">=</span> <span class="n">default_loader</span><span class="o">.</span><span class="n">config</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a>
+</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a>
+</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a><span class="k">def</span><span class="w"> </span><span class="nf">load_config</span><span class="p">():</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a><span class="sd">    Legacy function to load config directly.</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a>    <span class="k">return</span> <span class="n">default_loader</span><span class="o">.</span><span class="n">_load_config</span><span class="p">()</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a>
+</span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a>
+</span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos">63</span></a><span class="sd">    Main entry point for testing the ConfigLoader.</span>
+</span><span id="L-64"><a href="#L-64"><span class="linenos">64</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-65"><a href="#L-65"><span class="linenos">65</span></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded config: </span><span class="si">{</span><span class="n">config</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos">66</span></a>
+</span><span id="L-67"><a href="#L-67"><span class="linenos">67</span></a>
+</span><span id="L-68"><a href="#L-68"><span class="linenos">68</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+</span><span id="L-69"><a href="#L-69"><span class="linenos">69</span></a>    <span class="n">main</span><span class="p">()</span>
 </span></pre></div>
 
 
             </section>
-                <section id="load_config">
-                            <input id="load_config-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-<div class="attr function">
+                <section id="ConfigLoader">
+                            <input id="ConfigLoader-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
             
-        <span class="def">def</span>
-        <span class="name">load_config</span><span class="signature pdoc-code condensed">(<span class="return-annotation">):</span></span>
+    <span class="def">class</span>
+    <span class="name">ConfigLoader</span>:
 
-                <label class="view-source-button" for="load_config-view-source"><span>View Source</span></label>
+                <label class="view-source-button" for="ConfigLoader-view-source"><span>View Source</span></label>
 
     </div>
-    <a class="headerlink" href="#load_config"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="load_config-6"><a href="#load_config-6"><span class="linenos"> 6</span></a><span class="k">def</span><span class="w"> </span><span class="nf">load_config</span><span class="p">():</span>
-</span><span id="load_config-7"><a href="#load_config-7"><span class="linenos"> 7</span></a>    <span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;config&#39;</span><span class="p">,</span> <span class="s1">&#39;settings.yaml&#39;</span><span class="p">)</span>
-</span><span id="load_config-8"><a href="#load_config-8"><span class="linenos"> 8</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">config_path</span><span class="p">):</span>
-</span><span id="load_config-9"><a href="#load_config-9"><span class="linenos"> 9</span></a>        <span class="k">return</span> <span class="p">{}</span>
-</span><span id="load_config-10"><a href="#load_config-10"><span class="linenos">10</span></a>    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="load_config-11"><a href="#load_config-11"><span class="linenos">11</span></a>        <span class="k">return</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <a class="headerlink" href="#ConfigLoader"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ConfigLoader-7"><a href="#ConfigLoader-7"><span class="linenos"> 7</span></a><span class="k">class</span><span class="w"> </span><span class="nc">ConfigLoader</span><span class="p">:</span>
+</span><span id="ConfigLoader-8"><a href="#ConfigLoader-8"><span class="linenos"> 8</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="ConfigLoader-9"><a href="#ConfigLoader-9"><span class="linenos"> 9</span></a><span class="sd">    A class to load and provide access to configuration settings,</span>
+</span><span id="ConfigLoader-10"><a href="#ConfigLoader-10"><span class="linenos">10</span></a><span class="sd">    as well as common directory paths to apply DRY principles.</span>
+</span><span id="ConfigLoader-11"><a href="#ConfigLoader-11"><span class="linenos">11</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="ConfigLoader-12"><a href="#ConfigLoader-12"><span class="linenos">12</span></a>
+</span><span id="ConfigLoader-13"><a href="#ConfigLoader-13"><span class="linenos">13</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span><span id="ConfigLoader-14"><a href="#ConfigLoader-14"><span class="linenos">14</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="ConfigLoader-15"><a href="#ConfigLoader-15"><span class="linenos">15</span></a><span class="sd">        Initializes the ConfigLoader and calculates common paths.</span>
+</span><span id="ConfigLoader-16"><a href="#ConfigLoader-16"><span class="linenos">16</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ConfigLoader-17"><a href="#ConfigLoader-17"><span class="linenos">17</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+</span><span id="ConfigLoader-18"><a href="#ConfigLoader-18"><span class="linenos">18</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">script_dir</span><span class="p">)</span>
+</span><span id="ConfigLoader-19"><a href="#ConfigLoader-19"><span class="linenos">19</span></a>
+</span><span id="ConfigLoader-20"><a href="#ConfigLoader-20"><span class="linenos">20</span></a>        <span class="k">if</span> <span class="n">config_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="ConfigLoader-21"><a href="#ConfigLoader-21"><span class="linenos">21</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="s2">&quot;settings.yaml&quot;</span><span class="p">)</span>
+</span><span id="ConfigLoader-22"><a href="#ConfigLoader-22"><span class="linenos">22</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="ConfigLoader-23"><a href="#ConfigLoader-23"><span class="linenos">23</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">config_path</span> <span class="o">=</span> <span class="n">config_path</span>
+</span><span id="ConfigLoader-24"><a href="#ConfigLoader-24"><span class="linenos">24</span></a>
+</span><span id="ConfigLoader-25"><a href="#ConfigLoader-25"><span class="linenos">25</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_config</span><span class="p">()</span>
+</span><span id="ConfigLoader-26"><a href="#ConfigLoader-26"><span class="linenos">26</span></a>
+</span><span id="ConfigLoader-27"><a href="#ConfigLoader-27"><span class="linenos">27</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_load_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="ConfigLoader-28"><a href="#ConfigLoader-28"><span class="linenos">28</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="ConfigLoader-29"><a href="#ConfigLoader-29"><span class="linenos">29</span></a><span class="sd">        Loads the configuration from the specified YAML file.</span>
+</span><span id="ConfigLoader-30"><a href="#ConfigLoader-30"><span class="linenos">30</span></a><span class="sd">        Returns an empty dictionary if the file does not exist.</span>
+</span><span id="ConfigLoader-31"><a href="#ConfigLoader-31"><span class="linenos">31</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ConfigLoader-32"><a href="#ConfigLoader-32"><span class="linenos">32</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_path</span><span class="p">):</span>
+</span><span id="ConfigLoader-33"><a href="#ConfigLoader-33"><span class="linenos">33</span></a>            <span class="k">return</span> <span class="p">{}</span>
+</span><span id="ConfigLoader-34"><a href="#ConfigLoader-34"><span class="linenos">34</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="ConfigLoader-35"><a href="#ConfigLoader-35"><span class="linenos">35</span></a>            <span class="k">return</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+</span><span id="ConfigLoader-36"><a href="#ConfigLoader-36"><span class="linenos">36</span></a>
+</span><span id="ConfigLoader-37"><a href="#ConfigLoader-37"><span class="linenos">37</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span><span id="ConfigLoader-38"><a href="#ConfigLoader-38"><span class="linenos">38</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="ConfigLoader-39"><a href="#ConfigLoader-39"><span class="linenos">39</span></a><span class="sd">        Retrieves a value from the configuration using the provided key.</span>
+</span><span id="ConfigLoader-40"><a href="#ConfigLoader-40"><span class="linenos">40</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ConfigLoader-41"><a href="#ConfigLoader-41"><span class="linenos">41</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
+</span><span id="ConfigLoader-42"><a href="#ConfigLoader-42"><span class="linenos">42</span></a>
+</span><span id="ConfigLoader-43"><a href="#ConfigLoader-43"><span class="linenos">43</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_repo_root</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="ConfigLoader-44"><a href="#ConfigLoader-44"><span class="linenos">44</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="ConfigLoader-45"><a href="#ConfigLoader-45"><span class="linenos">45</span></a><span class="sd">        Returns the root directory of the repository.</span>
+</span><span id="ConfigLoader-46"><a href="#ConfigLoader-46"><span class="linenos">46</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ConfigLoader-47"><a href="#ConfigLoader-47"><span class="linenos">47</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span>
 </span></pre></div>
 
 
+            <div class="docstring"><p>A class to load and provide access to configuration settings,
+as well as common directory paths to apply DRY principles.</p>
+</div>
+
+
+                            <div id="ConfigLoader.__init__" class="classattr">
+                                        <input id="ConfigLoader.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="name">ConfigLoader</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">config_path</span><span class="o">=</span><span class="kc">None</span></span>)</span>
+
+                <label class="view-source-button" for="ConfigLoader.__init__-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#ConfigLoader.__init__"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ConfigLoader.__init__-13"><a href="#ConfigLoader.__init__-13"><span class="linenos">13</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span><span id="ConfigLoader.__init__-14"><a href="#ConfigLoader.__init__-14"><span class="linenos">14</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="ConfigLoader.__init__-15"><a href="#ConfigLoader.__init__-15"><span class="linenos">15</span></a><span class="sd">        Initializes the ConfigLoader and calculates common paths.</span>
+</span><span id="ConfigLoader.__init__-16"><a href="#ConfigLoader.__init__-16"><span class="linenos">16</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ConfigLoader.__init__-17"><a href="#ConfigLoader.__init__-17"><span class="linenos">17</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+</span><span id="ConfigLoader.__init__-18"><a href="#ConfigLoader.__init__-18"><span class="linenos">18</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">script_dir</span><span class="p">)</span>
+</span><span id="ConfigLoader.__init__-19"><a href="#ConfigLoader.__init__-19"><span class="linenos">19</span></a>
+</span><span id="ConfigLoader.__init__-20"><a href="#ConfigLoader.__init__-20"><span class="linenos">20</span></a>        <span class="k">if</span> <span class="n">config_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="ConfigLoader.__init__-21"><a href="#ConfigLoader.__init__-21"><span class="linenos">21</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="s2">&quot;settings.yaml&quot;</span><span class="p">)</span>
+</span><span id="ConfigLoader.__init__-22"><a href="#ConfigLoader.__init__-22"><span class="linenos">22</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="ConfigLoader.__init__-23"><a href="#ConfigLoader.__init__-23"><span class="linenos">23</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">config_path</span> <span class="o">=</span> <span class="n">config_path</span>
+</span><span id="ConfigLoader.__init__-24"><a href="#ConfigLoader.__init__-24"><span class="linenos">24</span></a>
+</span><span id="ConfigLoader.__init__-25"><a href="#ConfigLoader.__init__-25"><span class="linenos">25</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_config</span><span class="p">()</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Initializes the ConfigLoader and calculates common paths.</p>
+</div>
+
+
+                            </div>
+                            <div id="ConfigLoader.script_dir" class="classattr">
+                                <div class="attr variable">
+            <span class="name">script_dir</span>
+
+        
+    </div>
+    <a class="headerlink" href="#ConfigLoader.script_dir"></a>
+    
+    
+
+                            </div>
+                            <div id="ConfigLoader.repo_root" class="classattr">
+                                <div class="attr variable">
+            <span class="name">repo_root</span>
+
+        
+    </div>
+    <a class="headerlink" href="#ConfigLoader.repo_root"></a>
+    
+    
+
+                            </div>
+                            <div id="ConfigLoader.config" class="classattr">
+                                <div class="attr variable">
+            <span class="name">config</span>
+
+        
+    </div>
+    <a class="headerlink" href="#ConfigLoader.config"></a>
+    
+    
+
+                            </div>
+                            <div id="ConfigLoader.get" class="classattr">
+                                        <input id="ConfigLoader.get-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">get</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">key</span>, </span><span class="param"><span class="n">default</span><span class="o">=</span><span class="kc">None</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="ConfigLoader.get-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#ConfigLoader.get"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ConfigLoader.get-37"><a href="#ConfigLoader.get-37"><span class="linenos">37</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span><span id="ConfigLoader.get-38"><a href="#ConfigLoader.get-38"><span class="linenos">38</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="ConfigLoader.get-39"><a href="#ConfigLoader.get-39"><span class="linenos">39</span></a><span class="sd">        Retrieves a value from the configuration using the provided key.</span>
+</span><span id="ConfigLoader.get-40"><a href="#ConfigLoader.get-40"><span class="linenos">40</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ConfigLoader.get-41"><a href="#ConfigLoader.get-41"><span class="linenos">41</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Retrieves a value from the configuration using the provided key.</p>
+</div>
+
+
+                            </div>
+                            <div id="ConfigLoader.get_repo_root" class="classattr">
+                                        <input id="ConfigLoader.get_repo_root-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">get_repo_root</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="ConfigLoader.get_repo_root-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#ConfigLoader.get_repo_root"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ConfigLoader.get_repo_root-43"><a href="#ConfigLoader.get_repo_root-43"><span class="linenos">43</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_repo_root</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="ConfigLoader.get_repo_root-44"><a href="#ConfigLoader.get_repo_root-44"><span class="linenos">44</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="ConfigLoader.get_repo_root-45"><a href="#ConfigLoader.get_repo_root-45"><span class="linenos">45</span></a><span class="sd">        Returns the root directory of the repository.</span>
+</span><span id="ConfigLoader.get_repo_root-46"><a href="#ConfigLoader.get_repo_root-46"><span class="linenos">46</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ConfigLoader.get_repo_root-47"><a href="#ConfigLoader.get_repo_root-47"><span class="linenos">47</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Returns the root directory of the repository.</p>
+</div>
+
+
+                            </div>
+                </section>
+                <section id="default_loader">
+                    <div class="attr variable">
+            <span class="name">default_loader</span>        =
+<span class="default_value">&lt;<a href="#ConfigLoader">ConfigLoader</a> object&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#default_loader"></a>
+    
     
 
                 </section>
@@ -118,6 +358,30 @@
     
 
                 </section>
+                <section id="load_config">
+                            <input id="load_config-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">load_config</span><span class="signature pdoc-code condensed">(<span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="load_config-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#load_config"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="load_config-55"><a href="#load_config-55"><span class="linenos">55</span></a><span class="k">def</span><span class="w"> </span><span class="nf">load_config</span><span class="p">():</span>
+</span><span id="load_config-56"><a href="#load_config-56"><span class="linenos">56</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="load_config-57"><a href="#load_config-57"><span class="linenos">57</span></a><span class="sd">    Legacy function to load config directly.</span>
+</span><span id="load_config-58"><a href="#load_config-58"><span class="linenos">58</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="load_config-59"><a href="#load_config-59"><span class="linenos">59</span></a>    <span class="k">return</span> <span class="n">default_loader</span><span class="o">.</span><span class="n">_load_config</span><span class="p">()</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Legacy function to load config directly.</p>
+</div>
+
+
+                </section>
                 <section id="main">
                             <input id="main-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -129,12 +393,17 @@
 
     </div>
     <a class="headerlink" href="#main"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="main-15"><a href="#main-15"><span class="linenos">15</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="main-16"><a href="#main-16"><span class="linenos">16</span></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded config: </span><span class="si">{</span><span class="n">config</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="main-62"><a href="#main-62"><span class="linenos">62</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="main-63"><a href="#main-63"><span class="linenos">63</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="main-64"><a href="#main-64"><span class="linenos">64</span></a><span class="sd">    Main entry point for testing the ConfigLoader.</span>
+</span><span id="main-65"><a href="#main-65"><span class="linenos">65</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="main-66"><a href="#main-66"><span class="linenos">66</span></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded config: </span><span class="si">{</span><span class="n">config</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>Main entry point for testing the ConfigLoader.</p>
+</div>
+
 
                 </section>
     </main>

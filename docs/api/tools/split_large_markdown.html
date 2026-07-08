@@ -31,6 +31,30 @@
             <h2>API Documentation</h2>
                 <ul class="memberlist">
             <li>
+                    <a class="class" href="#MarkdownSplitter">MarkdownSplitter</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#MarkdownSplitter.__init__">MarkdownSplitter</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#MarkdownSplitter.max_lines">max_lines</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#MarkdownSplitter.exclude_files">exclude_files</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#MarkdownSplitter.repo_root">repo_root</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#MarkdownSplitter.split_file">split_file</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#MarkdownSplitter.scan_and_split">scan_and_split</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
                     <a class="function" href="#split_file">split_file</a>
             </li>
             <li>
@@ -52,95 +76,319 @@
                     <h1 class="modulename">
 <a href="./../tools.html">tools</a><wbr>.split_large_markdown    </h1>
 
-                
+                        <div class="docstring"><p>Utility to split large markdown files into smaller chunks.</p>
+</div>
+
                         <input id="mod-split_large_markdown-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 
                         <label class="view-source-button" for="mod-split_large_markdown-view-source"><span>View Source</span></label>
 
                         <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="ch">#!/usr/bin/env python3</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
-</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="k">def</span><span class="w"> </span><span class="nf">split_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">max_lines</span><span class="o">=</span><span class="mi">500</span><span class="p">):</span>
-</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>        <span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>        
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">max_lines</span><span class="p">:</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>        <span class="k">return</span> <span class="kc">False</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>        
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>    <span class="n">directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>    <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>    <span class="n">name</span><span class="p">,</span> <span class="n">ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>    
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>    <span class="n">num_parts</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">/</span> <span class="n">max_lines</span><span class="p">)</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_parts</span><span class="p">):</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>        <span class="n">part_lines</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span> <span class="o">*</span> <span class="n">max_lines</span> <span class="p">:</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">max_lines</span><span class="p">]</span>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>        <span class="n">part_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_part</span><span class="si">{</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}{</span><span class="n">ext</span><span class="si">}</span><span class="s2">&quot;</span>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>        <span class="n">part_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">part_name</span><span class="p">)</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">part_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>            <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="n">part_lines</span><span class="p">)</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>            
-</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Split </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2"> into </span><span class="si">{</span><span class="n">num_parts</span><span class="si">}</span><span class="s2"> optimized chunks.&quot;</span><span class="p">)</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>    <span class="k">return</span> <span class="kc">True</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>
-</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>    <span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
-</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>    <span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">script_dir</span><span class="p">)</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>    <span class="n">exclude_files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;README.md&quot;</span><span class="p">,</span> <span class="s2">&quot;change_log.md&quot;</span><span class="p">,</span> <span class="s2">&quot;GEMINI.md&quot;</span><span class="p">,</span> <span class="s2">&quot;USER_PROFILE.md&quot;</span><span class="p">]</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>    
-</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Scanning library for oversized markdown files...&quot;</span><span class="p">)</span>
-</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>    <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">dirs</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">repo_root</span><span class="p">):</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>        <span class="k">if</span> <span class="s2">&quot;.git&quot;</span> <span class="ow">in</span> <span class="n">root</span> <span class="ow">or</span> <span class="s2">&quot;.agents&quot;</span> <span class="ow">in</span> <span class="n">root</span><span class="p">:</span>
-</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>            <span class="k">continue</span>
-</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
-</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>            <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.md&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">file</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude_files</span><span class="p">:</span>
-</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>                <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span>
-</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>                <span class="n">split_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
-</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>
-</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>    <span class="n">main</span><span class="p">()</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="sd">Utility to split large markdown files into smaller chunks.</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a>
+</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>
+</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="k">class</span><span class="w"> </span><span class="nc">MarkdownSplitter</span><span class="p">:</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to handle finding and splitting large markdown files.&quot;&quot;&quot;</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">500</span><span class="p">,</span> <span class="n">exclude_files</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the splitter.&quot;&quot;&quot;</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span> <span class="o">=</span> <span class="n">max_lines</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">exclude_files</span> <span class="o">=</span> <span class="n">exclude_files</span> <span class="ow">or</span> <span class="p">[</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>            <span class="s2">&quot;README.md&quot;</span><span class="p">,</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>            <span class="s2">&quot;change_log.md&quot;</span><span class="p">,</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>            <span class="s2">&quot;GEMINI.md&quot;</span><span class="p">,</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>            <span class="s2">&quot;USER_PROFILE.md&quot;</span><span class="p">,</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>        <span class="p">]</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>        <span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">script_dir</span><span class="p">)</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">split_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Splits a single markdown file if it exceeds the max lines threshold.&quot;&quot;&quot;</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>            <span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span><span class="p">:</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>            <span class="k">return</span> <span class="kc">False</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>        <span class="n">directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>        <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>        <span class="n">name</span><span class="p">,</span> <span class="n">ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>
+</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>        <span class="n">num_parts</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span><span class="p">)</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_parts</span><span class="p">):</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>            <span class="n">part_lines</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span> <span class="p">:</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span><span class="p">]</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>            <span class="n">part_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_part</span><span class="si">{</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}{</span><span class="n">ext</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>            <span class="n">part_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">part_name</span><span class="p">)</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>
+</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">part_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>                <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="n">part_lines</span><span class="p">)</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>
+</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Split </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2"> into </span><span class="si">{</span><span class="n">num_parts</span><span class="si">}</span><span class="s2"> optimized chunks.&quot;</span><span class="p">)</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a>
+</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">scan_and_split</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Scans the repository and splits oversized markdown files.&quot;&quot;&quot;</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Scanning library for oversized markdown files...&quot;</span><span class="p">)</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a>        <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">dirs</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">):</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a>            <span class="k">if</span> <span class="s2">&quot;.git&quot;</span> <span class="ow">in</span> <span class="n">root</span> <span class="ow">or</span> <span class="s2">&quot;.agents&quot;</span> <span class="ow">in</span> <span class="n">root</span><span class="p">:</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a>                <span class="k">continue</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a>            <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a>                <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.md&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">file</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclude_files</span><span class="p">:</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a>                    <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span>
+</span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a>                    <span class="bp">self</span><span class="o">.</span><span class="n">split_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+</span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a>
+</span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a>
+</span><span id="L-63"><a href="#L-63"><span class="linenos">63</span></a><span class="k">def</span><span class="w"> </span><span class="nf">split_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">500</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-64"><a href="#L-64"><span class="linenos">64</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Legacy function to maintain exact compatibility.&quot;&quot;&quot;</span>
+</span><span id="L-65"><a href="#L-65"><span class="linenos">65</span></a>    <span class="n">splitter</span> <span class="o">=</span> <span class="n">MarkdownSplitter</span><span class="p">(</span><span class="n">max_lines</span><span class="o">=</span><span class="n">max_lines</span><span class="p">)</span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos">66</span></a>    <span class="k">return</span> <span class="n">splitter</span><span class="o">.</span><span class="n">split_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos">67</span></a>
+</span><span id="L-68"><a href="#L-68"><span class="linenos">68</span></a>
+</span><span id="L-69"><a href="#L-69"><span class="linenos">69</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="L-70"><a href="#L-70"><span class="linenos">70</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Main entry point.&quot;&quot;&quot;</span>
+</span><span id="L-71"><a href="#L-71"><span class="linenos">71</span></a>    <span class="n">splitter</span> <span class="o">=</span> <span class="n">MarkdownSplitter</span><span class="p">()</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos">72</span></a>    <span class="n">splitter</span><span class="o">.</span><span class="n">scan_and_split</span><span class="p">()</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos">73</span></a>
+</span><span id="L-74"><a href="#L-74"><span class="linenos">74</span></a>
+</span><span id="L-75"><a href="#L-75"><span class="linenos">75</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+</span><span id="L-76"><a href="#L-76"><span class="linenos">76</span></a>    <span class="n">main</span><span class="p">()</span>
 </span></pre></div>
 
 
             </section>
+                <section id="MarkdownSplitter">
+                            <input id="MarkdownSplitter-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">MarkdownSplitter</span>:
+
+                <label class="view-source-button" for="MarkdownSplitter-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#MarkdownSplitter"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="MarkdownSplitter-11"><a href="#MarkdownSplitter-11"><span class="linenos">11</span></a><span class="k">class</span><span class="w"> </span><span class="nc">MarkdownSplitter</span><span class="p">:</span>
+</span><span id="MarkdownSplitter-12"><a href="#MarkdownSplitter-12"><span class="linenos">12</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to handle finding and splitting large markdown files.&quot;&quot;&quot;</span>
+</span><span id="MarkdownSplitter-13"><a href="#MarkdownSplitter-13"><span class="linenos">13</span></a>
+</span><span id="MarkdownSplitter-14"><a href="#MarkdownSplitter-14"><span class="linenos">14</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">500</span><span class="p">,</span> <span class="n">exclude_files</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="MarkdownSplitter-15"><a href="#MarkdownSplitter-15"><span class="linenos">15</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the splitter.&quot;&quot;&quot;</span>
+</span><span id="MarkdownSplitter-16"><a href="#MarkdownSplitter-16"><span class="linenos">16</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span> <span class="o">=</span> <span class="n">max_lines</span>
+</span><span id="MarkdownSplitter-17"><a href="#MarkdownSplitter-17"><span class="linenos">17</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">exclude_files</span> <span class="o">=</span> <span class="n">exclude_files</span> <span class="ow">or</span> <span class="p">[</span>
+</span><span id="MarkdownSplitter-18"><a href="#MarkdownSplitter-18"><span class="linenos">18</span></a>            <span class="s2">&quot;README.md&quot;</span><span class="p">,</span>
+</span><span id="MarkdownSplitter-19"><a href="#MarkdownSplitter-19"><span class="linenos">19</span></a>            <span class="s2">&quot;change_log.md&quot;</span><span class="p">,</span>
+</span><span id="MarkdownSplitter-20"><a href="#MarkdownSplitter-20"><span class="linenos">20</span></a>            <span class="s2">&quot;GEMINI.md&quot;</span><span class="p">,</span>
+</span><span id="MarkdownSplitter-21"><a href="#MarkdownSplitter-21"><span class="linenos">21</span></a>            <span class="s2">&quot;USER_PROFILE.md&quot;</span><span class="p">,</span>
+</span><span id="MarkdownSplitter-22"><a href="#MarkdownSplitter-22"><span class="linenos">22</span></a>        <span class="p">]</span>
+</span><span id="MarkdownSplitter-23"><a href="#MarkdownSplitter-23"><span class="linenos">23</span></a>
+</span><span id="MarkdownSplitter-24"><a href="#MarkdownSplitter-24"><span class="linenos">24</span></a>        <span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+</span><span id="MarkdownSplitter-25"><a href="#MarkdownSplitter-25"><span class="linenos">25</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">script_dir</span><span class="p">)</span>
+</span><span id="MarkdownSplitter-26"><a href="#MarkdownSplitter-26"><span class="linenos">26</span></a>
+</span><span id="MarkdownSplitter-27"><a href="#MarkdownSplitter-27"><span class="linenos">27</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">split_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="MarkdownSplitter-28"><a href="#MarkdownSplitter-28"><span class="linenos">28</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Splits a single markdown file if it exceeds the max lines threshold.&quot;&quot;&quot;</span>
+</span><span id="MarkdownSplitter-29"><a href="#MarkdownSplitter-29"><span class="linenos">29</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="MarkdownSplitter-30"><a href="#MarkdownSplitter-30"><span class="linenos">30</span></a>            <span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+</span><span id="MarkdownSplitter-31"><a href="#MarkdownSplitter-31"><span class="linenos">31</span></a>
+</span><span id="MarkdownSplitter-32"><a href="#MarkdownSplitter-32"><span class="linenos">32</span></a>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span><span class="p">:</span>
+</span><span id="MarkdownSplitter-33"><a href="#MarkdownSplitter-33"><span class="linenos">33</span></a>            <span class="k">return</span> <span class="kc">False</span>
+</span><span id="MarkdownSplitter-34"><a href="#MarkdownSplitter-34"><span class="linenos">34</span></a>
+</span><span id="MarkdownSplitter-35"><a href="#MarkdownSplitter-35"><span class="linenos">35</span></a>        <span class="n">directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+</span><span id="MarkdownSplitter-36"><a href="#MarkdownSplitter-36"><span class="linenos">36</span></a>        <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+</span><span id="MarkdownSplitter-37"><a href="#MarkdownSplitter-37"><span class="linenos">37</span></a>        <span class="n">name</span><span class="p">,</span> <span class="n">ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+</span><span id="MarkdownSplitter-38"><a href="#MarkdownSplitter-38"><span class="linenos">38</span></a>
+</span><span id="MarkdownSplitter-39"><a href="#MarkdownSplitter-39"><span class="linenos">39</span></a>        <span class="n">num_parts</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span><span class="p">)</span>
+</span><span id="MarkdownSplitter-40"><a href="#MarkdownSplitter-40"><span class="linenos">40</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_parts</span><span class="p">):</span>
+</span><span id="MarkdownSplitter-41"><a href="#MarkdownSplitter-41"><span class="linenos">41</span></a>            <span class="n">part_lines</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span> <span class="p">:</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span><span class="p">]</span>
+</span><span id="MarkdownSplitter-42"><a href="#MarkdownSplitter-42"><span class="linenos">42</span></a>            <span class="n">part_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_part</span><span class="si">{</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}{</span><span class="n">ext</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="MarkdownSplitter-43"><a href="#MarkdownSplitter-43"><span class="linenos">43</span></a>            <span class="n">part_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">part_name</span><span class="p">)</span>
+</span><span id="MarkdownSplitter-44"><a href="#MarkdownSplitter-44"><span class="linenos">44</span></a>
+</span><span id="MarkdownSplitter-45"><a href="#MarkdownSplitter-45"><span class="linenos">45</span></a>            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">part_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="MarkdownSplitter-46"><a href="#MarkdownSplitter-46"><span class="linenos">46</span></a>                <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="n">part_lines</span><span class="p">)</span>
+</span><span id="MarkdownSplitter-47"><a href="#MarkdownSplitter-47"><span class="linenos">47</span></a>
+</span><span id="MarkdownSplitter-48"><a href="#MarkdownSplitter-48"><span class="linenos">48</span></a>        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+</span><span id="MarkdownSplitter-49"><a href="#MarkdownSplitter-49"><span class="linenos">49</span></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Split </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2"> into </span><span class="si">{</span><span class="n">num_parts</span><span class="si">}</span><span class="s2"> optimized chunks.&quot;</span><span class="p">)</span>
+</span><span id="MarkdownSplitter-50"><a href="#MarkdownSplitter-50"><span class="linenos">50</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span><span id="MarkdownSplitter-51"><a href="#MarkdownSplitter-51"><span class="linenos">51</span></a>
+</span><span id="MarkdownSplitter-52"><a href="#MarkdownSplitter-52"><span class="linenos">52</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">scan_and_split</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="MarkdownSplitter-53"><a href="#MarkdownSplitter-53"><span class="linenos">53</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Scans the repository and splits oversized markdown files.&quot;&quot;&quot;</span>
+</span><span id="MarkdownSplitter-54"><a href="#MarkdownSplitter-54"><span class="linenos">54</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Scanning library for oversized markdown files...&quot;</span><span class="p">)</span>
+</span><span id="MarkdownSplitter-55"><a href="#MarkdownSplitter-55"><span class="linenos">55</span></a>        <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">dirs</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">):</span>
+</span><span id="MarkdownSplitter-56"><a href="#MarkdownSplitter-56"><span class="linenos">56</span></a>            <span class="k">if</span> <span class="s2">&quot;.git&quot;</span> <span class="ow">in</span> <span class="n">root</span> <span class="ow">or</span> <span class="s2">&quot;.agents&quot;</span> <span class="ow">in</span> <span class="n">root</span><span class="p">:</span>
+</span><span id="MarkdownSplitter-57"><a href="#MarkdownSplitter-57"><span class="linenos">57</span></a>                <span class="k">continue</span>
+</span><span id="MarkdownSplitter-58"><a href="#MarkdownSplitter-58"><span class="linenos">58</span></a>            <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+</span><span id="MarkdownSplitter-59"><a href="#MarkdownSplitter-59"><span class="linenos">59</span></a>                <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.md&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">file</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclude_files</span><span class="p">:</span>
+</span><span id="MarkdownSplitter-60"><a href="#MarkdownSplitter-60"><span class="linenos">60</span></a>                    <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span>
+</span><span id="MarkdownSplitter-61"><a href="#MarkdownSplitter-61"><span class="linenos">61</span></a>                    <span class="bp">self</span><span class="o">.</span><span class="n">split_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Class to handle finding and splitting large markdown files.</p>
+</div>
+
+
+                            <div id="MarkdownSplitter.__init__" class="classattr">
+                                        <input id="MarkdownSplitter.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="name">MarkdownSplitter</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">max_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">500</span>, </span><span class="param"><span class="n">exclude_files</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span></span>)</span>
+
+                <label class="view-source-button" for="MarkdownSplitter.__init__-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#MarkdownSplitter.__init__"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="MarkdownSplitter.__init__-14"><a href="#MarkdownSplitter.__init__-14"><span class="linenos">14</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">500</span><span class="p">,</span> <span class="n">exclude_files</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="MarkdownSplitter.__init__-15"><a href="#MarkdownSplitter.__init__-15"><span class="linenos">15</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the splitter.&quot;&quot;&quot;</span>
+</span><span id="MarkdownSplitter.__init__-16"><a href="#MarkdownSplitter.__init__-16"><span class="linenos">16</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span> <span class="o">=</span> <span class="n">max_lines</span>
+</span><span id="MarkdownSplitter.__init__-17"><a href="#MarkdownSplitter.__init__-17"><span class="linenos">17</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">exclude_files</span> <span class="o">=</span> <span class="n">exclude_files</span> <span class="ow">or</span> <span class="p">[</span>
+</span><span id="MarkdownSplitter.__init__-18"><a href="#MarkdownSplitter.__init__-18"><span class="linenos">18</span></a>            <span class="s2">&quot;README.md&quot;</span><span class="p">,</span>
+</span><span id="MarkdownSplitter.__init__-19"><a href="#MarkdownSplitter.__init__-19"><span class="linenos">19</span></a>            <span class="s2">&quot;change_log.md&quot;</span><span class="p">,</span>
+</span><span id="MarkdownSplitter.__init__-20"><a href="#MarkdownSplitter.__init__-20"><span class="linenos">20</span></a>            <span class="s2">&quot;GEMINI.md&quot;</span><span class="p">,</span>
+</span><span id="MarkdownSplitter.__init__-21"><a href="#MarkdownSplitter.__init__-21"><span class="linenos">21</span></a>            <span class="s2">&quot;USER_PROFILE.md&quot;</span><span class="p">,</span>
+</span><span id="MarkdownSplitter.__init__-22"><a href="#MarkdownSplitter.__init__-22"><span class="linenos">22</span></a>        <span class="p">]</span>
+</span><span id="MarkdownSplitter.__init__-23"><a href="#MarkdownSplitter.__init__-23"><span class="linenos">23</span></a>
+</span><span id="MarkdownSplitter.__init__-24"><a href="#MarkdownSplitter.__init__-24"><span class="linenos">24</span></a>        <span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+</span><span id="MarkdownSplitter.__init__-25"><a href="#MarkdownSplitter.__init__-25"><span class="linenos">25</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">script_dir</span><span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Initializes the splitter.</p>
+</div>
+
+
+                            </div>
+                            <div id="MarkdownSplitter.max_lines" class="classattr">
+                                <div class="attr variable">
+            <span class="name">max_lines</span>
+
+        
+    </div>
+    <a class="headerlink" href="#MarkdownSplitter.max_lines"></a>
+    
+    
+
+                            </div>
+                            <div id="MarkdownSplitter.exclude_files" class="classattr">
+                                <div class="attr variable">
+            <span class="name">exclude_files</span>
+
+        
+    </div>
+    <a class="headerlink" href="#MarkdownSplitter.exclude_files"></a>
+    
+    
+
+                            </div>
+                            <div id="MarkdownSplitter.repo_root" class="classattr">
+                                <div class="attr variable">
+            <span class="name">repo_root</span>
+
+        
+    </div>
+    <a class="headerlink" href="#MarkdownSplitter.repo_root"></a>
+    
+    
+
+                            </div>
+                            <div id="MarkdownSplitter.split_file" class="classattr">
+                                        <input id="MarkdownSplitter.split_file-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">split_file</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">) -> <span class="nb">bool</span>:</span></span>
+
+                <label class="view-source-button" for="MarkdownSplitter.split_file-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#MarkdownSplitter.split_file"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="MarkdownSplitter.split_file-27"><a href="#MarkdownSplitter.split_file-27"><span class="linenos">27</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">split_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="MarkdownSplitter.split_file-28"><a href="#MarkdownSplitter.split_file-28"><span class="linenos">28</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Splits a single markdown file if it exceeds the max lines threshold.&quot;&quot;&quot;</span>
+</span><span id="MarkdownSplitter.split_file-29"><a href="#MarkdownSplitter.split_file-29"><span class="linenos">29</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="MarkdownSplitter.split_file-30"><a href="#MarkdownSplitter.split_file-30"><span class="linenos">30</span></a>            <span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+</span><span id="MarkdownSplitter.split_file-31"><a href="#MarkdownSplitter.split_file-31"><span class="linenos">31</span></a>
+</span><span id="MarkdownSplitter.split_file-32"><a href="#MarkdownSplitter.split_file-32"><span class="linenos">32</span></a>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span><span class="p">:</span>
+</span><span id="MarkdownSplitter.split_file-33"><a href="#MarkdownSplitter.split_file-33"><span class="linenos">33</span></a>            <span class="k">return</span> <span class="kc">False</span>
+</span><span id="MarkdownSplitter.split_file-34"><a href="#MarkdownSplitter.split_file-34"><span class="linenos">34</span></a>
+</span><span id="MarkdownSplitter.split_file-35"><a href="#MarkdownSplitter.split_file-35"><span class="linenos">35</span></a>        <span class="n">directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+</span><span id="MarkdownSplitter.split_file-36"><a href="#MarkdownSplitter.split_file-36"><span class="linenos">36</span></a>        <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+</span><span id="MarkdownSplitter.split_file-37"><a href="#MarkdownSplitter.split_file-37"><span class="linenos">37</span></a>        <span class="n">name</span><span class="p">,</span> <span class="n">ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+</span><span id="MarkdownSplitter.split_file-38"><a href="#MarkdownSplitter.split_file-38"><span class="linenos">38</span></a>
+</span><span id="MarkdownSplitter.split_file-39"><a href="#MarkdownSplitter.split_file-39"><span class="linenos">39</span></a>        <span class="n">num_parts</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span><span class="p">)</span>
+</span><span id="MarkdownSplitter.split_file-40"><a href="#MarkdownSplitter.split_file-40"><span class="linenos">40</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_parts</span><span class="p">):</span>
+</span><span id="MarkdownSplitter.split_file-41"><a href="#MarkdownSplitter.split_file-41"><span class="linenos">41</span></a>            <span class="n">part_lines</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span> <span class="p">:</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lines</span><span class="p">]</span>
+</span><span id="MarkdownSplitter.split_file-42"><a href="#MarkdownSplitter.split_file-42"><span class="linenos">42</span></a>            <span class="n">part_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_part</span><span class="si">{</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}{</span><span class="n">ext</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="MarkdownSplitter.split_file-43"><a href="#MarkdownSplitter.split_file-43"><span class="linenos">43</span></a>            <span class="n">part_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">part_name</span><span class="p">)</span>
+</span><span id="MarkdownSplitter.split_file-44"><a href="#MarkdownSplitter.split_file-44"><span class="linenos">44</span></a>
+</span><span id="MarkdownSplitter.split_file-45"><a href="#MarkdownSplitter.split_file-45"><span class="linenos">45</span></a>            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">part_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="MarkdownSplitter.split_file-46"><a href="#MarkdownSplitter.split_file-46"><span class="linenos">46</span></a>                <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="n">part_lines</span><span class="p">)</span>
+</span><span id="MarkdownSplitter.split_file-47"><a href="#MarkdownSplitter.split_file-47"><span class="linenos">47</span></a>
+</span><span id="MarkdownSplitter.split_file-48"><a href="#MarkdownSplitter.split_file-48"><span class="linenos">48</span></a>        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+</span><span id="MarkdownSplitter.split_file-49"><a href="#MarkdownSplitter.split_file-49"><span class="linenos">49</span></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Split </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2"> into </span><span class="si">{</span><span class="n">num_parts</span><span class="si">}</span><span class="s2"> optimized chunks.&quot;</span><span class="p">)</span>
+</span><span id="MarkdownSplitter.split_file-50"><a href="#MarkdownSplitter.split_file-50"><span class="linenos">50</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Splits a single markdown file if it exceeds the max lines threshold.</p>
+</div>
+
+
+                            </div>
+                            <div id="MarkdownSplitter.scan_and_split" class="classattr">
+                                        <input id="MarkdownSplitter.scan_and_split-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">scan_and_split</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">) -> <span class="kc">None</span>:</span></span>
+
+                <label class="view-source-button" for="MarkdownSplitter.scan_and_split-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#MarkdownSplitter.scan_and_split"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="MarkdownSplitter.scan_and_split-52"><a href="#MarkdownSplitter.scan_and_split-52"><span class="linenos">52</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">scan_and_split</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="MarkdownSplitter.scan_and_split-53"><a href="#MarkdownSplitter.scan_and_split-53"><span class="linenos">53</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Scans the repository and splits oversized markdown files.&quot;&quot;&quot;</span>
+</span><span id="MarkdownSplitter.scan_and_split-54"><a href="#MarkdownSplitter.scan_and_split-54"><span class="linenos">54</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Scanning library for oversized markdown files...&quot;</span><span class="p">)</span>
+</span><span id="MarkdownSplitter.scan_and_split-55"><a href="#MarkdownSplitter.scan_and_split-55"><span class="linenos">55</span></a>        <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">dirs</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">):</span>
+</span><span id="MarkdownSplitter.scan_and_split-56"><a href="#MarkdownSplitter.scan_and_split-56"><span class="linenos">56</span></a>            <span class="k">if</span> <span class="s2">&quot;.git&quot;</span> <span class="ow">in</span> <span class="n">root</span> <span class="ow">or</span> <span class="s2">&quot;.agents&quot;</span> <span class="ow">in</span> <span class="n">root</span><span class="p">:</span>
+</span><span id="MarkdownSplitter.scan_and_split-57"><a href="#MarkdownSplitter.scan_and_split-57"><span class="linenos">57</span></a>                <span class="k">continue</span>
+</span><span id="MarkdownSplitter.scan_and_split-58"><a href="#MarkdownSplitter.scan_and_split-58"><span class="linenos">58</span></a>            <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+</span><span id="MarkdownSplitter.scan_and_split-59"><a href="#MarkdownSplitter.scan_and_split-59"><span class="linenos">59</span></a>                <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.md&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">file</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclude_files</span><span class="p">:</span>
+</span><span id="MarkdownSplitter.scan_and_split-60"><a href="#MarkdownSplitter.scan_and_split-60"><span class="linenos">60</span></a>                    <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span>
+</span><span id="MarkdownSplitter.scan_and_split-61"><a href="#MarkdownSplitter.scan_and_split-61"><span class="linenos">61</span></a>                    <span class="bp">self</span><span class="o">.</span><span class="n">split_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Scans the repository and splits oversized markdown files.</p>
+</div>
+
+
+                            </div>
+                </section>
                 <section id="split_file">
                             <input id="split_file-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">split_file</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">filepath</span>, </span><span class="param"><span class="n">max_lines</span><span class="o">=</span><span class="mi">500</span></span><span class="return-annotation">):</span></span>
+        <span class="name">split_file</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span>, </span><span class="param"><span class="n">max_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">500</span></span><span class="return-annotation">) -> <span class="nb">bool</span>:</span></span>
 
                 <label class="view-source-button" for="split_file-view-source"><span>View Source</span></label>
 
     </div>
     <a class="headerlink" href="#split_file"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="split_file-6"><a href="#split_file-6"><span class="linenos"> 6</span></a><span class="k">def</span><span class="w"> </span><span class="nf">split_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">max_lines</span><span class="o">=</span><span class="mi">500</span><span class="p">):</span>
-</span><span id="split_file-7"><a href="#split_file-7"><span class="linenos"> 7</span></a>    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="split_file-8"><a href="#split_file-8"><span class="linenos"> 8</span></a>        <span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
-</span><span id="split_file-9"><a href="#split_file-9"><span class="linenos"> 9</span></a>        
-</span><span id="split_file-10"><a href="#split_file-10"><span class="linenos">10</span></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">max_lines</span><span class="p">:</span>
-</span><span id="split_file-11"><a href="#split_file-11"><span class="linenos">11</span></a>        <span class="k">return</span> <span class="kc">False</span>
-</span><span id="split_file-12"><a href="#split_file-12"><span class="linenos">12</span></a>        
-</span><span id="split_file-13"><a href="#split_file-13"><span class="linenos">13</span></a>    <span class="n">directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
-</span><span id="split_file-14"><a href="#split_file-14"><span class="linenos">14</span></a>    <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
-</span><span id="split_file-15"><a href="#split_file-15"><span class="linenos">15</span></a>    <span class="n">name</span><span class="p">,</span> <span class="n">ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-</span><span id="split_file-16"><a href="#split_file-16"><span class="linenos">16</span></a>    
-</span><span id="split_file-17"><a href="#split_file-17"><span class="linenos">17</span></a>    <span class="n">num_parts</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">/</span> <span class="n">max_lines</span><span class="p">)</span>
-</span><span id="split_file-18"><a href="#split_file-18"><span class="linenos">18</span></a>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_parts</span><span class="p">):</span>
-</span><span id="split_file-19"><a href="#split_file-19"><span class="linenos">19</span></a>        <span class="n">part_lines</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span> <span class="o">*</span> <span class="n">max_lines</span> <span class="p">:</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">max_lines</span><span class="p">]</span>
-</span><span id="split_file-20"><a href="#split_file-20"><span class="linenos">20</span></a>        <span class="n">part_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_part</span><span class="si">{</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}{</span><span class="n">ext</span><span class="si">}</span><span class="s2">&quot;</span>
-</span><span id="split_file-21"><a href="#split_file-21"><span class="linenos">21</span></a>        <span class="n">part_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">part_name</span><span class="p">)</span>
-</span><span id="split_file-22"><a href="#split_file-22"><span class="linenos">22</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">part_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="split_file-23"><a href="#split_file-23"><span class="linenos">23</span></a>            <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="n">part_lines</span><span class="p">)</span>
-</span><span id="split_file-24"><a href="#split_file-24"><span class="linenos">24</span></a>            
-</span><span id="split_file-25"><a href="#split_file-25"><span class="linenos">25</span></a>    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
-</span><span id="split_file-26"><a href="#split_file-26"><span class="linenos">26</span></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Split </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2"> into </span><span class="si">{</span><span class="n">num_parts</span><span class="si">}</span><span class="s2"> optimized chunks.&quot;</span><span class="p">)</span>
-</span><span id="split_file-27"><a href="#split_file-27"><span class="linenos">27</span></a>    <span class="k">return</span> <span class="kc">True</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="split_file-64"><a href="#split_file-64"><span class="linenos">64</span></a><span class="k">def</span><span class="w"> </span><span class="nf">split_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">500</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="split_file-65"><a href="#split_file-65"><span class="linenos">65</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Legacy function to maintain exact compatibility.&quot;&quot;&quot;</span>
+</span><span id="split_file-66"><a href="#split_file-66"><span class="linenos">66</span></a>    <span class="n">splitter</span> <span class="o">=</span> <span class="n">MarkdownSplitter</span><span class="p">(</span><span class="n">max_lines</span><span class="o">=</span><span class="n">max_lines</span><span class="p">)</span>
+</span><span id="split_file-67"><a href="#split_file-67"><span class="linenos">67</span></a>    <span class="k">return</span> <span class="n">splitter</span><span class="o">.</span><span class="n">split_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>Legacy function to maintain exact compatibility.</p>
+</div>
+
 
                 </section>
                 <section id="main">
@@ -154,23 +402,16 @@
 
     </div>
     <a class="headerlink" href="#main"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="main-29"><a href="#main-29"><span class="linenos">29</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="main-30"><a href="#main-30"><span class="linenos">30</span></a>    <span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
-</span><span id="main-31"><a href="#main-31"><span class="linenos">31</span></a>    <span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">script_dir</span><span class="p">)</span>
-</span><span id="main-32"><a href="#main-32"><span class="linenos">32</span></a>    <span class="n">exclude_files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;README.md&quot;</span><span class="p">,</span> <span class="s2">&quot;change_log.md&quot;</span><span class="p">,</span> <span class="s2">&quot;GEMINI.md&quot;</span><span class="p">,</span> <span class="s2">&quot;USER_PROFILE.md&quot;</span><span class="p">]</span>
-</span><span id="main-33"><a href="#main-33"><span class="linenos">33</span></a>    
-</span><span id="main-34"><a href="#main-34"><span class="linenos">34</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Scanning library for oversized markdown files...&quot;</span><span class="p">)</span>
-</span><span id="main-35"><a href="#main-35"><span class="linenos">35</span></a>    <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">dirs</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">repo_root</span><span class="p">):</span>
-</span><span id="main-36"><a href="#main-36"><span class="linenos">36</span></a>        <span class="k">if</span> <span class="s2">&quot;.git&quot;</span> <span class="ow">in</span> <span class="n">root</span> <span class="ow">or</span> <span class="s2">&quot;.agents&quot;</span> <span class="ow">in</span> <span class="n">root</span><span class="p">:</span>
-</span><span id="main-37"><a href="#main-37"><span class="linenos">37</span></a>            <span class="k">continue</span>
-</span><span id="main-38"><a href="#main-38"><span class="linenos">38</span></a>        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
-</span><span id="main-39"><a href="#main-39"><span class="linenos">39</span></a>            <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.md&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">file</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude_files</span><span class="p">:</span>
-</span><span id="main-40"><a href="#main-40"><span class="linenos">40</span></a>                <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span>
-</span><span id="main-41"><a href="#main-41"><span class="linenos">41</span></a>                <span class="n">split_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="main-70"><a href="#main-70"><span class="linenos">70</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="main-71"><a href="#main-71"><span class="linenos">71</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Main entry point.&quot;&quot;&quot;</span>
+</span><span id="main-72"><a href="#main-72"><span class="linenos">72</span></a>    <span class="n">splitter</span> <span class="o">=</span> <span class="n">MarkdownSplitter</span><span class="p">()</span>
+</span><span id="main-73"><a href="#main-73"><span class="linenos">73</span></a>    <span class="n">splitter</span><span class="o">.</span><span class="n">scan_and_split</span><span class="p">()</span>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>Main entry point.</p>
+</div>
+
 
                 </section>
     </main>

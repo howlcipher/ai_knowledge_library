@@ -31,7 +31,28 @@
             <h2>API Documentation</h2>
                 <ul class="memberlist">
             <li>
-                    <a class="variable" href="#SCOPES">SCOPES</a>
+                    <a class="class" href="#GoogleDocsAuthenticator">GoogleDocsAuthenticator</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#GoogleDocsAuthenticator.__init__">GoogleDocsAuthenticator</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#GoogleDocsAuthenticator.SCOPES">SCOPES</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#GoogleDocsAuthenticator.repo_root">repo_root</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#GoogleDocsAuthenticator.token_path">token_path</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#GoogleDocsAuthenticator.creds_path">creds_path</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#GoogleDocsAuthenticator.authenticate">authenticate</a>
+                        </li>
+                </ul>
+
             </li>
             <li>
                     <a class="function" href="#main">main</a>
@@ -52,99 +73,354 @@
                     <h1 class="modulename">
 <a href="./../scripts.html">scripts</a><wbr>.setup_google_docs_auth    </h1>
 
-                
+                        <div class="docstring"><p>Google Docs Authentication Setup</p>
+
+<p>This script sets up OAuth authentication for Google Docs API.
+It handles creating/refreshing tokens and guides the user through
+obtaining credentials if they are missing.</p>
+</div>
+
                         <input id="mod-setup_google_docs_auth-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 
                         <label class="view-source-button" for="mod-setup_google_docs_auth-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="ch">#!/usr/bin/env python3</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="k">try</span><span class="p">:</span>
-</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">google.auth.transport.requests</span><span class="w"> </span><span class="kn">import</span> <span class="n">Request</span>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">google.oauth2.credentials</span><span class="w"> </span><span class="kn">import</span> <span class="n">Credentials</span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">google_auth_oauthlib.flow</span><span class="w"> </span><span class="kn">import</span> <span class="n">InstalledAppFlow</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Missing Google API libraries.&quot;</span><span class="p">)</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Please run the global install script or &#39;pip install -r requirements.txt&#39; first.&quot;</span><span class="p">)</span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="c1"># If modifying these scopes, delete the file token.json.</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a><span class="n">SCOPES</span> <span class="o">=</span> <span class="p">[</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>    <span class="s1">&#39;https://www.googleapis.com/auth/documents&#39;</span><span class="p">,</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>    <span class="s1">&#39;https://www.googleapis.com/auth/drive.readonly&#39;</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a><span class="p">]</span>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>    <span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>    <span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">script_dir</span><span class="p">)</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>    
-</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>    <span class="n">token_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_root</span><span class="p">,</span> <span class="s1">&#39;token.json&#39;</span><span class="p">)</span>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>    <span class="n">creds_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_root</span><span class="p">,</span> <span class="s1">&#39;credentials.json&#39;</span><span class="p">)</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>    
-</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>    <span class="n">creds</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>    
-</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>    <span class="c1"># The file token.json stores the user&#39;s access and refresh tokens, and is</span>
-</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>    <span class="c1"># created automatically when the authorization flow completes for the first time.</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">token_path</span><span class="p">):</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>        <span class="n">creds</span> <span class="o">=</span> <span class="n">Credentials</span><span class="o">.</span><span class="n">from_authorized_user_file</span><span class="p">(</span><span class="n">token_path</span><span class="p">,</span> <span class="n">SCOPES</span><span class="p">)</span>
-</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>        
-</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>    <span class="c1"># If there are no (valid) credentials available, let the user log in.</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">creds</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">creds</span><span class="o">.</span><span class="n">valid</span><span class="p">:</span>
-</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>        <span class="k">if</span> <span class="n">creds</span> <span class="ow">and</span> <span class="n">creds</span><span class="o">.</span><span class="n">expired</span> <span class="ow">and</span> <span class="n">creds</span><span class="o">.</span><span class="n">refresh_token</span><span class="p">:</span>
-</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>            <span class="n">creds</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">Request</span><span class="p">())</span>
-</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">creds_path</span><span class="p">):</span>
-</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
-</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: &#39;credentials.json&#39; not found!&quot;</span><span class="p">)</span>
-</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
-</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;To connect this library to Google Docs, you need an OAuth Client ID.&quot;</span><span class="p">)</span>
-</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Please follow these steps:&quot;</span><span class="p">)</span>
-</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  1. Go to the Google Cloud Console: https://console.cloud.google.com/&quot;</span><span class="p">)</span>
-</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  2. Create a new project (or select an existing one).&quot;</span><span class="p">)</span>
-</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  3. Go to &#39;APIs &amp; Services&#39; -&gt; &#39;Library&#39; and enable the &#39;Google Docs API&#39;.&quot;</span><span class="p">)</span>
-</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  4. In the left sidebar under &#39;Google Auth Platform&#39;, click on &#39;Audience&#39;.&quot;</span><span class="p">)</span>
-</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  5. Under the &#39;Test users&#39; section, click &#39;+ ADD USERS&#39; and add your email address.&quot;</span><span class="p">)</span>
-</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  6. Go to &#39;APIs &amp; Services&#39; -&gt; &#39;Credentials&#39;.&quot;</span><span class="p">)</span>
-</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  7. Click &#39;Create Credentials&#39; -&gt; &#39;OAuth client ID&#39;.&quot;</span><span class="p">)</span>
-</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  8. Choose Application type: &#39;Desktop app&#39;.&quot;</span><span class="p">)</span>
-</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  9. Click Create, then Download the JSON file.&quot;</span><span class="p">)</span>
-</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a>                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  10. Rename it to &#39;credentials.json&#39; and place it in: </span><span class="si">{</span><span class="n">repo_root</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  11. Run this script again.&quot;</span><span class="p">)</span>
-</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
-</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a>                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a>
-</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a>            <span class="c1"># Initiate OAuth flow</span>
-</span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a>            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Initiating Google authentication flow. Check your web browser...&quot;</span><span class="p">)</span>
-</span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a>            <span class="n">flow</span> <span class="o">=</span> <span class="n">InstalledAppFlow</span><span class="o">.</span><span class="n">from_client_secrets_file</span><span class="p">(</span><span class="n">creds_path</span><span class="p">,</span> <span class="n">SCOPES</span><span class="p">)</span>
-</span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a>            <span class="n">creds</span> <span class="o">=</span> <span class="n">flow</span><span class="o">.</span><span class="n">run_local_server</span><span class="p">(</span><span class="n">port</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-</span><span id="L-63"><a href="#L-63"><span class="linenos">63</span></a>            
-</span><span id="L-64"><a href="#L-64"><span class="linenos">64</span></a>        <span class="c1"># Save the credentials for the next run</span>
-</span><span id="L-65"><a href="#L-65"><span class="linenos">65</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">token_path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">token</span><span class="p">:</span>
-</span><span id="L-66"><a href="#L-66"><span class="linenos">66</span></a>            <span class="n">token</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">creds</span><span class="o">.</span><span class="n">to_json</span><span class="p">())</span>
-</span><span id="L-67"><a href="#L-67"><span class="linenos">67</span></a>            
-</span><span id="L-68"><a href="#L-68"><span class="linenos">68</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Authentication successful!&quot;</span><span class="p">)</span>
-</span><span id="L-69"><a href="#L-69"><span class="linenos">69</span></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Your authorization has been securely saved to: </span><span class="si">{</span><span class="n">token_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="L-70"><a href="#L-70"><span class="linenos">70</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Your library is now fully connected and authorized to push to Google Docs.&quot;</span><span class="p">)</span>
-</span><span id="L-71"><a href="#L-71"><span class="linenos">71</span></a>
-</span><span id="L-72"><a href="#L-72"><span class="linenos">72</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
-</span><span id="L-73"><a href="#L-73"><span class="linenos">73</span></a>    <span class="n">main</span><span class="p">()</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="ch">#!/usr/bin/env python3</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a><span class="sd">Google Docs Authentication Setup</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a>
+</span><span id="L-5"><a href="#L-5"><span class="linenos">  5</span></a><span class="sd">This script sets up OAuth authentication for Google Docs API.</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a><span class="sd">It handles creating/refreshing tokens and guides the user through</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a><span class="sd">obtaining credentials if they are missing.</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a>
+</span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a>
+</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="k">try</span><span class="p">:</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">google.auth.transport.requests</span><span class="w"> </span><span class="kn">import</span> <span class="n">Request</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">google.oauth2.credentials</span><span class="w"> </span><span class="kn">import</span> <span class="n">Credentials</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">google_auth_oauthlib.flow</span><span class="w"> </span><span class="kn">import</span> <span class="n">InstalledAppFlow</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a><span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Missing Google API libraries.&quot;</span><span class="p">)</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a>    <span class="nb">print</span><span class="p">(</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a>        <span class="s2">&quot;Please run the global install script or &#39;pip install -r requirements.txt&#39; first.&quot;</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a>    <span class="p">)</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a>    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a>
+</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a>
+</span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a><span class="k">class</span><span class="w"> </span><span class="nc">GoogleDocsAuthenticator</span><span class="p">:</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles Google Docs API OAuth authentication flow.&quot;&quot;&quot;</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a>
+</span><span id="L-28"><a href="#L-28"><span class="linenos"> 28</span></a>    <span class="n">SCOPES</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a>        <span class="s2">&quot;https://www.googleapis.com/auth/documents&quot;</span><span class="p">,</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a>        <span class="s2">&quot;https://www.googleapis.com/auth/drive.readonly&quot;</span><span class="p">,</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a>    <span class="p">]</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a>
+</span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">repo_root</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a><span class="sd">        Initialize the authenticator with paths.</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a>
+</span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a><span class="sd">        Args:</span>
+</span><span id="L-38"><a href="#L-38"><span class="linenos"> 38</span></a><span class="sd">            repo_root (str): The root directory of the repository.</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos"> 40</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">repo_root</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">token_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;token.json&quot;</span><span class="p">)</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">creds_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;credentials.json&quot;</span><span class="p">)</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a>
+</span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_load_existing_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Credentials</span><span class="p">:</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Load valid credentials from token file if it exists.&quot;&quot;&quot;</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a>        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">token_path</span><span class="p">):</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a>            <span class="k">return</span> <span class="n">Credentials</span><span class="o">.</span><span class="n">from_authorized_user_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">token_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SCOPES</span><span class="p">)</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a>        <span class="k">return</span> <span class="kc">None</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a>
+</span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_print_instructions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Print instructions for setting up Google OAuth credentials.&quot;&quot;&quot;</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: &#39;credentials.json&#39; not found!&quot;</span><span class="p">)</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;To connect this library to Google Docs, you need an OAuth Client ID.&quot;</span><span class="p">)</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Please follow these steps:&quot;</span><span class="p">)</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  1. Go to the Google Cloud Console: https://console.cloud.google.com/&quot;</span><span class="p">)</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  2. Create a new project (or select an existing one).&quot;</span><span class="p">)</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a>            <span class="s2">&quot;  3. Go to &#39;APIs &amp; Services&#39; -&gt; &#39;Library&#39; and enable the &#39;Google Docs API&#39;.&quot;</span>
+</span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a>        <span class="p">)</span>
+</span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a>            <span class="s2">&quot;  4. In the left sidebar under &#39;Google Auth Platform&#39;, click on &#39;Audience&#39;.&quot;</span>
+</span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a>        <span class="p">)</span>
+</span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a>            <span class="s2">&quot;  5. Under the &#39;Test users&#39; section, click &#39;+ ADD USERS&#39; and add your email address.&quot;</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a>        <span class="p">)</span>
+</span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  6. Go to &#39;APIs &amp; Services&#39; -&gt; &#39;Credentials&#39;.&quot;</span><span class="p">)</span>
+</span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  7. Click &#39;Create Credentials&#39; -&gt; &#39;OAuth client ID&#39;.&quot;</span><span class="p">)</span>
+</span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  8. Choose Application type: &#39;Desktop app&#39;.&quot;</span><span class="p">)</span>
+</span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  9. Click Create, then Download the JSON file.&quot;</span><span class="p">)</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a>            <span class="sa">f</span><span class="s2">&quot;  10. Rename it to &#39;credentials.json&#39; and place it in: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>        <span class="p">)</span>
+</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  11. Run this script again.&quot;</span><span class="p">)</span>
+</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a>
+</span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_perform_auth_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Credentials</span><span class="p">:</span>
+</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Perform the OAuth installed app flow.&quot;&quot;&quot;</span>
+</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">creds_path</span><span class="p">):</span>
+</span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_print_instructions</span><span class="p">()</span>
+</span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a>            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a>
+</span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Initiating Google authentication flow. Check your web browser...&quot;</span><span class="p">)</span>
+</span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a>        <span class="n">flow</span> <span class="o">=</span> <span class="n">InstalledAppFlow</span><span class="o">.</span><span class="n">from_client_secrets_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">creds_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SCOPES</span><span class="p">)</span>
+</span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a>        <span class="k">return</span> <span class="n">flow</span><span class="o">.</span><span class="n">run_local_server</span><span class="p">(</span><span class="n">port</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a>
+</span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">authenticate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-89"><a href="#L-89"><span class="linenos"> 89</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensure valid credentials exist, prompting for login if necessary.&quot;&quot;&quot;</span>
+</span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a>        <span class="n">creds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_existing_credentials</span><span class="p">()</span>
+</span><span id="L-91"><a href="#L-91"><span class="linenos"> 91</span></a>
+</span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">creds</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">creds</span><span class="o">.</span><span class="n">valid</span><span class="p">:</span>
+</span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a>            <span class="k">if</span> <span class="n">creds</span> <span class="ow">and</span> <span class="n">creds</span><span class="o">.</span><span class="n">expired</span> <span class="ow">and</span> <span class="n">creds</span><span class="o">.</span><span class="n">refresh_token</span><span class="p">:</span>
+</span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a>                <span class="n">creds</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">Request</span><span class="p">())</span>
+</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a>            <span class="k">else</span><span class="p">:</span>
+</span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a>                <span class="n">creds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_perform_auth_flow</span><span class="p">()</span>
+</span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a>
+</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a>            <span class="c1"># Save the credentials for the next run</span>
+</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a>            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">token_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">token</span><span class="p">:</span>
+</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a>                <span class="n">token</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">creds</span><span class="o">.</span><span class="n">to_json</span><span class="p">())</span>
+</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a>
+</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Authentication successful!&quot;</span><span class="p">)</span>
+</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Your authorization has been securely saved to: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">token_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>            <span class="s2">&quot;Your library is now fully connected and authorized to push to Google Docs.&quot;</span>
+</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a>        <span class="p">)</span>
+</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a>
+</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>
+</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Main execution point for authentication script.&quot;&quot;&quot;</span>
+</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>    <span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a>    <span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">script_dir</span><span class="p">)</span>
+</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a>
+</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a>    <span class="n">authenticator</span> <span class="o">=</span> <span class="n">GoogleDocsAuthenticator</span><span class="p">(</span><span class="n">repo_root</span><span class="p">)</span>
+</span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a>    <span class="n">authenticator</span><span class="o">.</span><span class="n">authenticate</span><span class="p">()</span>
+</span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a>
+</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a>
+</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a>    <span class="n">main</span><span class="p">()</span>
 </span></pre></div>
 
 
             </section>
-                <section id="SCOPES">
-                    <div class="attr variable">
+                <section id="GoogleDocsAuthenticator">
+                            <input id="GoogleDocsAuthenticator-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">GoogleDocsAuthenticator</span>:
+
+                <label class="view-source-button" for="GoogleDocsAuthenticator-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#GoogleDocsAuthenticator"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="GoogleDocsAuthenticator-26"><a href="#GoogleDocsAuthenticator-26"><span class="linenos"> 26</span></a><span class="k">class</span><span class="w"> </span><span class="nc">GoogleDocsAuthenticator</span><span class="p">:</span>
+</span><span id="GoogleDocsAuthenticator-27"><a href="#GoogleDocsAuthenticator-27"><span class="linenos"> 27</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles Google Docs API OAuth authentication flow.&quot;&quot;&quot;</span>
+</span><span id="GoogleDocsAuthenticator-28"><a href="#GoogleDocsAuthenticator-28"><span class="linenos"> 28</span></a>
+</span><span id="GoogleDocsAuthenticator-29"><a href="#GoogleDocsAuthenticator-29"><span class="linenos"> 29</span></a>    <span class="n">SCOPES</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="GoogleDocsAuthenticator-30"><a href="#GoogleDocsAuthenticator-30"><span class="linenos"> 30</span></a>        <span class="s2">&quot;https://www.googleapis.com/auth/documents&quot;</span><span class="p">,</span>
+</span><span id="GoogleDocsAuthenticator-31"><a href="#GoogleDocsAuthenticator-31"><span class="linenos"> 31</span></a>        <span class="s2">&quot;https://www.googleapis.com/auth/drive.readonly&quot;</span><span class="p">,</span>
+</span><span id="GoogleDocsAuthenticator-32"><a href="#GoogleDocsAuthenticator-32"><span class="linenos"> 32</span></a>    <span class="p">]</span>
+</span><span id="GoogleDocsAuthenticator-33"><a href="#GoogleDocsAuthenticator-33"><span class="linenos"> 33</span></a>
+</span><span id="GoogleDocsAuthenticator-34"><a href="#GoogleDocsAuthenticator-34"><span class="linenos"> 34</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">repo_root</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="GoogleDocsAuthenticator-35"><a href="#GoogleDocsAuthenticator-35"><span class="linenos"> 35</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="GoogleDocsAuthenticator-36"><a href="#GoogleDocsAuthenticator-36"><span class="linenos"> 36</span></a><span class="sd">        Initialize the authenticator with paths.</span>
+</span><span id="GoogleDocsAuthenticator-37"><a href="#GoogleDocsAuthenticator-37"><span class="linenos"> 37</span></a>
+</span><span id="GoogleDocsAuthenticator-38"><a href="#GoogleDocsAuthenticator-38"><span class="linenos"> 38</span></a><span class="sd">        Args:</span>
+</span><span id="GoogleDocsAuthenticator-39"><a href="#GoogleDocsAuthenticator-39"><span class="linenos"> 39</span></a><span class="sd">            repo_root (str): The root directory of the repository.</span>
+</span><span id="GoogleDocsAuthenticator-40"><a href="#GoogleDocsAuthenticator-40"><span class="linenos"> 40</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="GoogleDocsAuthenticator-41"><a href="#GoogleDocsAuthenticator-41"><span class="linenos"> 41</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">repo_root</span>
+</span><span id="GoogleDocsAuthenticator-42"><a href="#GoogleDocsAuthenticator-42"><span class="linenos"> 42</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">token_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;token.json&quot;</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-43"><a href="#GoogleDocsAuthenticator-43"><span class="linenos"> 43</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">creds_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;credentials.json&quot;</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-44"><a href="#GoogleDocsAuthenticator-44"><span class="linenos"> 44</span></a>
+</span><span id="GoogleDocsAuthenticator-45"><a href="#GoogleDocsAuthenticator-45"><span class="linenos"> 45</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_load_existing_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Credentials</span><span class="p">:</span>
+</span><span id="GoogleDocsAuthenticator-46"><a href="#GoogleDocsAuthenticator-46"><span class="linenos"> 46</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Load valid credentials from token file if it exists.&quot;&quot;&quot;</span>
+</span><span id="GoogleDocsAuthenticator-47"><a href="#GoogleDocsAuthenticator-47"><span class="linenos"> 47</span></a>        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">token_path</span><span class="p">):</span>
+</span><span id="GoogleDocsAuthenticator-48"><a href="#GoogleDocsAuthenticator-48"><span class="linenos"> 48</span></a>            <span class="k">return</span> <span class="n">Credentials</span><span class="o">.</span><span class="n">from_authorized_user_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">token_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SCOPES</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-49"><a href="#GoogleDocsAuthenticator-49"><span class="linenos"> 49</span></a>        <span class="k">return</span> <span class="kc">None</span>
+</span><span id="GoogleDocsAuthenticator-50"><a href="#GoogleDocsAuthenticator-50"><span class="linenos"> 50</span></a>
+</span><span id="GoogleDocsAuthenticator-51"><a href="#GoogleDocsAuthenticator-51"><span class="linenos"> 51</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_print_instructions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="GoogleDocsAuthenticator-52"><a href="#GoogleDocsAuthenticator-52"><span class="linenos"> 52</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Print instructions for setting up Google OAuth credentials.&quot;&quot;&quot;</span>
+</span><span id="GoogleDocsAuthenticator-53"><a href="#GoogleDocsAuthenticator-53"><span class="linenos"> 53</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-54"><a href="#GoogleDocsAuthenticator-54"><span class="linenos"> 54</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: &#39;credentials.json&#39; not found!&quot;</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-55"><a href="#GoogleDocsAuthenticator-55"><span class="linenos"> 55</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-56"><a href="#GoogleDocsAuthenticator-56"><span class="linenos"> 56</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;To connect this library to Google Docs, you need an OAuth Client ID.&quot;</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-57"><a href="#GoogleDocsAuthenticator-57"><span class="linenos"> 57</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Please follow these steps:&quot;</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-58"><a href="#GoogleDocsAuthenticator-58"><span class="linenos"> 58</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  1. Go to the Google Cloud Console: https://console.cloud.google.com/&quot;</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-59"><a href="#GoogleDocsAuthenticator-59"><span class="linenos"> 59</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  2. Create a new project (or select an existing one).&quot;</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-60"><a href="#GoogleDocsAuthenticator-60"><span class="linenos"> 60</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="GoogleDocsAuthenticator-61"><a href="#GoogleDocsAuthenticator-61"><span class="linenos"> 61</span></a>            <span class="s2">&quot;  3. Go to &#39;APIs &amp; Services&#39; -&gt; &#39;Library&#39; and enable the &#39;Google Docs API&#39;.&quot;</span>
+</span><span id="GoogleDocsAuthenticator-62"><a href="#GoogleDocsAuthenticator-62"><span class="linenos"> 62</span></a>        <span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-63"><a href="#GoogleDocsAuthenticator-63"><span class="linenos"> 63</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="GoogleDocsAuthenticator-64"><a href="#GoogleDocsAuthenticator-64"><span class="linenos"> 64</span></a>            <span class="s2">&quot;  4. In the left sidebar under &#39;Google Auth Platform&#39;, click on &#39;Audience&#39;.&quot;</span>
+</span><span id="GoogleDocsAuthenticator-65"><a href="#GoogleDocsAuthenticator-65"><span class="linenos"> 65</span></a>        <span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-66"><a href="#GoogleDocsAuthenticator-66"><span class="linenos"> 66</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="GoogleDocsAuthenticator-67"><a href="#GoogleDocsAuthenticator-67"><span class="linenos"> 67</span></a>            <span class="s2">&quot;  5. Under the &#39;Test users&#39; section, click &#39;+ ADD USERS&#39; and add your email address.&quot;</span>
+</span><span id="GoogleDocsAuthenticator-68"><a href="#GoogleDocsAuthenticator-68"><span class="linenos"> 68</span></a>        <span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-69"><a href="#GoogleDocsAuthenticator-69"><span class="linenos"> 69</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  6. Go to &#39;APIs &amp; Services&#39; -&gt; &#39;Credentials&#39;.&quot;</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-70"><a href="#GoogleDocsAuthenticator-70"><span class="linenos"> 70</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  7. Click &#39;Create Credentials&#39; -&gt; &#39;OAuth client ID&#39;.&quot;</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-71"><a href="#GoogleDocsAuthenticator-71"><span class="linenos"> 71</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  8. Choose Application type: &#39;Desktop app&#39;.&quot;</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-72"><a href="#GoogleDocsAuthenticator-72"><span class="linenos"> 72</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  9. Click Create, then Download the JSON file.&quot;</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-73"><a href="#GoogleDocsAuthenticator-73"><span class="linenos"> 73</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="GoogleDocsAuthenticator-74"><a href="#GoogleDocsAuthenticator-74"><span class="linenos"> 74</span></a>            <span class="sa">f</span><span class="s2">&quot;  10. Rename it to &#39;credentials.json&#39; and place it in: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="GoogleDocsAuthenticator-75"><a href="#GoogleDocsAuthenticator-75"><span class="linenos"> 75</span></a>        <span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-76"><a href="#GoogleDocsAuthenticator-76"><span class="linenos"> 76</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  11. Run this script again.&quot;</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-77"><a href="#GoogleDocsAuthenticator-77"><span class="linenos"> 77</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-78"><a href="#GoogleDocsAuthenticator-78"><span class="linenos"> 78</span></a>
+</span><span id="GoogleDocsAuthenticator-79"><a href="#GoogleDocsAuthenticator-79"><span class="linenos"> 79</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_perform_auth_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Credentials</span><span class="p">:</span>
+</span><span id="GoogleDocsAuthenticator-80"><a href="#GoogleDocsAuthenticator-80"><span class="linenos"> 80</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Perform the OAuth installed app flow.&quot;&quot;&quot;</span>
+</span><span id="GoogleDocsAuthenticator-81"><a href="#GoogleDocsAuthenticator-81"><span class="linenos"> 81</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">creds_path</span><span class="p">):</span>
+</span><span id="GoogleDocsAuthenticator-82"><a href="#GoogleDocsAuthenticator-82"><span class="linenos"> 82</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_print_instructions</span><span class="p">()</span>
+</span><span id="GoogleDocsAuthenticator-83"><a href="#GoogleDocsAuthenticator-83"><span class="linenos"> 83</span></a>            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-84"><a href="#GoogleDocsAuthenticator-84"><span class="linenos"> 84</span></a>
+</span><span id="GoogleDocsAuthenticator-85"><a href="#GoogleDocsAuthenticator-85"><span class="linenos"> 85</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Initiating Google authentication flow. Check your web browser...&quot;</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-86"><a href="#GoogleDocsAuthenticator-86"><span class="linenos"> 86</span></a>        <span class="n">flow</span> <span class="o">=</span> <span class="n">InstalledAppFlow</span><span class="o">.</span><span class="n">from_client_secrets_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">creds_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SCOPES</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-87"><a href="#GoogleDocsAuthenticator-87"><span class="linenos"> 87</span></a>        <span class="k">return</span> <span class="n">flow</span><span class="o">.</span><span class="n">run_local_server</span><span class="p">(</span><span class="n">port</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-88"><a href="#GoogleDocsAuthenticator-88"><span class="linenos"> 88</span></a>
+</span><span id="GoogleDocsAuthenticator-89"><a href="#GoogleDocsAuthenticator-89"><span class="linenos"> 89</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">authenticate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="GoogleDocsAuthenticator-90"><a href="#GoogleDocsAuthenticator-90"><span class="linenos"> 90</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensure valid credentials exist, prompting for login if necessary.&quot;&quot;&quot;</span>
+</span><span id="GoogleDocsAuthenticator-91"><a href="#GoogleDocsAuthenticator-91"><span class="linenos"> 91</span></a>        <span class="n">creds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_existing_credentials</span><span class="p">()</span>
+</span><span id="GoogleDocsAuthenticator-92"><a href="#GoogleDocsAuthenticator-92"><span class="linenos"> 92</span></a>
+</span><span id="GoogleDocsAuthenticator-93"><a href="#GoogleDocsAuthenticator-93"><span class="linenos"> 93</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">creds</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">creds</span><span class="o">.</span><span class="n">valid</span><span class="p">:</span>
+</span><span id="GoogleDocsAuthenticator-94"><a href="#GoogleDocsAuthenticator-94"><span class="linenos"> 94</span></a>            <span class="k">if</span> <span class="n">creds</span> <span class="ow">and</span> <span class="n">creds</span><span class="o">.</span><span class="n">expired</span> <span class="ow">and</span> <span class="n">creds</span><span class="o">.</span><span class="n">refresh_token</span><span class="p">:</span>
+</span><span id="GoogleDocsAuthenticator-95"><a href="#GoogleDocsAuthenticator-95"><span class="linenos"> 95</span></a>                <span class="n">creds</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">Request</span><span class="p">())</span>
+</span><span id="GoogleDocsAuthenticator-96"><a href="#GoogleDocsAuthenticator-96"><span class="linenos"> 96</span></a>            <span class="k">else</span><span class="p">:</span>
+</span><span id="GoogleDocsAuthenticator-97"><a href="#GoogleDocsAuthenticator-97"><span class="linenos"> 97</span></a>                <span class="n">creds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_perform_auth_flow</span><span class="p">()</span>
+</span><span id="GoogleDocsAuthenticator-98"><a href="#GoogleDocsAuthenticator-98"><span class="linenos"> 98</span></a>
+</span><span id="GoogleDocsAuthenticator-99"><a href="#GoogleDocsAuthenticator-99"><span class="linenos"> 99</span></a>            <span class="c1"># Save the credentials for the next run</span>
+</span><span id="GoogleDocsAuthenticator-100"><a href="#GoogleDocsAuthenticator-100"><span class="linenos">100</span></a>            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">token_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">token</span><span class="p">:</span>
+</span><span id="GoogleDocsAuthenticator-101"><a href="#GoogleDocsAuthenticator-101"><span class="linenos">101</span></a>                <span class="n">token</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">creds</span><span class="o">.</span><span class="n">to_json</span><span class="p">())</span>
+</span><span id="GoogleDocsAuthenticator-102"><a href="#GoogleDocsAuthenticator-102"><span class="linenos">102</span></a>
+</span><span id="GoogleDocsAuthenticator-103"><a href="#GoogleDocsAuthenticator-103"><span class="linenos">103</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Authentication successful!&quot;</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-104"><a href="#GoogleDocsAuthenticator-104"><span class="linenos">104</span></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Your authorization has been securely saved to: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">token_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator-105"><a href="#GoogleDocsAuthenticator-105"><span class="linenos">105</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="GoogleDocsAuthenticator-106"><a href="#GoogleDocsAuthenticator-106"><span class="linenos">106</span></a>            <span class="s2">&quot;Your library is now fully connected and authorized to push to Google Docs.&quot;</span>
+</span><span id="GoogleDocsAuthenticator-107"><a href="#GoogleDocsAuthenticator-107"><span class="linenos">107</span></a>        <span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Handles Google Docs API OAuth authentication flow.</p>
+</div>
+
+
+                            <div id="GoogleDocsAuthenticator.__init__" class="classattr">
+                                        <input id="GoogleDocsAuthenticator.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="name">GoogleDocsAuthenticator</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">repo_root</span><span class="p">:</span> <span class="nb">str</span></span>)</span>
+
+                <label class="view-source-button" for="GoogleDocsAuthenticator.__init__-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#GoogleDocsAuthenticator.__init__"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="GoogleDocsAuthenticator.__init__-34"><a href="#GoogleDocsAuthenticator.__init__-34"><span class="linenos">34</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">repo_root</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="GoogleDocsAuthenticator.__init__-35"><a href="#GoogleDocsAuthenticator.__init__-35"><span class="linenos">35</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="GoogleDocsAuthenticator.__init__-36"><a href="#GoogleDocsAuthenticator.__init__-36"><span class="linenos">36</span></a><span class="sd">        Initialize the authenticator with paths.</span>
+</span><span id="GoogleDocsAuthenticator.__init__-37"><a href="#GoogleDocsAuthenticator.__init__-37"><span class="linenos">37</span></a>
+</span><span id="GoogleDocsAuthenticator.__init__-38"><a href="#GoogleDocsAuthenticator.__init__-38"><span class="linenos">38</span></a><span class="sd">        Args:</span>
+</span><span id="GoogleDocsAuthenticator.__init__-39"><a href="#GoogleDocsAuthenticator.__init__-39"><span class="linenos">39</span></a><span class="sd">            repo_root (str): The root directory of the repository.</span>
+</span><span id="GoogleDocsAuthenticator.__init__-40"><a href="#GoogleDocsAuthenticator.__init__-40"><span class="linenos">40</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="GoogleDocsAuthenticator.__init__-41"><a href="#GoogleDocsAuthenticator.__init__-41"><span class="linenos">41</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">repo_root</span>
+</span><span id="GoogleDocsAuthenticator.__init__-42"><a href="#GoogleDocsAuthenticator.__init__-42"><span class="linenos">42</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">token_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;token.json&quot;</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator.__init__-43"><a href="#GoogleDocsAuthenticator.__init__-43"><span class="linenos">43</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">creds_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_root</span><span class="p">,</span> <span class="s2">&quot;credentials.json&quot;</span><span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Initialize the authenticator with paths.</p>
+
+<p>Args:
+    repo_root (str): The root directory of the repository.</p>
+</div>
+
+
+                            </div>
+                            <div id="GoogleDocsAuthenticator.SCOPES" class="classattr">
+                                <div class="attr variable">
             <span class="name">SCOPES</span>        =
 <span class="default_value">[&#39;https://www.googleapis.com/auth/documents&#39;, &#39;https://www.googleapis.com/auth/drive.readonly&#39;]</span>
 
         
     </div>
-    <a class="headerlink" href="#SCOPES"></a>
+    <a class="headerlink" href="#GoogleDocsAuthenticator.SCOPES"></a>
     
     
 
+                            </div>
+                            <div id="GoogleDocsAuthenticator.repo_root" class="classattr">
+                                <div class="attr variable">
+            <span class="name">repo_root</span>
+
+        
+    </div>
+    <a class="headerlink" href="#GoogleDocsAuthenticator.repo_root"></a>
+    
+    
+
+                            </div>
+                            <div id="GoogleDocsAuthenticator.token_path" class="classattr">
+                                <div class="attr variable">
+            <span class="name">token_path</span>
+
+        
+    </div>
+    <a class="headerlink" href="#GoogleDocsAuthenticator.token_path"></a>
+    
+    
+
+                            </div>
+                            <div id="GoogleDocsAuthenticator.creds_path" class="classattr">
+                                <div class="attr variable">
+            <span class="name">creds_path</span>
+
+        
+    </div>
+    <a class="headerlink" href="#GoogleDocsAuthenticator.creds_path"></a>
+    
+    
+
+                            </div>
+                            <div id="GoogleDocsAuthenticator.authenticate" class="classattr">
+                                        <input id="GoogleDocsAuthenticator.authenticate-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">authenticate</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="GoogleDocsAuthenticator.authenticate-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#GoogleDocsAuthenticator.authenticate"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="GoogleDocsAuthenticator.authenticate-89"><a href="#GoogleDocsAuthenticator.authenticate-89"><span class="linenos"> 89</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">authenticate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="GoogleDocsAuthenticator.authenticate-90"><a href="#GoogleDocsAuthenticator.authenticate-90"><span class="linenos"> 90</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensure valid credentials exist, prompting for login if necessary.&quot;&quot;&quot;</span>
+</span><span id="GoogleDocsAuthenticator.authenticate-91"><a href="#GoogleDocsAuthenticator.authenticate-91"><span class="linenos"> 91</span></a>        <span class="n">creds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_existing_credentials</span><span class="p">()</span>
+</span><span id="GoogleDocsAuthenticator.authenticate-92"><a href="#GoogleDocsAuthenticator.authenticate-92"><span class="linenos"> 92</span></a>
+</span><span id="GoogleDocsAuthenticator.authenticate-93"><a href="#GoogleDocsAuthenticator.authenticate-93"><span class="linenos"> 93</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">creds</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">creds</span><span class="o">.</span><span class="n">valid</span><span class="p">:</span>
+</span><span id="GoogleDocsAuthenticator.authenticate-94"><a href="#GoogleDocsAuthenticator.authenticate-94"><span class="linenos"> 94</span></a>            <span class="k">if</span> <span class="n">creds</span> <span class="ow">and</span> <span class="n">creds</span><span class="o">.</span><span class="n">expired</span> <span class="ow">and</span> <span class="n">creds</span><span class="o">.</span><span class="n">refresh_token</span><span class="p">:</span>
+</span><span id="GoogleDocsAuthenticator.authenticate-95"><a href="#GoogleDocsAuthenticator.authenticate-95"><span class="linenos"> 95</span></a>                <span class="n">creds</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">Request</span><span class="p">())</span>
+</span><span id="GoogleDocsAuthenticator.authenticate-96"><a href="#GoogleDocsAuthenticator.authenticate-96"><span class="linenos"> 96</span></a>            <span class="k">else</span><span class="p">:</span>
+</span><span id="GoogleDocsAuthenticator.authenticate-97"><a href="#GoogleDocsAuthenticator.authenticate-97"><span class="linenos"> 97</span></a>                <span class="n">creds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_perform_auth_flow</span><span class="p">()</span>
+</span><span id="GoogleDocsAuthenticator.authenticate-98"><a href="#GoogleDocsAuthenticator.authenticate-98"><span class="linenos"> 98</span></a>
+</span><span id="GoogleDocsAuthenticator.authenticate-99"><a href="#GoogleDocsAuthenticator.authenticate-99"><span class="linenos"> 99</span></a>            <span class="c1"># Save the credentials for the next run</span>
+</span><span id="GoogleDocsAuthenticator.authenticate-100"><a href="#GoogleDocsAuthenticator.authenticate-100"><span class="linenos">100</span></a>            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">token_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">token</span><span class="p">:</span>
+</span><span id="GoogleDocsAuthenticator.authenticate-101"><a href="#GoogleDocsAuthenticator.authenticate-101"><span class="linenos">101</span></a>                <span class="n">token</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">creds</span><span class="o">.</span><span class="n">to_json</span><span class="p">())</span>
+</span><span id="GoogleDocsAuthenticator.authenticate-102"><a href="#GoogleDocsAuthenticator.authenticate-102"><span class="linenos">102</span></a>
+</span><span id="GoogleDocsAuthenticator.authenticate-103"><a href="#GoogleDocsAuthenticator.authenticate-103"><span class="linenos">103</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Authentication successful!&quot;</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator.authenticate-104"><a href="#GoogleDocsAuthenticator.authenticate-104"><span class="linenos">104</span></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Your authorization has been securely saved to: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">token_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="GoogleDocsAuthenticator.authenticate-105"><a href="#GoogleDocsAuthenticator.authenticate-105"><span class="linenos">105</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="GoogleDocsAuthenticator.authenticate-106"><a href="#GoogleDocsAuthenticator.authenticate-106"><span class="linenos">106</span></a>            <span class="s2">&quot;Your library is now fully connected and authorized to push to Google Docs.&quot;</span>
+</span><span id="GoogleDocsAuthenticator.authenticate-107"><a href="#GoogleDocsAuthenticator.authenticate-107"><span class="linenos">107</span></a>        <span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Ensure valid credentials exist, prompting for login if necessary.</p>
+</div>
+
+
+                            </div>
                 </section>
                 <section id="main">
                             <input id="main-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
@@ -157,61 +433,19 @@
 
     </div>
     <a class="headerlink" href="#main"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="main-21"><a href="#main-21"><span class="linenos">21</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="main-22"><a href="#main-22"><span class="linenos">22</span></a>    <span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
-</span><span id="main-23"><a href="#main-23"><span class="linenos">23</span></a>    <span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">script_dir</span><span class="p">)</span>
-</span><span id="main-24"><a href="#main-24"><span class="linenos">24</span></a>    
-</span><span id="main-25"><a href="#main-25"><span class="linenos">25</span></a>    <span class="n">token_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_root</span><span class="p">,</span> <span class="s1">&#39;token.json&#39;</span><span class="p">)</span>
-</span><span id="main-26"><a href="#main-26"><span class="linenos">26</span></a>    <span class="n">creds_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_root</span><span class="p">,</span> <span class="s1">&#39;credentials.json&#39;</span><span class="p">)</span>
-</span><span id="main-27"><a href="#main-27"><span class="linenos">27</span></a>    
-</span><span id="main-28"><a href="#main-28"><span class="linenos">28</span></a>    <span class="n">creds</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="main-29"><a href="#main-29"><span class="linenos">29</span></a>    
-</span><span id="main-30"><a href="#main-30"><span class="linenos">30</span></a>    <span class="c1"># The file token.json stores the user&#39;s access and refresh tokens, and is</span>
-</span><span id="main-31"><a href="#main-31"><span class="linenos">31</span></a>    <span class="c1"># created automatically when the authorization flow completes for the first time.</span>
-</span><span id="main-32"><a href="#main-32"><span class="linenos">32</span></a>    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">token_path</span><span class="p">):</span>
-</span><span id="main-33"><a href="#main-33"><span class="linenos">33</span></a>        <span class="n">creds</span> <span class="o">=</span> <span class="n">Credentials</span><span class="o">.</span><span class="n">from_authorized_user_file</span><span class="p">(</span><span class="n">token_path</span><span class="p">,</span> <span class="n">SCOPES</span><span class="p">)</span>
-</span><span id="main-34"><a href="#main-34"><span class="linenos">34</span></a>        
-</span><span id="main-35"><a href="#main-35"><span class="linenos">35</span></a>    <span class="c1"># If there are no (valid) credentials available, let the user log in.</span>
-</span><span id="main-36"><a href="#main-36"><span class="linenos">36</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">creds</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">creds</span><span class="o">.</span><span class="n">valid</span><span class="p">:</span>
-</span><span id="main-37"><a href="#main-37"><span class="linenos">37</span></a>        <span class="k">if</span> <span class="n">creds</span> <span class="ow">and</span> <span class="n">creds</span><span class="o">.</span><span class="n">expired</span> <span class="ow">and</span> <span class="n">creds</span><span class="o">.</span><span class="n">refresh_token</span><span class="p">:</span>
-</span><span id="main-38"><a href="#main-38"><span class="linenos">38</span></a>            <span class="n">creds</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">Request</span><span class="p">())</span>
-</span><span id="main-39"><a href="#main-39"><span class="linenos">39</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="main-40"><a href="#main-40"><span class="linenos">40</span></a>            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">creds_path</span><span class="p">):</span>
-</span><span id="main-41"><a href="#main-41"><span class="linenos">41</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
-</span><span id="main-42"><a href="#main-42"><span class="linenos">42</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: &#39;credentials.json&#39; not found!&quot;</span><span class="p">)</span>
-</span><span id="main-43"><a href="#main-43"><span class="linenos">43</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
-</span><span id="main-44"><a href="#main-44"><span class="linenos">44</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;To connect this library to Google Docs, you need an OAuth Client ID.&quot;</span><span class="p">)</span>
-</span><span id="main-45"><a href="#main-45"><span class="linenos">45</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Please follow these steps:&quot;</span><span class="p">)</span>
-</span><span id="main-46"><a href="#main-46"><span class="linenos">46</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  1. Go to the Google Cloud Console: https://console.cloud.google.com/&quot;</span><span class="p">)</span>
-</span><span id="main-47"><a href="#main-47"><span class="linenos">47</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  2. Create a new project (or select an existing one).&quot;</span><span class="p">)</span>
-</span><span id="main-48"><a href="#main-48"><span class="linenos">48</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  3. Go to &#39;APIs &amp; Services&#39; -&gt; &#39;Library&#39; and enable the &#39;Google Docs API&#39;.&quot;</span><span class="p">)</span>
-</span><span id="main-49"><a href="#main-49"><span class="linenos">49</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  4. In the left sidebar under &#39;Google Auth Platform&#39;, click on &#39;Audience&#39;.&quot;</span><span class="p">)</span>
-</span><span id="main-50"><a href="#main-50"><span class="linenos">50</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  5. Under the &#39;Test users&#39; section, click &#39;+ ADD USERS&#39; and add your email address.&quot;</span><span class="p">)</span>
-</span><span id="main-51"><a href="#main-51"><span class="linenos">51</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  6. Go to &#39;APIs &amp; Services&#39; -&gt; &#39;Credentials&#39;.&quot;</span><span class="p">)</span>
-</span><span id="main-52"><a href="#main-52"><span class="linenos">52</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  7. Click &#39;Create Credentials&#39; -&gt; &#39;OAuth client ID&#39;.&quot;</span><span class="p">)</span>
-</span><span id="main-53"><a href="#main-53"><span class="linenos">53</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  8. Choose Application type: &#39;Desktop app&#39;.&quot;</span><span class="p">)</span>
-</span><span id="main-54"><a href="#main-54"><span class="linenos">54</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  9. Click Create, then Download the JSON file.&quot;</span><span class="p">)</span>
-</span><span id="main-55"><a href="#main-55"><span class="linenos">55</span></a>                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  10. Rename it to &#39;credentials.json&#39; and place it in: </span><span class="si">{</span><span class="n">repo_root</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="main-56"><a href="#main-56"><span class="linenos">56</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  11. Run this script again.&quot;</span><span class="p">)</span>
-</span><span id="main-57"><a href="#main-57"><span class="linenos">57</span></a>                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
-</span><span id="main-58"><a href="#main-58"><span class="linenos">58</span></a>                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-</span><span id="main-59"><a href="#main-59"><span class="linenos">59</span></a>
-</span><span id="main-60"><a href="#main-60"><span class="linenos">60</span></a>            <span class="c1"># Initiate OAuth flow</span>
-</span><span id="main-61"><a href="#main-61"><span class="linenos">61</span></a>            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Initiating Google authentication flow. Check your web browser...&quot;</span><span class="p">)</span>
-</span><span id="main-62"><a href="#main-62"><span class="linenos">62</span></a>            <span class="n">flow</span> <span class="o">=</span> <span class="n">InstalledAppFlow</span><span class="o">.</span><span class="n">from_client_secrets_file</span><span class="p">(</span><span class="n">creds_path</span><span class="p">,</span> <span class="n">SCOPES</span><span class="p">)</span>
-</span><span id="main-63"><a href="#main-63"><span class="linenos">63</span></a>            <span class="n">creds</span> <span class="o">=</span> <span class="n">flow</span><span class="o">.</span><span class="n">run_local_server</span><span class="p">(</span><span class="n">port</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-</span><span id="main-64"><a href="#main-64"><span class="linenos">64</span></a>            
-</span><span id="main-65"><a href="#main-65"><span class="linenos">65</span></a>        <span class="c1"># Save the credentials for the next run</span>
-</span><span id="main-66"><a href="#main-66"><span class="linenos">66</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">token_path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">token</span><span class="p">:</span>
-</span><span id="main-67"><a href="#main-67"><span class="linenos">67</span></a>            <span class="n">token</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">creds</span><span class="o">.</span><span class="n">to_json</span><span class="p">())</span>
-</span><span id="main-68"><a href="#main-68"><span class="linenos">68</span></a>            
-</span><span id="main-69"><a href="#main-69"><span class="linenos">69</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Authentication successful!&quot;</span><span class="p">)</span>
-</span><span id="main-70"><a href="#main-70"><span class="linenos">70</span></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Your authorization has been securely saved to: </span><span class="si">{</span><span class="n">token_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="main-71"><a href="#main-71"><span class="linenos">71</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Your library is now fully connected and authorized to push to Google Docs.&quot;</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="main-110"><a href="#main-110"><span class="linenos">110</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="main-111"><a href="#main-111"><span class="linenos">111</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Main execution point for authentication script.&quot;&quot;&quot;</span>
+</span><span id="main-112"><a href="#main-112"><span class="linenos">112</span></a>    <span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+</span><span id="main-113"><a href="#main-113"><span class="linenos">113</span></a>    <span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">script_dir</span><span class="p">)</span>
+</span><span id="main-114"><a href="#main-114"><span class="linenos">114</span></a>
+</span><span id="main-115"><a href="#main-115"><span class="linenos">115</span></a>    <span class="n">authenticator</span> <span class="o">=</span> <span class="n">GoogleDocsAuthenticator</span><span class="p">(</span><span class="n">repo_root</span><span class="p">)</span>
+</span><span id="main-116"><a href="#main-116"><span class="linenos">116</span></a>    <span class="n">authenticator</span><span class="o">.</span><span class="n">authenticate</span><span class="p">()</span>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>Main execution point for authentication script.</p>
+</div>
+
 
                 </section>
     </main>

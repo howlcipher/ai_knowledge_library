@@ -31,6 +31,24 @@
             <h2>API Documentation</h2>
                 <ul class="memberlist">
             <li>
+                    <a class="class" href="#ContextPruner">ContextPruner</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#ContextPruner.__init__">ContextPruner</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#ContextPruner.repo_root">repo_root</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#ContextPruner.get_db_path">get_db_path</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#ContextPruner.prune">prune</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
                     <a class="function" href="#main">main</a>
             </li>
     </ul>
@@ -49,44 +67,266 @@
                     <h1 class="modulename">
 <a href="./../tools.html">tools</a><wbr>.prune_context    </h1>
 
-                
+                        <div class="docstring"><p>Module for pruning context from the ChromaDB vector database.</p>
+</div>
+
                         <input id="mod-prune_context-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 
                         <label class="view-source-button" for="mod-prune_context-view-source"><span>View Source</span></label>
 
                         <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="ch">#!/usr/bin/env python3</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">chromadb</span>
-</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">chromadb.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Settings</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="sd">Module for pruning context from the ChromaDB vector database.</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a>
-</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>    <span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>    <span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">script_dir</span><span class="p">)</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">repo_root</span><span class="p">)</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>    
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">config.loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_chroma_db_path</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>    <span class="n">db_path</span> <span class="o">=</span> <span class="n">get_chroma_db_path</span><span class="p">()</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>    
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">db_path</span><span class="p">):</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No ChromaDB found at </span><span class="si">{</span><span class="n">db_path</span><span class="si">}</span><span class="s2">, skipping prune.&quot;</span><span class="p">)</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>        <span class="k">return</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>        
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>    <span class="n">client</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">db_path</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">Settings</span><span class="p">(</span><span class="n">allow_reset</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>    <span class="n">collection</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_or_create_collection</span><span class="p">(</span><span class="s2">&quot;ai_knowledge_library&quot;</span><span class="p">)</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>    
-</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>    <span class="c1"># In a real scenario, this would query embeddings and compute cosine similarity</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>    <span class="c1"># to find duplicates or outdated nodes.</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Context Pruning Engine initialized.&quot;</span><span class="p">)</span>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Scanning vector embeddings for redundant, contradictory, or outdated markdown files...&quot;</span><span class="p">)</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No severe contradictions found in the knowledge graph. Context is clean.&quot;</span><span class="p">)</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>
-</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>    <span class="n">main</span><span class="p">()</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">chromadb</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">chromadb.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Settings</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="k">class</span><span class="w"> </span><span class="nc">ContextPruner</span><span class="p">:</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="sd">    Handles the pruning of redundant or outdated context from the vector database.</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a><span class="sd">        Initializes the ContextPruner by determining the database path.</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>        <span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">script_dir</span><span class="p">)</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>        <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">)</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_db_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a><span class="sd">        Retrieves the ChromaDB path from the configuration loader.</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a><span class="sd">        Returns:</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a><span class="sd">            str: The path to the ChromaDB directory.</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">config.loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_chroma_db_path</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>        <span class="k">return</span> <span class="n">get_chroma_db_path</span><span class="p">()</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>
+</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">prune</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a><span class="sd">        Executes the context pruning operation.</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>        <span class="n">db_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_db_path</span><span class="p">()</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>
+</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">db_path</span><span class="p">):</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No ChromaDB found at </span><span class="si">{</span><span class="n">db_path</span><span class="si">}</span><span class="s2">, skipping prune.&quot;</span><span class="p">)</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>            <span class="k">return</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>
+</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>        <span class="n">client</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>            <span class="n">path</span><span class="o">=</span><span class="n">db_path</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">Settings</span><span class="p">(</span><span class="n">allow_reset</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a>        <span class="p">)</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a>        <span class="n">collection</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_or_create_collection</span><span class="p">(</span><span class="s2">&quot;ai_knowledge_library&quot;</span><span class="p">)</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a>
+</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>        <span class="c1"># In a real scenario, this would query embeddings and compute cosine similarity</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a>        <span class="c1"># to find duplicates or outdated nodes.</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Context Pruning Engine initialized.&quot;</span><span class="p">)</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a>            <span class="s2">&quot;Scanning vector embeddings for redundant, contradictory, or outdated markdown files...&quot;</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a>        <span class="p">)</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a>            <span class="s2">&quot;No severe contradictions found in the knowledge graph. Context is clean.&quot;</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a>        <span class="p">)</span>
+</span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a>
+</span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a>
+</span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos">63</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-64"><a href="#L-64"><span class="linenos">64</span></a><span class="sd">    Main entry point for the script.</span>
+</span><span id="L-65"><a href="#L-65"><span class="linenos">65</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos">66</span></a>    <span class="n">pruner</span> <span class="o">=</span> <span class="n">ContextPruner</span><span class="p">()</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos">67</span></a>    <span class="n">pruner</span><span class="o">.</span><span class="n">prune</span><span class="p">()</span>
+</span><span id="L-68"><a href="#L-68"><span class="linenos">68</span></a>
+</span><span id="L-69"><a href="#L-69"><span class="linenos">69</span></a>
+</span><span id="L-70"><a href="#L-70"><span class="linenos">70</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+</span><span id="L-71"><a href="#L-71"><span class="linenos">71</span></a>    <span class="n">main</span><span class="p">()</span>
 </span></pre></div>
 
 
             </section>
+                <section id="ContextPruner">
+                            <input id="ContextPruner-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">ContextPruner</span>:
+
+                <label class="view-source-button" for="ContextPruner-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#ContextPruner"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ContextPruner-13"><a href="#ContextPruner-13"><span class="linenos">13</span></a><span class="k">class</span><span class="w"> </span><span class="nc">ContextPruner</span><span class="p">:</span>
+</span><span id="ContextPruner-14"><a href="#ContextPruner-14"><span class="linenos">14</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="ContextPruner-15"><a href="#ContextPruner-15"><span class="linenos">15</span></a><span class="sd">    Handles the pruning of redundant or outdated context from the vector database.</span>
+</span><span id="ContextPruner-16"><a href="#ContextPruner-16"><span class="linenos">16</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="ContextPruner-17"><a href="#ContextPruner-17"><span class="linenos">17</span></a>
+</span><span id="ContextPruner-18"><a href="#ContextPruner-18"><span class="linenos">18</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="ContextPruner-19"><a href="#ContextPruner-19"><span class="linenos">19</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="ContextPruner-20"><a href="#ContextPruner-20"><span class="linenos">20</span></a><span class="sd">        Initializes the ContextPruner by determining the database path.</span>
+</span><span id="ContextPruner-21"><a href="#ContextPruner-21"><span class="linenos">21</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ContextPruner-22"><a href="#ContextPruner-22"><span class="linenos">22</span></a>        <span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+</span><span id="ContextPruner-23"><a href="#ContextPruner-23"><span class="linenos">23</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">script_dir</span><span class="p">)</span>
+</span><span id="ContextPruner-24"><a href="#ContextPruner-24"><span class="linenos">24</span></a>        <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">)</span>
+</span><span id="ContextPruner-25"><a href="#ContextPruner-25"><span class="linenos">25</span></a>
+</span><span id="ContextPruner-26"><a href="#ContextPruner-26"><span class="linenos">26</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_db_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="ContextPruner-27"><a href="#ContextPruner-27"><span class="linenos">27</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="ContextPruner-28"><a href="#ContextPruner-28"><span class="linenos">28</span></a><span class="sd">        Retrieves the ChromaDB path from the configuration loader.</span>
+</span><span id="ContextPruner-29"><a href="#ContextPruner-29"><span class="linenos">29</span></a>
+</span><span id="ContextPruner-30"><a href="#ContextPruner-30"><span class="linenos">30</span></a><span class="sd">        Returns:</span>
+</span><span id="ContextPruner-31"><a href="#ContextPruner-31"><span class="linenos">31</span></a><span class="sd">            str: The path to the ChromaDB directory.</span>
+</span><span id="ContextPruner-32"><a href="#ContextPruner-32"><span class="linenos">32</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ContextPruner-33"><a href="#ContextPruner-33"><span class="linenos">33</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">config.loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_chroma_db_path</span>
+</span><span id="ContextPruner-34"><a href="#ContextPruner-34"><span class="linenos">34</span></a>
+</span><span id="ContextPruner-35"><a href="#ContextPruner-35"><span class="linenos">35</span></a>        <span class="k">return</span> <span class="n">get_chroma_db_path</span><span class="p">()</span>
+</span><span id="ContextPruner-36"><a href="#ContextPruner-36"><span class="linenos">36</span></a>
+</span><span id="ContextPruner-37"><a href="#ContextPruner-37"><span class="linenos">37</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">prune</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="ContextPruner-38"><a href="#ContextPruner-38"><span class="linenos">38</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="ContextPruner-39"><a href="#ContextPruner-39"><span class="linenos">39</span></a><span class="sd">        Executes the context pruning operation.</span>
+</span><span id="ContextPruner-40"><a href="#ContextPruner-40"><span class="linenos">40</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ContextPruner-41"><a href="#ContextPruner-41"><span class="linenos">41</span></a>        <span class="n">db_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_db_path</span><span class="p">()</span>
+</span><span id="ContextPruner-42"><a href="#ContextPruner-42"><span class="linenos">42</span></a>
+</span><span id="ContextPruner-43"><a href="#ContextPruner-43"><span class="linenos">43</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">db_path</span><span class="p">):</span>
+</span><span id="ContextPruner-44"><a href="#ContextPruner-44"><span class="linenos">44</span></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No ChromaDB found at </span><span class="si">{</span><span class="n">db_path</span><span class="si">}</span><span class="s2">, skipping prune.&quot;</span><span class="p">)</span>
+</span><span id="ContextPruner-45"><a href="#ContextPruner-45"><span class="linenos">45</span></a>            <span class="k">return</span>
+</span><span id="ContextPruner-46"><a href="#ContextPruner-46"><span class="linenos">46</span></a>
+</span><span id="ContextPruner-47"><a href="#ContextPruner-47"><span class="linenos">47</span></a>        <span class="n">client</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span>
+</span><span id="ContextPruner-48"><a href="#ContextPruner-48"><span class="linenos">48</span></a>            <span class="n">path</span><span class="o">=</span><span class="n">db_path</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">Settings</span><span class="p">(</span><span class="n">allow_reset</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="ContextPruner-49"><a href="#ContextPruner-49"><span class="linenos">49</span></a>        <span class="p">)</span>
+</span><span id="ContextPruner-50"><a href="#ContextPruner-50"><span class="linenos">50</span></a>        <span class="n">collection</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_or_create_collection</span><span class="p">(</span><span class="s2">&quot;ai_knowledge_library&quot;</span><span class="p">)</span>
+</span><span id="ContextPruner-51"><a href="#ContextPruner-51"><span class="linenos">51</span></a>
+</span><span id="ContextPruner-52"><a href="#ContextPruner-52"><span class="linenos">52</span></a>        <span class="c1"># In a real scenario, this would query embeddings and compute cosine similarity</span>
+</span><span id="ContextPruner-53"><a href="#ContextPruner-53"><span class="linenos">53</span></a>        <span class="c1"># to find duplicates or outdated nodes.</span>
+</span><span id="ContextPruner-54"><a href="#ContextPruner-54"><span class="linenos">54</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Context Pruning Engine initialized.&quot;</span><span class="p">)</span>
+</span><span id="ContextPruner-55"><a href="#ContextPruner-55"><span class="linenos">55</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="ContextPruner-56"><a href="#ContextPruner-56"><span class="linenos">56</span></a>            <span class="s2">&quot;Scanning vector embeddings for redundant, contradictory, or outdated markdown files...&quot;</span>
+</span><span id="ContextPruner-57"><a href="#ContextPruner-57"><span class="linenos">57</span></a>        <span class="p">)</span>
+</span><span id="ContextPruner-58"><a href="#ContextPruner-58"><span class="linenos">58</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="ContextPruner-59"><a href="#ContextPruner-59"><span class="linenos">59</span></a>            <span class="s2">&quot;No severe contradictions found in the knowledge graph. Context is clean.&quot;</span>
+</span><span id="ContextPruner-60"><a href="#ContextPruner-60"><span class="linenos">60</span></a>        <span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Handles the pruning of redundant or outdated context from the vector database.</p>
+</div>
+
+
+                            <div id="ContextPruner.__init__" class="classattr">
+                                        <input id="ContextPruner.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="name">ContextPruner</span><span class="signature pdoc-code condensed">()</span>
+
+                <label class="view-source-button" for="ContextPruner.__init__-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#ContextPruner.__init__"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ContextPruner.__init__-18"><a href="#ContextPruner.__init__-18"><span class="linenos">18</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="ContextPruner.__init__-19"><a href="#ContextPruner.__init__-19"><span class="linenos">19</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="ContextPruner.__init__-20"><a href="#ContextPruner.__init__-20"><span class="linenos">20</span></a><span class="sd">        Initializes the ContextPruner by determining the database path.</span>
+</span><span id="ContextPruner.__init__-21"><a href="#ContextPruner.__init__-21"><span class="linenos">21</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ContextPruner.__init__-22"><a href="#ContextPruner.__init__-22"><span class="linenos">22</span></a>        <span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+</span><span id="ContextPruner.__init__-23"><a href="#ContextPruner.__init__-23"><span class="linenos">23</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">script_dir</span><span class="p">)</span>
+</span><span id="ContextPruner.__init__-24"><a href="#ContextPruner.__init__-24"><span class="linenos">24</span></a>        <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Initializes the ContextPruner by determining the database path.</p>
+</div>
+
+
+                            </div>
+                            <div id="ContextPruner.repo_root" class="classattr">
+                                <div class="attr variable">
+            <span class="name">repo_root</span>
+
+        
+    </div>
+    <a class="headerlink" href="#ContextPruner.repo_root"></a>
+    
+    
+
+                            </div>
+                            <div id="ContextPruner.get_db_path" class="classattr">
+                                        <input id="ContextPruner.get_db_path-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">get_db_path</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">) -> <span class="nb">str</span>:</span></span>
+
+                <label class="view-source-button" for="ContextPruner.get_db_path-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#ContextPruner.get_db_path"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ContextPruner.get_db_path-26"><a href="#ContextPruner.get_db_path-26"><span class="linenos">26</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_db_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="ContextPruner.get_db_path-27"><a href="#ContextPruner.get_db_path-27"><span class="linenos">27</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="ContextPruner.get_db_path-28"><a href="#ContextPruner.get_db_path-28"><span class="linenos">28</span></a><span class="sd">        Retrieves the ChromaDB path from the configuration loader.</span>
+</span><span id="ContextPruner.get_db_path-29"><a href="#ContextPruner.get_db_path-29"><span class="linenos">29</span></a>
+</span><span id="ContextPruner.get_db_path-30"><a href="#ContextPruner.get_db_path-30"><span class="linenos">30</span></a><span class="sd">        Returns:</span>
+</span><span id="ContextPruner.get_db_path-31"><a href="#ContextPruner.get_db_path-31"><span class="linenos">31</span></a><span class="sd">            str: The path to the ChromaDB directory.</span>
+</span><span id="ContextPruner.get_db_path-32"><a href="#ContextPruner.get_db_path-32"><span class="linenos">32</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ContextPruner.get_db_path-33"><a href="#ContextPruner.get_db_path-33"><span class="linenos">33</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">config.loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_chroma_db_path</span>
+</span><span id="ContextPruner.get_db_path-34"><a href="#ContextPruner.get_db_path-34"><span class="linenos">34</span></a>
+</span><span id="ContextPruner.get_db_path-35"><a href="#ContextPruner.get_db_path-35"><span class="linenos">35</span></a>        <span class="k">return</span> <span class="n">get_chroma_db_path</span><span class="p">()</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Retrieves the ChromaDB path from the configuration loader.</p>
+
+<p>Returns:
+    str: The path to the ChromaDB directory.</p>
+</div>
+
+
+                            </div>
+                            <div id="ContextPruner.prune" class="classattr">
+                                        <input id="ContextPruner.prune-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">prune</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">) -> <span class="kc">None</span>:</span></span>
+
+                <label class="view-source-button" for="ContextPruner.prune-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#ContextPruner.prune"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ContextPruner.prune-37"><a href="#ContextPruner.prune-37"><span class="linenos">37</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">prune</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="ContextPruner.prune-38"><a href="#ContextPruner.prune-38"><span class="linenos">38</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="ContextPruner.prune-39"><a href="#ContextPruner.prune-39"><span class="linenos">39</span></a><span class="sd">        Executes the context pruning operation.</span>
+</span><span id="ContextPruner.prune-40"><a href="#ContextPruner.prune-40"><span class="linenos">40</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="ContextPruner.prune-41"><a href="#ContextPruner.prune-41"><span class="linenos">41</span></a>        <span class="n">db_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_db_path</span><span class="p">()</span>
+</span><span id="ContextPruner.prune-42"><a href="#ContextPruner.prune-42"><span class="linenos">42</span></a>
+</span><span id="ContextPruner.prune-43"><a href="#ContextPruner.prune-43"><span class="linenos">43</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">db_path</span><span class="p">):</span>
+</span><span id="ContextPruner.prune-44"><a href="#ContextPruner.prune-44"><span class="linenos">44</span></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No ChromaDB found at </span><span class="si">{</span><span class="n">db_path</span><span class="si">}</span><span class="s2">, skipping prune.&quot;</span><span class="p">)</span>
+</span><span id="ContextPruner.prune-45"><a href="#ContextPruner.prune-45"><span class="linenos">45</span></a>            <span class="k">return</span>
+</span><span id="ContextPruner.prune-46"><a href="#ContextPruner.prune-46"><span class="linenos">46</span></a>
+</span><span id="ContextPruner.prune-47"><a href="#ContextPruner.prune-47"><span class="linenos">47</span></a>        <span class="n">client</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span>
+</span><span id="ContextPruner.prune-48"><a href="#ContextPruner.prune-48"><span class="linenos">48</span></a>            <span class="n">path</span><span class="o">=</span><span class="n">db_path</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">Settings</span><span class="p">(</span><span class="n">allow_reset</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="ContextPruner.prune-49"><a href="#ContextPruner.prune-49"><span class="linenos">49</span></a>        <span class="p">)</span>
+</span><span id="ContextPruner.prune-50"><a href="#ContextPruner.prune-50"><span class="linenos">50</span></a>        <span class="n">collection</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_or_create_collection</span><span class="p">(</span><span class="s2">&quot;ai_knowledge_library&quot;</span><span class="p">)</span>
+</span><span id="ContextPruner.prune-51"><a href="#ContextPruner.prune-51"><span class="linenos">51</span></a>
+</span><span id="ContextPruner.prune-52"><a href="#ContextPruner.prune-52"><span class="linenos">52</span></a>        <span class="c1"># In a real scenario, this would query embeddings and compute cosine similarity</span>
+</span><span id="ContextPruner.prune-53"><a href="#ContextPruner.prune-53"><span class="linenos">53</span></a>        <span class="c1"># to find duplicates or outdated nodes.</span>
+</span><span id="ContextPruner.prune-54"><a href="#ContextPruner.prune-54"><span class="linenos">54</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Context Pruning Engine initialized.&quot;</span><span class="p">)</span>
+</span><span id="ContextPruner.prune-55"><a href="#ContextPruner.prune-55"><span class="linenos">55</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="ContextPruner.prune-56"><a href="#ContextPruner.prune-56"><span class="linenos">56</span></a>            <span class="s2">&quot;Scanning vector embeddings for redundant, contradictory, or outdated markdown files...&quot;</span>
+</span><span id="ContextPruner.prune-57"><a href="#ContextPruner.prune-57"><span class="linenos">57</span></a>        <span class="p">)</span>
+</span><span id="ContextPruner.prune-58"><a href="#ContextPruner.prune-58"><span class="linenos">58</span></a>        <span class="nb">print</span><span class="p">(</span>
+</span><span id="ContextPruner.prune-59"><a href="#ContextPruner.prune-59"><span class="linenos">59</span></a>            <span class="s2">&quot;No severe contradictions found in the knowledge graph. Context is clean.&quot;</span>
+</span><span id="ContextPruner.prune-60"><a href="#ContextPruner.prune-60"><span class="linenos">60</span></a>        <span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Executes the context pruning operation.</p>
+</div>
+
+
+                            </div>
+                </section>
                 <section id="main">
                             <input id="main-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -98,31 +338,18 @@
 
     </div>
     <a class="headerlink" href="#main"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="main-7"><a href="#main-7"><span class="linenos"> 7</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="main-8"><a href="#main-8"><span class="linenos"> 8</span></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-</span><span id="main-9"><a href="#main-9"><span class="linenos"> 9</span></a>    <span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
-</span><span id="main-10"><a href="#main-10"><span class="linenos">10</span></a>    <span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">script_dir</span><span class="p">)</span>
-</span><span id="main-11"><a href="#main-11"><span class="linenos">11</span></a>    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">repo_root</span><span class="p">)</span>
-</span><span id="main-12"><a href="#main-12"><span class="linenos">12</span></a>    
-</span><span id="main-13"><a href="#main-13"><span class="linenos">13</span></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">config.loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_chroma_db_path</span>
-</span><span id="main-14"><a href="#main-14"><span class="linenos">14</span></a>    <span class="n">db_path</span> <span class="o">=</span> <span class="n">get_chroma_db_path</span><span class="p">()</span>
-</span><span id="main-15"><a href="#main-15"><span class="linenos">15</span></a>    
-</span><span id="main-16"><a href="#main-16"><span class="linenos">16</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">db_path</span><span class="p">):</span>
-</span><span id="main-17"><a href="#main-17"><span class="linenos">17</span></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No ChromaDB found at </span><span class="si">{</span><span class="n">db_path</span><span class="si">}</span><span class="s2">, skipping prune.&quot;</span><span class="p">)</span>
-</span><span id="main-18"><a href="#main-18"><span class="linenos">18</span></a>        <span class="k">return</span>
-</span><span id="main-19"><a href="#main-19"><span class="linenos">19</span></a>        
-</span><span id="main-20"><a href="#main-20"><span class="linenos">20</span></a>    <span class="n">client</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">db_path</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">Settings</span><span class="p">(</span><span class="n">allow_reset</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-</span><span id="main-21"><a href="#main-21"><span class="linenos">21</span></a>    <span class="n">collection</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_or_create_collection</span><span class="p">(</span><span class="s2">&quot;ai_knowledge_library&quot;</span><span class="p">)</span>
-</span><span id="main-22"><a href="#main-22"><span class="linenos">22</span></a>    
-</span><span id="main-23"><a href="#main-23"><span class="linenos">23</span></a>    <span class="c1"># In a real scenario, this would query embeddings and compute cosine similarity</span>
-</span><span id="main-24"><a href="#main-24"><span class="linenos">24</span></a>    <span class="c1"># to find duplicates or outdated nodes.</span>
-</span><span id="main-25"><a href="#main-25"><span class="linenos">25</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Context Pruning Engine initialized.&quot;</span><span class="p">)</span>
-</span><span id="main-26"><a href="#main-26"><span class="linenos">26</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Scanning vector embeddings for redundant, contradictory, or outdated markdown files...&quot;</span><span class="p">)</span>
-</span><span id="main-27"><a href="#main-27"><span class="linenos">27</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No severe contradictions found in the knowledge graph. Context is clean.&quot;</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="main-63"><a href="#main-63"><span class="linenos">63</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="main-64"><a href="#main-64"><span class="linenos">64</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="main-65"><a href="#main-65"><span class="linenos">65</span></a><span class="sd">    Main entry point for the script.</span>
+</span><span id="main-66"><a href="#main-66"><span class="linenos">66</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="main-67"><a href="#main-67"><span class="linenos">67</span></a>    <span class="n">pruner</span> <span class="o">=</span> <span class="n">ContextPruner</span><span class="p">()</span>
+</span><span id="main-68"><a href="#main-68"><span class="linenos">68</span></a>    <span class="n">pruner</span><span class="o">.</span><span class="n">prune</span><span class="p">()</span>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>Main entry point for the script.</p>
+</div>
+
 
                 </section>
     </main>
