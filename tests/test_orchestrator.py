@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from tools.orchestrator import Agent, Orchestrator
+from src.core.orchestrator import Agent, Orchestrator
 
 def test_agent_initialization():
     agent = Agent("TestAgent", "You are a test.", "gemini/gemini-1.5-pro")
@@ -21,7 +21,7 @@ def test_agent_generate_response(mock_completion, mock_cost):
     
     agent = Agent("TestAgent", "You are a test.", "gemini/gemini-1.5-pro")
     
-    with patch("tools.orchestrator.log_telemetry") as mock_log:
+    with patch("src.core.orchestrator.log_telemetry") as mock_log:
         response = agent.generate_response("Hello", context="Some context")
         assert response == "Mocked answer"
         mock_log.assert_called_once()
@@ -46,8 +46,8 @@ def test_human_proxy_rejected(mock_input):
     result = orchestrator.human_proxy_intercept("Here is a command:\n```bash\necho hello\n```")
     assert result is False
 
-@patch("tools.orchestrator.Agent.generate_response")
-@patch("tools.orchestrator.Orchestrator.human_proxy_intercept", return_value=True)
+@patch("src.core.orchestrator.Agent.generate_response")
+@patch("src.core.orchestrator.Orchestrator.human_proxy_intercept", return_value=True)
 def test_orchestrator_run_loop_approved_immediately(mock_proxy, mock_generate):
     orchestrator = Orchestrator()
     
@@ -61,8 +61,8 @@ def test_orchestrator_run_loop_approved_immediately(mock_proxy, mock_generate):
     assert mock_generate.call_count == 2
     mock_proxy.assert_called_once()
 
-@patch("tools.orchestrator.Agent.generate_response")
-@patch("tools.orchestrator.Orchestrator.human_proxy_intercept", return_value=True)
+@patch("src.core.orchestrator.Agent.generate_response")
+@patch("src.core.orchestrator.Orchestrator.human_proxy_intercept", return_value=True)
 def test_orchestrator_run_loop_rejected_then_approved(mock_proxy, mock_generate):
     orchestrator = Orchestrator()
     
@@ -80,9 +80,9 @@ def test_orchestrator_run_loop_rejected_then_approved(mock_proxy, mock_generate)
 
 def test_main(monkeypatch):
     import sys
-    from tools.orchestrator import main
+    from src.core.orchestrator import main
     
-    with patch("tools.orchestrator.Orchestrator.run_loop") as mock_run:
+    with patch("src.core.orchestrator.Orchestrator.run_loop") as mock_run:
         monkeypatch.setattr(sys, "argv", ["orchestrator.py", "What is AI?"])
         main()
         mock_run.assert_called_once_with("What is AI?")

@@ -106,7 +106,7 @@ def main():
     Main entry point for the search script.
     """
     if len(sys.argv) < 2:
-        print("Usage: python3 tools/brain.py <search_term>")
+        print("Usage: python3 src/core/brain.py <search_term>")
         return
 
     term = sys.argv[1]

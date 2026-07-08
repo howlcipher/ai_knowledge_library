@@ -7,16 +7,16 @@ import sys
 sys.modules['streamlit'] = MagicMock()
 sys.modules['chromadb'] = MagicMock()
 
-from tools.web_ui import KnowledgeUI, main
+from src.ui.web_ui import KnowledgeUI, main
 
 @pytest.fixture
 def mock_streamlit():
-    with patch('tools.web_ui.st') as mock_st:
+    with patch('src.ui.web_ui.st') as mock_st:
         yield mock_st
 
 @pytest.fixture
 def mock_chromadb():
-    with patch('tools.web_ui.chromadb') as mock_chroma:
+    with patch('src.ui.web_ui.chromadb') as mock_chroma:
         yield mock_chroma
 
 def test_knowledge_ui_init_no_db(mock_streamlit, mock_chromadb):
@@ -120,7 +120,7 @@ def test_knowledge_ui_display_results(mock_streamlit, mock_chromadb):
         mock_streamlit.write.assert_called_with("doc1")
 
 def test_main(mock_streamlit, mock_chromadb):
-    with patch('tools.web_ui.KnowledgeUI') as mock_ui_class:
+    with patch('src.ui.web_ui.KnowledgeUI') as mock_ui_class:
         mock_ui = MagicMock()
         mock_ui_class.return_value = mock_ui
         

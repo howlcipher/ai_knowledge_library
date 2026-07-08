@@ -6,7 +6,7 @@ import sys
 # Add tools to sys.path to resolve internal imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'tools'))
 
-from tools.tui import AILibraryTUI, ChatArea
+from src.ui.tui import AILibraryTUI, ChatArea
 from textual.widgets import Select, Input, Label
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def mock_config(tmp_path, monkeypatch):
         def get(self, key, default):
             return self.data.get(key, default)
             
-    monkeypatch.setattr("tools.tui.ConfigLoader", MockConfigLoader)
+    monkeypatch.setattr("src.ui.tui.ConfigLoader", MockConfigLoader)
     return str(config_file)
 
 @pytest.mark.asyncio
@@ -91,7 +91,7 @@ async def test_tui_action_clear_chat(mock_config, monkeypatch):
         assert len(container.children) == 0
 
 def test_tui_main(monkeypatch):
-    import tools.tui
+    import src.ui.tui
     
     class MockApp:
         def run(self):
@@ -100,5 +100,5 @@ def test_tui_main(monkeypatch):
     def mock_tui():
         return MockApp()
         
-    monkeypatch.setattr(tools.tui, "AILibraryTUI", mock_tui)
-    tools.tui.main()
+    monkeypatch.setattr(src.ui.tui, "AILibraryTUI", mock_tui)
+    src.ui.tui.main()

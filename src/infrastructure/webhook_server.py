@@ -56,7 +56,7 @@ class WebhookServer:
         print("Webhook received! Triggering context synchronization...")
         try:
             # Execute the sync tool asynchronously as a subprocess
-            subprocess.Popen(["python3", "tools/sync_context.py"])
+            subprocess.Popen(["python3", "scripts/sync_context.py"])
             return {"status": "success", "message": "Sync triggered in background"}
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))

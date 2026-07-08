@@ -46,7 +46,7 @@ class SemanticSearcher:
 
     def _search_pgvector(self, query: str, n_results: int):
         """Handles searching using PostgreSQL/PgVector."""
-        from tools.pgvector_backend import PgVectorStore
+        from src.infrastructure.pgvector_backend import PgVectorStore
 
         store = PgVectorStore()
         results = store.query(query, n_results=n_results)
@@ -71,7 +71,7 @@ class SemanticSearcher:
         db_path = get_chroma_db_path()
         if not os.path.exists(db_path):
             print(
-                "Vector database not found. Please run tools/build_vector_index.py first."
+                "Vector database not found. Please run src/infrastructure/build_vector_index.py first."
             )
             sys.exit(1)
 

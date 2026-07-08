@@ -22,7 +22,7 @@ except ImportError:
     print("pip install textual litellm")
     sys.exit(1)
 
-from config_loader import ConfigLoader
+from src.infrastructure.config_loader import ConfigLoader
 
 
 class ChatArea(Static):
@@ -183,7 +183,7 @@ class AILibraryTUI(App):
             
             # Log telemetry
             try:
-                from tools.telemetry_logger import log_telemetry
+                from src.infrastructure.telemetry_logger import log_telemetry
                 cost = litellm.completion_cost(completion_response=response)
                 usage = response.usage
                 

@@ -100,7 +100,7 @@ class ContentVerifier:
             
             # Log telemetry
             try:
-                from tools.telemetry_logger import log_telemetry
+                from src.infrastructure.telemetry_logger import log_telemetry
                 cost = litellm.completion_cost(completion_response=response)
                 usage = response.usage
                 log_telemetry(
@@ -198,7 +198,7 @@ class VectorStoreManager:
             self._insert_chroma(docs, metadatas, ids)
 
     def _insert_pgvector(self, docs: List[str], metadatas: List[Dict]):
-        from tools.pgvector_backend import PgVectorStore
+        from src.infrastructure.pgvector_backend import PgVectorStore
 
         store = PgVectorStore()
         for i in range(0, len(docs), self.batch_size):

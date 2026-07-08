@@ -6,9 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ### 🚀 Major Features & Architectural Overhaul
 - **Provider-Side KV Prompt Caching**: Refactored the internal LiteLLM messaging pipelines across the TUI and Orchestrator to automatically inject explicit cache-control markers (Anthropic `ephemeral`) and structure contexts to natively trigger API-level Prefix caching. This massively reduces latency and halves API costs on repeat prompts.
-- **Multi-Agent Orchestration Engine**: Shipped `tools/orchestrator.py` which spawns self-correcting Researcher and QA Reviewer personas that iteratively solve problems until perfected.
+- **Multi-Agent Orchestration Engine**: Shipped `src/core/orchestrator.py` which spawns self-correcting Researcher and QA Reviewer personas that iteratively solve problems until perfected.
 - **Human-in-the-Loop Execution Guard**: Built a secure terminal proxy interceptor into the new Orchestrator that strictly pauses and requests `[Y/n]` manual authorization before allowing any LLM to execute shell commands.
-- **Cost & Token Analytics Dashboard**: Integrated a native SQLite telemetry database (`tools/telemetry_logger.py`) and a `pandas`-powered visual dashboard into the Web UI (`tools/web_ui.py`) to actively monitor cost, latency, and cache hits.
+- **Cost & Token Analytics Dashboard**: Integrated a native SQLite telemetry database (`src/infrastructure/telemetry_logger.py`) and a `pandas`-powered visual dashboard into the Web UI (`src/ui/web_ui.py`) to actively monitor cost, latency, and cache hits.
 - **Intelligent Failover & Rate Limit Recovery**: Expanded LiteLLM router implementations across all tooling to automatically cascade from `gemini-1.5-pro` to fallback providers (`claude-3-5-sonnet`, `gpt-4o`, `grok-2`) whenever API rate limits are exceeded.
 
 ### 🛡️ Security & Hardening
@@ -18,14 +18,14 @@ All notable changes to this project will be documented in this file.
 ## [2.0.0] - 2026-07-07
 
 ### 🚀 Major Features & Architectural Overhaul
-- **Docker & Cloud Ready**: Fully dockerized the knowledge library (`Dockerfile` and `docker-compose.yml`) and added a centralized HTTP Client-Server mode to ChromaDB (`tools/sync_context.py --host`).
+- **Docker & Cloud Ready**: Fully dockerized the knowledge library (`Dockerfile` and `docker-compose.yml`) and added a centralized HTTP Client-Server mode to ChromaDB (`scripts/sync_context.py --host`).
 - **Dynamic Context Templating**: Implemented `scripts/template_injector.py` to automatically inject `USER_PROFILE.md` variables dynamically into Jinja2 templates for all AI skills at runtime.
-- **Context Pruning Engine**: Shipped `tools/prune_context.py` to proactively analyze ChromaDB embeddings for outdated or contradictory markdown files.
+- **Context Pruning Engine**: Shipped `scripts/prune_context.py` to proactively analyze ChromaDB embeddings for outdated or contradictory markdown files.
 - **Interactive TUI Enhancements**: 
     - Added a natively embedded `Help / FAQ` menu to the Go TUI installer.
     - Added beautiful `charmbracelet/bubbles/spinner` animations during long-running Git and Sync tasks.
 - **Automated PR Code Review**: Configured `.agents/rules/code_review.md` allowing the AI to act as an automated code reviewer on GitHub PRs.
-- **Web Research / Scraping Tool**: Added `tools/web_research.py` utilizing `BeautifulSoup` to autonomously scrape external documentation into the RAG vector index.
+- **Web Research / Scraping Tool**: Added `src/core/web_research.py` utilizing `BeautifulSoup` to autonomously scrape external documentation into the RAG vector index.
 - **Automated ADR Engine**: Built `scripts/generate_adr.py` to instantly scaffold timestamped Architecture Decision Records for the library.
 
 ### 🛡️ Security & Privacy
@@ -38,7 +38,7 @@ All notable changes to this project will be documented in this file.
 - **End-to-End Go TUI Tests**: Expanded the test suite with `cmd/installer/main_test.go` to validate interactive terminal prompts on Ubuntu, Windows, and macOS via a new `cross_platform.yml` Action.
 - **ChromaDB Mock Testing**: Engineered `tests/test_chromadb.py` using `unittest.mock` to validate RAG vector indexing without incurring disk I/O.
 - **Strict Python Typing (Mypy)**: Standardized Python type-hinting across the repository and locked it down in CI using `mypy`.
-- **Standardized Python Logging**: Refactored raw standard output calls in favor of a new configurable `tools/system_logger.py` module.
+- **Standardized Python Logging**: Refactored raw standard output calls in favor of a new configurable `src/infrastructure/system_logger.py` module.
 - **Cloud Architecture Diagrams**: Upgraded `infrastructure/network_diagram.md` with detailed AWS (EKS/RDS) and GCP (GKE/CloudSQL) topological maps.
 
 ## [1.3.0] - 2026-07-07
@@ -58,7 +58,7 @@ All notable changes to this project will be documented in this file.
 
 ### 🚀 Added
 * **Automated Multi-Platform Releases**: Integrated `GoReleaser` with GitHub Actions (`release_installer.yml`) to automatically compile and release Windows, macOS, and Linux binaries (including `.deb` and `.rpm`) natively triggered on semantic version tags.
-* **ChromaDB Vector Integration**: Added `tools/build_vector_index.py` and `tools/semantic_search.py` to establish a local RAG system for intelligent, semantic knowledge retrieval.
+* **ChromaDB Vector Integration**: Added `src/infrastructure/build_vector_index.py` and `src/infrastructure/semantic_search.py` to establish a local RAG system for intelligent, semantic knowledge retrieval.
 * **Data Science Capabilities**: Built `.agents/skills/data_analyst/SKILL.md` to mathematically enforce methodologies for Pandas data wrangling and Scikit-Learn pipelines.
 * **Automated API Documentation**: Configured GitHub Actions (`docs.yml`) utilizing `pdoc` to automatically build and deploy API documentation to a `gh-pages` branch.
 * **Standardized Makefile**: Introduced a root `Makefile` to establish standard entry points for installation, testing (`make test`), linting, building, and documentation generation.
@@ -76,7 +76,7 @@ All notable changes to this project will be documented in this file.
 * **Workflow Permissions**: Fixed authentication crashes in the `Update Badges` and `Docs` pipelines by explicitly declaring `contents: write` in the GitHub Actions configuration.
 * **Docs API Dependency Errors**: Fixed the API documentation generator by forcing `pip install -r requirements.txt` prior to `pdoc` execution, resolving missing `chromadb` import crashes.
 * **Google Docs OAuth Flow**: Updated the `setup_google_docs_auth.py` script instructions to accurately reflect the modernized Google Cloud Platform 'Audience' UI and test user whitelisting process.
-* **Server Health Checks**: Refactored the stub in `tools/server_health_check.py` to expose a proper `main()` entrypoint, satisfying the automated test suite.
+* **Server Health Checks**: Refactored the stub in `scripts/server_health_check.py` to expose a proper `main()` entrypoint, satisfying the automated test suite.
 
 ---
 
@@ -88,7 +88,7 @@ All notable changes to this project will be documented in this file.
 * Built boilerplate templates for Python FastAPI and Go backend services inside `projects/templates/`.
 * Engineered a beautiful, interactive Terminal User Interface (TUI) installer in Go using `charmbracelet/huh`.
 * Built `scripts/setup_google_docs_auth.py` to provide an interactive OAuth setup flow for Google Docs API integration.
-* Created `tools/fetch_security_news.py` to automatically update local docs with current cybersecurity threats.
+* Created `scripts/fetch_security_news.py` to automatically update local docs with current cybersecurity threats.
 * Added `.agents/skills/bug_bounty_hunter/SKILL.md` to establish strict methodologies for reconnaissance.
 
 ### 🛡 Security & Privacy
@@ -99,6 +99,6 @@ All notable changes to this project will be documented in this file.
 
 ### 🤖 AGY Integrations & Memory
 * Established `documentation/agent_memory/` for long-term AI persistent memory retention.
-* Created `tools/brain.py` to allow offline CLI searching of the entire knowledge base.
+* Created `src/core/brain.py` to allow offline CLI searching of the entire knowledge base.
 * Added `.agents/rules/epistemic_skepticism.md` to enforce rigorous multi-source cross-checking.
 * Built `.agents/rules/documentation_enforcement.md` to guarantee the AI always updates the changelog and README prior to any git push.

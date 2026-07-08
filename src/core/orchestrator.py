@@ -18,7 +18,7 @@ if repo_root not in sys.path:
     sys.path.append(repo_root)
 
 from config.loader import load_config
-from tools.telemetry_logger import log_telemetry
+from src.infrastructure.telemetry_logger import log_telemetry
 
 class Agent:
     def __init__(self, name: str, system_prompt: str, model: str):

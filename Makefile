@@ -15,7 +15,7 @@ test:
 
 coverage-python:
 	@echo "Generating Python coverage..."
-	PYTHONPATH=. pytest tests/ -v --cov=tools --cov=scripts --cov-report=term-missing --cov-fail-under=42
+	PYTHONPATH=. pytest tests/ -v --cov=src --cov=scripts --cov=scripts --cov-report=term-missing --cov-fail-under=42
 
 coverage-go:
 	@echo "Generating Go coverage..."
@@ -25,9 +25,9 @@ coverage-go:
 # Linting and Quality Checks
 lint:
 	@echo "Running Python linting (flake8)..."
-	flake8 tools/ scripts/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+	flake8 src/ scripts/ scripts/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
 	@echo "Running Python SAST (bandit)..."
-	bandit -r tools/ scripts/ tests/ -ll -ii
+	bandit -r src/ scripts/ scripts/ tests/ -ll -ii
 	@echo "Running Go linting..."
 	if command -v golangci-lint >/dev/null 2>&1; then golangci-lint run; else echo "golangci-lint not installed, skipping..."; fi
 	@echo "Running Go SAST (gosec)..."
@@ -37,7 +37,7 @@ lint:
 
 format:
 	@echo "Formatting Python code (black)..."
-	black tools/ scripts/ tests/
+	black src/ scripts/ scripts/ tests/
 	@echo "Formatting Go code (gofmt)..."
 	gofmt -w .
 
@@ -62,5 +62,5 @@ docs:
 # Sync and Data
 sync:
 	@echo "Syncing context and pulling remote docs..."
-	python3 tools/sync_context.py
-	python3 tools/pull_from_docs.py
+	python3 scripts/sync_context.py
+	python3 scripts/pull_from_docs.py

@@ -5,7 +5,7 @@ import pandas as pd
 from datetime import datetime
 from unittest.mock import patch, MagicMock
 
-import tools.telemetry_logger as telemetry_logger
+import src.infrastructure.telemetry_logger as telemetry_logger
 
 @pytest.fixture
 def mock_db_path(tmp_path, monkeypatch):

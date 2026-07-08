@@ -41,7 +41,7 @@ class KnowledgeUI:
 
         if not os.path.exists(db_path):
             st.error(
-                "Vector database not found. Please run tools/build_vector_index.py first."
+                "Vector database not found. Please run src/infrastructure/build_vector_index.py first."
             )
             st.stop()
 
@@ -81,7 +81,7 @@ class KnowledgeUI:
         st.markdown("Tracks token consumption, cost estimates across LLM providers, and query latency.")
         
         try:
-            from tools.telemetry_logger import get_telemetry_data
+            from src.infrastructure.telemetry_logger import get_telemetry_data
             df = get_telemetry_data()
             if len(df) == 0:
                 st.info("No telemetry data recorded yet. Try asking some questions in the chat!")

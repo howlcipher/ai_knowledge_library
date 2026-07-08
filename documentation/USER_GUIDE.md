@@ -37,11 +37,11 @@ You do not have to navigate the library through the command line to ask question
 
 The `tools/` directory contains powerful automation scripts that you (or an AI agent) can execute directly:
 
-* **`python tools/build_vector_index.py`**: Scans your entire knowledge base and builds a localized ChromaDB vector database so semantic RAG search works offline.
-* **`python tools/orchestrator.py "<query>"`**: Executes the Multi-Agent Orchestrator, deploying a Researcher and QA Reviewer agent to solve complex tasks with a secure Human-in-the-Loop proxy.
-* **`python tools/github_profile_sync.py`**: Automatically syncs your local profile variables against your live GitHub identity.
-* **`python tools/translate_project.py --lang [CODE]`**: Translates the documentation into any of the 13 supported global languages.
-* **`python tools/adversarial_tester.py`**: Runs a prompt-injection and adversarial logic test against your ruleset to ensure the AI behaves safely.
+* **`python src/infrastructure/build_vector_index.py`**: Scans your entire knowledge base and builds a localized ChromaDB vector database so semantic RAG search works offline.
+* **`python src/core/orchestrator.py "<query>"`**: Executes the Multi-Agent Orchestrator, deploying a Researcher and QA Reviewer agent to solve complex tasks with a secure Human-in-the-Loop proxy.
+* **`python scripts/github_profile_sync.py`**: Automatically syncs your local profile variables against your live GitHub identity.
+* **`python scripts/translate_project.py --lang [CODE]`**: Translates the documentation into any of the 13 supported global languages.
+* **`python src/core/adversarial_tester.py`**: Runs a prompt-injection and adversarial logic test against your ruleset to ensure the AI behaves safely.
 
 ---
 

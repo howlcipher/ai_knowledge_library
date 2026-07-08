@@ -6,11 +6,11 @@ from unittest.mock import patch, MagicMock, mock_open
 # Ensure tools can be imported
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tools.semantic_search import SemanticSearcher, main
+from src.infrastructure.semantic_search import SemanticSearcher, main
 
 @pytest.fixture
 def mock_config():
-    with patch('tools.semantic_search.load_config') as mock_load:
+    with patch('src.infrastructure.semantic_search.load_config') as mock_load:
         mock_load.return_value = {"database": {"mode": "sqlite"}}
         yield mock_load
 
@@ -41,14 +41,14 @@ def test_search_routing_chromadb(mock_chroma, mock_pg, mock_config):
     mock_chroma.assert_called_once_with("test query", 3)
     mock_pg.assert_not_called()
 
-@patch('tools.semantic_search.PgVectorStore', create=True)
+@patch('src.infrastructure.semantic_search.PgVectorStore', create=True)
 def test_search_pgvector_with_results(mock_pgstore_class, searcher, capsys):
     mock_store = MagicMock()
     mock_pgstore_class.return_value = mock_store
     mock_store.query.return_value = [("some content that is somewhat long and interesting to read for vector search purposes", "doc.txt", 0.1234)]
     
     # We have to patch it inside sys.modules because it's imported locally
-    with patch.dict('sys.modules', {'tools.pgvector_backend': MagicMock(PgVectorStore=mock_pgstore_class)}):
+    with patch.dict('sys.modules', {'src.infrastructure.pgvector_backend': MagicMock(PgVectorStore=mock_pgstore_class)}):
         searcher._search_pgvector("test query", 1)
         
     mock_store.query.assert_called_once_with("test query", n_results=1)
@@ -56,19 +56,19 @@ def test_search_pgvector_with_results(mock_pgstore_class, searcher, capsys):
     assert "[1] Source: doc.txt (Distance: 0.1234)" in captured.out
     assert "Snippet: some content that is somewhat long" in captured.out
 
-@patch('tools.semantic_search.PgVectorStore', create=True)
+@patch('src.infrastructure.semantic_search.PgVectorStore', create=True)
 def test_search_pgvector_empty_results(mock_pgstore_class, searcher, capsys):
     mock_store = MagicMock()
     mock_pgstore_class.return_value = mock_store
     mock_store.query.return_value = []
     
-    with patch.dict('sys.modules', {'tools.pgvector_backend': MagicMock(PgVectorStore=mock_pgstore_class)}):
+    with patch.dict('sys.modules', {'src.infrastructure.pgvector_backend': MagicMock(PgVectorStore=mock_pgstore_class)}):
         searcher._search_pgvector("test query", 1)
         
     captured = capsys.readouterr()
     assert "No relevant results found." in captured.out
 
-@patch('tools.semantic_search.get_chroma_db_path')
+@patch('src.infrastructure.semantic_search.get_chroma_db_path')
 @patch('os.path.exists')
 def test_search_chromadb_with_results(mock_exists, mock_get_path, searcher, capsys):
     mock_get_path.return_value = "/fake/db/path"
@@ -93,7 +93,7 @@ def test_search_chromadb_with_results(mock_exists, mock_get_path, searcher, caps
     assert "[1] Source: fake_source.md (Distance: 0.5678)" in captured.out
     assert "Snippet: this is a document text" in captured.out
 
-@patch('tools.semantic_search.get_chroma_db_path')
+@patch('src.infrastructure.semantic_search.get_chroma_db_path')
 @patch('os.path.exists')
 def test_search_chromadb_empty_results(mock_exists, mock_get_path, searcher, capsys):
     mock_get_path.return_value = "/fake/db/path"
@@ -117,7 +117,7 @@ def test_search_chromadb_empty_results(mock_exists, mock_get_path, searcher, cap
     captured = capsys.readouterr()
     assert "No relevant results found." in captured.out
 
-@patch('tools.semantic_search.get_chroma_db_path')
+@patch('src.infrastructure.semantic_search.get_chroma_db_path')
 @patch('os.path.exists')
 def test_search_chromadb_no_db(mock_exists, mock_get_path, searcher, capsys):
     mock_get_path.return_value = "/fake/db/path"
@@ -133,7 +133,7 @@ def test_search_chromadb_no_db(mock_exists, mock_get_path, searcher, capsys):
     captured = capsys.readouterr()
     assert "Vector database not found." in captured.out
 
-@patch('tools.semantic_search.get_chroma_db_path')
+@patch('src.infrastructure.semantic_search.get_chroma_db_path')
 @patch('os.path.exists')
 def test_search_chromadb_no_collection(mock_exists, mock_get_path, searcher, capsys):
     mock_get_path.return_value = "/fake/db/path"

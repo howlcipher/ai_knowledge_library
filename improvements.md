@@ -30,7 +30,7 @@ This document tracks all conceptual improvements, architectural upgrades, and au
 
 ## ✅ Recently Completed
 * **Provider-Side Prompt Caching:** Refactored TUI and Orchestrator prompts to front-load static system contexts and injected explicit KV cache-control markers via LiteLLM for Anthropic/Gemini, significantly reducing token processing costs and latency.
-* **Multi-Agent Orchestration:** Created `tools/orchestrator.py` implementing a collaborative loop between Researcher and QA Reviewer personas with a strict Human Proxy interceptor for executable commands.
+* **Multi-Agent Orchestration:** Created `src/core/orchestrator.py` implementing a collaborative loop between Researcher and QA Reviewer personas with a strict Human Proxy interceptor for executable commands.
 * **Intelligent Failover & Rate Limit Handling:** Enhanced LiteLLM implementation across the library to automatically cascade and failover to backup LLMs (Claude, GPT-4o) when Gemini hits rate limits.
 * **SAST Integration & Security Hardening:** Integrated Bandit and GoSec into the CI/CD pipeline and patched 8 existing vulnerabilities (B108, B701, G204).
 * **Graphical Frontend (TUI or Web UI):** Built an interactive Textual TUI (`tui.py`) and integrated Streamlit Web UI launchers natively into the Go installer.

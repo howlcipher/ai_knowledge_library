@@ -164,7 +164,7 @@ class VectorIndexBuilder:
         """
         Inserts chunks into PgVector backend.
         """
-        from tools.pgvector_backend import PgVectorStore
+        from src.infrastructure.pgvector_backend import PgVectorStore
 
         store = PgVectorStore()
         store.init_db()

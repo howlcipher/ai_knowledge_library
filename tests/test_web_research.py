@@ -9,7 +9,7 @@ repo_root = os.path.dirname(script_dir)
 if repo_root not in sys.path:
     sys.path.append(repo_root)
 
-from tools.web_research import (
+from src.core.web_research import (
     ContentVerifier,
     WebScraper,
     VectorStoreManager,
@@ -42,7 +42,7 @@ class TestContentVerifier:
         assert score == 70
         assert "passed" in reason
 
-    @patch("tools.web_research.ContentVerifier._heuristic_check")
+    @patch("src.core.web_research.ContentVerifier._heuristic_check")
     def test_verify_no_api_key(self, mock_heuristic):
         mock_heuristic.return_value = (True, 70, "mocked")
         verifier = ContentVerifier(api_key=None)
@@ -50,7 +50,7 @@ class TestContentVerifier:
         assert res == (True, 70, "mocked")
         mock_heuristic.assert_called_once_with("text")
 
-    @patch("tools.web_research.ContentVerifier._llm_check")
+    @patch("src.core.web_research.ContentVerifier._llm_check")
     def test_verify_with_api_key(self, mock_llm):
         mock_llm.return_value = (True, 95, "llm pass")
         verifier = ContentVerifier(api_key="fake_key")
@@ -58,7 +58,7 @@ class TestContentVerifier:
         assert res == (True, 95, "llm pass")
         mock_llm.assert_called_once_with("text", "url")
 
-    @patch("tools.web_research.ContentVerifier._llm_check")
+    @patch("src.core.web_research.ContentVerifier._llm_check")
     def test_verify_llm_exception(self, mock_llm):
         mock_llm.side_effect = Exception("LLM Error")
         verifier = ContentVerifier(api_key="fake_key")
@@ -119,7 +119,7 @@ class TestWebScraper:
 
 
 class TestVectorStoreManager:
-    @patch("tools.pgvector_backend.PgVectorStore")
+    @patch("src.infrastructure.pgvector_backend.PgVectorStore")
     def test_insert_pgvector(self, mock_store_class):
         mock_store = MagicMock()
         mock_store_class.return_value = mock_store
@@ -130,7 +130,7 @@ class TestVectorStoreManager:
         mock_store.upsert.assert_called_once_with(docs=["doc1"], metadatas=[{"meta": 1}])
 
     @patch("chromadb.PersistentClient")
-    @patch("tools.web_research.get_chroma_db_path")
+    @patch("src.core.web_research.get_chroma_db_path")
     def test_insert_chroma(self, mock_get_path, mock_client_class):
         mock_get_path.return_value = "/tmp/db"  # nosec B108
         mock_client = MagicMock()
@@ -157,10 +157,10 @@ class TestTextChunker:
 
 class TestMain:
     @patch("argparse.ArgumentParser.parse_args")
-    @patch("tools.web_research.WebScraper")
-    @patch("tools.web_research.ContentVerifier")
-    @patch("tools.web_research.VectorStoreManager")
-    @patch("tools.web_research.load_config")
+    @patch("src.core.web_research.WebScraper")
+    @patch("src.core.web_research.ContentVerifier")
+    @patch("src.core.web_research.VectorStoreManager")
+    @patch("src.core.web_research.load_config")
     def test_main_success(self, mock_config, mock_vsm_class, mock_verifier_class, mock_scraper_class, mock_parse_args):
         mock_parse_args.return_value = MagicMock(url="http://example.com")
         
@@ -184,7 +184,7 @@ class TestMain:
         mock_vsm.insert.assert_called_once()
 
     @patch("argparse.ArgumentParser.parse_args")
-    @patch("tools.web_research.WebScraper")
+    @patch("src.core.web_research.WebScraper")
     def test_main_no_text(self, mock_scraper_class, mock_parse_args):
         mock_parse_args.return_value = MagicMock(url="http://example.com")
         mock_scraper = MagicMock()
@@ -196,8 +196,8 @@ class TestMain:
         assert e.value.code == 1
 
     @patch("argparse.ArgumentParser.parse_args")
-    @patch("tools.web_research.WebScraper")
-    @patch("tools.web_research.ContentVerifier")
+    @patch("src.core.web_research.WebScraper")
+    @patch("src.core.web_research.ContentVerifier")
     def test_main_verification_failed(self, mock_verifier_class, mock_scraper_class, mock_parse_args):
         mock_parse_args.return_value = MagicMock(url="http://example.com")
         mock_scraper = MagicMock()
