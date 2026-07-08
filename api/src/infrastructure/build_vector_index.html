@@ -135,73 +135,73 @@ and stores it in the configured vector store.</p>
 </span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a><span class="sd">and stores it in the configured vector store.</span>
 </span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a>
-</span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">glob</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a>
-</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a><span class="k">try</span><span class="p">:</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">chromadb</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a>    <span class="k">pass</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">glob</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a>
+</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="k">try</span><span class="p">:</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a>    <span class="k">pass</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a><span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a>    <span class="k">pass</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a>
 </span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a>
-</span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a>
-</span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a><span class="c1"># Removed boilerplate</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a>
-</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.config_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span><span class="p">,</span> <span class="n">get_chroma_db_path</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a><span class="c1"># Removed boilerplate</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a>
+</span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.config_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a>
 </span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a>
-</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a>
-</span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a><span class="k">class</span><span class="w"> </span><span class="nc">TextChunker</span><span class="p">:</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a><span class="sd">    Helper class responsible for chunking text content.</span>
-</span><span id="L-28"><a href="#L-28"><span class="linenos"> 28</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a>
-</span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">):</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a><span class="sd">        Args:</span>
-</span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a><span class="sd">            max_len (int): Maximum character length per chunk.</span>
-</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span> <span class="o">=</span> <span class="n">max_len</span>
-</span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a>
-</span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">chunk_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-</span><span id="L-38"><a href="#L-38"><span class="linenos"> 38</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a><span class="sd">        Splits text into smaller chunks based on word count and max length.</span>
-</span><span id="L-40"><a href="#L-40"><span class="linenos"> 40</span></a>
-</span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a><span class="sd">        Args:</span>
-</span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a><span class="sd">            text (str): The input text to chunk.</span>
-</span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a>
-</span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a><span class="sd">        Returns:</span>
-</span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a><span class="sd">            list: A list of text chunks.</span>
-</span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a>        <span class="n">words</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-</span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a>        <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a>        <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a>        <span class="n">current_len</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a>
-</span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a>        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
-</span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a>            <span class="k">if</span> <span class="n">current_len</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">:</span>
-</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a>                <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
-</span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a>                <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span><span class="p">]</span>
-</span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a>                <span class="n">current_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
-</span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a>            <span class="k">else</span><span class="p">:</span>
-</span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a>                <span class="n">current_chunk</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
-</span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a>                <span class="n">current_len</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
-</span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a>
-</span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a>        <span class="k">if</span> <span class="n">current_chunk</span><span class="p">:</span>
-</span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a>            <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
-</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a>
-</span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a>        <span class="k">return</span> <span class="n">chunks</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a><span class="k">class</span><span class="w"> </span><span class="nc">TextChunker</span><span class="p">:</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a><span class="sd">    Helper class responsible for chunking text content.</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos"> 28</span></a>
+</span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">):</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a><span class="sd">        Args:</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a><span class="sd">            max_len (int): Maximum character length per chunk.</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span> <span class="o">=</span> <span class="n">max_len</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a>
+</span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">chunk_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-38"><a href="#L-38"><span class="linenos"> 38</span></a><span class="sd">        Splits text into smaller chunks based on word count and max length.</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a>
+</span><span id="L-40"><a href="#L-40"><span class="linenos"> 40</span></a><span class="sd">        Args:</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a><span class="sd">            text (str): The input text to chunk.</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a>
+</span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a><span class="sd">        Returns:</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a><span class="sd">            list: A list of text chunks.</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a>        <span class="n">words</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a>        <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a>        <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a>        <span class="n">current_len</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a>
+</span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a>        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a>            <span class="k">if</span> <span class="n">current_len</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">:</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a>                <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a>                <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span><span class="p">]</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a>                <span class="n">current_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a>            <span class="k">else</span><span class="p">:</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a>                <span class="n">current_chunk</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a>                <span class="n">current_len</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a>
+</span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a>        <span class="k">if</span> <span class="n">current_chunk</span><span class="p">:</span>
+</span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a>            <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
+</span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a>
+</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a>        <span class="k">return</span> <span class="n">chunks</span>
+</span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a>
 </span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a>
-</span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a>
-</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a><span class="k">class</span><span class="w"> </span><span class="nc">VectorIndexBuilder</span><span class="p">:</span>
-</span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a><span class="sd">    Manages the indexing of markdown files into the configured vector store.</span>
-</span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>
-</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a><span class="sd">        Initializes the index builder, loading configuration and setting up chunking.</span>
-</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.config_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_loader</span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a><span class="k">class</span><span class="w"> </span><span class="nc">VectorIndexBuilder</span><span class="p">:</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a><span class="sd">    Manages the indexing of markdown files into the configured vector store.</span>
+</span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a>
+</span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a><span class="sd">        Initializes the index builder, loading configuration and setting up chunking.</span>
+</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.config_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_loader</span>
+</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>
 </span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">default_loader</span><span class="o">.</span><span class="n">get_repo_root</span><span class="p">()</span>
 </span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span>
 </span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">db_mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;database&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="s2">&quot;sqlite&quot;</span><span class="p">)</span>
@@ -279,36 +279,37 @@ and stores it in the configured vector store.</p>
 </span><span id="L-151"><a href="#L-151"><span class="linenos">151</span></a>        <span class="p">)</span>
 </span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a>
 </span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.vector_store_factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorStoreFactory</span>
-</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a>        <span class="n">store</span> <span class="o">=</span> <span class="n">VectorStoreFactory</span><span class="o">.</span><span class="n">get_store</span><span class="p">()</span>
-</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a>        <span class="n">store</span><span class="o">.</span><span class="n">init_db</span><span class="p">()</span>
-</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a>        
-</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
-</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a>            <span class="n">store</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
-</span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a>                <span class="n">docs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
-</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
-</span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a>                <span class="n">ids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
-</span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a>            <span class="p">)</span>
-</span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a>
-</span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Knowledge base indexing complete!&quot;</span><span class="p">)</span>
-</span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a>
-</span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a><span class="sd">        Executes the entire indexing pipeline.</span>
-</span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">scan_files</span><span class="p">()</span>
-</span><span id="L-171"><a href="#L-171"><span class="linenos">171</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">insert_chunks</span><span class="p">()</span>
-</span><span id="L-172"><a href="#L-172"><span class="linenos">172</span></a>
+</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a>
+</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a>        <span class="n">store</span> <span class="o">=</span> <span class="n">VectorStoreFactory</span><span class="o">.</span><span class="n">get_store</span><span class="p">()</span>
+</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a>        <span class="n">store</span><span class="o">.</span><span class="n">init_db</span><span class="p">()</span>
+</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a>
+</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
+</span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a>            <span class="n">store</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
+</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a>                <span class="n">docs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a>                <span class="n">ids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a>            <span class="p">)</span>
+</span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a>
+</span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Knowledge base indexing complete!&quot;</span><span class="p">)</span>
+</span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a>
+</span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a><span class="sd">        Executes the entire indexing pipeline.</span>
+</span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-171"><a href="#L-171"><span class="linenos">171</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">scan_files</span><span class="p">()</span>
+</span><span id="L-172"><a href="#L-172"><span class="linenos">172</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">insert_chunks</span><span class="p">()</span>
 </span><span id="L-173"><a href="#L-173"><span class="linenos">173</span></a>
-</span><span id="L-174"><a href="#L-174"><span class="linenos">174</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a><span class="sd">    Main entry point for the vector indexing script.</span>
-</span><span id="L-177"><a href="#L-177"><span class="linenos">177</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a>    <span class="n">builder</span> <span class="o">=</span> <span class="n">VectorIndexBuilder</span><span class="p">()</span>
-</span><span id="L-179"><a href="#L-179"><span class="linenos">179</span></a>    <span class="n">builder</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
-</span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a>
+</span><span id="L-174"><a href="#L-174"><span class="linenos">174</span></a>
+</span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-177"><a href="#L-177"><span class="linenos">177</span></a><span class="sd">    Main entry point for the vector indexing script.</span>
+</span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-179"><a href="#L-179"><span class="linenos">179</span></a>    <span class="n">builder</span> <span class="o">=</span> <span class="n">VectorIndexBuilder</span><span class="p">()</span>
+</span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a>    <span class="n">builder</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </span><span id="L-181"><a href="#L-181"><span class="linenos">181</span></a>
-</span><span id="L-182"><a href="#L-182"><span class="linenos">182</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-</span><span id="L-183"><a href="#L-183"><span class="linenos">183</span></a>    <span class="n">main</span><span class="p">()</span>
+</span><span id="L-182"><a href="#L-182"><span class="linenos">182</span></a>
+</span><span id="L-183"><a href="#L-183"><span class="linenos">183</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+</span><span id="L-184"><a href="#L-184"><span class="linenos">184</span></a>    <span class="n">main</span><span class="p">()</span>
 </span></pre></div>
 
 
@@ -324,46 +325,46 @@ and stores it in the configured vector store.</p>
 
     </div>
     <a class="headerlink" href="#TextChunker"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="TextChunker-26"><a href="#TextChunker-26"><span class="linenos">26</span></a><span class="k">class</span><span class="w"> </span><span class="nc">TextChunker</span><span class="p">:</span>
-</span><span id="TextChunker-27"><a href="#TextChunker-27"><span class="linenos">27</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="TextChunker-28"><a href="#TextChunker-28"><span class="linenos">28</span></a><span class="sd">    Helper class responsible for chunking text content.</span>
-</span><span id="TextChunker-29"><a href="#TextChunker-29"><span class="linenos">29</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="TextChunker-30"><a href="#TextChunker-30"><span class="linenos">30</span></a>
-</span><span id="TextChunker-31"><a href="#TextChunker-31"><span class="linenos">31</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">):</span>
-</span><span id="TextChunker-32"><a href="#TextChunker-32"><span class="linenos">32</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="TextChunker-33"><a href="#TextChunker-33"><span class="linenos">33</span></a><span class="sd">        Args:</span>
-</span><span id="TextChunker-34"><a href="#TextChunker-34"><span class="linenos">34</span></a><span class="sd">            max_len (int): Maximum character length per chunk.</span>
-</span><span id="TextChunker-35"><a href="#TextChunker-35"><span class="linenos">35</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="TextChunker-36"><a href="#TextChunker-36"><span class="linenos">36</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span> <span class="o">=</span> <span class="n">max_len</span>
-</span><span id="TextChunker-37"><a href="#TextChunker-37"><span class="linenos">37</span></a>
-</span><span id="TextChunker-38"><a href="#TextChunker-38"><span class="linenos">38</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">chunk_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-</span><span id="TextChunker-39"><a href="#TextChunker-39"><span class="linenos">39</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="TextChunker-40"><a href="#TextChunker-40"><span class="linenos">40</span></a><span class="sd">        Splits text into smaller chunks based on word count and max length.</span>
-</span><span id="TextChunker-41"><a href="#TextChunker-41"><span class="linenos">41</span></a>
-</span><span id="TextChunker-42"><a href="#TextChunker-42"><span class="linenos">42</span></a><span class="sd">        Args:</span>
-</span><span id="TextChunker-43"><a href="#TextChunker-43"><span class="linenos">43</span></a><span class="sd">            text (str): The input text to chunk.</span>
-</span><span id="TextChunker-44"><a href="#TextChunker-44"><span class="linenos">44</span></a>
-</span><span id="TextChunker-45"><a href="#TextChunker-45"><span class="linenos">45</span></a><span class="sd">        Returns:</span>
-</span><span id="TextChunker-46"><a href="#TextChunker-46"><span class="linenos">46</span></a><span class="sd">            list: A list of text chunks.</span>
-</span><span id="TextChunker-47"><a href="#TextChunker-47"><span class="linenos">47</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="TextChunker-48"><a href="#TextChunker-48"><span class="linenos">48</span></a>        <span class="n">words</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-</span><span id="TextChunker-49"><a href="#TextChunker-49"><span class="linenos">49</span></a>        <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="TextChunker-50"><a href="#TextChunker-50"><span class="linenos">50</span></a>        <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="TextChunker-51"><a href="#TextChunker-51"><span class="linenos">51</span></a>        <span class="n">current_len</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="TextChunker-52"><a href="#TextChunker-52"><span class="linenos">52</span></a>
-</span><span id="TextChunker-53"><a href="#TextChunker-53"><span class="linenos">53</span></a>        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
-</span><span id="TextChunker-54"><a href="#TextChunker-54"><span class="linenos">54</span></a>            <span class="k">if</span> <span class="n">current_len</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">:</span>
-</span><span id="TextChunker-55"><a href="#TextChunker-55"><span class="linenos">55</span></a>                <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
-</span><span id="TextChunker-56"><a href="#TextChunker-56"><span class="linenos">56</span></a>                <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span><span class="p">]</span>
-</span><span id="TextChunker-57"><a href="#TextChunker-57"><span class="linenos">57</span></a>                <span class="n">current_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
-</span><span id="TextChunker-58"><a href="#TextChunker-58"><span class="linenos">58</span></a>            <span class="k">else</span><span class="p">:</span>
-</span><span id="TextChunker-59"><a href="#TextChunker-59"><span class="linenos">59</span></a>                <span class="n">current_chunk</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
-</span><span id="TextChunker-60"><a href="#TextChunker-60"><span class="linenos">60</span></a>                <span class="n">current_len</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
-</span><span id="TextChunker-61"><a href="#TextChunker-61"><span class="linenos">61</span></a>
-</span><span id="TextChunker-62"><a href="#TextChunker-62"><span class="linenos">62</span></a>        <span class="k">if</span> <span class="n">current_chunk</span><span class="p">:</span>
-</span><span id="TextChunker-63"><a href="#TextChunker-63"><span class="linenos">63</span></a>            <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
-</span><span id="TextChunker-64"><a href="#TextChunker-64"><span class="linenos">64</span></a>
-</span><span id="TextChunker-65"><a href="#TextChunker-65"><span class="linenos">65</span></a>        <span class="k">return</span> <span class="n">chunks</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="TextChunker-25"><a href="#TextChunker-25"><span class="linenos">25</span></a><span class="k">class</span><span class="w"> </span><span class="nc">TextChunker</span><span class="p">:</span>
+</span><span id="TextChunker-26"><a href="#TextChunker-26"><span class="linenos">26</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="TextChunker-27"><a href="#TextChunker-27"><span class="linenos">27</span></a><span class="sd">    Helper class responsible for chunking text content.</span>
+</span><span id="TextChunker-28"><a href="#TextChunker-28"><span class="linenos">28</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="TextChunker-29"><a href="#TextChunker-29"><span class="linenos">29</span></a>
+</span><span id="TextChunker-30"><a href="#TextChunker-30"><span class="linenos">30</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">):</span>
+</span><span id="TextChunker-31"><a href="#TextChunker-31"><span class="linenos">31</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="TextChunker-32"><a href="#TextChunker-32"><span class="linenos">32</span></a><span class="sd">        Args:</span>
+</span><span id="TextChunker-33"><a href="#TextChunker-33"><span class="linenos">33</span></a><span class="sd">            max_len (int): Maximum character length per chunk.</span>
+</span><span id="TextChunker-34"><a href="#TextChunker-34"><span class="linenos">34</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="TextChunker-35"><a href="#TextChunker-35"><span class="linenos">35</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span> <span class="o">=</span> <span class="n">max_len</span>
+</span><span id="TextChunker-36"><a href="#TextChunker-36"><span class="linenos">36</span></a>
+</span><span id="TextChunker-37"><a href="#TextChunker-37"><span class="linenos">37</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">chunk_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+</span><span id="TextChunker-38"><a href="#TextChunker-38"><span class="linenos">38</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="TextChunker-39"><a href="#TextChunker-39"><span class="linenos">39</span></a><span class="sd">        Splits text into smaller chunks based on word count and max length.</span>
+</span><span id="TextChunker-40"><a href="#TextChunker-40"><span class="linenos">40</span></a>
+</span><span id="TextChunker-41"><a href="#TextChunker-41"><span class="linenos">41</span></a><span class="sd">        Args:</span>
+</span><span id="TextChunker-42"><a href="#TextChunker-42"><span class="linenos">42</span></a><span class="sd">            text (str): The input text to chunk.</span>
+</span><span id="TextChunker-43"><a href="#TextChunker-43"><span class="linenos">43</span></a>
+</span><span id="TextChunker-44"><a href="#TextChunker-44"><span class="linenos">44</span></a><span class="sd">        Returns:</span>
+</span><span id="TextChunker-45"><a href="#TextChunker-45"><span class="linenos">45</span></a><span class="sd">            list: A list of text chunks.</span>
+</span><span id="TextChunker-46"><a href="#TextChunker-46"><span class="linenos">46</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="TextChunker-47"><a href="#TextChunker-47"><span class="linenos">47</span></a>        <span class="n">words</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+</span><span id="TextChunker-48"><a href="#TextChunker-48"><span class="linenos">48</span></a>        <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="TextChunker-49"><a href="#TextChunker-49"><span class="linenos">49</span></a>        <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="TextChunker-50"><a href="#TextChunker-50"><span class="linenos">50</span></a>        <span class="n">current_len</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="TextChunker-51"><a href="#TextChunker-51"><span class="linenos">51</span></a>
+</span><span id="TextChunker-52"><a href="#TextChunker-52"><span class="linenos">52</span></a>        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+</span><span id="TextChunker-53"><a href="#TextChunker-53"><span class="linenos">53</span></a>            <span class="k">if</span> <span class="n">current_len</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">:</span>
+</span><span id="TextChunker-54"><a href="#TextChunker-54"><span class="linenos">54</span></a>                <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
+</span><span id="TextChunker-55"><a href="#TextChunker-55"><span class="linenos">55</span></a>                <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span><span class="p">]</span>
+</span><span id="TextChunker-56"><a href="#TextChunker-56"><span class="linenos">56</span></a>                <span class="n">current_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+</span><span id="TextChunker-57"><a href="#TextChunker-57"><span class="linenos">57</span></a>            <span class="k">else</span><span class="p">:</span>
+</span><span id="TextChunker-58"><a href="#TextChunker-58"><span class="linenos">58</span></a>                <span class="n">current_chunk</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+</span><span id="TextChunker-59"><a href="#TextChunker-59"><span class="linenos">59</span></a>                <span class="n">current_len</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span id="TextChunker-60"><a href="#TextChunker-60"><span class="linenos">60</span></a>
+</span><span id="TextChunker-61"><a href="#TextChunker-61"><span class="linenos">61</span></a>        <span class="k">if</span> <span class="n">current_chunk</span><span class="p">:</span>
+</span><span id="TextChunker-62"><a href="#TextChunker-62"><span class="linenos">62</span></a>            <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
+</span><span id="TextChunker-63"><a href="#TextChunker-63"><span class="linenos">63</span></a>
+</span><span id="TextChunker-64"><a href="#TextChunker-64"><span class="linenos">64</span></a>        <span class="k">return</span> <span class="n">chunks</span>
 </span></pre></div>
 
 
@@ -381,12 +382,12 @@ and stores it in the configured vector store.</p>
 
     </div>
     <a class="headerlink" href="#TextChunker.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="TextChunker.__init__-31"><a href="#TextChunker.__init__-31"><span class="linenos">31</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">):</span>
-</span><span id="TextChunker.__init__-32"><a href="#TextChunker.__init__-32"><span class="linenos">32</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="TextChunker.__init__-33"><a href="#TextChunker.__init__-33"><span class="linenos">33</span></a><span class="sd">        Args:</span>
-</span><span id="TextChunker.__init__-34"><a href="#TextChunker.__init__-34"><span class="linenos">34</span></a><span class="sd">            max_len (int): Maximum character length per chunk.</span>
-</span><span id="TextChunker.__init__-35"><a href="#TextChunker.__init__-35"><span class="linenos">35</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="TextChunker.__init__-36"><a href="#TextChunker.__init__-36"><span class="linenos">36</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span> <span class="o">=</span> <span class="n">max_len</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="TextChunker.__init__-30"><a href="#TextChunker.__init__-30"><span class="linenos">30</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">):</span>
+</span><span id="TextChunker.__init__-31"><a href="#TextChunker.__init__-31"><span class="linenos">31</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="TextChunker.__init__-32"><a href="#TextChunker.__init__-32"><span class="linenos">32</span></a><span class="sd">        Args:</span>
+</span><span id="TextChunker.__init__-33"><a href="#TextChunker.__init__-33"><span class="linenos">33</span></a><span class="sd">            max_len (int): Maximum character length per chunk.</span>
+</span><span id="TextChunker.__init__-34"><a href="#TextChunker.__init__-34"><span class="linenos">34</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="TextChunker.__init__-35"><a href="#TextChunker.__init__-35"><span class="linenos">35</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span> <span class="o">=</span> <span class="n">max_len</span>
 </span></pre></div>
 
 
@@ -418,34 +419,34 @@ and stores it in the configured vector store.</p>
 
     </div>
     <a class="headerlink" href="#TextChunker.chunk_text"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="TextChunker.chunk_text-38"><a href="#TextChunker.chunk_text-38"><span class="linenos">38</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">chunk_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-</span><span id="TextChunker.chunk_text-39"><a href="#TextChunker.chunk_text-39"><span class="linenos">39</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="TextChunker.chunk_text-40"><a href="#TextChunker.chunk_text-40"><span class="linenos">40</span></a><span class="sd">        Splits text into smaller chunks based on word count and max length.</span>
-</span><span id="TextChunker.chunk_text-41"><a href="#TextChunker.chunk_text-41"><span class="linenos">41</span></a>
-</span><span id="TextChunker.chunk_text-42"><a href="#TextChunker.chunk_text-42"><span class="linenos">42</span></a><span class="sd">        Args:</span>
-</span><span id="TextChunker.chunk_text-43"><a href="#TextChunker.chunk_text-43"><span class="linenos">43</span></a><span class="sd">            text (str): The input text to chunk.</span>
-</span><span id="TextChunker.chunk_text-44"><a href="#TextChunker.chunk_text-44"><span class="linenos">44</span></a>
-</span><span id="TextChunker.chunk_text-45"><a href="#TextChunker.chunk_text-45"><span class="linenos">45</span></a><span class="sd">        Returns:</span>
-</span><span id="TextChunker.chunk_text-46"><a href="#TextChunker.chunk_text-46"><span class="linenos">46</span></a><span class="sd">            list: A list of text chunks.</span>
-</span><span id="TextChunker.chunk_text-47"><a href="#TextChunker.chunk_text-47"><span class="linenos">47</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="TextChunker.chunk_text-48"><a href="#TextChunker.chunk_text-48"><span class="linenos">48</span></a>        <span class="n">words</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-</span><span id="TextChunker.chunk_text-49"><a href="#TextChunker.chunk_text-49"><span class="linenos">49</span></a>        <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="TextChunker.chunk_text-50"><a href="#TextChunker.chunk_text-50"><span class="linenos">50</span></a>        <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="TextChunker.chunk_text-51"><a href="#TextChunker.chunk_text-51"><span class="linenos">51</span></a>        <span class="n">current_len</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="TextChunker.chunk_text-52"><a href="#TextChunker.chunk_text-52"><span class="linenos">52</span></a>
-</span><span id="TextChunker.chunk_text-53"><a href="#TextChunker.chunk_text-53"><span class="linenos">53</span></a>        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
-</span><span id="TextChunker.chunk_text-54"><a href="#TextChunker.chunk_text-54"><span class="linenos">54</span></a>            <span class="k">if</span> <span class="n">current_len</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">:</span>
-</span><span id="TextChunker.chunk_text-55"><a href="#TextChunker.chunk_text-55"><span class="linenos">55</span></a>                <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
-</span><span id="TextChunker.chunk_text-56"><a href="#TextChunker.chunk_text-56"><span class="linenos">56</span></a>                <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span><span class="p">]</span>
-</span><span id="TextChunker.chunk_text-57"><a href="#TextChunker.chunk_text-57"><span class="linenos">57</span></a>                <span class="n">current_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
-</span><span id="TextChunker.chunk_text-58"><a href="#TextChunker.chunk_text-58"><span class="linenos">58</span></a>            <span class="k">else</span><span class="p">:</span>
-</span><span id="TextChunker.chunk_text-59"><a href="#TextChunker.chunk_text-59"><span class="linenos">59</span></a>                <span class="n">current_chunk</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
-</span><span id="TextChunker.chunk_text-60"><a href="#TextChunker.chunk_text-60"><span class="linenos">60</span></a>                <span class="n">current_len</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
-</span><span id="TextChunker.chunk_text-61"><a href="#TextChunker.chunk_text-61"><span class="linenos">61</span></a>
-</span><span id="TextChunker.chunk_text-62"><a href="#TextChunker.chunk_text-62"><span class="linenos">62</span></a>        <span class="k">if</span> <span class="n">current_chunk</span><span class="p">:</span>
-</span><span id="TextChunker.chunk_text-63"><a href="#TextChunker.chunk_text-63"><span class="linenos">63</span></a>            <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
-</span><span id="TextChunker.chunk_text-64"><a href="#TextChunker.chunk_text-64"><span class="linenos">64</span></a>
-</span><span id="TextChunker.chunk_text-65"><a href="#TextChunker.chunk_text-65"><span class="linenos">65</span></a>        <span class="k">return</span> <span class="n">chunks</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="TextChunker.chunk_text-37"><a href="#TextChunker.chunk_text-37"><span class="linenos">37</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">chunk_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+</span><span id="TextChunker.chunk_text-38"><a href="#TextChunker.chunk_text-38"><span class="linenos">38</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="TextChunker.chunk_text-39"><a href="#TextChunker.chunk_text-39"><span class="linenos">39</span></a><span class="sd">        Splits text into smaller chunks based on word count and max length.</span>
+</span><span id="TextChunker.chunk_text-40"><a href="#TextChunker.chunk_text-40"><span class="linenos">40</span></a>
+</span><span id="TextChunker.chunk_text-41"><a href="#TextChunker.chunk_text-41"><span class="linenos">41</span></a><span class="sd">        Args:</span>
+</span><span id="TextChunker.chunk_text-42"><a href="#TextChunker.chunk_text-42"><span class="linenos">42</span></a><span class="sd">            text (str): The input text to chunk.</span>
+</span><span id="TextChunker.chunk_text-43"><a href="#TextChunker.chunk_text-43"><span class="linenos">43</span></a>
+</span><span id="TextChunker.chunk_text-44"><a href="#TextChunker.chunk_text-44"><span class="linenos">44</span></a><span class="sd">        Returns:</span>
+</span><span id="TextChunker.chunk_text-45"><a href="#TextChunker.chunk_text-45"><span class="linenos">45</span></a><span class="sd">            list: A list of text chunks.</span>
+</span><span id="TextChunker.chunk_text-46"><a href="#TextChunker.chunk_text-46"><span class="linenos">46</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="TextChunker.chunk_text-47"><a href="#TextChunker.chunk_text-47"><span class="linenos">47</span></a>        <span class="n">words</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+</span><span id="TextChunker.chunk_text-48"><a href="#TextChunker.chunk_text-48"><span class="linenos">48</span></a>        <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="TextChunker.chunk_text-49"><a href="#TextChunker.chunk_text-49"><span class="linenos">49</span></a>        <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="TextChunker.chunk_text-50"><a href="#TextChunker.chunk_text-50"><span class="linenos">50</span></a>        <span class="n">current_len</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="TextChunker.chunk_text-51"><a href="#TextChunker.chunk_text-51"><span class="linenos">51</span></a>
+</span><span id="TextChunker.chunk_text-52"><a href="#TextChunker.chunk_text-52"><span class="linenos">52</span></a>        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+</span><span id="TextChunker.chunk_text-53"><a href="#TextChunker.chunk_text-53"><span class="linenos">53</span></a>            <span class="k">if</span> <span class="n">current_len</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">:</span>
+</span><span id="TextChunker.chunk_text-54"><a href="#TextChunker.chunk_text-54"><span class="linenos">54</span></a>                <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
+</span><span id="TextChunker.chunk_text-55"><a href="#TextChunker.chunk_text-55"><span class="linenos">55</span></a>                <span class="n">current_chunk</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span><span class="p">]</span>
+</span><span id="TextChunker.chunk_text-56"><a href="#TextChunker.chunk_text-56"><span class="linenos">56</span></a>                <span class="n">current_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+</span><span id="TextChunker.chunk_text-57"><a href="#TextChunker.chunk_text-57"><span class="linenos">57</span></a>            <span class="k">else</span><span class="p">:</span>
+</span><span id="TextChunker.chunk_text-58"><a href="#TextChunker.chunk_text-58"><span class="linenos">58</span></a>                <span class="n">current_chunk</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+</span><span id="TextChunker.chunk_text-59"><a href="#TextChunker.chunk_text-59"><span class="linenos">59</span></a>                <span class="n">current_len</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span id="TextChunker.chunk_text-60"><a href="#TextChunker.chunk_text-60"><span class="linenos">60</span></a>
+</span><span id="TextChunker.chunk_text-61"><a href="#TextChunker.chunk_text-61"><span class="linenos">61</span></a>        <span class="k">if</span> <span class="n">current_chunk</span><span class="p">:</span>
+</span><span id="TextChunker.chunk_text-62"><a href="#TextChunker.chunk_text-62"><span class="linenos">62</span></a>            <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_chunk</span><span class="p">))</span>
+</span><span id="TextChunker.chunk_text-63"><a href="#TextChunker.chunk_text-63"><span class="linenos">63</span></a>
+</span><span id="TextChunker.chunk_text-64"><a href="#TextChunker.chunk_text-64"><span class="linenos">64</span></a>        <span class="k">return</span> <span class="n">chunks</span>
 </span></pre></div>
 
 
@@ -472,16 +473,17 @@ and stores it in the configured vector store.</p>
 
     </div>
     <a class="headerlink" href="#VectorIndexBuilder"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="VectorIndexBuilder-68"><a href="#VectorIndexBuilder-68"><span class="linenos"> 68</span></a><span class="k">class</span><span class="w"> </span><span class="nc">VectorIndexBuilder</span><span class="p">:</span>
-</span><span id="VectorIndexBuilder-69"><a href="#VectorIndexBuilder-69"><span class="linenos"> 69</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="VectorIndexBuilder-70"><a href="#VectorIndexBuilder-70"><span class="linenos"> 70</span></a><span class="sd">    Manages the indexing of markdown files into the configured vector store.</span>
-</span><span id="VectorIndexBuilder-71"><a href="#VectorIndexBuilder-71"><span class="linenos"> 71</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="VectorIndexBuilder-72"><a href="#VectorIndexBuilder-72"><span class="linenos"> 72</span></a>
-</span><span id="VectorIndexBuilder-73"><a href="#VectorIndexBuilder-73"><span class="linenos"> 73</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="VectorIndexBuilder-74"><a href="#VectorIndexBuilder-74"><span class="linenos"> 74</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="VectorIndexBuilder-75"><a href="#VectorIndexBuilder-75"><span class="linenos"> 75</span></a><span class="sd">        Initializes the index builder, loading configuration and setting up chunking.</span>
-</span><span id="VectorIndexBuilder-76"><a href="#VectorIndexBuilder-76"><span class="linenos"> 76</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="VectorIndexBuilder-77"><a href="#VectorIndexBuilder-77"><span class="linenos"> 77</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.config_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_loader</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="VectorIndexBuilder-67"><a href="#VectorIndexBuilder-67"><span class="linenos"> 67</span></a><span class="k">class</span><span class="w"> </span><span class="nc">VectorIndexBuilder</span><span class="p">:</span>
+</span><span id="VectorIndexBuilder-68"><a href="#VectorIndexBuilder-68"><span class="linenos"> 68</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-69"><a href="#VectorIndexBuilder-69"><span class="linenos"> 69</span></a><span class="sd">    Manages the indexing of markdown files into the configured vector store.</span>
+</span><span id="VectorIndexBuilder-70"><a href="#VectorIndexBuilder-70"><span class="linenos"> 70</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-71"><a href="#VectorIndexBuilder-71"><span class="linenos"> 71</span></a>
+</span><span id="VectorIndexBuilder-72"><a href="#VectorIndexBuilder-72"><span class="linenos"> 72</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder-73"><a href="#VectorIndexBuilder-73"><span class="linenos"> 73</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-74"><a href="#VectorIndexBuilder-74"><span class="linenos"> 74</span></a><span class="sd">        Initializes the index builder, loading configuration and setting up chunking.</span>
+</span><span id="VectorIndexBuilder-75"><a href="#VectorIndexBuilder-75"><span class="linenos"> 75</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-76"><a href="#VectorIndexBuilder-76"><span class="linenos"> 76</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.config_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_loader</span>
+</span><span id="VectorIndexBuilder-77"><a href="#VectorIndexBuilder-77"><span class="linenos"> 77</span></a>
 </span><span id="VectorIndexBuilder-78"><a href="#VectorIndexBuilder-78"><span class="linenos"> 78</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">default_loader</span><span class="o">.</span><span class="n">get_repo_root</span><span class="p">()</span>
 </span><span id="VectorIndexBuilder-79"><a href="#VectorIndexBuilder-79"><span class="linenos"> 79</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span>
 </span><span id="VectorIndexBuilder-80"><a href="#VectorIndexBuilder-80"><span class="linenos"> 80</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">db_mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;database&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="s2">&quot;sqlite&quot;</span><span class="p">)</span>
@@ -559,24 +561,25 @@ and stores it in the configured vector store.</p>
 </span><span id="VectorIndexBuilder-152"><a href="#VectorIndexBuilder-152"><span class="linenos">152</span></a>        <span class="p">)</span>
 </span><span id="VectorIndexBuilder-153"><a href="#VectorIndexBuilder-153"><span class="linenos">153</span></a>
 </span><span id="VectorIndexBuilder-154"><a href="#VectorIndexBuilder-154"><span class="linenos">154</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.vector_store_factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorStoreFactory</span>
-</span><span id="VectorIndexBuilder-155"><a href="#VectorIndexBuilder-155"><span class="linenos">155</span></a>        <span class="n">store</span> <span class="o">=</span> <span class="n">VectorStoreFactory</span><span class="o">.</span><span class="n">get_store</span><span class="p">()</span>
-</span><span id="VectorIndexBuilder-156"><a href="#VectorIndexBuilder-156"><span class="linenos">156</span></a>        <span class="n">store</span><span class="o">.</span><span class="n">init_db</span><span class="p">()</span>
-</span><span id="VectorIndexBuilder-157"><a href="#VectorIndexBuilder-157"><span class="linenos">157</span></a>        
-</span><span id="VectorIndexBuilder-158"><a href="#VectorIndexBuilder-158"><span class="linenos">158</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
-</span><span id="VectorIndexBuilder-159"><a href="#VectorIndexBuilder-159"><span class="linenos">159</span></a>            <span class="n">store</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
-</span><span id="VectorIndexBuilder-160"><a href="#VectorIndexBuilder-160"><span class="linenos">160</span></a>                <span class="n">docs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
-</span><span id="VectorIndexBuilder-161"><a href="#VectorIndexBuilder-161"><span class="linenos">161</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
-</span><span id="VectorIndexBuilder-162"><a href="#VectorIndexBuilder-162"><span class="linenos">162</span></a>                <span class="n">ids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
-</span><span id="VectorIndexBuilder-163"><a href="#VectorIndexBuilder-163"><span class="linenos">163</span></a>            <span class="p">)</span>
-</span><span id="VectorIndexBuilder-164"><a href="#VectorIndexBuilder-164"><span class="linenos">164</span></a>
-</span><span id="VectorIndexBuilder-165"><a href="#VectorIndexBuilder-165"><span class="linenos">165</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Knowledge base indexing complete!&quot;</span><span class="p">)</span>
-</span><span id="VectorIndexBuilder-166"><a href="#VectorIndexBuilder-166"><span class="linenos">166</span></a>
-</span><span id="VectorIndexBuilder-167"><a href="#VectorIndexBuilder-167"><span class="linenos">167</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="VectorIndexBuilder-168"><a href="#VectorIndexBuilder-168"><span class="linenos">168</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="VectorIndexBuilder-169"><a href="#VectorIndexBuilder-169"><span class="linenos">169</span></a><span class="sd">        Executes the entire indexing pipeline.</span>
-</span><span id="VectorIndexBuilder-170"><a href="#VectorIndexBuilder-170"><span class="linenos">170</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="VectorIndexBuilder-171"><a href="#VectorIndexBuilder-171"><span class="linenos">171</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">scan_files</span><span class="p">()</span>
-</span><span id="VectorIndexBuilder-172"><a href="#VectorIndexBuilder-172"><span class="linenos">172</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">insert_chunks</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder-155"><a href="#VectorIndexBuilder-155"><span class="linenos">155</span></a>
+</span><span id="VectorIndexBuilder-156"><a href="#VectorIndexBuilder-156"><span class="linenos">156</span></a>        <span class="n">store</span> <span class="o">=</span> <span class="n">VectorStoreFactory</span><span class="o">.</span><span class="n">get_store</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder-157"><a href="#VectorIndexBuilder-157"><span class="linenos">157</span></a>        <span class="n">store</span><span class="o">.</span><span class="n">init_db</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder-158"><a href="#VectorIndexBuilder-158"><span class="linenos">158</span></a>
+</span><span id="VectorIndexBuilder-159"><a href="#VectorIndexBuilder-159"><span class="linenos">159</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder-160"><a href="#VectorIndexBuilder-160"><span class="linenos">160</span></a>            <span class="n">store</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
+</span><span id="VectorIndexBuilder-161"><a href="#VectorIndexBuilder-161"><span class="linenos">161</span></a>                <span class="n">docs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="VectorIndexBuilder-162"><a href="#VectorIndexBuilder-162"><span class="linenos">162</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="VectorIndexBuilder-163"><a href="#VectorIndexBuilder-163"><span class="linenos">163</span></a>                <span class="n">ids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="VectorIndexBuilder-164"><a href="#VectorIndexBuilder-164"><span class="linenos">164</span></a>            <span class="p">)</span>
+</span><span id="VectorIndexBuilder-165"><a href="#VectorIndexBuilder-165"><span class="linenos">165</span></a>
+</span><span id="VectorIndexBuilder-166"><a href="#VectorIndexBuilder-166"><span class="linenos">166</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Knowledge base indexing complete!&quot;</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder-167"><a href="#VectorIndexBuilder-167"><span class="linenos">167</span></a>
+</span><span id="VectorIndexBuilder-168"><a href="#VectorIndexBuilder-168"><span class="linenos">168</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder-169"><a href="#VectorIndexBuilder-169"><span class="linenos">169</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-170"><a href="#VectorIndexBuilder-170"><span class="linenos">170</span></a><span class="sd">        Executes the entire indexing pipeline.</span>
+</span><span id="VectorIndexBuilder-171"><a href="#VectorIndexBuilder-171"><span class="linenos">171</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-172"><a href="#VectorIndexBuilder-172"><span class="linenos">172</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">scan_files</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder-173"><a href="#VectorIndexBuilder-173"><span class="linenos">173</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">insert_chunks</span><span class="p">()</span>
 </span></pre></div>
 
 
@@ -594,11 +597,12 @@ and stores it in the configured vector store.</p>
 
     </div>
     <a class="headerlink" href="#VectorIndexBuilder.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="VectorIndexBuilder.__init__-73"><a href="#VectorIndexBuilder.__init__-73"><span class="linenos">73</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="VectorIndexBuilder.__init__-74"><a href="#VectorIndexBuilder.__init__-74"><span class="linenos">74</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="VectorIndexBuilder.__init__-75"><a href="#VectorIndexBuilder.__init__-75"><span class="linenos">75</span></a><span class="sd">        Initializes the index builder, loading configuration and setting up chunking.</span>
-</span><span id="VectorIndexBuilder.__init__-76"><a href="#VectorIndexBuilder.__init__-76"><span class="linenos">76</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="VectorIndexBuilder.__init__-77"><a href="#VectorIndexBuilder.__init__-77"><span class="linenos">77</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.config_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_loader</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="VectorIndexBuilder.__init__-72"><a href="#VectorIndexBuilder.__init__-72"><span class="linenos">72</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder.__init__-73"><a href="#VectorIndexBuilder.__init__-73"><span class="linenos">73</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder.__init__-74"><a href="#VectorIndexBuilder.__init__-74"><span class="linenos">74</span></a><span class="sd">        Initializes the index builder, loading configuration and setting up chunking.</span>
+</span><span id="VectorIndexBuilder.__init__-75"><a href="#VectorIndexBuilder.__init__-75"><span class="linenos">75</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder.__init__-76"><a href="#VectorIndexBuilder.__init__-76"><span class="linenos">76</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.config_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_loader</span>
+</span><span id="VectorIndexBuilder.__init__-77"><a href="#VectorIndexBuilder.__init__-77"><span class="linenos">77</span></a>
 </span><span id="VectorIndexBuilder.__init__-78"><a href="#VectorIndexBuilder.__init__-78"><span class="linenos">78</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">default_loader</span><span class="o">.</span><span class="n">get_repo_root</span><span class="p">()</span>
 </span><span id="VectorIndexBuilder.__init__-79"><a href="#VectorIndexBuilder.__init__-79"><span class="linenos">79</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span>
 </span><span id="VectorIndexBuilder.__init__-80"><a href="#VectorIndexBuilder.__init__-80"><span class="linenos">80</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">db_mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;database&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="s2">&quot;sqlite&quot;</span><span class="p">)</span>
@@ -815,17 +819,18 @@ and stores it in the configured vector store.</p>
 </span><span id="VectorIndexBuilder.insert_chunks-152"><a href="#VectorIndexBuilder.insert_chunks-152"><span class="linenos">152</span></a>        <span class="p">)</span>
 </span><span id="VectorIndexBuilder.insert_chunks-153"><a href="#VectorIndexBuilder.insert_chunks-153"><span class="linenos">153</span></a>
 </span><span id="VectorIndexBuilder.insert_chunks-154"><a href="#VectorIndexBuilder.insert_chunks-154"><span class="linenos">154</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.vector_store_factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorStoreFactory</span>
-</span><span id="VectorIndexBuilder.insert_chunks-155"><a href="#VectorIndexBuilder.insert_chunks-155"><span class="linenos">155</span></a>        <span class="n">store</span> <span class="o">=</span> <span class="n">VectorStoreFactory</span><span class="o">.</span><span class="n">get_store</span><span class="p">()</span>
-</span><span id="VectorIndexBuilder.insert_chunks-156"><a href="#VectorIndexBuilder.insert_chunks-156"><span class="linenos">156</span></a>        <span class="n">store</span><span class="o">.</span><span class="n">init_db</span><span class="p">()</span>
-</span><span id="VectorIndexBuilder.insert_chunks-157"><a href="#VectorIndexBuilder.insert_chunks-157"><span class="linenos">157</span></a>        
-</span><span id="VectorIndexBuilder.insert_chunks-158"><a href="#VectorIndexBuilder.insert_chunks-158"><span class="linenos">158</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
-</span><span id="VectorIndexBuilder.insert_chunks-159"><a href="#VectorIndexBuilder.insert_chunks-159"><span class="linenos">159</span></a>            <span class="n">store</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
-</span><span id="VectorIndexBuilder.insert_chunks-160"><a href="#VectorIndexBuilder.insert_chunks-160"><span class="linenos">160</span></a>                <span class="n">docs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
-</span><span id="VectorIndexBuilder.insert_chunks-161"><a href="#VectorIndexBuilder.insert_chunks-161"><span class="linenos">161</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
-</span><span id="VectorIndexBuilder.insert_chunks-162"><a href="#VectorIndexBuilder.insert_chunks-162"><span class="linenos">162</span></a>                <span class="n">ids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
-</span><span id="VectorIndexBuilder.insert_chunks-163"><a href="#VectorIndexBuilder.insert_chunks-163"><span class="linenos">163</span></a>            <span class="p">)</span>
-</span><span id="VectorIndexBuilder.insert_chunks-164"><a href="#VectorIndexBuilder.insert_chunks-164"><span class="linenos">164</span></a>
-</span><span id="VectorIndexBuilder.insert_chunks-165"><a href="#VectorIndexBuilder.insert_chunks-165"><span class="linenos">165</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Knowledge base indexing complete!&quot;</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder.insert_chunks-155"><a href="#VectorIndexBuilder.insert_chunks-155"><span class="linenos">155</span></a>
+</span><span id="VectorIndexBuilder.insert_chunks-156"><a href="#VectorIndexBuilder.insert_chunks-156"><span class="linenos">156</span></a>        <span class="n">store</span> <span class="o">=</span> <span class="n">VectorStoreFactory</span><span class="o">.</span><span class="n">get_store</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder.insert_chunks-157"><a href="#VectorIndexBuilder.insert_chunks-157"><span class="linenos">157</span></a>        <span class="n">store</span><span class="o">.</span><span class="n">init_db</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder.insert_chunks-158"><a href="#VectorIndexBuilder.insert_chunks-158"><span class="linenos">158</span></a>
+</span><span id="VectorIndexBuilder.insert_chunks-159"><a href="#VectorIndexBuilder.insert_chunks-159"><span class="linenos">159</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder.insert_chunks-160"><a href="#VectorIndexBuilder.insert_chunks-160"><span class="linenos">160</span></a>            <span class="n">store</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
+</span><span id="VectorIndexBuilder.insert_chunks-161"><a href="#VectorIndexBuilder.insert_chunks-161"><span class="linenos">161</span></a>                <span class="n">docs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="VectorIndexBuilder.insert_chunks-162"><a href="#VectorIndexBuilder.insert_chunks-162"><span class="linenos">162</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="VectorIndexBuilder.insert_chunks-163"><a href="#VectorIndexBuilder.insert_chunks-163"><span class="linenos">163</span></a>                <span class="n">ids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="VectorIndexBuilder.insert_chunks-164"><a href="#VectorIndexBuilder.insert_chunks-164"><span class="linenos">164</span></a>            <span class="p">)</span>
+</span><span id="VectorIndexBuilder.insert_chunks-165"><a href="#VectorIndexBuilder.insert_chunks-165"><span class="linenos">165</span></a>
+</span><span id="VectorIndexBuilder.insert_chunks-166"><a href="#VectorIndexBuilder.insert_chunks-166"><span class="linenos">166</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Knowledge base indexing complete!&quot;</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -845,12 +850,12 @@ and stores it in the configured vector store.</p>
 
     </div>
     <a class="headerlink" href="#VectorIndexBuilder.run"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="VectorIndexBuilder.run-167"><a href="#VectorIndexBuilder.run-167"><span class="linenos">167</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="VectorIndexBuilder.run-168"><a href="#VectorIndexBuilder.run-168"><span class="linenos">168</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="VectorIndexBuilder.run-169"><a href="#VectorIndexBuilder.run-169"><span class="linenos">169</span></a><span class="sd">        Executes the entire indexing pipeline.</span>
-</span><span id="VectorIndexBuilder.run-170"><a href="#VectorIndexBuilder.run-170"><span class="linenos">170</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="VectorIndexBuilder.run-171"><a href="#VectorIndexBuilder.run-171"><span class="linenos">171</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">scan_files</span><span class="p">()</span>
-</span><span id="VectorIndexBuilder.run-172"><a href="#VectorIndexBuilder.run-172"><span class="linenos">172</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">insert_chunks</span><span class="p">()</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="VectorIndexBuilder.run-168"><a href="#VectorIndexBuilder.run-168"><span class="linenos">168</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder.run-169"><a href="#VectorIndexBuilder.run-169"><span class="linenos">169</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder.run-170"><a href="#VectorIndexBuilder.run-170"><span class="linenos">170</span></a><span class="sd">        Executes the entire indexing pipeline.</span>
+</span><span id="VectorIndexBuilder.run-171"><a href="#VectorIndexBuilder.run-171"><span class="linenos">171</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder.run-172"><a href="#VectorIndexBuilder.run-172"><span class="linenos">172</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">scan_files</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder.run-173"><a href="#VectorIndexBuilder.run-173"><span class="linenos">173</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">insert_chunks</span><span class="p">()</span>
 </span></pre></div>
 
 
@@ -871,12 +876,12 @@ and stores it in the configured vector store.</p>
 
     </div>
     <a class="headerlink" href="#main"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="main-175"><a href="#main-175"><span class="linenos">175</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="main-176"><a href="#main-176"><span class="linenos">176</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="main-177"><a href="#main-177"><span class="linenos">177</span></a><span class="sd">    Main entry point for the vector indexing script.</span>
-</span><span id="main-178"><a href="#main-178"><span class="linenos">178</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="main-179"><a href="#main-179"><span class="linenos">179</span></a>    <span class="n">builder</span> <span class="o">=</span> <span class="n">VectorIndexBuilder</span><span class="p">()</span>
-</span><span id="main-180"><a href="#main-180"><span class="linenos">180</span></a>    <span class="n">builder</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="main-176"><a href="#main-176"><span class="linenos">176</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="main-177"><a href="#main-177"><span class="linenos">177</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="main-178"><a href="#main-178"><span class="linenos">178</span></a><span class="sd">    Main entry point for the vector indexing script.</span>
+</span><span id="main-179"><a href="#main-179"><span class="linenos">179</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="main-180"><a href="#main-180"><span class="linenos">180</span></a>    <span class="n">builder</span> <span class="o">=</span> <span class="n">VectorIndexBuilder</span><span class="p">()</span>
+</span><span id="main-181"><a href="#main-181"><span class="linenos">181</span></a>    <span class="n">builder</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </span></pre></div>
 
 

@@ -31,12 +31,6 @@
             <h2>API Documentation</h2>
                 <ul class="memberlist">
             <li>
-                    <a class="variable" href="#script_dir">script_dir</a>
-            </li>
-            <li>
-                    <a class="variable" href="#repo_root">repo_root</a>
-            </li>
-            <li>
                     <a class="class" href="#BackupCleaner">BackupCleaner</a>
                             <ul class="memberlist">
                         <li>
@@ -98,80 +92,50 @@ respecting centralized configuration for the backup directory.</p>
 </span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>
 </span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="c1"># Ensure repo root is in sys.path to import from config</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a><span class="n">script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="n">repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">script_dir</span><span class="p">,</span> <span class="s2">&quot;..&quot;</span><span class="p">))</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a><span class="k">if</span> <span class="n">repo_root</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">repo_root</span><span class="p">)</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>
-</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.config_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a><span class="k">class</span><span class="w"> </span><span class="nc">BackupCleaner</span><span class="p">:</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a><span class="sd">    Manages the purging of old backups in the repository.</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a><span class="sd">        Initializes the BackupCleaner and loads configuration.</span>
-</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">repo_root</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;backup&quot;</span><span class="p">,</span> <span class="p">{})</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.config_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="k">class</span><span class="w"> </span><span class="nc">BackupCleaner</span><span class="p">:</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="sd">    Manages the purging of old backups in the repository.</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a><span class="sd">        Initializes the BackupCleaner and loads configuration.</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.config_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigLoader</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">ConfigLoader</span><span class="p">()</span><span class="o">.</span><span class="n">get_repo_root</span><span class="p">()</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;backup&quot;</span><span class="p">,</span> <span class="p">{})</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>        <span class="c1"># Determine the backup directory from config with fallback</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">backup_rel_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>            <span class="s2">&quot;backup_dir&quot;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;infrastructure&quot;</span><span class="p">,</span> <span class="s2">&quot;backups&quot;</span><span class="p">)</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>        <span class="p">)</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">backup_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">backup_rel_dir</span><span class="p">)</span>
 </span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>
-</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>        <span class="c1"># Determine the backup directory from config with fallback</span>
-</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">backup_rel_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>            <span class="s2">&quot;backup_dir&quot;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;infrastructure&quot;</span><span class="p">,</span> <span class="s2">&quot;backups&quot;</span><span class="p">)</span>
-</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>        <span class="p">)</span>
-</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">backup_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">backup_rel_dir</span><span class="p">)</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">purge_old_backups</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a><span class="sd">        Executes the cleanup logic for backups.</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Old backups purged successfully.&quot;</span><span class="p">)</span>
 </span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>
-</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">purge_old_backups</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a><span class="sd">        Executes the cleanup logic for backups.</span>
-</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Old backups purged successfully.&quot;</span><span class="p">)</span>
-</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>
-</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>
-</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a><span class="sd">    Main entry point for the backup cleanup script.</span>
-</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a>    <span class="n">cleaner</span> <span class="o">=</span> <span class="n">BackupCleaner</span><span class="p">()</span>
-</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>    <span class="n">cleaner</span><span class="o">.</span><span class="n">purge_old_backups</span><span class="p">()</span>
-</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a>
-</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a>
-</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a>    <span class="n">main</span><span class="p">()</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>
+</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a><span class="sd">    Main entry point for the backup cleanup script.</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>    <span class="n">cleaner</span> <span class="o">=</span> <span class="n">BackupCleaner</span><span class="p">()</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>    <span class="n">cleaner</span><span class="o">.</span><span class="n">purge_old_backups</span><span class="p">()</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>
+</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>
+</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a>    <span class="n">main</span><span class="p">()</span>
 </span></pre></div>
 
 
             </section>
-                <section id="script_dir">
-                    <div class="attr variable">
-            <span class="name">script_dir</span>        =
-<span class="default_value">&#39;/home/runner/work/ai_knowledge_library/ai_knowledge_library/scripts&#39;</span>
-
-        
-    </div>
-    <a class="headerlink" href="#script_dir"></a>
-    
-    
-
-                </section>
-                <section id="repo_root">
-                    <div class="attr variable">
-            <span class="name">repo_root</span>        =
-<span class="default_value">$GITHUB_WORKSPACE</span>
-
-        
-    </div>
-    <a class="headerlink" href="#repo_root"></a>
-    
-    
-
-                </section>
                 <section id="BackupCleaner">
                             <input id="BackupCleaner-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr class">
@@ -183,29 +147,30 @@ respecting centralized configuration for the backup directory.</p>
 
     </div>
     <a class="headerlink" href="#BackupCleaner"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="BackupCleaner-22"><a href="#BackupCleaner-22"><span class="linenos">22</span></a><span class="k">class</span><span class="w"> </span><span class="nc">BackupCleaner</span><span class="p">:</span>
-</span><span id="BackupCleaner-23"><a href="#BackupCleaner-23"><span class="linenos">23</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="BackupCleaner-24"><a href="#BackupCleaner-24"><span class="linenos">24</span></a><span class="sd">    Manages the purging of old backups in the repository.</span>
-</span><span id="BackupCleaner-25"><a href="#BackupCleaner-25"><span class="linenos">25</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="BackupCleaner-26"><a href="#BackupCleaner-26"><span class="linenos">26</span></a>
-</span><span id="BackupCleaner-27"><a href="#BackupCleaner-27"><span class="linenos">27</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="BackupCleaner-28"><a href="#BackupCleaner-28"><span class="linenos">28</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="BackupCleaner-29"><a href="#BackupCleaner-29"><span class="linenos">29</span></a><span class="sd">        Initializes the BackupCleaner and loads configuration.</span>
-</span><span id="BackupCleaner-30"><a href="#BackupCleaner-30"><span class="linenos">30</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="BackupCleaner-31"><a href="#BackupCleaner-31"><span class="linenos">31</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">repo_root</span>
-</span><span id="BackupCleaner-32"><a href="#BackupCleaner-32"><span class="linenos">32</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;backup&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="BackupCleaner-15"><a href="#BackupCleaner-15"><span class="linenos">15</span></a><span class="k">class</span><span class="w"> </span><span class="nc">BackupCleaner</span><span class="p">:</span>
+</span><span id="BackupCleaner-16"><a href="#BackupCleaner-16"><span class="linenos">16</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="BackupCleaner-17"><a href="#BackupCleaner-17"><span class="linenos">17</span></a><span class="sd">    Manages the purging of old backups in the repository.</span>
+</span><span id="BackupCleaner-18"><a href="#BackupCleaner-18"><span class="linenos">18</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="BackupCleaner-19"><a href="#BackupCleaner-19"><span class="linenos">19</span></a>
+</span><span id="BackupCleaner-20"><a href="#BackupCleaner-20"><span class="linenos">20</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="BackupCleaner-21"><a href="#BackupCleaner-21"><span class="linenos">21</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="BackupCleaner-22"><a href="#BackupCleaner-22"><span class="linenos">22</span></a><span class="sd">        Initializes the BackupCleaner and loads configuration.</span>
+</span><span id="BackupCleaner-23"><a href="#BackupCleaner-23"><span class="linenos">23</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BackupCleaner-24"><a href="#BackupCleaner-24"><span class="linenos">24</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.config_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigLoader</span>
+</span><span id="BackupCleaner-25"><a href="#BackupCleaner-25"><span class="linenos">25</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">ConfigLoader</span><span class="p">()</span><span class="o">.</span><span class="n">get_repo_root</span><span class="p">()</span>
+</span><span id="BackupCleaner-26"><a href="#BackupCleaner-26"><span class="linenos">26</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;backup&quot;</span><span class="p">,</span> <span class="p">{})</span>
+</span><span id="BackupCleaner-27"><a href="#BackupCleaner-27"><span class="linenos">27</span></a>
+</span><span id="BackupCleaner-28"><a href="#BackupCleaner-28"><span class="linenos">28</span></a>        <span class="c1"># Determine the backup directory from config with fallback</span>
+</span><span id="BackupCleaner-29"><a href="#BackupCleaner-29"><span class="linenos">29</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">backup_rel_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+</span><span id="BackupCleaner-30"><a href="#BackupCleaner-30"><span class="linenos">30</span></a>            <span class="s2">&quot;backup_dir&quot;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;infrastructure&quot;</span><span class="p">,</span> <span class="s2">&quot;backups&quot;</span><span class="p">)</span>
+</span><span id="BackupCleaner-31"><a href="#BackupCleaner-31"><span class="linenos">31</span></a>        <span class="p">)</span>
+</span><span id="BackupCleaner-32"><a href="#BackupCleaner-32"><span class="linenos">32</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">backup_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">backup_rel_dir</span><span class="p">)</span>
 </span><span id="BackupCleaner-33"><a href="#BackupCleaner-33"><span class="linenos">33</span></a>
-</span><span id="BackupCleaner-34"><a href="#BackupCleaner-34"><span class="linenos">34</span></a>        <span class="c1"># Determine the backup directory from config with fallback</span>
-</span><span id="BackupCleaner-35"><a href="#BackupCleaner-35"><span class="linenos">35</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">backup_rel_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-</span><span id="BackupCleaner-36"><a href="#BackupCleaner-36"><span class="linenos">36</span></a>            <span class="s2">&quot;backup_dir&quot;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;infrastructure&quot;</span><span class="p">,</span> <span class="s2">&quot;backups&quot;</span><span class="p">)</span>
-</span><span id="BackupCleaner-37"><a href="#BackupCleaner-37"><span class="linenos">37</span></a>        <span class="p">)</span>
-</span><span id="BackupCleaner-38"><a href="#BackupCleaner-38"><span class="linenos">38</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">backup_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">backup_rel_dir</span><span class="p">)</span>
-</span><span id="BackupCleaner-39"><a href="#BackupCleaner-39"><span class="linenos">39</span></a>
-</span><span id="BackupCleaner-40"><a href="#BackupCleaner-40"><span class="linenos">40</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">purge_old_backups</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="BackupCleaner-41"><a href="#BackupCleaner-41"><span class="linenos">41</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="BackupCleaner-42"><a href="#BackupCleaner-42"><span class="linenos">42</span></a><span class="sd">        Executes the cleanup logic for backups.</span>
-</span><span id="BackupCleaner-43"><a href="#BackupCleaner-43"><span class="linenos">43</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="BackupCleaner-44"><a href="#BackupCleaner-44"><span class="linenos">44</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Old backups purged successfully.&quot;</span><span class="p">)</span>
+</span><span id="BackupCleaner-34"><a href="#BackupCleaner-34"><span class="linenos">34</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">purge_old_backups</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="BackupCleaner-35"><a href="#BackupCleaner-35"><span class="linenos">35</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="BackupCleaner-36"><a href="#BackupCleaner-36"><span class="linenos">36</span></a><span class="sd">        Executes the cleanup logic for backups.</span>
+</span><span id="BackupCleaner-37"><a href="#BackupCleaner-37"><span class="linenos">37</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BackupCleaner-38"><a href="#BackupCleaner-38"><span class="linenos">38</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Old backups purged successfully.&quot;</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -223,18 +188,19 @@ respecting centralized configuration for the backup directory.</p>
 
     </div>
     <a class="headerlink" href="#BackupCleaner.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="BackupCleaner.__init__-27"><a href="#BackupCleaner.__init__-27"><span class="linenos">27</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="BackupCleaner.__init__-28"><a href="#BackupCleaner.__init__-28"><span class="linenos">28</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="BackupCleaner.__init__-29"><a href="#BackupCleaner.__init__-29"><span class="linenos">29</span></a><span class="sd">        Initializes the BackupCleaner and loads configuration.</span>
-</span><span id="BackupCleaner.__init__-30"><a href="#BackupCleaner.__init__-30"><span class="linenos">30</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="BackupCleaner.__init__-31"><a href="#BackupCleaner.__init__-31"><span class="linenos">31</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">repo_root</span>
-</span><span id="BackupCleaner.__init__-32"><a href="#BackupCleaner.__init__-32"><span class="linenos">32</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;backup&quot;</span><span class="p">,</span> <span class="p">{})</span>
-</span><span id="BackupCleaner.__init__-33"><a href="#BackupCleaner.__init__-33"><span class="linenos">33</span></a>
-</span><span id="BackupCleaner.__init__-34"><a href="#BackupCleaner.__init__-34"><span class="linenos">34</span></a>        <span class="c1"># Determine the backup directory from config with fallback</span>
-</span><span id="BackupCleaner.__init__-35"><a href="#BackupCleaner.__init__-35"><span class="linenos">35</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">backup_rel_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-</span><span id="BackupCleaner.__init__-36"><a href="#BackupCleaner.__init__-36"><span class="linenos">36</span></a>            <span class="s2">&quot;backup_dir&quot;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;infrastructure&quot;</span><span class="p">,</span> <span class="s2">&quot;backups&quot;</span><span class="p">)</span>
-</span><span id="BackupCleaner.__init__-37"><a href="#BackupCleaner.__init__-37"><span class="linenos">37</span></a>        <span class="p">)</span>
-</span><span id="BackupCleaner.__init__-38"><a href="#BackupCleaner.__init__-38"><span class="linenos">38</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">backup_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">backup_rel_dir</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="BackupCleaner.__init__-20"><a href="#BackupCleaner.__init__-20"><span class="linenos">20</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="BackupCleaner.__init__-21"><a href="#BackupCleaner.__init__-21"><span class="linenos">21</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="BackupCleaner.__init__-22"><a href="#BackupCleaner.__init__-22"><span class="linenos">22</span></a><span class="sd">        Initializes the BackupCleaner and loads configuration.</span>
+</span><span id="BackupCleaner.__init__-23"><a href="#BackupCleaner.__init__-23"><span class="linenos">23</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BackupCleaner.__init__-24"><a href="#BackupCleaner.__init__-24"><span class="linenos">24</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.config_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigLoader</span>
+</span><span id="BackupCleaner.__init__-25"><a href="#BackupCleaner.__init__-25"><span class="linenos">25</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span> <span class="o">=</span> <span class="n">ConfigLoader</span><span class="p">()</span><span class="o">.</span><span class="n">get_repo_root</span><span class="p">()</span>
+</span><span id="BackupCleaner.__init__-26"><a href="#BackupCleaner.__init__-26"><span class="linenos">26</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;backup&quot;</span><span class="p">,</span> <span class="p">{})</span>
+</span><span id="BackupCleaner.__init__-27"><a href="#BackupCleaner.__init__-27"><span class="linenos">27</span></a>
+</span><span id="BackupCleaner.__init__-28"><a href="#BackupCleaner.__init__-28"><span class="linenos">28</span></a>        <span class="c1"># Determine the backup directory from config with fallback</span>
+</span><span id="BackupCleaner.__init__-29"><a href="#BackupCleaner.__init__-29"><span class="linenos">29</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">backup_rel_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+</span><span id="BackupCleaner.__init__-30"><a href="#BackupCleaner.__init__-30"><span class="linenos">30</span></a>            <span class="s2">&quot;backup_dir&quot;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;infrastructure&quot;</span><span class="p">,</span> <span class="s2">&quot;backups&quot;</span><span class="p">)</span>
+</span><span id="BackupCleaner.__init__-31"><a href="#BackupCleaner.__init__-31"><span class="linenos">31</span></a>        <span class="p">)</span>
+</span><span id="BackupCleaner.__init__-32"><a href="#BackupCleaner.__init__-32"><span class="linenos">32</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">backup_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_root</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">backup_rel_dir</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -298,11 +264,11 @@ respecting centralized configuration for the backup directory.</p>
 
     </div>
     <a class="headerlink" href="#BackupCleaner.purge_old_backups"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="BackupCleaner.purge_old_backups-40"><a href="#BackupCleaner.purge_old_backups-40"><span class="linenos">40</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">purge_old_backups</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="BackupCleaner.purge_old_backups-41"><a href="#BackupCleaner.purge_old_backups-41"><span class="linenos">41</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="BackupCleaner.purge_old_backups-42"><a href="#BackupCleaner.purge_old_backups-42"><span class="linenos">42</span></a><span class="sd">        Executes the cleanup logic for backups.</span>
-</span><span id="BackupCleaner.purge_old_backups-43"><a href="#BackupCleaner.purge_old_backups-43"><span class="linenos">43</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="BackupCleaner.purge_old_backups-44"><a href="#BackupCleaner.purge_old_backups-44"><span class="linenos">44</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Old backups purged successfully.&quot;</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="BackupCleaner.purge_old_backups-34"><a href="#BackupCleaner.purge_old_backups-34"><span class="linenos">34</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">purge_old_backups</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="BackupCleaner.purge_old_backups-35"><a href="#BackupCleaner.purge_old_backups-35"><span class="linenos">35</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="BackupCleaner.purge_old_backups-36"><a href="#BackupCleaner.purge_old_backups-36"><span class="linenos">36</span></a><span class="sd">        Executes the cleanup logic for backups.</span>
+</span><span id="BackupCleaner.purge_old_backups-37"><a href="#BackupCleaner.purge_old_backups-37"><span class="linenos">37</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BackupCleaner.purge_old_backups-38"><a href="#BackupCleaner.purge_old_backups-38"><span class="linenos">38</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Old backups purged successfully.&quot;</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -323,12 +289,12 @@ respecting centralized configuration for the backup directory.</p>
 
     </div>
     <a class="headerlink" href="#main"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="main-47"><a href="#main-47"><span class="linenos">47</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="main-48"><a href="#main-48"><span class="linenos">48</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="main-49"><a href="#main-49"><span class="linenos">49</span></a><span class="sd">    Main entry point for the backup cleanup script.</span>
-</span><span id="main-50"><a href="#main-50"><span class="linenos">50</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="main-51"><a href="#main-51"><span class="linenos">51</span></a>    <span class="n">cleaner</span> <span class="o">=</span> <span class="n">BackupCleaner</span><span class="p">()</span>
-</span><span id="main-52"><a href="#main-52"><span class="linenos">52</span></a>    <span class="n">cleaner</span><span class="o">.</span><span class="n">purge_old_backups</span><span class="p">()</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="main-41"><a href="#main-41"><span class="linenos">41</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="main-42"><a href="#main-42"><span class="linenos">42</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="main-43"><a href="#main-43"><span class="linenos">43</span></a><span class="sd">    Main entry point for the backup cleanup script.</span>
+</span><span id="main-44"><a href="#main-44"><span class="linenos">44</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="main-45"><a href="#main-45"><span class="linenos">45</span></a>    <span class="n">cleaner</span> <span class="o">=</span> <span class="n">BackupCleaner</span><span class="p">()</span>
+</span><span id="main-46"><a href="#main-46"><span class="linenos">46</span></a>    <span class="n">cleaner</span><span class="o">.</span><span class="n">purge_old_backups</span><span class="p">()</span>
 </span></pre></div>
 
 
