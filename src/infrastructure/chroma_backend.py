@@ -1,8 +1,10 @@
-import sys
 import os
-from typing import List, Dict, Tuple, Optional
-from src.infrastructure.vector_store_base import BaseVectorStore
+import sys
+from typing import Dict, List, Optional, Tuple
+
 from src.infrastructure.config_loader import get_chroma_db_path
+from src.infrastructure.vector_store_base import BaseVectorStore
+
 
 class ChromaVectorStore(BaseVectorStore):
     def __init__(self, collection_name: str = "ai_library_knowledge"):
@@ -11,24 +13,25 @@ class ChromaVectorStore(BaseVectorStore):
         except ImportError:
             print("Error: chromadb not installed.")
             sys.exit(1)
-            
+
         self.collection_name = collection_name
         self.db_path = get_chroma_db_path()
         if not os.path.exists(self.db_path):
             os.makedirs(self.db_path, exist_ok=True)
-            
+
         self.client = chromadb.PersistentClient(path=self.db_path)
 
     def init_db(self) -> None:
         """ChromaDB initializes implicitly."""
-        pass
 
-    def upsert(self, docs: List[str], metadatas: List[Dict], ids: Optional[List[str]] = None) -> None:
+    def upsert(
+        self, docs: List[str], metadatas: List[Dict], ids: Optional[List[str]] = None
+    ) -> None:
         collection = self.client.get_or_create_collection(name=self.collection_name)
-        
+
         if not ids:
             ids = [f"doc_{i}" for i in range(len(docs))]
-            
+
         collection.upsert(
             documents=docs,
             metadatas=metadatas,

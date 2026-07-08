@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
+import json
 import os
 import urllib.request
-import json
-import sys
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from src.infrastructure.config_loader import ConfigLoader
 
 
@@ -41,6 +39,7 @@ class AgentSummaryGenerator:
                     return data.get("public_repos", 0), data.get("bio", "")
         except Exception as e:
             import sys
+
             print(f"Error parsing GitHub API response: {e}", file=sys.stderr)
         return None, None
 

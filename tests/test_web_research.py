@@ -6,8 +6,6 @@ import sys
 # Ensure the project root is in the path for imports
 script_dir = os.path.dirname(os.path.abspath(__file__))
 repo_root = os.path.dirname(script_dir)
-if repo_root not in sys.path:
-    sys.path.append(repo_root)
 
 from src.core.web_research import (
     ContentVerifier,

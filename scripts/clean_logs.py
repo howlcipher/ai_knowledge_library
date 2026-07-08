@@ -7,14 +7,7 @@ It reads retention policies and log directories from the centralized configurati
 """
 
 import os
-import sys
 import time
-
-# Ensure repo root is in sys.path to import from config
-script_dir = os.path.dirname(os.path.abspath(__file__))
-repo_root = os.path.abspath(os.path.join(script_dir, ".."))
-if repo_root not in sys.path:
-    sys.path.append(repo_root)
 
 from src.infrastructure.config_loader import load_config
 
@@ -28,7 +21,8 @@ class LogCleaner:
         """
         Initializes the LogCleaner and loads configuration.
         """
-        self.repo_root = repo_root
+        from src.infrastructure.config_loader import ConfigLoader
+        self.repo_root = ConfigLoader().get_repo_root()
         self.config = load_config().get("logs", {})
 
         # Load directory and retention configuration with fallbacks

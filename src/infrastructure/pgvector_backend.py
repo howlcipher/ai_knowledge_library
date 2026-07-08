@@ -3,14 +3,12 @@
 Module for interacting with a PostgreSQL database using the pgvector extension.
 """
 
-import os
 import sys
 
 try:
     import psycopg2
     from pgvector.psycopg2 import register_vector
     from sentence_transformers import SentenceTransformer
-    import yaml
 except ImportError:
     print(
         "Dependencies missing. Please install psycopg2-binary, pgvector, and sentence-transformers."
@@ -18,8 +16,9 @@ except ImportError:
     sys.exit(1)
 
 
-from src.infrastructure.vector_store_base import BaseVectorStore
 from src.infrastructure.config_loader import load_config
+from src.infrastructure.vector_store_base import BaseVectorStore
+
 
 class PgVectorStore(BaseVectorStore):
     """

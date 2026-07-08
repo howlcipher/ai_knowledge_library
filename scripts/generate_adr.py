@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-import os
 import datetime
-import sys
 import glob
+import os
+import sys
 
 
 def generate_adr(title):

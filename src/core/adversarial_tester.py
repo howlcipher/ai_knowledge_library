@@ -11,9 +11,10 @@ Requires:
     GEMINI_API_KEY environment variable set.
 """
 
+import argparse
 import os
 import sys
-import argparse
+
 from google import genai
 from google.genai import types
 
@@ -141,8 +142,11 @@ def main():
     args = parser.parse_args()
 
     from src.infrastructure.config_loader import load_config
+
     cfg = load_config()
-    api_key = args.api_key or cfg.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY")
+    api_key = (
+        args.api_key or cfg.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY")
+    )
     if not api_key:
         print(
             "Error: Gemini API Key is required. Set it in .env, GEMINI_API_KEY environment variable, or pass --api-key."

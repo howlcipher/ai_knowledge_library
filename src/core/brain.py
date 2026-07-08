@@ -2,116 +2,67 @@
 """
 Library Search Tool (Brain).
 
-This module provides an object oriented search functionality across the
-library files. It respects configuration for excluded directories
-and file extensions.
+This module provides an object-oriented search functionality across the
+library files. It delegates to the SemanticSearcher to utilize the vector
+database infrastructure for advanced RAG queries.
 """
 
-import os
+import argparse
 import sys
 
-# Ensure repo root is in sys.path to import from config
-script_dir = os.path.dirname(os.path.abspath(__file__))
-repo_root = os.path.abspath(os.path.join(script_dir, ".."))
-if repo_root not in sys.path:
-    sys.path.append(repo_root)
-
-from src.infrastructure.config_loader import load_config
+from src.infrastructure.semantic_search import SemanticSearcher
 
 
 class LibrarySearcher:
     """
-    Handles searching for specific terms within the library files.
+    Handles searching for specific terms within the library files by
+    delegating to the SemanticSearcher vector database backend.
     """
 
     def __init__(self, search_term: str):
         """
-        Initializes the LibrarySearcher with a search term and loads configuration.
+        Initializes the LibrarySearcher with a search term.
 
         Args:
             search_term (str): The term to search for.
         """
-        self.search_term = search_term.lower()
-        self.repo_root = repo_root
-
-        # Load configuration for exclusions and extensions
-        self.config = load_config().get("search", {})
-        self.exclude_dirs = self.config.get("exclude_dirs", [".git", ".agents"])
-        self.file_extensions = self.config.get("file_extensions", [".md"])
-
-    def _should_exclude_dir(self, directory: str) -> bool:
-        """
-        Checks if a directory should be excluded from the search.
-
-        Args:
-            directory (str): Directory path or name.
-
-        Returns:
-            bool: True if the directory should be excluded, False otherwise.
-        """
-        for exclude in self.exclude_dirs:
-            if exclude in directory:
-                return True
-        return False
+        self.search_term = search_term
 
     def search(self):
         """
-        Executes the search across the repository.
-        Prints out the matches found, showing relative file path and line number.
+        Executes the search across the repository utilizing the vector DB.
         """
-        print(f"Searching library for: {self.search_term}")
-        found = False
-
-        for root, dirs, files in os.walk(self.repo_root):
-            if self._should_exclude_dir(root):
-                continue
-
-            for file in files:
-                if any(file.endswith(ext) for ext in self.file_extensions):
-                    if self._search_in_file(root, file):
-                        found = True
-
-        if not found:
-            print("No results found.")
-
-    def _search_in_file(self, root: str, file: str) -> bool:
-        """
-        Searches for the term within a specific file.
-
-        Args:
-            root (str): The directory containing the file.
-            file (str): The file name.
-
-        Returns:
-            bool: True if matches were found, False otherwise.
-        """
-        filepath = os.path.join(root, file)
-        found = False
+        print(f"Searching library semantically for: {self.search_term}\n")
         try:
-            with open(filepath, "r", encoding="utf8") as f:
-                lines = f.readlines()
-                for i, line in enumerate(lines):
-                    if self.search_term in line.lower():
-                        rel_path = os.path.relpath(filepath, self.repo_root)
-                        print(f"[{rel_path} Line {i + 1}] {line.strip()}")
-                        found = True
-        except Exception as e:
-            import sys
-            print(f"Error reading {filepath}: {e}", file=sys.stderr)
+            searcher = SemanticSearcher()
+            results = searcher.search(self.search_term, n_results=5)
 
-        return found
+            if not results:
+                print("No results found.")
+                return
+
+            for i, result in enumerate(results, 1):
+                doc = result.get("document", "")
+                source = result.get("metadata", {}).get("source", "Unknown")
+                print(f"[{i}] File: {source}")
+                print(f"Snippet: {doc.strip()}")
+                print("-" * 50)
+
+        except Exception as e:
+            print(f"Error during semantic search: {e}", file=sys.stderr)
 
 
 def main():
     """
-    Main entry point for the search script.
+    CLI entry point for testing the brain search script standalone.
     """
-    if len(sys.argv) < 2:
-        print("Usage: python3 src/core/brain.py <search_term>")
-        return
+    parser = argparse.ArgumentParser(description="AI Knowledge Library Search (Brain)")
+    parser.add_argument(
+        "query", type=str, help="The search query to look for in the library"
+    )
 
-    term = sys.argv[1]
-    searcher = LibrarySearcher(term)
+    args = parser.parse_args()
+    searcher = LibrarySearcher(args.query)
     searcher.search()
 
 

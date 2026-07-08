@@ -6,11 +6,7 @@ Provides a FastAPI-based server for handling incoming webhooks
 (e.g., from GitHub) and triggering background synchronization of the knowledge graph.
 """
 
-import os
-import sys
-import subprocess
-from fastapi import FastAPI, Request, HTTPException
-
+from fastapi import FastAPI, HTTPException, Request
 
 from src.infrastructure.config_loader import load_config
 
@@ -51,9 +47,13 @@ class WebhookServer:
         print("Webhook received! Triggering context synchronization...")
         try:
             from src.infrastructure.celery_worker import sync_context_task
+
             # Dispatch to Celery background worker
             task = sync_context_task.delay()
-            return {"status": "success", "message": f"Sync queued in background. Task ID: {task.id}"}
+            return {
+                "status": "success",
+                "message": f"Sync queued in background. Task ID: {task.id}",
+            }
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 

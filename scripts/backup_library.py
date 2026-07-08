@@ -8,14 +8,7 @@ and destinations.
 """
 
 import os
-import sys
 import tarfile
-
-# Ensure repo root is in sys.path to import from config
-script_dir = os.path.dirname(os.path.abspath(__file__))
-repo_root = os.path.abspath(os.path.join(script_dir, ".."))
-if repo_root not in sys.path:
-    sys.path.append(repo_root)
 
 from src.infrastructure.config_loader import load_config
 
@@ -30,11 +23,15 @@ class LibraryBackupManager:
         Initializes the LibraryBackupManager by loading configuration
         and setting up paths.
         """
-        self.repo_root = repo_root
+        from src.infrastructure.config_loader import ConfigLoader
+
+        self.repo_root = ConfigLoader().get_repo_root()
         loader = load_config()
         self.config = loader.get("backup", {})
         self.db_mode = loader.get("database", {}).get("mode", "sqlite")
-        self.pg_dsn = loader.get("database", {}).get("pgvector_dsn", "postgresql://localhost:5432/ai_knowledge")
+        self.pg_dsn = loader.get("database", {}).get(
+            "pgvector_dsn", "postgresql://localhost:5432/ai_knowledge"
+        )
 
         # Read from config with fallbacks
         self.backup_rel_dir = self.config.get(
@@ -48,7 +45,9 @@ class LibraryBackupManager:
         """
         Executes the backup process, compressing target directories into a tar archive.
         """
+        import shutil
         import subprocess
+
         from src.infrastructure.config_loader import get_chroma_db_path
 
         os.makedirs(self.backup_dir, exist_ok=True)
@@ -71,13 +70,19 @@ class LibraryBackupManager:
                     print("Added ChromaDB to backup.")
             elif self.db_mode == "pgvector":
                 pg_dump_path = os.path.join(self.backup_dir, "pg_dump.sql")
-                try:
-                    subprocess.run(["pg_dump", self.pg_dsn, "-f", pg_dump_path], check=True)
-                    tar.add(pg_dump_path, arcname="pg_dump.sql")
-                    os.remove(pg_dump_path)
-                    print("Added PostgreSQL dump to backup.")
-                except Exception as e:
-                    print(f"Failed to backup pgvector database: {e}")
+                pg_dump_exe = shutil.which("pg_dump")
+                if not pg_dump_exe:
+                    print("Failed to backup pgvector: pg_dump not found in PATH.")
+                else:
+                    try:
+                        subprocess.run(
+                            [pg_dump_exe, self.pg_dsn, "-f", pg_dump_path], check=True
+                        )
+                        tar.add(pg_dump_path, arcname="pg_dump.sql")
+                        os.remove(pg_dump_path)
+                        print("Added PostgreSQL dump to backup.")
+                    except Exception as e:
+                        print(f"Failed to backup pgvector database: {e}")
 
         print("Backup completed successfully.")
 

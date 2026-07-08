@@ -3,8 +3,8 @@
 Utility to split large markdown files into smaller chunks.
 """
 
-import os
 import math
+import os
 
 
 class MarkdownSplitter:

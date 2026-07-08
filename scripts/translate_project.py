@@ -7,9 +7,9 @@ by translating markdown files into a specified target language.
 """
 
 import argparse
-import sys
 import logging
 import os
+import sys
 
 
 class ProjectTranslator:

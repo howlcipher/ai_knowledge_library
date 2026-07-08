@@ -7,19 +7,18 @@ index from the markdown documentation in the repository. It chunks the text
 and stores it in the configured vector store.
 """
 
-import os
-import sys
 import glob
+import os
 
 try:
-    import chromadb
+    pass
 except ImportError:
     pass
 
 
 # Removed boilerplate
 
-from src.infrastructure.config_loader import load_config, get_chroma_db_path
+from src.infrastructure.config_loader import load_config
 
 
 class TextChunker:
@@ -74,6 +73,7 @@ class VectorIndexBuilder:
         Initializes the index builder, loading configuration and setting up chunking.
         """
         from src.infrastructure.config_loader import default_loader
+
         self.repo_root = default_loader.get_repo_root()
         self.cfg = load_config()
         self.db_mode = self.cfg.get("database", {}).get("mode", "sqlite")
@@ -151,9 +151,10 @@ class VectorIndexBuilder:
         )
 
         from src.infrastructure.vector_store_factory import VectorStoreFactory
+
         store = VectorStoreFactory.get_store()
         store.init_db()
-        
+
         for i in range(0, len(self.docs_to_insert), self.batch_size):
             store.upsert(
                 docs=self.docs_to_insert[i : i + self.batch_size],

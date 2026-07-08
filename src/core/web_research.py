@@ -6,15 +6,16 @@ This tool fetches content from a given URL, verifies it using an LLM (Gemini),
 chunks the text, and inserts it into a vector database (ChromaDB or PGVector).
 """
 
-import sys
-import os
 import argparse
-import requests
 import json
-from bs4 import BeautifulSoup
-from typing import Tuple, List, Dict, Optional
+import os
+import sys
+from typing import Dict, List, Optional, Tuple
 
-from src.infrastructure.config_loader import load_config, get_chroma_db_path
+import requests
+from bs4 import BeautifulSoup
+
+from src.infrastructure.config_loader import load_config
 
 
 class ContentVerifier:
@@ -28,7 +29,9 @@ class ContentVerifier:
             api_key (Optional[str]): The Gemini API key. If None, falls back to heuristics.
         """
         cfg = load_config()
-        self.api_key = api_key or cfg.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY")
+        self.api_key = (
+            api_key or cfg.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY")
+        )
 
     def verify(self, text: str, source_url: str) -> Tuple[bool, int, str]:
         """
@@ -83,19 +86,21 @@ class ContentVerifier:
                 "openai/gpt-4o-mini",
             ]
             import time
+
             start_time = time.time()
             response = litellm.completion(
                 model="gemini/gemini-1.5-flash",
                 messages=[{"role": "user", "content": prompt}],
                 fallbacks=fallbacks,
-                api_key=self.api_key
+                api_key=self.api_key,
             )
             latency = time.time() - start_time
             content = response.choices[0].message.content.strip()
-            
+
             # Log telemetry
             try:
                 from src.infrastructure.telemetry_logger import log_telemetry
+
                 cost = litellm.completion_cost(completion_response=response)
                 usage = response.usage
                 log_telemetry(
@@ -104,12 +109,13 @@ class ContentVerifier:
                     completion_tokens=usage.completion_tokens if usage else 0,
                     total_tokens=usage.total_tokens if usage else 0,
                     cost=float(cost) if cost else 0.0,
-                    latency=latency
+                    latency=latency,
                 )
             except Exception as e:
                 import sys
+
                 print(f"Error logging telemetry: {e}", file=sys.stderr)
-                
+
         except Exception as e:
             print(f"LiteLLM failover exhausted. Error: {e}")
             return False, 0, str(e)
@@ -189,6 +195,7 @@ class VectorStoreManager:
         print(f"Injecting {len(docs)} chunks into {self.db_mode} context...")
 
         from src.infrastructure.vector_store_factory import VectorStoreFactory
+
         store = VectorStoreFactory.get_store()
         store.init_db()
 
@@ -211,25 +218,27 @@ class TextChunker:
         """
         try:
             from langchain_text_splitters import RecursiveCharacterTextSplitter
-            
+
             splitter = RecursiveCharacterTextSplitter(
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
                 length_function=len,
-                separators=["\n\n", "\n", " ", ""]
+                separators=["\n\n", "\n", " ", ""],
             )
             return splitter.split_text(text)
-            
+
         except ImportError:
-            print("Warning: langchain-text-splitters not installed. Falling back to naive word chunking.")
+            print(
+                "Warning: langchain-text-splitters not installed. Falling back to naive word chunking."
+            )
             # Fallback to naive implementation if not installed
             words = text.split()
             chunks = []
             current_chunk = []
             current_len = 0
             # Naive word counting (approx 5 chars per word roughly maps to max_len)
-            max_len = chunk_size // 5 
-            
+            max_len = chunk_size // 5
+
             for word in words:
                 if current_len + 1 > max_len:
                     chunks.append(" ".join(current_chunk))
@@ -238,7 +247,7 @@ class TextChunker:
                 else:
                     current_chunk.append(word)
                     current_len += 1
-                    
+
             if current_chunk:
                 chunks.append(" ".join(current_chunk))
             return chunks

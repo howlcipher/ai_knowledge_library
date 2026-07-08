@@ -6,12 +6,10 @@ This script provides a Streamlit-based web interface to search
 and chat with the repository context.
 """
 
-import os
 import sys
 
 try:
     import streamlit as st
-    import chromadb
 except ImportError:
     print(
         "Error: streamlit or chromadb not installed. Run 'pip install streamlit chromadb sentence-transformers'"
@@ -25,6 +23,7 @@ class KnowledgeUI:
     def __init__(self, collection_name: str = "ai_library_knowledge"):
         """Initialize the UI with a specific collection name."""
         from src.infrastructure.vector_store_factory import VectorStoreFactory
+
         self.store = VectorStoreFactory.get_store()
 
     def render(self):
@@ -43,24 +42,27 @@ class KnowledgeUI:
 
             if st.button("Search") and query:
                 self._handle_search(query)
-                
+
         with tab2:
             self._render_telemetry()
 
     def _render_telemetry(self):
         """Render the telemetry dashboard."""
         st.header("Token & Cost Analytics Dashboard")
-        st.markdown("Tracks token consumption, cost estimates across LLM providers, and query latency.")
-        
+        st.markdown(
+            "Tracks token consumption, cost estimates across LLM providers, and query latency."
+        )
+
         try:
             from src.infrastructure.telemetry_logger import get_telemetry_data
+
             df = get_telemetry_data()
             if len(df) == 0:
-                st.info("No telemetry data recorded yet. Try asking some questions in the chat!")
+                st.info(
+                    "No telemetry data recorded yet. Try asking some questions in the chat!"
+                )
                 return
-                
-            import pandas as pd
-            
+
             # High level metrics
             col1, col2, col3, col4, col5 = st.columns(5)
             col1.metric("Total API Calls", len(df))
@@ -68,25 +70,25 @@ class KnowledgeUI:
             col3.metric("Cached Tokens", df["cached_tokens"].sum())
             col4.metric("Total Cost", f"${df['cost'].sum():.6f}")
             col5.metric("Avg Latency", f"{df['latency_seconds'].mean():.2f}s")
-            
+
             # Charts
             st.subheader("Cost Over Time")
             st.line_chart(df.set_index("timestamp")["cost"])
-            
+
             col1, col2 = st.columns(2)
             with col1:
                 st.subheader("API Calls by Model")
                 model_counts = df["model"].value_counts()
                 st.bar_chart(model_counts)
-                
+
             with col2:
                 st.subheader("Latency by Model")
                 latency_avg = df.groupby("model")["latency_seconds"].mean()
                 st.bar_chart(latency_avg)
-                
+
             st.subheader("Raw Telemetry Logs")
             st.dataframe(df)
-            
+
         except Exception as e:
             st.error(f"Failed to load telemetry data: {e}")
 
@@ -110,8 +112,6 @@ class KnowledgeUI:
                 f"Result {i+1} | Source: {source} (Confidence: {1 - dist:.2f})"
             ):
                 st.write(content)
-
-
 
 
 def main():

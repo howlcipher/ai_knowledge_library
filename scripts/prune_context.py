@@ -4,7 +4,7 @@ Module for pruning context from the ChromaDB vector database.
 """
 
 import os
-import sys
+
 import chromadb
 from chromadb.config import Settings
 
@@ -20,7 +20,6 @@ class ContextPruner:
         """
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.repo_root = os.path.dirname(script_dir)
-        sys.path.append(self.repo_root)
 
     def get_db_path(self) -> str:
         """
@@ -46,7 +45,7 @@ class ContextPruner:
         client = chromadb.PersistentClient(
             path=db_path, settings=Settings(allow_reset=True)
         )
-        collection = client.get_or_create_collection("ai_knowledge_library")
+        client.get_or_create_collection("ai_knowledge_library")
 
         # In a real scenario, this would query embeddings and compute cosine similarity
         # to find duplicates or outdated nodes.

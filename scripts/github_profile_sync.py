@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-import urllib.request
 import json
 import os
 import sys
+import urllib.request
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from src.infrastructure.config_loader import ConfigLoader
 
 

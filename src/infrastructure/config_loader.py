@@ -1,30 +1,35 @@
 #!/usr/bin/env python3
-import yaml
 import os
 
-
+import yaml
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from src.infrastructure.secret_manager import SecretManager
+
 
 class DatabaseSettings(BaseModel):
     chroma_db_path: str = ".chroma"
     pgvector_dsn: str = ""
     mode: str = "sqlite"
 
+
 class ServerSettings(BaseModel):
     host: str = "0.0.0.0"  # nosec B104
     port: int = 8000
     webhook_secret: str = ""
 
+
 class AgentsSettings(BaseModel):
     default_language: str = "en_US"
     max_context_tokens: int = 8192
+
 
 class BackupSettings(BaseModel):
     targets: list = ["documentation"]
     backup_dir: str = "infrastructure/backups"
     filename: str = "library_backup.tar.gz"
+
 
 class AppSettings(BaseSettings):
     llm_model: str = "gemini/gemini-1.5-pro"
@@ -35,9 +40,7 @@ class AppSettings(BaseSettings):
     backup: BackupSettings = BackupSettings()
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_nested_delimiter="__",
-        extra="ignore"
+        env_file=".env", env_nested_delimiter="__", extra="ignore"
     )
 
     @classmethod
@@ -55,6 +58,7 @@ class AppSettings(BaseSettings):
             init_settings,
             file_secret_settings,
         )
+
 
 class ConfigLoader:
     """
@@ -81,18 +85,18 @@ class ConfigLoader:
 
         # Load pydantic settings prioritizing .env over yaml_data
         self.settings = AppSettings(**yaml_data)
-        
+
         # Override with Secret Manager if configured
         secret_mgr = SecretManager()
         if os.environ.get("USE_AWS_SECRETS_MANAGER") == "true":
             aws_api_key = secret_mgr.get_secret("GEMINI_API_KEY")
             if aws_api_key:
                 self.settings.gemini_api_key = aws_api_key
-            
+
             aws_webhook = secret_mgr.get_secret("WEBHOOK_SECRET")
             if aws_webhook:
                 self.settings.server.webhook_secret = aws_webhook
-                
+
         self.config = self.settings.model_dump()
 
     def get(self, key, default=None):
@@ -129,6 +133,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 def get_chroma_db_path():
     """

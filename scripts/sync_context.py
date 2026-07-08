@@ -5,9 +5,9 @@ Synchronizes the knowledge base to ChromaDB.
 """
 
 import argparse
-import chromadb
 import os
-import sys
+
+import chromadb
 
 
 class ChromaDBSyncer:
@@ -25,9 +25,7 @@ class ChromaDBSyncer:
     def _load_dependencies(self):
         """Loads repository specific config dependencies dynamically."""
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        repo_root = os.path.dirname(script_dir)
-        if repo_root not in sys.path:
-            sys.path.append(repo_root)
+        os.path.dirname(script_dir)
         from src.infrastructure.config_loader import get_chroma_db_path
 
         return get_chroma_db_path

@@ -35,19 +35,31 @@ class CronManager:
 
     def _get_current_crontab(self) -> str:
         """Retrieve the current crontab for the user."""
+        import shutil
+
+        crontab_exe = shutil.which("crontab")
+        if not crontab_exe:
+            return ""
         try:
             flag = chr(45) + "l"
-            return subprocess.check_output(["crontab", flag]).decode("utf8")
+            return subprocess.check_output([crontab_exe, flag]).decode("utf8")
         except subprocess.CalledProcessError:
             return ""
 
     def _apply_crontab(self, cron_content: str):
         """Apply new cron content to the system."""
+        import shutil
         import tempfile
+
+        crontab_exe = shutil.which("crontab")
+        if not crontab_exe:
+            print("Failed to apply crontab: crontab not found in PATH.")
+            return
+
         fd, cron_file = tempfile.mkstemp()
         with os.fdopen(fd, "w") as f:
             f.write(cron_content)
-        subprocess.run(["crontab", cron_file])
+        subprocess.run([crontab_exe, cron_file])
         os.remove(cron_file)
 
     def update_crontab(self):

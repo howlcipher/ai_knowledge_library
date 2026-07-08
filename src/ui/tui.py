@@ -1,22 +1,12 @@
 #!/usr/bin/env python3
-import os
 import sys
 
 try:
-    from textual.app import App, ComposeResult
-    from textual.containers import Container, Horizontal, Vertical
-    from textual.widgets import (
-        Header,
-        Footer,
-        Static,
-        Input,
-        Button,
-        Markdown,
-        Select,
-        Label,
-    )
-    from textual.binding import Binding
     import litellm
+    from textual.app import App, ComposeResult
+    from textual.binding import Binding
+    from textual.containers import Horizontal, Vertical
+    from textual.widgets import Footer, Header, Input, Label, Select, Static
 except ImportError:
     print("Error: Required packages not installed. Please run:")
     print("pip install textual litellm")
@@ -27,8 +17,6 @@ from src.infrastructure.config_loader import ConfigLoader
 
 class ChatArea(Static):
     """Area to display chat messages."""
-
-    pass
 
 
 class AILibraryTUI(App):
@@ -133,6 +121,7 @@ class AILibraryTUI(App):
                     yaml.dump(data, f)
             except Exception as e:
                 import sys
+
                 print(f"Error saving settings: {e}", file=sys.stderr)
 
     async def on_input_submitted(self, event: Input.Submitted) -> None:
@@ -155,12 +144,13 @@ class AILibraryTUI(App):
                 "gemini/gemini-1.5-pro",
                 "anthropic/claude-3-5-sonnet-20240620",
                 "openai/gpt-4o",
-                "xai/grok-2"
+                "xai/grok-2",
             ]
             if self.current_model in fallbacks:
                 fallbacks.remove(self.current_model)
 
             import time
+
             start_time = time.time()
             messages = [
                 {
@@ -169,11 +159,11 @@ class AILibraryTUI(App):
                         {
                             "type": "text",
                             "text": "You are the Antigravity AI Knowledge Library assistant. Answer the user's questions.",
-                            "cache_control": {"type": "ephemeral"}
+                            "cache_control": {"type": "ephemeral"},
                         }
-                    ]
+                    ],
                 },
-                {"role": "user", "content": user_text}
+                {"role": "user", "content": user_text},
             ]
             response = await litellm.acompletion(
                 model=self.current_model,
@@ -181,24 +171,25 @@ class AILibraryTUI(App):
                 fallbacks=fallbacks,
             )
             latency = time.time() - start_time
-            
+
             # Log telemetry
             try:
                 from src.infrastructure.telemetry_logger import log_telemetry
+
                 cost = litellm.completion_cost(completion_response=response)
                 usage = response.usage
-                
+
                 # Extract cached tokens safely from different provider formats
                 cached_tokens = 0
                 if usage:
-                    cached_tokens = getattr(usage, 'cache_read_input_tokens', 0)
-                    if not cached_tokens and hasattr(usage, 'prompt_tokens_details'):
-                        prompt_details = getattr(usage, 'prompt_tokens_details', {})
+                    cached_tokens = getattr(usage, "cache_read_input_tokens", 0)
+                    if not cached_tokens and hasattr(usage, "prompt_tokens_details"):
+                        prompt_details = getattr(usage, "prompt_tokens_details", {})
                         if isinstance(prompt_details, dict):
-                            cached_tokens = prompt_details.get('cached_tokens', 0)
-                        elif hasattr(prompt_details, 'cached_tokens'):
+                            cached_tokens = prompt_details.get("cached_tokens", 0)
+                        elif hasattr(prompt_details, "cached_tokens"):
                             cached_tokens = prompt_details.cached_tokens
-                            
+
                 log_telemetry(
                     model=response.model,
                     prompt_tokens=usage.prompt_tokens if usage else 0,
@@ -206,17 +197,21 @@ class AILibraryTUI(App):
                     total_tokens=usage.total_tokens if usage else 0,
                     cost=float(cost) if cost else 0.0,
                     latency=latency,
-                    cached_tokens=cached_tokens
+                    cached_tokens=cached_tokens,
                 )
             except Exception as e:
                 import sys
+
                 print(f"Error logging telemetry: {e}", file=sys.stderr)
 
             response_text = f"[{self.current_model.split('/')[0].upper()}]: {response.choices[0].message.content}"
             self.chat_container.mount(Label(response_text, classes="chat-message"))
         except Exception as e:
             self.chat_container.mount(
-                Label(f"[{self.current_model.split('/')[0].upper()}] Placeholder RAG response for '{user_text}'. (Configure API keys to enable real inference. Failover Error: {str(e)})", classes="chat-message")
+                Label(
+                    f"[{self.current_model.split('/')[0].upper()}] Placeholder RAG response for '{user_text}'. (Configure API keys to enable real inference. Failover Error: {str(e)})",
+                    classes="chat-message",
+                )
             )
 
         self.chat_container.scroll_end()
