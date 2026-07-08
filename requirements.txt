@@ -19,3 +19,4 @@ streamlit
 psycopg2-binary
 pgvector
 sentence-transformers
+google-generativeai

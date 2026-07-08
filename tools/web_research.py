@@ -3,6 +3,7 @@ import sys
 import os
 import argparse
 import requests
+import json
 from bs4 import BeautifulSoup
 
 # Ensure root is in path for imports
@@ -12,6 +13,48 @@ if repo_root not in sys.path:
     sys.path.append(repo_root)
 
 from config.loader import load_config, get_chroma_db_path
+
+def verify_content(text, source_url):
+    print("Verifying content integrity...")
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        print("Warning: GEMINI_API_KEY not found. Falling back to basic heuristic checks.")
+        # Basic heuristic check
+        if len(text) < 100:
+            return False, 0, "Content too short to verify."
+        return True, 70, "Basic check passed (No LLM validation)."
+    
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        prompt = f"""
+        You are an AI data verifier for a knowledge graph.
+        Analyze the following scraped text from {source_url}.
+        Determine if the text contains useful, factual information or if it is spam, hallucinated, or irrelevant filler.
+        Return a JSON object with three keys:
+        - "verified": true/false
+        - "confidence": integer 0-100
+        - "reason": brief explanation
+        
+        Text snippet (first 3000 chars):
+        {text[:3000]}
+        """
+        
+        response = model.generate_content(prompt)
+        content = response.text.strip()
+        # Parse JSON from response
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0].strip()
+        elif "```" in content:
+            content = content.split("```")[1].strip()
+            
+        result = json.loads(content)
+        return result.get("verified", False), result.get("confidence", 0), result.get("reason", "No reason provided")
+    except Exception as e:
+        print(f"Verification failed: {e}")
+        return False, 0, str(e)
 
 def chunk_text(text, max_len=1000):
     words = text.split()
@@ -65,6 +108,13 @@ def main():
     if not text:
         sys.exit(1)
         
+    is_verified, trust_score, reason = verify_content(text, args.url)
+    if not is_verified:
+        print(f"Verification Failed: {reason} (Score: {trust_score})")
+        print("Aborting ingestion.")
+        sys.exit(1)
+        
+    print(f"Content Verified (Score: {trust_score}): {reason}")
     print(f"Successfully extracted {len(text)} characters. Chunking...")
     chunks = chunk_text(text)
     
@@ -74,7 +124,12 @@ def main():
     
     for i, chunk in enumerate(chunks):
         docs_to_insert.append(chunk)
-        metadata_to_insert.append({"source": args.url, "chunk": i})
+        metadata_to_insert.append({
+            "source": args.url, 
+            "chunk": i,
+            "trust_score": trust_score,
+            "verified": True
+        })
         ids_to_insert.append(f"{args.url}_{i}")
         
     cfg = load_config()
