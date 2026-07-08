@@ -28,6 +28,9 @@ All notable changes to this project will be documented in this file.
 - **Advanced RAG Capabilities**: Added Re-ranking, Query Expansion, and Hybrid Search capabilities.
 - **Broken Imports & Regressions**: Resolved broken imports, merged duplicate configs, and eliminated redundant `sys.path.append` boilerplate.
 - **Weak Human Proxy**: Improved the human-in-the-loop intercept from rudimentary regex to strict LLM Tool Calling schemas.
+- **Tool Execution Logic**: Built out execution handling within `orchestrator.py` to route approved tool calls and pipe the resulting output back into the agent loop.
+- **Deprecated Packages**: Migrated the legacy `google.generativeai` package to the newly supported `google.genai` SDK in `adversarial_tester.py`.
+- **Silent Error Swallowing**: Replaced scattered `except Exception: pass` anti-patterns with proper logging and error handling across `brain.py`, `web_research.py`, and `tui.py`.
 - **Naive Search**: Upgraded `LibrarySearcher` in `brain.py` to use semantic vector database infrastructure instead of naive string matching.
 - **Subprocess Security**: Hardened subprocess calls in `backup_library.py`, `setup_cron.py`, and `celery_worker.py` by dynamically resolving absolute paths using `shutil.which` and `sys.executable`.
 - **Linter Violations**: Cleaned up the codebase by removing unused imports and resolving PEP8 formatting issues.
