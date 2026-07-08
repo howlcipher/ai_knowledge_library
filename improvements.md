@@ -6,7 +6,11 @@ This document tracks all conceptual improvements, architectural upgrades, and au
 * (No open items)
 
 ## 2. Architecture & Ease of Use
-* **Graphical Frontend (TUI or Web UI):** Build an interactive TUI or a fully-featured Web application to manage the library, configure agents, and execute tools without requiring the user to rely entirely on the CLI.
+* (No open items)
 
 ## 3. Advanced Features & Tooling
-* **Multi-LLM Integration Switch:** Implement a configuration interface allowing users to dynamically select their desired AI service provider (e.g., Claude, Gemini, ChatGPT, Grok, Perplexity, Copilot) for agentic workflows rather than being locked to a single provider.
+* (No open items)
+
+## ✅ Recently Completed
+* **Graphical Frontend (TUI or Web UI):** Built an interactive Textual TUI (`tui.py`) and integrated Streamlit Web UI launchers natively into the Go installer.
+* **Multi-LLM Integration Switch:** Implemented `litellm` routing and a configuration interface inside the TUI to dynamically swap between Claude, Gemini, GPT-4o, Grok, and Perplexity.
