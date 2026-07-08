@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] - 2026-07-08
+
+### 🚀 Analytics & Resiliency Overhaul
+- **Token & Cost Analytics Dashboard**: Implemented `tools/telemetry_logger.py` utilizing SQLite to meticulously track timestamp, model used, tokens consumed, latency, and cost calculation.
+- **Streamlit Telemetry UI**: Upgraded `tools/web_ui.py` with `pandas` to expose a data-rich interactive dashboard rendering real-time metrics, line charts, and bar charts for API consumption.
+- **Intelligent LLM Failover**: Migrated legacy LLM routing to `litellm` in `tui.py` and `web_research.py`, empowering robust, automated cascading fallbacks during API rate limit exhaustion.
+
+### 🛡️ Security Hardening (SAST)
+- **Vulnerability Remediation**: Addressed 8 highly critical vulnerabilities flagged by `bandit` and `gosec` covering path traversal, permissive file modes, command injection, and Jinja2 XSS execution.
+
+### 📊 Regression Suite Fortification
+- **CI/CD Stabilization**: Fixed `PYTHONPATH` module resolution errors within GitHub Actions workflows preventing test suites from loading internal packages.
+- **Coverage Baseline Floor**: Established a rigid 42% global test coverage floor via `--cov-fail-under=42` inside `Makefile` to instantly block any pull requests that degrade unit testing standards.
+
 ## [2.0.0] - 2026-07-07
 
 ### 🚀 Major Features & Architectural Overhaul
