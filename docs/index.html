@@ -76,12 +76,19 @@
             <div class="panel-header warning-stripes">
                 <span>/// DEPLOYMENT_MODULE ///</span>
             </div>
-            <h2 data-i18n="download_title">QUICK START</h2>
-            <p data-i18n="download_subtitle">> Run the installer directly from your terminal to get started in seconds:</p>
-            <div class="code-block">
-                <code>> go run cmd/installer/main.go install</code>
-                <button class="copy-btn" onclick="copyCode()" data-i18n="btn_copy">COPY</button>
+            <h2 data-i18n="download_title">SYSTEM DOWNLOADS</h2>
+            <p data-i18n="download_subtitle">> Select your target operating system to download the latest compiled executable:</p>
+            
+            <div class="download-links">
+                <a href="https://github.com/howlcipher/ai_knowledge_library/releases/latest/download/ai_installer_linux_amd64" class="btn btn-primary">LINUX (AMD64)</a>
+                <a href="https://github.com/howlcipher/ai_knowledge_library/releases/latest/download/ai_installer_darwin_amd64" class="btn btn-primary">MACOS (INTEL/M1)</a>
+                <a href="https://github.com/howlcipher/ai_knowledge_library/releases/latest/download/ai_installer_windows_amd64.exe" class="btn btn-primary">WINDOWS (EXE)</a>
             </div>
+
+            <p style="margin-top: 2.5rem; color: var(--accent-1); font-weight: bold;">
+                <span data-i18n="download_repo_link">> SOURCE CODE REPOSITORY: </span>
+                <a href="https://github.com/howlcipher/ai_knowledge_library" style="color: var(--accent-2); text-decoration: underline;">GITHUB.COM/HOWLCIPHER/AI_KNOWLEDGE_LIBRARY</a>
+            </p>
         </div>
     </main>
 
@@ -100,8 +107,9 @@
                 feat_1_title: "ADVANCED RAG", feat_1_desc: "> Seamless PgVector and ChromaDB integration for deep semantic search and context retrieval.",
                 feat_2_title: "GO CLI INSTALLER", feat_2_desc: "> Lightning-fast native Cobra CLI installer to seamlessly manage dependencies and global links.",
                 feat_3_title: "AUTOMATED WEBHOOKS", feat_3_desc: "> Background FastAPI servers that automatically sync and embed incoming repository changes.",
-                download_title: "QUICK START", download_subtitle: "> Run the installer directly from your terminal to get started in seconds:",
-                btn_copy: "COPY", footer_text: "> Built for the open-source agentic community. Open sourced on "
+                download_title: "SYSTEM DOWNLOADS", download_subtitle: "> Select your target operating system to download the latest compiled executable:",
+                btn_copy: "COPY", footer_text: "> Built for the open-source agentic community. Open sourced on ",
+                download_repo_link: "> SOURCE CODE REPOSITORY: "
             },
             ja: {
                 nav_features: "[機能]", nav_docs: "[API_仕様]",
@@ -111,19 +119,21 @@
                 feat_1_title: "高度なRAG", feat_1_desc: "> PgVectorとChromaDBのシームレスな統合による、深層意味検索とコンテキスト抽出。",
                 feat_2_title: "GO CLI インストーラー", feat_2_desc: "> 依存関係を管理する超高速ネイティブCobra CLIインストーラー。",
                 feat_3_title: "自動化WEBHOOK", feat_3_desc: "> バックグラウンドのFastAPIサーバーが、リポジトリの変更を自動同期。",
-                download_title: "クイックスタート", download_subtitle: "> ターミナルから直接インストーラーを実行して起動：",
-                btn_copy: "コピー", footer_text: "> オープンソースのエージェントコミュニティへ。提供元："
+                download_title: "システムダウンロード", download_subtitle: "> ターゲットOSを選択して、最新のコンパイル済み実行可能ファイルをダウンロードします：",
+                btn_copy: "コピー", footer_text: "> オープンソースのエージェントコミュニティへ。提供元：",
+                download_repo_link: "> ソースコードリポジトリ: "
             },
             es: {
                 nav_features: "[CARACTERÍSTICAS]", nav_docs: "[DOCS_API]",
                 hero_title: "SOBRECARGA TU CONTEXTO IA",
                 hero_subtitle: "> UN GRAFO DE CONOCIMIENTO Y BASE DE DATOS VECTORIAL ALOJADA LOCALMENTE PARA AGENTES AUTÓNOMOS AVANZADOS. INTEGRACIÓN PGVECTOR E INSTALADORES GO.",
                 hero_btn_download: "EJECUTAR INSTALACIÓN", hero_btn_docs: "LEER MANUAL",
-                feat_1_title: "RAG AVANZADO", feat_1_desc: "> Integración de PgVector y ChromaDB para búsqueda semántica profunda.",
+                feat_1_title: "RAG AVANCADO", feat_1_desc: "> Integración de PgVector y ChromaDB para búsqueda semántica profunda.",
                 feat_2_title: "INSTALADOR GO CLI", feat_2_desc: "> Instalador nativo ultrarrápido para gestionar dependencias.",
                 feat_3_title: "WEBHOOKS AUTOMATIZADOS", feat_3_desc: "> Servidores FastAPI en segundo plano para sincronizar cambios.",
-                download_title: "INICIO RÁPIDO", download_subtitle: "> Ejecuta el instalador directamente desde tu terminal:",
-                btn_copy: "COPIAR", footer_text: "> Construido para la comunidad de código abierto. Código fuente en "
+                download_title: "DESCARGAS DEL SISTEMA", download_subtitle: "> Selecciona tu sistema operativo objetivo para descargar el último ejecutable compilado:",
+                btn_copy: "COPIAR", footer_text: "> Construido para la comunidad de código abierto. Código fuente en ",
+                download_repo_link: "> REPOSITORIO DE CÓDIGO FUENTE: "
             },
             zh: {
                 nav_features: "[功能]", nav_docs: "[API文档]",
@@ -133,8 +143,9 @@
                 feat_1_title: "高级RAG", feat_1_desc: "> 无缝集成PgVector和ChromaDB，用于深度语义搜索。",
                 feat_2_title: "GO CLI 安装程序", feat_2_desc: "> 极速原生CLI安装程序，无缝管理依赖项。",
                 feat_3_title: "自动WEBHOOK", feat_3_desc: "> 后台FastAPI服务器自动同步存储库更改。",
-                download_title: "快速开始", download_subtitle: "> 从终端运行安装程序即可开始：",
-                btn_copy: "复制", footer_text: "> 为开源代理社区构建。开源于 "
+                download_title: "系统下载", download_subtitle: "> 选择您的目标操作系统以直接下载最新编译的可执行文件：",
+                btn_copy: "复制", footer_text: "> 为开源代理社区构建。开源于 ",
+                download_repo_link: "> 源代码存储库： "
             },
             fr: {
                 nav_features: "[FONCTIONNALITÉS]", nav_docs: "[DOCS_API]",
@@ -144,8 +155,9 @@
                 feat_1_title: "RAG AVANCÉ", feat_1_desc: "> Intégration PgVector et ChromaDB pour la recherche sémantique profonde.",
                 feat_2_title: "INSTALLATEUR GO CLI", feat_2_desc: "> Installateur natif ultra-rapide pour gérer les dépendances.",
                 feat_3_title: "WEBHOOKS AUTOMATISÉS", feat_3_desc: "> Serveurs FastAPI en arrière-plan pour synchroniser les changements.",
-                download_title: "DÉMARRAGE RAPIDE", download_subtitle: "> Exécutez l'installateur depuis votre terminal :",
-                btn_copy: "COPIER", footer_text: "> Construit pour la communauté open source. Code source sur "
+                download_title: "TÉLÉCHARGEMENTS DU SYSTÈME", download_subtitle: "> Sélectionnez votre système d'exploitation cible pour télécharger le dernier exécutable compilé :",
+                btn_copy: "COPIER", footer_text: "> Construit pour la communauté open source. Code source sur ",
+                download_repo_link: "> DÉPÔT DE CODE SOURCE : "
             },
             de: {
                 nav_features: "[FUNKTIONEN]", nav_docs: "[API_DOKU]",
@@ -155,8 +167,9 @@
                 feat_1_title: "FORTSCHRITTLICHES RAG", feat_1_desc: "> Nahtlose PgVector- und ChromaDB-Integration für tiefe semantische Suche.",
                 feat_2_title: "GO CLI INSTALLER", feat_2_desc: "> Blitzschneller nativer CLI-Installer zur Verwaltung von Abhängigkeiten.",
                 feat_3_title: "AUTOMATISIERTE WEBHOOKS", feat_3_desc: "> Hintergrund-FastAPI-Server zur automatischen Synchronisierung.",
-                download_title: "SCHNELLSTART", download_subtitle: "> Führen Sie den Installer direkt vom Terminal aus:",
-                btn_copy: "KOPIEREN", footer_text: "> Gebaut für die Open-Source-Community. Quellcode auf "
+                download_title: "SYSTEM-DOWNLOADS", download_subtitle: "> Wählen Sie Ihr Zielbetriebssystem aus, um die neueste kompilierte ausführbare Datei herunterzuladen:",
+                btn_copy: "KOPIEREN", footer_text: "> Gebaut für die Open-Source-Community. Quellcode auf ",
+                download_repo_link: "> QUELLCODE-REPOSITORY: "
             }
         };
 
