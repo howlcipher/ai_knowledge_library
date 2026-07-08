@@ -11,7 +11,7 @@ This document tracks all conceptual improvements, architectural upgrades, and au
 ## 2. Architecture & Ease of Use
 * [x] **Cobra CLI Refactor**: Refactor the Go Installer to use the `cobra` framework so power users can run `ai_installer install` directly from the command line without navigating the visual TUI.
 * [x] **Centralized Config Loader**: Build a central `config.yaml` or `.env` configuration loader in Python. Currently, ChromaDB paths are hardcoded randomly across multiple scripts.
-* [ ] **PgVector Migration**: Replace the local SQLite ChromaDB backend with a true PostgreSQL/pgvector database for production-level multi-agent concurrency.
+* [x] **PgVector Migration**: Replace the local SQLite ChromaDB backend with a true PostgreSQL/pgvector database for production-level multi-agent concurrency.
 
 ## 3. Advanced Features & Tooling
 * [x] **Streamlit / Gradio Web UI**: Build a visual browser-based chat interface connected directly to the RAG database, rather than relying exclusively on CLI agents.

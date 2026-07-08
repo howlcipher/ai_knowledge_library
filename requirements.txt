@@ -16,3 +16,6 @@ uvicorn
 beautifulsoup4
 requests
 streamlit
+psycopg2-binary
+pgvector
+sentence-transformers
