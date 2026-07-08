@@ -26,9 +26,7 @@ jobs:
           pip install pdoc
 
       - name: Generate API Docs
-        run: |
-          mkdir -p docs
-          pdoc ./tools ./scripts -o docs
+        run: make docs
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
