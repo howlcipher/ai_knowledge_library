@@ -243,7 +243,21 @@ class Orchestrator:
             print("\n[Orchestrator] Final Output:")
             print(current_draft_content)
             if current_tool_calls:
-                print(f"[Executing {len(current_tool_calls)} tool calls...]")
+                import subprocess
+                print(f"\n[Executing {len(current_tool_calls)} tool calls...]")
+                for call in current_tool_calls:
+                    if call.function.name == "execute_bash_command":
+                        try:
+                            args = json.loads(call.function.arguments)
+                            cmd = args.get('command')
+                            print(f"\n$ {cmd}")
+                            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                            if result.stdout:
+                                print(result.stdout)
+                            if result.stderr:
+                                print(result.stderr, file=sys.stderr)
+                        except Exception as e:
+                            print(f"Error executing command: {e}", file=sys.stderr)
         else:
             print("\n[Orchestrator] Task aborted due to human rejection.")
 

@@ -132,7 +132,8 @@ class AILibraryTUI(App):
                 with open(settings_path, "w") as f:
                     yaml.dump(data, f)
             except Exception as e:
-                pass
+                import sys
+                print(f"Error saving settings: {e}", file=sys.stderr)
 
     async def on_input_submitted(self, event: Input.Submitted) -> None:
         """Handle user input."""
@@ -208,7 +209,8 @@ class AILibraryTUI(App):
                     cached_tokens=cached_tokens
                 )
             except Exception as e:
-                pass # Fail silently if telemetry fails
+                import sys
+                print(f"Error logging telemetry: {e}", file=sys.stderr)
 
             response_text = f"[{self.current_model.split('/')[0].upper()}]: {response.choices[0].message.content}"
             self.chat_container.mount(Label(response_text, classes="chat-message"))

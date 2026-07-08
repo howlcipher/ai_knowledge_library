@@ -106,8 +106,9 @@ class ContentVerifier:
                     cost=float(cost) if cost else 0.0,
                     latency=latency
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                import sys
+                print(f"Error logging telemetry: {e}", file=sys.stderr)
                 
         except Exception as e:
             print(f"LiteLLM failover exhausted. Error: {e}")

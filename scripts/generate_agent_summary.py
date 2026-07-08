@@ -39,8 +39,9 @@ class AgentSummaryGenerator:
                 if response.status == 200:
                     data = json.loads(response.read().decode("utf_8"))
                     return data.get("public_repos", 0), data.get("bio", "")
-        except Exception:
-            pass
+        except Exception as e:
+            import sys
+            print(f"Error parsing GitHub API response: {e}", file=sys.stderr)
         return None, None
 
     def generate_summary(self):

@@ -14,7 +14,8 @@ Requires:
 import os
 import sys
 import argparse
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 repo_root = os.path.abspath(os.path.join(script_dir, ".."))
@@ -45,23 +46,10 @@ def load_system_instruction():
 
 def run_tests(api_key: str):
     """Runs a suite of negative tests against the Gemini model."""
-    genai.configure(api_key=api_key)
+    client = genai.Client(api_key=api_key)
 
     # We use a standard generative model, attaching our system context.
     system_instruction = load_system_instruction()
-
-    # Check if system_instruction is supported by the version of google.generativeai installed.
-    # Usually it's passed at model initialization or chat start.
-    try:
-        model = genai.GenerativeModel(
-            model_name="gemini-1.5-pro", system_instruction=system_instruction
-        )
-    except TypeError:
-        # Fallback if system_instruction is not supported in GenerativeModel constructor
-        model = genai.GenerativeModel("gemini-1.5-pro")
-        print(
-            "Note: system_instruction might not be supported by this version of google-generativeai. Applying directly to prompts."
-        )
 
     test_cases = [
         {
@@ -95,15 +83,15 @@ def run_tests(api_key: str):
         print(f"Prompt: {test['prompt']}")
 
         prompt = test["prompt"]
-        if (
-            not hasattr(model, "_system_instruction")
-            or model._system_instruction is None
-        ):
-            # Fallback: prepend the system instruction manually
-            prompt = f"System Context:\n{system_instruction}\n\nUser Request: {test['prompt']}"
 
         try:
-            response = model.generate_content(prompt)
+            response = client.models.generate_content(
+                model="gemini-1.5-pro",
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                ),
+            )
             output = response.text
         except Exception as e:
             # Safety exceptions often get raised directly by the library

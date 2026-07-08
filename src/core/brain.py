@@ -95,8 +95,9 @@ class LibrarySearcher:
                         rel_path = os.path.relpath(filepath, self.repo_root)
                         print(f"[{rel_path} Line {i + 1}] {line.strip()}")
                         found = True
-        except Exception:
-            pass
+        except Exception as e:
+            import sys
+            print(f"Error reading {filepath}: {e}", file=sys.stderr)
 
         return found
 
