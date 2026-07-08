@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+"""
+Module for interacting with a PostgreSQL database using the pgvector extension.
+"""
+
 import os
 import sys
 
@@ -14,19 +18,39 @@ except ImportError:
     sys.exit(1)
 
 
-def get_config():
-    config_path = os.path.join(
-        os.path.dirname(__file__), "..", "config", "settings.yaml"
-    )
-    if not os.path.exists(config_path):
-        return {}
-    with open(config_path, "r") as f:
-        return yaml.safe_load(f)
+class ConfigLoader:
+    """
+    Utility class for loading configuration settings.
+    """
+
+    @staticmethod
+    def get_config() -> dict:
+        """
+        Loads the settings.yaml configuration file.
+
+        Returns:
+            dict: The configuration settings.
+        """
+        config_path = os.path.join(
+            os.path.dirname(__file__), "..", "config", "settings.yaml"
+        )
+        if not os.path.exists(config_path):
+            return {}
+        with open(config_path, "r") as f:
+            return yaml.safe_load(f)
 
 
 class PgVectorStore:
+    """
+    Handles operations for the PostgreSQL vector database.
+    """
+
     def __init__(self):
-        config = get_config()
+        """
+        Initializes the PgVectorStore, establishing a database connection
+        and loading the sentence transformer model.
+        """
+        config = ConfigLoader.get_config()
         dsn = config.get("database", {}).get(
             "pgvector_dsn", "postgresql://localhost:5432/ai_knowledge"
         )
@@ -39,7 +63,10 @@ class PgVectorStore:
             print(f"Error connecting to PostgreSQL: {e}")
             sys.exit(1)
 
-    def init_db(self):
+    def init_db(self) -> None:
+        """
+        Initializes the database by creating the necessary extension and table.
+        """
         with self.conn.cursor() as cur:
             cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
             cur.execute("""
@@ -52,7 +79,14 @@ class PgVectorStore:
             """)
         self.conn.commit()
 
-    def upsert(self, docs, metadatas):
+    def upsert(self, docs: list, metadatas: list) -> None:
+        """
+        Encodes documents into embeddings and inserts them into the database.
+
+        Args:
+            docs (list): A list of document strings.
+            metadatas (list): A list of metadata dictionaries corresponding to the documents.
+        """
         embeddings = self.model.encode(docs)
         with self.conn.cursor() as cur:
             for doc, meta, emb in zip(docs, metadatas, embeddings):
@@ -62,7 +96,17 @@ class PgVectorStore:
                 )
         self.conn.commit()
 
-    def query(self, text, n_results=5):
+    def query(self, text: str, n_results: int = 5) -> list:
+        """
+        Queries the database for documents similar to the provided text.
+
+        Args:
+            text (str): The search query text.
+            n_results (int, optional): The number of results to return. Defaults to 5.
+
+        Returns:
+            list: A list of tuples containing the matched documents and their sources.
+        """
         query_embedding = self.model.encode([text])[0]
         with self.conn.cursor() as cur:
             # Using cosine distance <=>
@@ -74,6 +118,9 @@ class PgVectorStore:
 
 
 def main():
+    """
+    Main entry point for the script.
+    """
     print("PgVector Backend Initialized. Ready for production concurrency.")
     # store = PgVectorStore()
     # store.init_db()

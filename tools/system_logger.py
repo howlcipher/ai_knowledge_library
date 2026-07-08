@@ -1,27 +1,49 @@
+"""
+Standardized System Logger Module.
+"""
+
 import logging
 
 
-def setup_logger(name):
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
+class SystemLogger:
+    """
+    Class to create and manage standardized loggers.
+    """
 
-    # Console handler
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
+    DEFAULT_FORMAT = "%(asctime)s \x2d %(name)s \x2d %(levelname)s \x2d %(message)s"
 
-    # Formatter
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
-    ch.setFormatter(formatter)
+    @classmethod
+    def setup_logger(
+        cls, name: str, level: int = logging.DEBUG, console_level: int = logging.INFO
+    ) -> logging.Logger:
+        """
+        Sets up and returns a configured logger instance.
+        """
+        logger = logging.getLogger(name)
+        logger.setLevel(level)
 
-    if not logger.handlers:
-        logger.addHandler(ch)
+        if not logger.handlers:
+            ch = logging.StreamHandler()
+            ch.setLevel(console_level)
 
-    return logger
+            formatter = logging.Formatter(cls.DEFAULT_FORMAT)
+            ch.setFormatter(formatter)
+
+            logger.addHandler(ch)
+
+        return logger
+
+
+def setup_logger(name: str):
+    """
+    Legacy wrapper for setup_logger to ensure exactly the same functionality
+    for scripts that import this function directly.
+    """
+    return SystemLogger.setup_logger(name)
 
 
 def main():
+    """Main entry point for testing the logger."""
     log = setup_logger("test")
     log.info("Standardized logging system initialized.")
 

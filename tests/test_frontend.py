@@ -31,12 +31,11 @@ def test_frontend_has_mecha_elements():
 
 
 def test_frontend_has_translations():
-    index_path = os.path.join(os.path.dirname(__file__), "..", "docs", "index.html")
-    with open(index_path, "r", encoding="utf-8") as f:
-        html_content = f.read()
+    app_js_path = os.path.join(os.path.dirname(__file__), "..", "docs", "app.js")
+    with open(app_js_path, "r", encoding="utf-8") as f:
+        js_content = f.read()
 
     # Super simple text check for the JS dictionary
-    assert "const i18n =" in html_content
-    assert "ja:" in html_content
-    assert "es:" in html_content
-    assert "de:" in html_content
+    assert "ja:" in js_content
+    assert "es:" in js_content
+    assert "de:" in js_content

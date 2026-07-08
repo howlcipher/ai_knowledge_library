@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
+"""
+Web scraping tool for AI research.
+
+This tool fetches content from a given URL, verifies it using an LLM (Gemini),
+chunks the text, and inserts it into a vector database (ChromaDB or PGVector).
+"""
+
 import sys
 import os
 import argparse
 import requests
 import json
 from bs4 import BeautifulSoup
+from typing import Tuple, List, Dict, Optional
 
 # Ensure root is in path for imports
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -15,22 +23,53 @@ if repo_root not in sys.path:
 from config.loader import load_config, get_chroma_db_path
 
 
-def verify_content(text, source_url):
-    print("Verifying content integrity...")
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        print(
-            "Warning: GEMINI_API_KEY not found. Falling back to basic heuristic checks."
-        )
-        # Basic heuristic check
+class ContentVerifier:
+    """Handles the verification of scraped content using an LLM."""
+
+    def __init__(self, api_key: Optional[str] = None):
+        """
+        Initialize the ContentVerifier.
+
+        Args:
+            api_key (Optional[str]): The Gemini API key. If None, falls back to heuristics.
+        """
+        self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
+
+    def verify(self, text: str, source_url: str) -> Tuple[bool, int, str]:
+        """
+        Verify the text content for usefulness and factuality.
+
+        Args:
+            text (str): The scraped text.
+            source_url (str): The URL the text was scraped from.
+
+        Returns:
+            Tuple[bool, int, str]: Verification status, confidence score, and reason.
+        """
+        print("Verifying content integrity...")
+        if not self.api_key:
+            print(
+                "Warning: GEMINI_API_KEY not found. Falling back to basic heuristic checks."
+            )
+            return self._heuristic_check(text)
+
+        try:
+            return self._llm_check(text, source_url)
+        except Exception as e:
+            print(f"Verification failed: {e}")
+            return False, 0, str(e)
+
+    def _heuristic_check(self, text: str) -> Tuple[bool, int, str]:
+        """Basic heuristic check when API key is missing."""
         if len(text) < 100:
             return False, 0, "Content too short to verify."
         return True, 70, "Basic check passed (No LLM validation)."
 
-    try:
+    def _llm_check(self, text: str, source_url: str) -> Tuple[bool, int, str]:
+        """LLM-based content verification."""
         import google.generativeai as genai
 
-        genai.configure(api_key=api_key)
+        genai.configure(api_key=self.api_key)
         model = genai.GenerativeModel("gemini-1.5-flash")
 
         prompt = f"""
@@ -48,6 +87,7 @@ def verify_content(text, source_url):
 
         response = model.generate_content(prompt)
         content = response.text.strip()
+
         # Parse JSON from response
         if "```json" in content:
             content = content.split("```json")[1].split("```")[0].strip()
@@ -60,66 +100,136 @@ def verify_content(text, source_url):
             result.get("confidence", 0),
             result.get("reason", "No reason provided"),
         )
-    except Exception as e:
-        print(f"Verification failed: {e}")
-        return False, 0, str(e)
 
 
-def chunk_text(text, max_len=1000):
-    words = text.split()
-    chunks = []
-    current_chunk = []
-    current_len = 0
-    for word in words:
-        if current_len + len(word) > max_len:
-            chunks.append(" ".join(current_chunk))
-            current_chunk = [word]
-            current_len = len(word)
+class WebScraper:
+    """Handles extracting text content from URLs."""
+
+    def __init__(
+        self,
+        user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AI Knowledge Web Scraper",
+    ):
+        self.headers = {"User-Agent": user_agent}
+
+    def fetch_text(self, url: str) -> Optional[str]:
+        """
+        Fetch and extract text from the given URL.
+
+        Args:
+            url (str): The URL to scrape.
+
+        Returns:
+            Optional[str]: Extracted text or None if fetch fails.
+        """
+        try:
+            print(f"Fetching {url}...")
+            response = requests.get(url, headers=self.headers, timeout=15)
+            response.raise_for_status()
+
+            soup = BeautifulSoup(response.text, "html.parser")
+
+            # Remove script, style, and nav elements
+            for element in soup(["script", "style", "nav", "footer", "header"]):
+                element.extract()
+
+            # Try to find main content, fallback to body
+            main_content = (
+                soup.find("main") or soup.find("article") or soup.find("body")
+            )
+            if not main_content:
+                main_content = soup
+
+            return main_content.get_text(separator=" ", strip=True)
+        except Exception as e:
+            print(f"Error fetching URL: {e}")
+            return None
+
+
+class VectorStoreManager:
+    """Manages insertion of documents into the configured vector store."""
+
+    def __init__(self, db_mode: str, collection_name: str = "ai_library_knowledge"):
+        self.db_mode = db_mode
+        self.collection_name = collection_name
+        self.batch_size = 100
+
+    def insert(self, docs: List[str], metadatas: List[Dict], ids: List[str]):
+        """
+        Insert documents into the vector database in batches.
+        """
+        print(f"Injecting {len(docs)} chunks into {self.db_mode} context...")
+
+        if self.db_mode == "pgvector":
+            self._insert_pgvector(docs, metadatas)
         else:
-            current_chunk.append(word)
-            current_len += len(word) + 1
-    if current_chunk:
-        chunks.append(" ".join(current_chunk))
-    return chunks
+            self._insert_chroma(docs, metadatas, ids)
+
+    def _insert_pgvector(self, docs: List[str], metadatas: List[Dict]):
+        from tools.pgvector_backend import PgVectorStore
+
+        store = PgVectorStore()
+        for i in range(0, len(docs), self.batch_size):
+            store.upsert(
+                docs=docs[i : i + self.batch_size],
+                metadatas=metadatas[i : i + self.batch_size],
+            )
+
+    def _insert_chroma(self, docs: List[str], metadatas: List[Dict], ids: List[str]):
+        try:
+            import chromadb
+        except ImportError:
+            print("Error: chromadb not installed.")
+            sys.exit(1)
+
+        db_path = get_chroma_db_path()
+        client = chromadb.PersistentClient(path=db_path)
+        collection = client.get_or_create_collection(name=self.collection_name)
+
+        for i in range(0, len(docs), self.batch_size):
+            collection.upsert(
+                documents=docs[i : i + self.batch_size],
+                metadatas=metadatas[i : i + self.batch_size],
+                ids=ids[i : i + self.batch_size],
+            )
 
 
-def extract_text_from_url(url):
-    try:
-        print(f"Fetching {url}...")
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AI Knowledge Web Scraper"
-        }
-        response = requests.get(url, headers=headers, timeout=15)
-        response.raise_for_status()
+class TextChunker:
+    """Handles splitting text into manageable chunks."""
 
-        soup = BeautifulSoup(response.text, "html.parser")
-
-        # Remove script, style, and nav elements
-        for element in soup(["script", "style", "nav", "footer", "header"]):
-            element.extract()
-
-        # Try to find main content, fallback to body
-        main_content = soup.find("main") or soup.find("article") or soup.find("body")
-        if not main_content:
-            main_content = soup
-
-        text = main_content.get_text(separator=" ", strip=True)
-        return text
-    except Exception as e:
-        print(f"Error fetching URL: {e}")
-        return None
+    @staticmethod
+    def chunk(text: str, max_len: int = 1000) -> List[str]:
+        """Split text into chunks of roughly max_len characters."""
+        words = text.split()
+        chunks = []
+        current_chunk = []
+        current_len = 0
+        for word in words:
+            if current_len + len(word) > max_len:
+                chunks.append(" ".join(current_chunk))
+                current_chunk = [word]
+                current_len = len(word)
+            else:
+                current_chunk.append(word)
+                current_len += len(word) + 1
+        if current_chunk:
+            chunks.append(" ".join(current_chunk))
+        return chunks
 
 
 def main():
+    """Main execution point for the web research tool."""
     parser = argparse.ArgumentParser(description="Web scraping tool for AI research.")
     parser.add_argument("--url", type=str, required=True, help="URL to scrape")
     args = parser.parse_args()
 
-    text = extract_text_from_url(args.url)
+    scraper = WebScraper()
+    text = scraper.fetch_text(args.url)
     if not text:
         sys.exit(1)
 
-    is_verified, trust_score, reason = verify_content(text, args.url)
+    verifier = ContentVerifier()
+    is_verified, trust_score, reason = verifier.verify(text, args.url)
+
     if not is_verified:
         print(f"Verification Failed: {reason} (Score: {trust_score})")
         print("Aborting ingestion.")
@@ -127,7 +237,8 @@ def main():
 
     print(f"Content Verified (Score: {trust_score}): {reason}")
     print(f"Successfully extracted {len(text)} characters. Chunking...")
-    chunks = chunk_text(text)
+
+    chunks = TextChunker.chunk(text)
 
     docs_to_insert = []
     metadata_to_insert = []
@@ -148,34 +259,8 @@ def main():
     cfg = load_config()
     db_mode = cfg.get("database", {}).get("mode", "sqlite")
 
-    print(f"Injecting {len(chunks)} chunks into {db_mode} context...")
-
-    batch_size = 100
-    if db_mode == "pgvector":
-        from tools.pgvector_backend import PgVectorStore
-
-        store = PgVectorStore()
-        for i in range(0, len(docs_to_insert), batch_size):
-            store.upsert(
-                docs=docs_to_insert[i : i + batch_size],
-                metadatas=metadata_to_insert[i : i + batch_size],
-            )
-    else:
-        try:
-            import chromadb
-        except ImportError:
-            print("Error: chromadb not installed.")
-            sys.exit(1)
-
-        db_path = get_chroma_db_path()
-        client = chromadb.PersistentClient(path=db_path)
-        collection = client.get_or_create_collection(name="ai_library_knowledge")
-        for i in range(0, len(docs_to_insert), batch_size):
-            collection.upsert(
-                documents=docs_to_insert[i : i + batch_size],
-                metadatas=metadata_to_insert[i : i + batch_size],
-                ids=ids_to_insert[i : i + batch_size],
-            )
+    vector_store = VectorStoreManager(db_mode)
+    vector_store.insert(docs_to_insert, metadata_to_insert, ids_to_insert)
 
     print(f"Preview: {text[:200]}...")
     print("Done!")
