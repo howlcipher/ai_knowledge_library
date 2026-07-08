@@ -52,8 +52,8 @@ build:
 # Documentation
 docs:
 	@echo "Generating API documentation via pdoc..."
-	mkdir -p docs
-	pdoc ./tools ./scripts -o docs
+	mkdir -p docs/api
+	pdoc ./tools ./scripts -o docs/api
 
 # Sync and Data
 sync:
