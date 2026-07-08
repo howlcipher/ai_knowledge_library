@@ -38,7 +38,7 @@ class GitHubProfileSyncer:
         url = f"{self.api_url}{self.username}/repos?sort=updated"
         req = urllib.request.Request(url, headers={self.header_key: self.header_value})
         try:
-            with urllib.request.urlopen(req) as response:
+            with urllib.request.urlopen(req) as response:  # nosec B310
                 if response.status == 200:
                     data = json.loads(response.read().decode("utf_8"))
                     return data

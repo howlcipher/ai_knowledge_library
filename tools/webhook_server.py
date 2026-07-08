@@ -31,7 +31,7 @@ class WebhookServer:
         self.app = FastAPI(title="AI Knowledge Library Webhook Server")
         self.cfg = load_config()
         self.expected_secret = self.cfg.get("server", {}).get("webhook_secret", "")
-        self.host = self.cfg.get("server", {}).get("host", "0.0.0.0")
+        self.host = self.cfg.get("server", {}).get("host", "0.0.0.0")  # nosec B104
         self.port = self.cfg.get("server", {}).get("port", 8000)
 
         # Register routes

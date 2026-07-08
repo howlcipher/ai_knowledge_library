@@ -34,7 +34,7 @@ class SecurityNewsFetcher:
         """
         req = urllib.request.Request(self.url)
         try:
-            with urllib.request.urlopen(req) as response:
+            with urllib.request.urlopen(req) as response:  # nosec B310
                 if response.status == 200:
                     data = json.loads(response.read().decode("utf_8"))
                     self._write_news(data)

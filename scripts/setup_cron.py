@@ -43,8 +43,9 @@ class CronManager:
 
     def _apply_crontab(self, cron_content: str):
         """Apply new cron content to the system."""
-        cron_file = "/tmp/new_cron_temp"
-        with open(cron_file, "w") as f:
+        import tempfile
+        fd, cron_file = tempfile.mkstemp()
+        with os.fdopen(fd, "w") as f:
             f.write(cron_content)
         subprocess.run(["crontab", cron_file])
         os.remove(cron_file)

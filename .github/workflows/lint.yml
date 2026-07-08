@@ -32,7 +32,7 @@ jobs:
 
       - name: Run Bandit (SAST)
         run: |
-          bandit -r tools/ scripts/ tests/ -ll -ii || true
+          bandit -r tools/ scripts/ tests/ -ll -ii
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -41,3 +41,6 @@ jobs:
           
       - name: Run golangci-lint
         run: go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --timeout=5m
+
+      - name: Run GoSec (SAST)
+        run: go run github.com/securego/gosec/v2/cmd/gosec@latest ./...

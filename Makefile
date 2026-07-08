@@ -26,8 +26,12 @@ coverage-go:
 lint:
 	@echo "Running Python linting (flake8)..."
 	flake8 tools/ scripts/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+	@echo "Running Python SAST (bandit)..."
+	bandit -r tools/ scripts/ tests/ -ll -ii
 	@echo "Running Go linting..."
 	if command -v golangci-lint >/dev/null 2>&1; then golangci-lint run; else echo "golangci-lint not installed, skipping..."; fi
+	@echo "Running Go SAST (gosec)..."
+	if command -v gosec >/dev/null 2>&1; then gosec ./...; else echo "gosec not installed, skipping..."; fi
 	@echo "Running pre-commit checks if installed..."
 	pre-commit run --all-files || true
 

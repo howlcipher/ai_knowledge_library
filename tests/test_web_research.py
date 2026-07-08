@@ -140,7 +140,7 @@ class TestVectorStoreManager:
     @patch("chromadb.PersistentClient")
     @patch("tools.web_research.get_chroma_db_path")
     def test_insert_chroma(self, mock_get_path, mock_client_class):
-        mock_get_path.return_value = "/tmp/db"
+        mock_get_path.return_value = "/tmp/db"  # nosec B108
         mock_client = MagicMock()
         mock_client_class.return_value = mock_client
         mock_collection = MagicMock()

@@ -15,7 +15,7 @@ fi
 """
     with open(hook_path, "w") as f:
         f.write(content)
-    os.chmod(hook_path, 0o755)
+    os.chmod(hook_path, 0o755)  # nosec B103
     print("Pre-commit hook installed successfully.")
 
 

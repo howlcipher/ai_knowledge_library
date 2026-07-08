@@ -24,7 +24,7 @@ class ProfileInjector:
         self.repo_root = repo_root
         self.profile_path = os.path.join(repo_root, "USER_PROFILE.md")
         self.skills_dir = os.path.join(repo_root, ".agents", "skills")
-        self.env = Environment()
+        self.env = Environment(autoescape=True)
 
     def _read_profile(self) -> str:
         """Read the profile content if it exists."""
