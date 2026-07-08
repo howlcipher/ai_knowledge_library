@@ -1,14 +1,14 @@
-# AI Knowledge Library - Chinese (Traditional) (zh_TW)
+# AI Knowledge Library - 中文 (繁體, zh_TW)
 
-This is the Chinese (Traditional) localized documentation for the AI Knowledge Library.
+這是 AI Knowledge Library 的中文（繁體）在地化文件。
 
-## Using the Installer in this Language
-To run the installer in Chinese (Traditional), set the `LANG` environment variable or select it during setup:
+## 在此語言下使用安裝程式
+要以中文（繁體）執行安裝程式，請設定 `LANG` 環境變數或在設定過程中選擇它：
 
 ```bash
 export LANG=zh_TW.UTF-8
 ./ai_installer install
 ```
 
-## Translating Content
-The AI Agent is configured to translate English skill definitions and prompts into Chinese (Traditional) when this module is active.
+## 翻譯內容
+當此模組處於活動狀態時，AI 代理被配置為將英語的技能定義和提示詞翻譯成中文（繁體）。

@@ -1,14 +1,14 @@
-# AI Knowledge Library - Polish (pl_PL)
+# AI Knowledge Library - Polski (pl_PL)
 
-This is the Polish localized documentation for the AI Knowledge Library.
+Oto zlokalizowana w języku polskim dokumentacja dla AI Knowledge Library.
 
-## Using the Installer in this Language
-To run the installer in Polish, set the `LANG` environment variable or select it during setup:
+## Korzystanie z instalatora w tym języku
+Aby uruchomić instalator w języku polskim, ustaw zmienną środowiskową `LANG` lub wybierz ją podczas konfiguracji:
 
 ```bash
 export LANG=pl_PL.UTF-8
 ./ai_installer install
 ```
 
-## Translating Content
-The AI Agent is configured to translate English skill definitions and prompts into Polish when this module is active.
+## Tłumaczenie treści
+Agent AI jest skonfigurowany do tłumaczenia angielskich definicji umiejętności i poleceń na język polski, gdy ten moduł jest aktywny.

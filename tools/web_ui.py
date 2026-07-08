@@ -12,7 +12,10 @@ except ImportError:
 def get_chroma_client():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.dirname(script_dir)
-    db_path = os.path.join(repo_root, ".chromadb")
+    sys.path.append(repo_root)
+    
+    from config.loader import get_chroma_db_path
+    db_path = get_chroma_db_path()
     
     if not os.path.exists(db_path):
         st.error("Vector database not found. Please run tools/build_vector_index.py first.")

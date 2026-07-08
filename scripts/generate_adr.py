@@ -13,7 +13,17 @@ def generate_adr(title):
     
     # Calculate ADR number
     existing_adrs = glob.glob(os.path.join(adrs_dir, "ADR-*.md"))
-    adr_number = len(existing_adrs) + 1
+    max_adr = 0
+    for adr in existing_adrs:
+        basename = os.path.basename(adr)
+        # Assuming format ADR-XXX-title.md
+        parts = basename.split('-')
+        if len(parts) >= 2 and parts[1].isdigit():
+            adr_num = int(parts[1])
+            if adr_num > max_adr:
+                max_adr = adr_num
+    
+    adr_number = max_adr + 1
     adr_id = f"ADR-{adr_number:03d}"
     
     filename = os.path.join(adrs_dir, f"{adr_id}-{safe_title}.md")

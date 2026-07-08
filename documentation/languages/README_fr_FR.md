@@ -1,14 +1,14 @@
-# AI Knowledge Library - French (fr_FR)
+# AI Knowledge Library - Français (fr_FR)
 
-This is the French localized documentation for the AI Knowledge Library.
+Ceci est la documentation localisée en français pour l'AI Knowledge Library.
 
-## Using the Installer in this Language
-To run the installer in French, set the `LANG` environment variable or select it during setup:
+## Utilisation de l'installateur dans cette langue
+Pour exécuter l'installateur en français, définissez la variable d'environnement `LANG` ou sélectionnez-la lors de l'installation :
 
 ```bash
 export LANG=fr_FR.UTF-8
 ./ai_installer install
 ```
 
-## Translating Content
-The AI Agent is configured to translate English skill definitions and prompts into French when this module is active.
+## Traduction du contenu
+L'Agent IA est configuré pour traduire les définitions de compétences et les instructions de l'anglais vers le français lorsque ce module est actif.

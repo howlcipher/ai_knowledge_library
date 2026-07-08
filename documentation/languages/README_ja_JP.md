@@ -1,14 +1,14 @@
-# AI Knowledge Library - Japanese (ja_JP)
+# AI Knowledge Library - 日本語 (ja_JP)
 
-This is the Japanese localized documentation for the AI Knowledge Library.
+これは AI Knowledge Library の日本語ローカライズ版ドキュメントです。
 
-## Using the Installer in this Language
-To run the installer in Japanese, set the `LANG` environment variable or select it during setup:
+## この言語でのインストーラーの使用
+インストーラーを日本語で実行するには、`LANG` 環境変数を設定するか、セットアップ中に日本語を選択します。
 
 ```bash
 export LANG=ja_JP.UTF-8
 ./ai_installer install
 ```
 
-## Translating Content
-The AI Agent is configured to translate English skill definitions and prompts into Japanese when this module is active.
+## コンテンツの翻訳
+AI エージェントは、このモジュールがアクティブな場合、英語のスキル定義とプロンプトを日本語に翻訳するように構成されています。

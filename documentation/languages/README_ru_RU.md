@@ -1,14 +1,14 @@
-# AI Knowledge Library - Russian (ru_RU)
+# AI Knowledge Library - Русский (ru_RU)
 
-This is the Russian localized documentation for the AI Knowledge Library.
+Это локализованная на русский язык документация для AI Knowledge Library.
 
-## Using the Installer in this Language
-To run the installer in Russian, set the `LANG` environment variable or select it during setup:
+## Использование установщика на этом языке
+Чтобы запустить установщик на русском языке, задайте переменную среды `LANG` или выберите ее во время установки:
 
 ```bash
 export LANG=ru_RU.UTF-8
 ./ai_installer install
 ```
 
-## Translating Content
-The AI Agent is configured to translate English skill definitions and prompts into Russian when this module is active.
+## Перевод контента
+AI-агент настроен на перевод английских определений навыков и подсказок на русский язык, когда этот модуль активен.

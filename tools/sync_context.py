@@ -14,7 +14,13 @@ def main():
         print(f"Connecting to ChromaDB Server at {args.host}:{args.port}")
         client = chromadb.HttpClient(host=args.host, port=args.port)
     else:
-        db_path = os.path.join(os.getcwd(), ".chroma")
+        import sys
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        repo_root = os.path.dirname(script_dir)
+        sys.path.append(repo_root)
+        
+        from config.loader import get_chroma_db_path
+        db_path = get_chroma_db_path()
         print(f"Connecting to local ChromaDB at {db_path}")
         client = chromadb.PersistentClient(path=db_path)
 

@@ -1,6 +1,6 @@
 # AI Knowledge Library - Australian English (en_AU)
 
-This is the Australian English localized documentation for the AI Knowledge Library.
+This is the Australian English localised documentation for the AI Knowledge Library.
 
 ## Using the Installer in this Language
 To run the installer in Australian English, set the `LANG` environment variable or select it during setup:

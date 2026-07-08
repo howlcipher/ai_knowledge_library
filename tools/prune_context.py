@@ -4,9 +4,16 @@ import chromadb
 from chromadb.config import Settings
 
 def main():
-    db_path = os.path.join(os.getcwd(), ".chroma")
+    import sys
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    repo_root = os.path.dirname(script_dir)
+    sys.path.append(repo_root)
+    
+    from config.loader import get_chroma_db_path
+    db_path = get_chroma_db_path()
+    
     if not os.path.exists(db_path):
-        print("No ChromaDB found at .chroma, skipping prune.")
+        print(f"No ChromaDB found at {db_path}, skipping prune.")
         return
         
     client = chromadb.PersistentClient(path=db_path, settings=Settings(allow_reset=True))

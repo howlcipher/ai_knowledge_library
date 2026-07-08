@@ -1,6 +1,6 @@
 # AI Knowledge Library - UK English (en_UK)
 
-This is the UK English localized documentation for the AI Knowledge Library.
+This is the UK English localised documentation for the AI Knowledge Library.
 
 ## Using the Installer in this Language
 To run the installer in UK English, set the `LANG` environment variable or select it during setup:

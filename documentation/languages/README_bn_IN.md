@@ -1,14 +1,14 @@
-# AI Knowledge Library - Bengali (bn_IN)
+# AI Knowledge Library - বাংলা (bn_IN)
 
-This is the Bengali localized documentation for the AI Knowledge Library.
+এটি AI Knowledge Library এর জন্য বাংলা স্থানীয়করণকৃত ডকুমেন্টেশন।
 
-## Using the Installer in this Language
-To run the installer in Bengali, set the `LANG` environment variable or select it during setup:
+## এই ভাষায় ইনস্টলার ব্যবহার করা
+ইনস্টলারটি বাংলায় চালানোর জন্য, `LANG` পরিবেশ চলক সেট করুন অথবা সেটআপের সময় এটি নির্বাচন করুন:
 
 ```bash
 export LANG=bn_IN.UTF-8
 ./ai_installer install
 ```
 
-## Translating Content
-The AI Agent is configured to translate English skill definitions and prompts into Bengali when this module is active.
+## কন্টেন্ট অনুবাদ
+এই মডিউলটি সক্রিয় থাকলে ইংরেজি দক্ষতার সংজ্ঞা এবং প্রম্পটগুলোকে বাংলায় অনুবাদ করার জন্য এআই এজেন্ট কনফিগার করা আছে।

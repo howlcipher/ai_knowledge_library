@@ -28,9 +28,13 @@ def chunk_text(text, max_len=1000):
     return chunks
 
 def main():
+    from config.loader import get_chroma_db_path
+    
     script_dir = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.dirname(script_dir)
-    db_path = os.path.join(repo_root, ".chromadb")
+    sys.path.append(repo_root)  # Ensure root is in path for imports
+    
+    db_path = get_chroma_db_path()
     
     print(f"Initializing ChromaDB at {db_path}...")
     client = chromadb.PersistentClient(path=db_path)

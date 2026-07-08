@@ -1,14 +1,14 @@
-# AI Knowledge Library - Hindi (hi_IN)
+# AI Knowledge Library - हिन्दी (hi_IN)
 
-This is the Hindi localized documentation for the AI Knowledge Library.
+यह AI Knowledge Library के लिए हिन्दी में स्थानीयकृत दस्तावेज़ है।
 
-## Using the Installer in this Language
-To run the installer in Hindi, set the `LANG` environment variable or select it during setup:
+## इस भाषा में इंस्टॉलर का उपयोग करना
+इंस्टॉलर को हिन्दी में चलाने के लिए, `LANG` पर्यावरण चर सेट करें या सेटअप के दौरान इसका चयन करें:
 
 ```bash
 export LANG=hi_IN.UTF-8
 ./ai_installer install
 ```
 
-## Translating Content
-The AI Agent is configured to translate English skill definitions and prompts into Hindi when this module is active.
+## सामग्री का अनुवाद
+जब यह मॉड्यूल सक्रिय होता है, तो AI एजेंट को अंग्रेजी कौशल परिभाषाओं और संकेतों को हिन्दी में अनुवाद करने के लिए कॉन्फ़िगर किया जाता है।

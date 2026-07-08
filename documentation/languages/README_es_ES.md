@@ -1,14 +1,14 @@
-# AI Knowledge Library - Spanish (es_ES)
+# AI Knowledge Library - Español (es_ES)
 
-This is the Spanish localized documentation for the AI Knowledge Library.
+Esta es la documentación localizada en español para la AI Knowledge Library.
 
-## Using the Installer in this Language
-To run the installer in Spanish, set the `LANG` environment variable or select it during setup:
+## Usar el instalador en este idioma
+Para ejecutar el instalador en español, establezca la variable de entorno `LANG` o selecciónela durante la configuración:
 
 ```bash
 export LANG=es_ES.UTF-8
 ./ai_installer install
 ```
 
-## Translating Content
-The AI Agent is configured to translate English skill definitions and prompts into Spanish when this module is active.
+## Traducir contenido
+El Agente de IA está configurado para traducir las definiciones de habilidades y las indicaciones del inglés al español cuando este módulo está activo.

@@ -1,14 +1,14 @@
-# AI Knowledge Library - Finnish (fi_FI)
+# AI Knowledge Library - Suomi (fi_FI)
 
-This is the Finnish localized documentation for the AI Knowledge Library.
+Tämä on suomenkielinen dokumentaatio AI Knowledge Librarylle.
 
-## Using the Installer in this Language
-To run the installer in Finnish, set the `LANG` environment variable or select it during setup:
+## Asennusohjelman käyttö tällä kielellä
+Voit suorittaa asennusohjelman suomeksi asettamalla `LANG` -ympäristömuuttujan tai valitsemalla sen asennuksen aikana:
 
 ```bash
 export LANG=fi_FI.UTF-8
 ./ai_installer install
 ```
 
-## Translating Content
-The AI Agent is configured to translate English skill definitions and prompts into Finnish when this module is active.
+## Sisällön kääntäminen
+AI Agent on määritetty kääntämään englanninkieliset taitomääritykset ja kehotteet suomeksi, kun tämä moduuli on aktiivinen.
