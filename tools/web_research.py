@@ -67,10 +67,7 @@ class ContentVerifier:
 
     def _llm_check(self, text: str, source_url: str) -> Tuple[bool, int, str]:
         """LLM-based content verification."""
-        import google.generativeai as genai
-
-        genai.configure(api_key=self.api_key)
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        import litellm
 
         prompt = f"""
         You are an AI data verifier for a knowledge graph.
@@ -85,8 +82,21 @@ class ContentVerifier:
         {text[:3000]}
         """
 
-        response = model.generate_content(prompt)
-        content = response.text.strip()
+        try:
+            fallbacks = [
+                "anthropic/claude-3-5-sonnet-20240620",
+                "openai/gpt-4o-mini",
+            ]
+            response = litellm.completion(
+                model="gemini/gemini-1.5-flash",
+                messages=[{"role": "user", "content": prompt}],
+                fallbacks=fallbacks,
+                api_key=self.api_key
+            )
+            content = response.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"LiteLLM failover exhausted. Error: {e}")
+            return False, 0, str(e)
 
         # Parse JSON from response
         if "```json" in content:
@@ -94,12 +104,15 @@ class ContentVerifier:
         elif "```" in content:
             content = content.split("```")[1].strip()
 
-        result = json.loads(content)
-        return (
-            result.get("verified", False),
-            result.get("confidence", 0),
-            result.get("reason", "No reason provided"),
-        )
+        try:
+            result = json.loads(content)
+            return (
+                result.get("verified", False),
+                result.get("confidence", 0),
+                result.get("reason", "No reason provided"),
+            )
+        except Exception as e:
+            return False, 0, f"JSON parse error: {e}"
 
 
 class WebScraper:

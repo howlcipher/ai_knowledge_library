@@ -148,15 +148,27 @@ class AILibraryTUI(App):
         )
         self.chat_container.scroll_end()
 
-        # Placeholder for actual RAG query
-        # Since we use litellm, we can seamlessly switch APIs!
+        # Execute LiteLLM with Intelligent Failover and Rate Limit Handling
         try:
-            # We wrap it in a mock response if API keys aren't set
-            response_text = f"[{self.current_model.split('/')[0].upper()}]: This is a placeholder RAG response for '{user_text}'. Configure your API keys to enable real inference."
+            fallbacks = [
+                "gemini/gemini-1.5-pro",
+                "anthropic/claude-3-5-sonnet-20240620",
+                "openai/gpt-4o",
+                "xai/grok-2"
+            ]
+            if self.current_model in fallbacks:
+                fallbacks.remove(self.current_model)
+
+            response = await litellm.acompletion(
+                model=self.current_model,
+                messages=[{"role": "user", "content": user_text}],
+                fallbacks=fallbacks,
+            )
+            response_text = f"[{self.current_model.split('/')[0].upper()}]: {response.choices[0].message.content}"
             self.chat_container.mount(Label(response_text, classes="chat-message"))
         except Exception as e:
             self.chat_container.mount(
-                Label(f"Error connecting to LLM: {str(e)}", classes="chat-message")
+                Label(f"[{self.current_model.split('/')[0].upper()}] Placeholder RAG response for '{user_text}'. (Configure API keys to enable real inference. Failover Error: {str(e)})", classes="chat-message")
             )
 
         self.chat_container.scroll_end()
