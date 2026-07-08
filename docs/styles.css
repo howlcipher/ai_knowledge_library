@@ -404,3 +404,19 @@ h1, h2, h3, .logo {
     .cta-buttons { flex-direction: column; }
     .hud-top-left, .hud-top-right, .hud-bottom-left, .hud-bottom-right { display: none; }
 }
+
+/* Colorblind Mode Support */
+[data-colorblind="true"] {
+    /* High contrast, colorblind safe palette (Blue/Orange replacing Red/Green) */
+    --accent-1: #0055ff;
+    --accent-3: #ffaa00;
+}
+
+[data-colorblind="true"] a {
+    text-decoration: underline;
+}
+
+[data-colorblind="true"] .colorblind-toggle.active {
+    background: var(--text-primary);
+    color: var(--bg-color);
+}
