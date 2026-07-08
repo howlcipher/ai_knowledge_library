@@ -34,7 +34,8 @@ dependencies = [
     "celery",
     "redis",
     "langgraph",
-    "langchain-core"
+    "langchain-core",
+    "langsmith"
 ]
 
 [project.optional-dependencies]

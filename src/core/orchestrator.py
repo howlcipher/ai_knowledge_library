@@ -14,6 +14,8 @@ from typing import Any, List, Optional, TypedDict
 import litellm
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
+from langchain_core.runnables.config import RunnableConfig
+from langsmith import Client
 
 from src.infrastructure.config_loader import load_config
 from src.infrastructure.telemetry_logger import log_telemetry
@@ -156,7 +158,7 @@ class Orchestrator:
             print()
             return {"draft_content": draft_content, "tool_calls": tool_calls}
 
-        def qa_node(state: AgentState):
+        def qa_node(state: AgentState, config: RunnableConfig):
             draft_content = state["draft_content"]
             tool_calls = state["tool_calls"]
 
@@ -172,11 +174,27 @@ class Orchestrator:
             qa_feedback = qa_message.content or ""
             print(f"\n[QA Feedback]:\n{qa_feedback}\n")
 
+            run_id = config.get("configurable", {}).get("run_id") or config.get(
+                "run_id"
+            )
+            ls_client = None
+            try:
+                ls_client = Client()
+            except Exception:
+                pass  # Ignore if LangSmith is not configured
+
             if "APPROVED" in qa_feedback.strip().upper():
                 print("[Orchestrator] QA approved the draft.")
+                if ls_client and run_id:
+                    ls_client.create_feedback(run_id, key="qa_approval", score=1.0)
                 return {"qa_approved": True}
 
             print("[Orchestrator] QA rejected the draft. Sending back for revision...")
+            if ls_client and run_id:
+                ls_client.create_feedback(
+                    run_id, key="qa_approval", score=0.0, comment=qa_feedback
+                )
+
             new_context = f"Previous Draft:\n{draft_content}\n\nQA Feedback:\n{qa_feedback}\n\nPlease revise your draft to address the QA Feedback."
             return {
                 "qa_approved": False,
@@ -236,7 +254,7 @@ class Orchestrator:
                 return False
 
     def run_loop(self, user_query: str):
-        print(f"\n=== Starting Multi-Agent Orchestration ===")
+        print("\n=== Starting Multi-Agent Orchestration ===")
         print(f"Query: {user_query}\n")
 
         config = {"configurable": {"thread_id": "default"}}

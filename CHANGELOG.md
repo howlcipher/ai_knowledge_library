@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - **Graphical Frontend**: Built an interactive Textual TUI and integrated Streamlit Web UI launchers natively into the Go installer.
 - **Multi-LLM Integration Switch**: Implemented routing to dynamically swap between Claude, Gemini, GPT-4o, Grok, and Perplexity.
 - **Automated Docker Registry Publishing**: Created a new GitHub Action workflow for GHCR.
+- **LangSmith Tracing and Evaluation**: Native integration of LangSmith Client within `orchestrator.py` QA node to automatically track LangGraph agent trajectories and quantify QA rejection/approval rates over time.
 
 ### Changed
 - **Project Structure**: Refactored the overloaded `tools/` directory into `src/core/`, `src/ui/`, `src/infrastructure/`, and `scripts/`.
