@@ -435,7 +435,7 @@ chunks the text, and inserts it into a vector database (ChromaDB or PGVector).</
                 <section id="script_dir">
                     <div class="attr variable">
             <span class="name">script_dir</span>        =
-<span class="default_value">&#39;/home/runner/work/ai_knowledge_library/ai_knowledge_library/tools&#39;</span>
+<span class="default_value">&#39;/run/media/system/tallgeese/dev/ai_knowledge_library/tools&#39;</span>
 
         
     </div>
@@ -447,7 +447,7 @@ chunks the text, and inserts it into a vector database (ChromaDB or PGVector).</
                 <section id="repo_root">
                     <div class="attr variable">
             <span class="name">repo_root</span>        =
-<span class="default_value">$GITHUB_WORKSPACE</span>
+<span class="default_value">$PWD</span>
 
         
     </div>
@@ -588,7 +588,7 @@ chunks the text, and inserts it into a vector database (ChromaDB or PGVector).</
                                         <input id="ContentVerifier.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
             
-        <span class="name">ContentVerifier</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span>)</span>
+        <span class="name">ContentVerifier</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span>)</span>
 
                 <label class="view-source-button" for="ContentVerifier.__init__-view-source"><span>View Source</span></label>
 
@@ -770,7 +770,7 @@ chunks the text, and inserts it into a vector database (ChromaDB or PGVector).</
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">fetch_text</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">url</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">) -> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>:</span></span>
+        <span class="name">fetch_text</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">url</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">) -> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>:</span></span>
 
                 <label class="view-source-button" for="WebScraper.fetch_text-view-source"><span>View Source</span></label>
 
