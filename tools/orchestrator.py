@@ -27,8 +27,18 @@ class Agent:
         self.model = model
         
     def generate_response(self, user_prompt: str, context: str = "") -> str:
+        # Anthropic explicit caching injection on system message
         messages = [
-            {"role": "system", "content": self.system_prompt}
+            {
+                "role": "system", 
+                "content": [
+                    {
+                        "type": "text", 
+                        "text": self.system_prompt,
+                        "cache_control": {"type": "ephemeral"}
+                    }
+                ]
+            }
         ]
         
         full_prompt = user_prompt
@@ -47,13 +57,25 @@ class Agent:
             # Log telemetry
             usage = response.usage
             cost = litellm.completion_cost(completion_response=response) or 0.0
+            
+            cached_tokens = 0
+            if usage:
+                cached_tokens = getattr(usage, 'cache_read_input_tokens', 0)
+                if not cached_tokens and hasattr(usage, 'prompt_tokens_details'):
+                    prompt_details = getattr(usage, 'prompt_tokens_details', {})
+                    if isinstance(prompt_details, dict):
+                        cached_tokens = prompt_details.get('cached_tokens', 0)
+                    elif hasattr(prompt_details, 'cached_tokens'):
+                        cached_tokens = prompt_details.cached_tokens
+                        
             log_telemetry(
                 model=self.model,
                 prompt_tokens=usage.prompt_tokens,
                 completion_tokens=usage.completion_tokens,
                 total_tokens=usage.total_tokens,
                 cost=cost,
-                latency=0.0 # Latency not tracked here yet, can be added later
+                latency=0.0,
+                cached_tokens=cached_tokens
             )
             
             return response.choices[0].message.content

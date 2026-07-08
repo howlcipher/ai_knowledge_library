@@ -90,11 +90,12 @@ class KnowledgeUI:
             import pandas as pd
             
             # High level metrics
-            col1, col2, col3, col4 = st.columns(4)
+            col1, col2, col3, col4, col5 = st.columns(5)
             col1.metric("Total API Calls", len(df))
             col2.metric("Total Tokens", df["total_tokens"].sum())
-            col3.metric("Total Cost (USD)", f"${df['cost'].sum():.6f}")
-            col4.metric("Avg Latency", f"{df['latency_seconds'].mean():.2f}s")
+            col3.metric("Cached Tokens", df["cached_tokens"].sum())
+            col4.metric("Total Cost", f"${df['cost'].sum():.6f}")
+            col5.metric("Avg Latency", f"{df['latency_seconds'].mean():.2f}s")
             
             # Charts
             st.subheader("Cost Over Time")

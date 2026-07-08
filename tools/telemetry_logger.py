@@ -36,13 +36,21 @@ def init_db():
             completion_tokens INTEGER,
             total_tokens INTEGER,
             cost REAL,
-            latency_seconds REAL
+            latency_seconds REAL,
+            cached_tokens INTEGER DEFAULT 0
         )
     ''')
+    
+    # Attempt to migrate existing database to add cached_tokens column
+    try:
+        cursor.execute("ALTER TABLE api_telemetry ADD COLUMN cached_tokens INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass # Column likely already exists
+        
     conn.commit()
     conn.close()
 
-def log_telemetry(model: str, prompt_tokens: int, completion_tokens: int, total_tokens: int, cost: float, latency: float):
+def log_telemetry(model: str, prompt_tokens: int, completion_tokens: int, total_tokens: int, cost: float, latency: float, cached_tokens: int = 0):
     """
     Logs an API call to the telemetry database.
     """
@@ -53,9 +61,9 @@ def log_telemetry(model: str, prompt_tokens: int, completion_tokens: int, total_
     
     timestamp = datetime.now().isoformat()
     cursor.execute('''
-        INSERT INTO api_telemetry (timestamp, model, prompt_tokens, completion_tokens, total_tokens, cost, latency_seconds)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (timestamp, model, prompt_tokens, completion_tokens, total_tokens, cost, latency))
+        INSERT INTO api_telemetry (timestamp, model, prompt_tokens, completion_tokens, total_tokens, cost, latency_seconds, cached_tokens)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (timestamp, model, prompt_tokens, completion_tokens, total_tokens, cost, latency, cached_tokens))
     
     conn.commit()
     conn.close()
@@ -70,9 +78,9 @@ def get_telemetry_data():
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
-    cursor.execute('SELECT timestamp, model, prompt_tokens, completion_tokens, total_tokens, cost, latency_seconds FROM api_telemetry')
+    cursor.execute('SELECT timestamp, model, prompt_tokens, completion_tokens, total_tokens, cost, latency_seconds, cached_tokens FROM api_telemetry')
     rows = cursor.fetchall()
-    columns = ["timestamp", "model", "prompt_tokens", "completion_tokens", "total_tokens", "cost", "latency_seconds"]
+    columns = ["timestamp", "model", "prompt_tokens", "completion_tokens", "total_tokens", "cost", "latency_seconds", "cached_tokens"]
     
     conn.close()
     

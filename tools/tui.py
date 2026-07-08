@@ -161,9 +161,22 @@ class AILibraryTUI(App):
 
             import time
             start_time = time.time()
+            messages = [
+                {
+                    "role": "system",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "You are the Antigravity AI Knowledge Library assistant. Answer the user's questions.",
+                            "cache_control": {"type": "ephemeral"}
+                        }
+                    ]
+                },
+                {"role": "user", "content": user_text}
+            ]
             response = await litellm.acompletion(
                 model=self.current_model,
-                messages=[{"role": "user", "content": user_text}],
+                messages=messages,
                 fallbacks=fallbacks,
             )
             latency = time.time() - start_time
@@ -173,13 +186,26 @@ class AILibraryTUI(App):
                 from tools.telemetry_logger import log_telemetry
                 cost = litellm.completion_cost(completion_response=response)
                 usage = response.usage
+                
+                # Extract cached tokens safely from different provider formats
+                cached_tokens = 0
+                if usage:
+                    cached_tokens = getattr(usage, 'cache_read_input_tokens', 0)
+                    if not cached_tokens and hasattr(usage, 'prompt_tokens_details'):
+                        prompt_details = getattr(usage, 'prompt_tokens_details', {})
+                        if isinstance(prompt_details, dict):
+                            cached_tokens = prompt_details.get('cached_tokens', 0)
+                        elif hasattr(prompt_details, 'cached_tokens'):
+                            cached_tokens = prompt_details.cached_tokens
+                            
                 log_telemetry(
                     model=response.model,
                     prompt_tokens=usage.prompt_tokens if usage else 0,
                     completion_tokens=usage.completion_tokens if usage else 0,
                     total_tokens=usage.total_tokens if usage else 0,
                     cost=float(cost) if cost else 0.0,
-                    latency=latency
+                    latency=latency,
+                    cached_tokens=cached_tokens
                 )
             except Exception as e:
                 pass # Fail silently if telemetry fails

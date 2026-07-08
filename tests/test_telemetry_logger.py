@@ -34,7 +34,7 @@ def test_log_telemetry(mock_db_path):
     
     conn = sqlite3.connect(mock_db_path)
     cursor = conn.cursor()
-    cursor.execute("SELECT model, prompt_tokens, completion_tokens, total_tokens, cost, latency_seconds FROM api_telemetry")
+    cursor.execute("SELECT model, prompt_tokens, completion_tokens, total_tokens, cost, latency_seconds, cached_tokens FROM api_telemetry")
     row = cursor.fetchone()
     
     assert row is not None
@@ -44,6 +44,7 @@ def test_log_telemetry(mock_db_path):
     assert row[3] == 30
     assert row[4] == 0.05
     assert row[5] == 1.2
+    assert row[6] == 0
     conn.close()
 
 def test_get_telemetry_data_with_pandas(mock_db_path):

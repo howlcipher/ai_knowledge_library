@@ -18,7 +18,6 @@ This document tracks all conceptual improvements, architectural upgrades, and au
 
 ## 5. DevOps & Infrastructure (`devops`)
 * **Automated Docker Registry Publishing**: Create a new GitHub Action workflow to automatically build and push the library's Docker container to the GitHub Container Registry (GHCR) on release.
-* **Prefix Caching & Memory Optimization (Inspired by LightLLM / vLLM)**: Implement KV cache prefixing so that the massive static RAG documents and system prompts are cached in memory across turns, drastically reducing latency and token costs.
 
 ## 6. Identified Skill Gaps (Missing Agent Capabilities)
 * **Gap 1: Advanced RAG Engineering (Inspired by LlamaIndex)**: Create a skill to implement Hybrid Search (combining BM25 keyword search with dense vector search), Knowledge Graph extraction, and agentic OCR for ingesting PDFs/images.
@@ -26,6 +25,7 @@ This document tracks all conceptual improvements, architectural upgrades, and au
 * **Gap 3: Prompt Engineering / AI Ops**: A dedicated skill for optimizing system prompts, managing token context windows, and refining few-shot examples for the LLM.
 
 ## ✅ Recently Completed
+* **Provider-Side Prompt Caching:** Refactored TUI and Orchestrator prompts to front-load static system contexts and injected explicit KV cache-control markers via LiteLLM for Anthropic/Gemini, significantly reducing token processing costs and latency.
 * **Multi-Agent Orchestration:** Created `tools/orchestrator.py` implementing a collaborative loop between Researcher and QA Reviewer personas with a strict Human Proxy interceptor for executable commands.
 * **Intelligent Failover & Rate Limit Handling:** Enhanced LiteLLM implementation across the library to automatically cascade and failover to backup LLMs (Claude, GPT-4o) when Gemini hits rate limits.
 * **SAST Integration & Security Hardening:** Integrated Bandit and GoSec into the CI/CD pipeline and patched 8 existing vulnerabilities (B108, B701, G204).

@@ -4,17 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [2.1.0] - 2026-07-08
 
-### 🚀 Analytics & Resiliency Overhaul
-- **Token & Cost Analytics Dashboard**: Implemented `tools/telemetry_logger.py` utilizing SQLite to meticulously track timestamp, model used, tokens consumed, latency, and cost calculation.
-- **Streamlit Telemetry UI**: Upgraded `tools/web_ui.py` with `pandas` to expose a data-rich interactive dashboard rendering real-time metrics, line charts, and bar charts for API consumption.
-- **Intelligent LLM Failover**: Migrated legacy LLM routing to `litellm` in `tui.py` and `web_research.py`, empowering robust, automated cascading fallbacks during API rate limit exhaustion.
+### 🚀 Major Features & Architectural Overhaul
+- **Provider-Side KV Prompt Caching**: Refactored the internal LiteLLM messaging pipelines across the TUI and Orchestrator to automatically inject explicit cache-control markers (Anthropic `ephemeral`) and structure contexts to natively trigger API-level Prefix caching. This massively reduces latency and halves API costs on repeat prompts.
+- **Multi-Agent Orchestration Engine**: Shipped `tools/orchestrator.py` which spawns self-correcting Researcher and QA Reviewer personas that iteratively solve problems until perfected.
+- **Human-in-the-Loop Execution Guard**: Built a secure terminal proxy interceptor into the new Orchestrator that strictly pauses and requests `[Y/n]` manual authorization before allowing any LLM to execute shell commands.
+- **Cost & Token Analytics Dashboard**: Integrated a native SQLite telemetry database (`tools/telemetry_logger.py`) and a `pandas`-powered visual dashboard into the Web UI (`tools/web_ui.py`) to actively monitor cost, latency, and cache hits.
+- **Intelligent Failover & Rate Limit Recovery**: Expanded LiteLLM router implementations across all tooling to automatically cascade from `gemini-1.5-pro` to fallback providers (`claude-3-5-sonnet`, `gpt-4o`, `grok-2`) whenever API rate limits are exceeded.
 
-### 🛡️ Security Hardening (SAST)
-- **Vulnerability Remediation**: Addressed 8 highly critical vulnerabilities flagged by `bandit` and `gosec` covering path traversal, permissive file modes, command injection, and Jinja2 XSS execution.
-
-### 📊 Regression Suite Fortification
-- **CI/CD Stabilization**: Fixed `PYTHONPATH` module resolution errors within GitHub Actions workflows preventing test suites from loading internal packages.
-- **Coverage Baseline Floor**: Established a rigid 42% global test coverage floor via `--cov-fail-under=42` inside `Makefile` to instantly block any pull requests that degrade unit testing standards.
+### 🛡️ Security & Hardening
+- **SAST Pipeline Integration**: Hardened the Go cross-compilation pipeline with `gosec` and the Python CI environments with `bandit`. Patched 8 existing vulnerabilities (B108, B701, G204).
+- **Test Coverage Floor Guard**: Established a rigid 42% global test coverage floor via `--cov-fail-under=42` inside `Makefile` to instantly block any pull requests that degrade unit testing standards.
 
 ## [2.0.0] - 2026-07-07
 
