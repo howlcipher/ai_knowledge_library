@@ -15,7 +15,7 @@ test:
 
 coverage-python:
 	@echo "Generating Python coverage..."
-	PYTHONPATH=. pytest tests/ -v --cov=src --cov=scripts --cov=scripts --cov-report=term-missing --cov-fail-under=42
+	PYTHONPATH=. pytest tests/ -v --cov=src --cov=scripts --cov-report=term-missing --cov-fail-under=42
 
 coverage-go:
 	@echo "Generating Go coverage..."

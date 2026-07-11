@@ -37,7 +37,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.26.x'
           
       - name: Run golangci-lint
         run: go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --timeout=5m
