@@ -27,6 +27,8 @@
 
 ## 🧠 Purpose and Value
 
+### 📚 Quick Start: [Read the Official User Wiki & Guide](documentation/USER_GUIDE.md)
+
 **What it is:** A centralized, filesystem-based knowledge library and execution environment specifically engineered for AI agents operating within the terminal.
 
 **Why use it:** AI agents frequently hallucinate or generate generic boilerplate when operating blindly. By linking this structured library to your local environment, you mathematically force the AI to:
@@ -34,11 +36,16 @@
 * Execute tasks using strictly defined domain skills.
 * Automatically generate scaffolding, monitor infrastructure, and perform self-reviews before committing code.
 
-**Model Context Protocol (MCP) Powerhouse:**
-This library acts as an aggressive orchestration engine capable of wielding over 20+ Model Context Protocol integrations. Out of the box, the AI is armed with **Docker, Kubernetes, Gitlab, AWS, Shodan, Puppeteer, Yahoo Finance, Sentry, Jira**, and more. 
+### 🔌 The Model Context Protocol (MCP) Advantage
+**Why is MCP important?** Historically, AI models have been trapped in a sandbox, limited only to their outdated training data and what you type in the chat box. Writing custom integrations for every external service (like Jira, AWS, or Wikipedia) required hundreds of lines of brittle code. 
 
-**Stealth AI Humanization:**
-The internal LangGraph Orchestrator features a `Technical_Writer` native agent that guarantees all generated reports and documentation are dynamically restructured to maximize "burstiness" and "perplexity"—ensuring your output bypasses external AI detectors completely.
+**The MCP Solution:** This library leverages the new open standard **Model Context Protocol** to act as a massive orchestration engine. By simply adding community-built MCP plugins to the `settings.yaml`, your AI instantly gains autonomous "hands" and "senses":
+* **Real-Time Knowledge:** The AI can query **Wikipedia**, **Brave Search**, and **Yahoo Finance** natively to bypass the "knowledge cutoff" problem.
+* **Full Autonomy:** The Orchestrator is armed with **Docker, Kubernetes, AWS, GitLab, Shodan, Puppeteer, Sentry, and Jira**. You can command it to find a bug in Jira, spin up a headless browser to reproduce it, fix the local code, and push the commit.
+* **Cognitive Persistence:** Powered by the **Memory** and **Sequential Thinking** MCPs, the agent permanently remembers your project preferences and can break down complex math or debugging loops step-by-step.
+
+### 🥷 Stealth AI Humanization
+The internal LangGraph Orchestrator features a native `Technical_Writer` agent. Once your code or documentation passes the QA Reviewer, the Stealth agent automatically rewrites it to maximize "burstiness" and "perplexity". This guarantees that all generated reports and documentation natively bypass external AI detectors for free.
 
 ***
 
