@@ -24,7 +24,8 @@ jobs:
           pip install .[dev]
 
       - name: Run Pytest with Coverage
-        run: make coverage-python
+        run: |
+          make coverage-python > pytest_output.txt 2>&1 || (git config --global user.email "bot@example.com" && git config --global user.name "bot" && git checkout -b debug-pytest && git add pytest_output.txt && git commit -m "Add pytest output" && git push origin debug-pytest -f && exit 1)
 
   test-go:
     runs-on: ubuntu-latest
