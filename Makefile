@@ -61,6 +61,7 @@ docs:
 	@echo "Setting up GitHub Pages frontpage..."
 	cp README.md docs/index.md
 	cp -r documentation docs/documentation
+	echo "include: [\"_*\"]" > docs/_config.yml
 
 # Sync and Data
 sync:
