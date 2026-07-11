@@ -29,7 +29,15 @@ jobs:
           pip install .[dev]
 
       - name: Run Pytest with Coverage
-        run: make coverage-python
+        run: make coverage-python > pytest_output.txt 2>&1 || exit 1
+
+      - name: Create Issue on Failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tail -n 100 pytest_output.txt > tail_output.txt
+          gh issue create --title "CI Failure: test-python" --body-file tail_output.txt || true
 
   test-go:
     runs-on: ubuntu-latest
