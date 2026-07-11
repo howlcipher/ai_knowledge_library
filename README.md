@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/retro_cli_banner.jpg" alt="Retro CLI Banner" width="800" style="border-radius: 10px;" />
+  <img src="assets/cyberpunk_hybrid_banner.jpg" alt="Retro CLI Banner" width="800" style="border-radius: 10px;" />
   <br><br>
   <img src="https://img.shields.io/static/v1?label=AI&message=Knowledge_Library&color=blueviolet&style=for_the_badge" alt="AI Library Badge" />
   <img src="https://img.shields.io/static/v1?label=Library_Size&message=265&color=success&style=for_the_badge" alt="Library Size Badge" />
