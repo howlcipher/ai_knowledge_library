@@ -65,7 +65,14 @@ docs:
 	cp GEMINI.md docs/GEMINI.md
 	cp change_log.md docs/change_log.md
 	cp -r .agents docs/.agents
+	cp -r docs_theme/* docs/
 	echo "include: [\"_*\", \".*\"]" > docs/_config.yml
+	echo "defaults:" >> docs/_config.yml
+	echo "  -" >> docs/_config.yml
+	echo "    scope:" >> docs/_config.yml
+	echo "      path: \"\"" >> docs/_config.yml
+	echo "    values:" >> docs/_config.yml
+	echo "      layout: \"default\"" >> docs/_config.yml
 
 # Sync and Data
 sync:

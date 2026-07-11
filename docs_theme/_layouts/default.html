@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="{{ site.lang | default: "en-US" }}">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page.title | default: site.title | default: "AI Knowledge Library" }}</title>
+    <link rel="stylesheet" href="{{ '/assets/css/cyberpunk.css' | relative_url }}">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="crt-overlay"></div>
+    <header class="page-header">
+      <div class="header-content">
+        <h1 class="project-name">AI_KNOWLEDGE_LIBRARY // OS_INIT</h1>
+        <div class="hamburger-menu" id="hamburger-menu">
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+        </div>
+        <nav class="nav-links" id="nav-links">
+          <a href="{{ '/' | relative_url }}">Home</a>
+          <a href="{{ '/documentation/USER_GUIDE.html' | relative_url }}">User Guide</a>
+          <a href="{{ '/api/' | relative_url }}">API Docs</a>
+          <a href="{{ '/change_log.html' | relative_url }}">Change Log</a>
+          <a href="{{ '/GEMINI.html' | relative_url }}">Grounding Rules</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="content" class="main-content">
+      {{ content }}
+    </main>
+
+    <footer class="site-footer">
+      <p>Powered by Antigravity // Cybernetic Underground // Neo-Kyoto</p>
+    </footer>
+
+    <script>
+      document.getElementById('hamburger-menu').addEventListener('click', function() {
+        document.getElementById('nav-links').classList.toggle('active');
+        this.classList.toggle('open');
+      });
+    </script>
+  </body>
+</html>
