@@ -48,7 +48,7 @@
 
 ### 🛡️ Security, Privacy & Trust
 When giving an AI access to your local filesystem and commands, security is paramount. This library is designed from the ground up to protect your local environment from prompt injection, AI poisoning, and hallucinated actions:
-* **Anti-Poisoning & Grounding Protocol:** The AI is mathematically grounded in local rule files (like [`GEMINI.md`](https://github.com/howlcipher/ai_knowledge_library/blob/main/GEMINI.md)) and forced to apply an epistemic humility decision tree. If live data conflicts with stale data, or if an action violates the [`anti_manipulation.md`](https://github.com/howlcipher/ai_knowledge_library/blob/main/.agents/rules/anti_manipulation.md) constraints, the Orchestrator will automatically halt.
+* **Anti-Poisoning & Grounding Protocol:** The AI is mathematically grounded in local rule files (like [`GEMINI.md`](GEMINI.md)) and forced to apply an epistemic humility decision tree. If live data conflicts with stale data, or if an action violates the [`anti_manipulation.md`](.agents/rules/anti_manipulation.md) constraints, the Orchestrator will automatically halt.
 * **Strict Human-in-the-Loop:** Absolutely no executable commands (like `bash` scripts or destructive API calls) are run without explicit human consent. You will see exactly what the AI wants to run and can approve or reject it natively.
 * **100% Local Privacy:** The Orchestrator and vector databases (ChromaDB / PGVector) run entirely locally. Your local filesystem, secrets, and project architecture are never ingested into a third-party training set.
 
