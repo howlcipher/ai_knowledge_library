@@ -26,12 +26,13 @@ jobs:
       - name: Run Pytest with Coverage
         run: make coverage-python > pytest_output.txt 2>&1 || true
 
-      - name: Upload Pytest Output to Pastebin
+      - name: Upload Pytest Output
         run: |
-          URL=$(curl -F "file=@pytest_output.txt" https://0x0.st)
-          echo "Output uploaded to: $URL"
-          echo "$URL" > pastebin_url.txt
-          cat pytest_output.txt
+          git config --global user.email "bot@example.com"
+          git config --global user.name "bot"
+          git add pytest_output.txt
+          git commit -m "Add pytest output" || true
+          git push origin HEAD:debug-pytest -f
           if grep -q "failed" pytest_output.txt || grep -q "Error" pytest_output.txt || grep -q "FAIL" pytest_output.txt || grep -q "exit code" pytest_output.txt; then
             exit 1
           fi
