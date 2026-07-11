@@ -58,6 +58,9 @@ docs:
 	@echo "Generating API documentation via pdoc..."
 	mkdir -p docs/api
 	pdoc ./src ./scripts -o docs/api
+	@echo "Setting up GitHub Pages frontpage..."
+	cp README.md docs/index.md
+	cp -r documentation docs/documentation
 
 # Sync and Data
 sync:
