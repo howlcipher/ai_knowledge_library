@@ -41,12 +41,20 @@ class LibrarySearcher:
                 print("No results found.")
                 return
 
-            for i, result in enumerate(results, 1):
-                doc = result.get("document", "")
-                source = result.get("metadata", {}).get("source", "Unknown")
-                print(f"[{i}] File: {source}")
-                print(f"Snippet: {doc.strip()}")
-                print("-" * 50)
+            from src.core.context_sanitizer import format_safe_prompt
+            
+            cleaned_chunks = []
+            for result in results:
+                content, source, score = result
+                chunk = f"Source: {source}\n{content.strip()}"
+                cleaned_chunks.append(chunk)
+
+            safe_output = format_safe_prompt(
+                system_instruction="The following are results from your semantic search tool.",
+                user_query=self.search_term,
+                cleaned_chunks=cleaned_chunks
+            )
+            print(safe_output)
 
         except Exception as e:
             print(f"Error during semantic search: {e}", file=sys.stderr)

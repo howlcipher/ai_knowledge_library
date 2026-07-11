@@ -35,7 +35,8 @@ dependencies = [
     "redis",
     "langgraph",
     "langchain-core",
-    "langsmith"
+    "langsmith",
+    "mcp"
 ]
 
 [project.optional-dependencies]

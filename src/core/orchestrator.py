@@ -19,6 +19,7 @@ from langsmith import Client
 
 from src.infrastructure.config_loader import load_config
 from src.infrastructure.telemetry_logger import log_telemetry
+import atexit
 
 
 class AgentState(TypedDict):
@@ -122,9 +123,41 @@ class Orchestrator:
             }
         ]
 
+        # Try to load configured MCP servers
+        self.mcp_clients = {}
+        mcp_servers_config = self.cfg.get("mcp_servers", {})
+        if mcp_servers_config:
+            from src.core.mcp_client import SyncMCPClient
+            for name, config in mcp_servers_config.items():
+                print(f"[Orchestrator] Connecting to MCP Server: {name}...")
+                try:
+                    client = SyncMCPClient(
+                        name=name,
+                        command=config.get("command"),
+                        args=config.get("args", []),
+                        env=config.get("env")
+                    )
+                    client.connect()
+                    self.mcp_clients[name] = client
+                    
+                    # Fetch tools and append to litellm tools
+                    mcp_tools = client.get_tools()
+                    for t in mcp_tools:
+                        tools.append({
+                            "type": "function",
+                            "function": {
+                                "name": f"mcp_{name}_{t.name}",
+                                "description": f"(MCP Tool from {name}) {t.description}",
+                                "parameters": t.inputSchema
+                            }
+                        })
+                    print(f"[Orchestrator] Loaded {len(mcp_tools)} tools from {name}.")
+                except Exception as e:
+                    print(f"[Orchestrator] Failed to load MCP Server {name}: {e}")
+
         self.researcher = Agent(
             name="Researcher",
-            system_prompt="You are a meticulous researcher. Your goal is to formulate comprehensive plans and answers based on user requests. Use the execute_bash_command tool if you need to execute system commands.",
+            system_prompt="You are a meticulous researcher. Your goal is to formulate comprehensive plans and answers based on user requests. Use the execute_bash_command tool if you need to execute system commands. You also have access to various MCP tools if configured.",
             model=self.default_model,
             tools=tools,
         )
@@ -135,6 +168,12 @@ class Orchestrator:
             model=self.default_model,
         )
         self.graph = self._build_graph()
+        atexit.register(self.shutdown)
+
+    def shutdown(self):
+        for name, client in self.mcp_clients.items():
+            print(f"[Orchestrator] Shutting down MCP Server: {name}...")
+            client.close()
 
     def _build_graph(self):
         workflow = StateGraph(AgentState)
@@ -239,6 +278,12 @@ class Orchestrator:
                     print(f"  > {args.get('command')}")
                 except Exception:
                     print(f"  > [Failed to parse arguments: {call.function.arguments}]")
+            elif call.function.name.startswith("mcp_"):
+                try:
+                    args = json.loads(call.function.arguments)
+                    print(f"  > [MCP Plugin: {call.function.name}] args: {args}")
+                except Exception:
+                    print(f"  > [MCP Plugin: {call.function.name}] Failed to parse args")
 
         while True:
             auth = (
@@ -309,6 +354,30 @@ class Orchestrator:
                                 print(result.stderr, file=sys.stderr)
                         except Exception as e:
                             print(f"Error executing command: {e}", file=sys.stderr)
+                    elif call.function.name.startswith("mcp_"):
+                        try:
+                            # format: mcp_{server_name}_{tool_name}
+                            parts = call.function.name.split("_", 2)
+                            if len(parts) == 3:
+                                _, server_name, tool_name = parts
+                                if server_name in self.mcp_clients:
+                                    args = json.loads(call.function.arguments)
+                                    print(f"\n$ Calling MCP tool '{tool_name}' on '{server_name}'...")
+                                    result = self.mcp_clients[server_name].call_tool(tool_name, args)
+                                    
+                                    # Output the result content
+                                    if hasattr(result, 'content'):
+                                        for content_block in result.content:
+                                            if hasattr(content_block, 'text'):
+                                                print(content_block.text)
+                                            else:
+                                                print(content_block)
+                                    else:
+                                        print(result)
+                                else:
+                                    print(f"Error: Unknown MCP server {server_name}")
+                        except Exception as e:
+                            print(f"Error executing MCP tool: {e}", file=sys.stderr)
         else:
             print("\n[Orchestrator] Task aborted due to human rejection.")
 

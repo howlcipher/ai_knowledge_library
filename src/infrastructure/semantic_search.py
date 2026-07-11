@@ -120,13 +120,19 @@ class SemanticSearcher:
         # Step 4: Truncate to final top N
         final_results = reranked_results[:n_results]
 
+        from src.core.context_sanitizer import ContextSanitizer
+        sanitizer = ContextSanitizer()
+
+        sanitized_results = []
         for i, row in enumerate(final_results):
             content, source, score = row
-            text = content[:300] + "..."
+            clean_content = sanitizer.sanitize(content)
+            text = clean_content[:300] + "..."
             print(f"[{i+1}] Source: {source} (Re-rank Score: {score:.4f})")
             print(f"Snippet: {text}\n")
+            sanitized_results.append((clean_content, source, score))
 
-        return final_results
+        return sanitized_results
 
 
 def main():
