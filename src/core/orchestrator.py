@@ -167,6 +167,13 @@ class Orchestrator:
             system_prompt="You are a strict QA reviewer. Evaluate the provided plan or answer. If it is high quality and safe, output exactly 'APPROVED'. If it is flawed, insecure, or hallucinates, explain why and request a revision.",
             model=self.default_model,
         )
+
+        self.technical_writer = Agent(
+            name="Technical_Writer",
+            system_prompt="You are an expert technical writer and stealth AI copywriter. Your job is to rewrite documentation and reports so they pass as human-written by AI detectors. You must significantly increase 'burstiness' by heavily varying sentence length and structure, and increase 'perplexity' by avoiding standard predictable AI vocabulary (e.g. 'delve', 'moreover', 'testament'). Keep all technical facts exactly the same, just change the tone and structure to be highly human, occasionally conversational, but still professional. Return ONLY the rewritten text, nothing else.",
+            model=self.default_model,
+        )
+
         self.graph = self._build_graph()
         atexit.register(self.shutdown)
 
@@ -241,23 +248,35 @@ class Orchestrator:
                 "iteration": state.get("iteration", 1) + 1,
             }
 
+        def humanize_node(state: AgentState):
+            print("\n--- Humanizing Output (Stealth Mode) ---")
+            draft_content = state["draft_content"]
+            prompt = f"Please humanize the following technical report/documentation. Maintain all facts but drastically increase burstiness and perplexity to bypass AI detectors:\n\n{draft_content}"
+            message = self.technical_writer.generate_response(prompt)
+            if message and message.content:
+                print("\n[Technical_Writer] Successfully humanized the draft.")
+                return {"draft_content": message.content}
+            return {"draft_content": draft_content}
+
         def should_continue(state: AgentState):
             if state.get("qa_approved", False):
-                return END
+                return "humanize"
             if state.get("iteration", 1) > state.get("max_iterations", 3):
                 print(
                     "[Orchestrator] Maximum iterations reached. Proceeding with latest draft."
                 )
-                return END
+                return "humanize"
             return "researcher"
 
         workflow.add_node("researcher", researcher_node)
         workflow.add_node("qa", qa_node)
+        workflow.add_node("humanize", humanize_node)
 
         workflow.set_entry_point("researcher")
         workflow.add_edge("researcher", "qa")
+        workflow.add_edge("humanize", END)
         workflow.add_conditional_edges(
-            "qa", should_continue, {"researcher": "researcher", END: END}
+            "qa", should_continue, {"researcher": "researcher", "humanize": "humanize"}
         )
 
         memory = MemorySaver()
