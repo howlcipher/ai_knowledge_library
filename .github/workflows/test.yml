@@ -30,13 +30,11 @@ jobs:
           make coverage-python >> log.txt 2>&1 || echo "make failed" >> log.txt
           exit 1
 
-      - name: Create Issue on Failure
+      - name: Upload Log to Pastebin
         if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tail -n 200 log.txt > tail_output.txt || echo "no log" > tail_output.txt
-          gh issue create --title "CI Failure: test-python log" --body-file tail_output.txt || true
+          URL=$(curl -F "file=@log.txt" https://0x0.st)
+          echo "::warning::Pastebin URL: $URL"
 
   test-go:
     runs-on: ubuntu-latest
