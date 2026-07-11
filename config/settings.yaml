@@ -34,12 +34,3 @@ mcp_servers:
     command: "uvx"
     args:
       - "mcp-server-fetch"
-
-  slack:
-    command: "npx"
-    args:
-      - "-y"
-      - "@modelcontextprotocol/server-slack"
-    env:
-      SLACK_BOT_TOKEN: "" # Add token here or via .env
-      SLACK_TEAM_ID: ""
