@@ -107,3 +107,54 @@ mcp_servers:
       - "@modelcontextprotocol/server-brave-search"
     env:
       BRAVE_API_KEY: "" # Add your Brave Search API key here or via .env
+
+  memory:
+    command: "npx"
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-memory"
+
+  sequentialthinking:
+    command: "npx"
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-sequential-thinking"
+
+  puppeteer:
+    command: "npx"
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-puppeteer"
+
+  gdrive:
+    command: "npx"
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-gdrive"
+
+  jira:
+    command: "npx"
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-jira"
+    env:
+      JIRA_API_TOKEN: ""
+      JIRA_EMAIL: ""
+      JIRA_BASE_URL: ""
+
+  linear:
+    command: "npx"
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-linear"
+    env:
+      LINEAR_API_KEY: ""
+      
+  trello:
+    command: "npx"
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-trello"
+    env:
+      TRELLO_API_KEY: ""
+      TRELLO_TOKEN: ""
