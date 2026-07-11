@@ -18,7 +18,7 @@
       "steps": [
         {
           "name": "Checkout code",
-          "uses": "actions/checkout@v7"
+          "uses": "actions/checkout@v4"
         },
         {
           "name": "Check for punctuation rules",
