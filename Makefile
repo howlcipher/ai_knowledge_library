@@ -62,7 +62,10 @@ docs:
 	cp README.md docs/index.md
 	cp -r documentation docs/documentation
 	cp -r assets docs/assets
-	echo "include: [\"_*\"]" > docs/_config.yml
+	cp GEMINI.md docs/GEMINI.md
+	cp change_log.md docs/change_log.md
+	cp -r .agents docs/.agents
+	echo "include: [\"_*\", \".*\"]" > docs/_config.yml
 
 # Sync and Data
 sync:
