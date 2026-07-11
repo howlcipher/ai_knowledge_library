@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.0] - 2026-07-10
+
+### 🚀 Massive Ecosystem & MCP Integrations
+- **Extensive MCP Plugin Arsenal**: Integrated over 20+ Model Context Protocol (MCP) servers into `settings.yaml` (Discord, Crunchyroll, Postgres, Kubernetes, Docker, Yahoo Finance, Wikipedia, Brave Search, Memory Graph, Puppeteer, Google Drive, Jira, Sentry, AWS, Strava, Steam, Shodan, MLB, and more) granting the AI orchestrator near-infinite native domain capabilities.
+- **Stealth Text Humanization Agent**: Built a dedicated `Technical_Writer` node into the LangGraph orchestrator. It natively rewrites all QA-approved documentation to maximize burstiness and perplexity, guaranteeing generated reports bypass external AI detectors for free.
+
+### 📚 Knowledge & Hygiene
+- **Advanced Architecture Guidelines**: Completely rewrote `documentation/coding_standards.md` to mathematically enforce OOP/FP context choices, Dependency Injection, and Dynamic DRY paradigms across all AI generations.
+
 ## [2.1.0] - 2026-07-08
 
 ### 🚀 Major Features & Architectural Overhaul
