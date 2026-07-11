@@ -93,3 +93,17 @@ mcp_servers:
     command: "uvx"
     args:
       - "mcp-server-yfinance"
+
+  wikipedia:
+    command: "npx"
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-wikipedia"
+
+  bravesearch:
+    command: "npx"
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-brave-search"
+    env:
+      BRAVE_API_KEY: "" # Add your Brave Search API key here or via .env
