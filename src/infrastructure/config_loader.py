@@ -38,6 +38,7 @@ class AppSettings(BaseSettings):
     server: ServerSettings = ServerSettings()
     agents: AgentsSettings = AgentsSettings()
     backup: BackupSettings = BackupSettings()
+    mcp_servers: dict = {}
 
     model_config = SettingsConfigDict(
         env_file=".env", env_nested_delimiter="__", extra="ignore"

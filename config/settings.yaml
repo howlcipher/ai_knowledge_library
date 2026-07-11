@@ -12,3 +12,34 @@ server:
 agents:
   default_language: "en_US"
   max_context_tokens: 8192
+
+mcp_servers:
+  github:
+    command: "npx"
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-github"
+    env:
+      GITHUB_PERSONAL_ACCESS_TOKEN: ""  # Add token here or via .env
+
+  sqlite:
+    command: "npx"
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-sqlite"
+      - "--db-path"
+      - "test.db"
+
+  fetch:
+    command: "uvx"
+    args:
+      - "mcp-server-fetch"
+
+  slack:
+    command: "npx"
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-slack"
+    env:
+      SLACK_BOT_TOKEN: "" # Add token here or via .env
+      SLACK_TEAM_ID: ""
