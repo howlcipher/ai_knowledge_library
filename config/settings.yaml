@@ -88,3 +88,8 @@ mcp_servers:
     args:
       - "-y"
       - "@modelcontextprotocol/server-docker"
+
+  yfinance:
+    command: "uvx"
+    args:
+      - "mcp-server-yfinance"
