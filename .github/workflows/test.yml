@@ -18,24 +18,18 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install .[dev]
 
       - name: Run Pytest with Coverage
-        run: make coverage-python > pytest_output.txt 2>&1 || true
-
-      - name: Upload Pytest Output
-        run: |
-          git config --global user.email "bot@example.com"
-          git config --global user.name "bot"
-          git add pytest_output.txt
-          git commit -m "Add pytest output" || true
-          git push origin HEAD:debug-pytest -f
-          if grep -q "failed" pytest_output.txt || grep -q "Error" pytest_output.txt || grep -q "FAIL" pytest_output.txt || grep -q "exit code" pytest_output.txt; then
-            exit 1
-          fi
+        run: make coverage-python
 
   test-go:
     runs-on: ubuntu-latest
