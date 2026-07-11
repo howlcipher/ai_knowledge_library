@@ -1,0 +1,221 @@
+/* Cyberpunk Hybrid Theme (Matrix, Ghost in the Shell, Blade Runner, Megazone 23) */
+:root {
+  --matrix-green: #00FF41;
+  --matrix-dark-green: #008F11;
+  --gits-cyan: #00FFFF;
+  --blade-amber: #FF9F00;
+  --blade-magenta: #FF00FF;
+  --bg-dark: #050508;
+  --bg-panel: #0d0d16;
+  --border-glow: 0 0 10px var(--gits-cyan);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-dark);
+  color: var(--matrix-green);
+  font-family: 'Share Tech Mono', monospace;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* CRT Scanline Overlay */
+.crt-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  background-size: 100% 4px, 6px 100%;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Header & Navigation */
+.page-header {
+  background-color: var(--bg-panel);
+  border-bottom: 2px solid var(--gits-cyan);
+  box-shadow: var(--border-glow);
+  padding: 1rem 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.project-name {
+  color: var(--gits-cyan);
+  margin: 0;
+  font-size: 1.5rem;
+  text-shadow: 0 0 5px var(--gits-cyan);
+  text-transform: uppercase;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.nav-links a {
+  color: var(--matrix-green);
+  text-decoration: none;
+  font-weight: bold;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  padding: 0.5rem;
+  border: 1px solid transparent;
+}
+
+.nav-links a:hover {
+  color: var(--blade-amber);
+  border-color: var(--blade-amber);
+  text-shadow: 0 0 8px var(--blade-amber);
+  box-shadow: inset 0 0 10px rgba(255, 159, 0, 0.2);
+}
+
+/* Hamburger Menu (Mobile) */
+.hamburger-menu {
+  display: none;
+  flex-direction: column;
+  cursor: pointer;
+  gap: 5px;
+}
+
+.hamburger-menu .bar {
+  width: 25px;
+  height: 3px;
+  background-color: var(--gits-cyan);
+  transition: all 0.3s;
+}
+
+@media (max-width: 768px) {
+  .nav-links {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: var(--bg-panel);
+    border-bottom: 2px solid var(--gits-cyan);
+    padding: 1rem 0;
+  }
+  .nav-links.active {
+    display: flex;
+  }
+  .nav-links a {
+    text-align: center;
+    padding: 1rem;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+  }
+  .hamburger-menu {
+    display: flex;
+  }
+  .hamburger-menu.open .bar:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+    background-color: var(--blade-magenta);
+  }
+  .hamburger-menu.open .bar:nth-child(2) {
+    opacity: 0;
+  }
+  .hamburger-menu.open .bar:nth-child(3) {
+    transform: rotate(-45deg) translate(6px, -6px);
+    background-color: var(--blade-magenta);
+  }
+}
+
+/* Main Content */
+.main-content {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: rgba(13, 13, 22, 0.85);
+  border: 1px solid var(--matrix-dark-green);
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.1);
+}
+
+/* Typography & Markdown Elements */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--gits-cyan);
+  text-shadow: 0 0 4px rgba(0, 255, 255, 0.5);
+  border-bottom: 1px dashed var(--matrix-dark-green);
+  padding-bottom: 0.5rem;
+  margin-top: 2rem;
+}
+
+a {
+  color: var(--gits-cyan);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--blade-magenta);
+  text-shadow: 0 0 5px var(--blade-magenta);
+}
+
+pre, code {
+  background-color: #000;
+  color: var(--matrix-green);
+  border: 1px solid var(--matrix-dark-green);
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+pre {
+  padding: 1rem;
+  overflow-x: auto;
+  box-shadow: inset 0 0 10px rgba(0, 255, 65, 0.1);
+}
+
+blockquote {
+  border-left: 4px solid var(--blade-amber);
+  margin-left: 0;
+  padding-left: 1rem;
+  color: #bbb;
+  font-style: italic;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+}
+
+th, td {
+  border: 1px solid var(--matrix-dark-green);
+  padding: 0.75rem;
+  text-align: left;
+}
+
+th {
+  background-color: rgba(0, 255, 255, 0.1);
+  color: var(--gits-cyan);
+}
+
+img {
+  max-width: 100%;
+  border: 1px solid var(--gits-cyan);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+}
+
+hr {
+  border: none;
+  border-top: 1px dashed var(--blade-magenta);
+  margin: 2rem 0;
+}
+
+/* Footer */
+.site-footer {
+  text-align: center;
+  padding: 2rem;
+  color: var(--matrix-dark-green);
+  border-top: 1px solid var(--matrix-dark-green);
+  margin-top: 3rem;
+}

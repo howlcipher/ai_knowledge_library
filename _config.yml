@@ -1,1 +1,7 @@
 include: ["_*", ".*"]
+defaults:
+  -
+    scope:
+      path: ""
+    values:
+      layout: "default"
