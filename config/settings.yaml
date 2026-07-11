@@ -158,3 +158,43 @@ mcp_servers:
     env:
       TRELLO_API_KEY: ""
       TRELLO_TOKEN: ""
+
+  sentry:
+    command: "npx"
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-sentry"
+    env:
+      SENTRY_AUTH_TOKEN: ""
+
+  aws:
+    command: "npx"
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-aws"
+
+  strava:
+    command: "npx"
+    args:
+      - "-y"
+      - "mcp-server-strava"
+
+  steam:
+    command: "npx"
+    args:
+      - "-y"
+      - "mcp-server-steam"
+
+  shodan:
+    command: "npx"
+    args:
+      - "-y"
+      - "mcp-server-shodan"
+    env:
+      SHODAN_API_KEY: ""
+
+  baseball:
+    command: "npx"
+    args:
+      - "-y"
+      - "mcp-server-baseball"
