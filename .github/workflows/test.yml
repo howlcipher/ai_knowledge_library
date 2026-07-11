@@ -30,11 +30,13 @@ jobs:
           make coverage-python >> log.txt 2>&1 || echo "make failed" >> log.txt
           exit 1
 
-      - name: Upload Log to Pastebin
+      - name: Output Log as Annotations
         if: always()
         run: |
-          URL=$(curl -F "file=@log.txt" https://0x0.st)
-          echo "::warning::Pastebin URL: $URL"
+          tail -n 50 log.txt > tail_output.txt || echo "no log" > tail_output.txt
+          while IFS= read -r line; do
+            echo "::error::$line"
+          done < tail_output.txt
 
   test-go:
     runs-on: ubuntu-latest
