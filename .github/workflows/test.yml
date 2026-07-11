@@ -29,7 +29,15 @@ jobs:
           pip install .[dev]
 
       - name: Run Pytest with Coverage
-        run: make coverage-python
+        run: |
+          make coverage-python > log.txt 2>&1 || {
+            exit_code=$?
+            tail -n 200 log.txt > tail_output.txt
+            while IFS= read -r line; do
+              echo "::error::$line"
+            done < tail_output.txt
+            exit $exit_code
+          }
 
   test-go:
     runs-on: ubuntu-latest
