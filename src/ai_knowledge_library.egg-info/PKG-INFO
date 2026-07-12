@@ -30,6 +30,8 @@ Requires-Dist: celery
 Requires-Dist: redis
 Requires-Dist: langgraph
 Requires-Dist: langchain-core
+Requires-Dist: langsmith
+Requires-Dist: mcp
 Provides-Extra: dev
 Requires-Dist: pytest; extra == "dev"
 Requires-Dist: pytest-cov; extra == "dev"
@@ -40,8 +42,10 @@ Requires-Dist: bandit; extra == "dev"
 Requires-Dist: pdoc; extra == "dev"
 
 <div align="center">
+  <img src="assets/cyberpunk_hybrid_banner.jpg" alt="Retro CLI Banner" width="800" style="border-radius: 10px;" />
+  <br><br>
   <img src="https://img.shields.io/static/v1?label=AI&message=Knowledge_Library&color=blueviolet&style=for_the_badge" alt="AI Library Badge" />
-  <img src="https://img.shields.io/static/v1?label=Library_Size&message=220&color=success&style=for_the_badge" alt="Library Size Badge" />
+  <img src="https://img.shields.io/static/v1?label=Library_Size&message=267&color=success&style=for_the_badge" alt="Library Size Badge" />
   <img src="https://img.shields.io/static/v1?label=Powered_By&message=Antigravity&color=blue&style=for_the_badge&logo=google" alt="Antigravity Badge" />
 </div>
 
@@ -66,16 +70,30 @@ Requires-Dist: pdoc; extra == "dev"
 
 ***
 
-## 🧠 Purpose and Value
+## 🧠 Core Value Proposition
+
+### 📚 Quick Start: [Read the Official User Wiki & Guide](documentation/USER_GUIDE.md)
 
 **What it is:** A centralized, filesystem-based knowledge library and execution environment specifically engineered for AI agents operating within the terminal.
 
-**Why use it:** AI agents frequently hallucinate or generate generic boilerplate when operating blindly. By linking this structured library to your local environment, you mathematically force the AI to:
-* Inherit your specific engineering methodologies.
-* Execute tasks using strictly defined domain skills.
-* Automatically generate scaffolding, monitor infrastructure, and perform self-reviews before committing code.
+**The Engineering Value:** AI agents frequently hallucinate or generate generic boilerplate when operating blindly. By linking this structured library to your local environment, you mathematically force the AI to operate exactly like a senior engineer on your team. The immediate benefits include:
+* **Zero-Hallucination Architecture:** The AI is strictly bound by local markdown rules, coding standards, and project constraints before generating code.
+* **Automated QA & Guardrails:** Built-in CI/CD pipelines (SAST, Linting, Testing) ensure the AI cannot break the master branch.
+* **Domain-Specific Expertise:** Pre-loaded domain skills (e.g., UI/UX, Data Science, Security) allow the AI to adapt its logic to the specific task rather than guessing.
 
-It transforms generic AI models into a personalized, highly disciplined engineering team that operates precisely the way you do.
+### 🔌 The Model Context Protocol (MCP) Advantage
+**Why is MCP important?** Historically, AI models have been trapped in a sandbox, limited only to their outdated training data and what you type in the chat box. Writing custom integrations for every external service (like Jira, AWS, or Wikipedia) required hundreds of lines of brittle code. 
+
+**The MCP Solution:** This library leverages the new open standard **Model Context Protocol** to act as a massive orchestration engine. By simply adding community-built MCP plugins to the `settings.yaml`, your AI instantly gains autonomous "hands" and "senses":
+* **Real-Time Knowledge:** The AI can query **Wikipedia**, **Brave Search**, and **Yahoo Finance** natively to bypass the "knowledge cutoff" problem.
+* **Full Autonomy:** The Orchestrator is armed with **Docker, Kubernetes, AWS, GitLab, Shodan, Puppeteer, Sentry, and Jira**. You can command it to find a bug in Jira, spin up a headless browser to reproduce it, fix the local code, and push the commit.
+* **Cognitive Persistence:** Powered by the **Memory** and **Sequential Thinking** MCPs, the agent permanently remembers your project preferences and can break down complex math or debugging loops step-by-step.
+
+### 🛡️ Security, Privacy & Trust
+When giving an AI access to your local filesystem and commands, security is paramount. This library is designed from the ground up to protect your local environment from prompt injection, AI poisoning, and hallucinated actions:
+* **Anti-Poisoning & Grounding Protocol:** The AI is mathematically grounded in local rule files (like [`GEMINI.md`](GEMINI.md)) and forced to apply an epistemic humility decision tree. If live data conflicts with stale data, or if an action violates the [`anti_manipulation.md`](.agents/rules/anti_manipulation.md) constraints, the Orchestrator will automatically halt.
+* **Strict Human-in-the-Loop:** Absolutely no executable commands (like `bash` scripts or destructive API calls) are run without explicit human consent. You will see exactly what the AI wants to run and can approve or reject it natively.
+* **100% Local Privacy:** The Orchestrator and vector databases (ChromaDB / PGVector) run entirely locally. Your local filesystem, secrets, and project architecture are never ingested into a third-party training set.
 
 ***
 

@@ -1,0 +1,12 @@
+test-python: in_progress - null
+test-go: completed - success
+Analyze: in_progress - null
+validate_markdown: completed - success
+build-and-deploy: in_progress - null
+build (windows-latest): completed - success
+lint: in_progress - null
+build (macos-latest): completed - success
+build (ubuntu-latest): completed - success
+release: in_progress - null
+build-and-push-image: in_progress - null
+update-badges: completed - success

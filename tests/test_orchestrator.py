@@ -68,12 +68,13 @@ def test_orchestrator_run_loop_approved_immediately(mock_proxy, mock_generate):
     
     mock_generate.side_effect = [
         MockMessage("Here is my research draft"), 
-        MockMessage("APPROVED")
+        MockMessage("APPROVED"),
+        MockMessage("Humanized draft")
     ]
     
     orchestrator.run_loop("Test query")
     
-    assert mock_generate.call_count == 2
+    assert mock_generate.call_count == 3
     mock_proxy.assert_called_once()
 
 @patch("src.core.orchestrator.Agent.generate_response")
@@ -83,12 +84,13 @@ def test_orchestrator_run_loop_rejected_then_approved(mock_proxy, mock_generate)
     
     mock_generate.side_effect = [
         MockMessage("First draft"), MockMessage("REJECTED. Fix it."),
-        MockMessage("Second draft"), MockMessage("APPROVED")
+        MockMessage("Second draft"), MockMessage("APPROVED"),
+        MockMessage("Humanized second draft")
     ]
     
     orchestrator.run_loop("Test query")
     
-    assert mock_generate.call_count == 4
+    assert mock_generate.call_count == 5
     mock_proxy.assert_called_once()
 
 def test_main(monkeypatch):

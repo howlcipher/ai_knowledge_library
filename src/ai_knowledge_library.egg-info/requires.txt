@@ -24,6 +24,8 @@ celery
 redis
 langgraph
 langchain-core
+langsmith
+mcp
 
 [dev]
 pytest

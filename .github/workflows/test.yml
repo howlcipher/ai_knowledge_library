@@ -30,14 +30,18 @@ jobs:
 
       - name: Run Pytest with Coverage
         run: |
-          make coverage-python > log.txt 2>&1 || {
-            exit_code=$?
+          set +e
+          make coverage-python > log.txt 2>&1
+          EXIT_CODE=$?
+          set -e
+
+          if [ $EXIT_CODE -ne 0 ]; then
             tail -n 200 log.txt > tail_output.txt
             while IFS= read -r line; do
               echo "::error::$line"
             done < tail_output.txt
-            exit $exit_code
-          }
+            exit $EXIT_CODE
+          fi
 
   test-go:
     runs-on: ubuntu-latest

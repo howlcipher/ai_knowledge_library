@@ -9,6 +9,8 @@ src/ai_knowledge_library.egg-info/top_level.txt
 src/core/__init__.py
 src/core/adversarial_tester.py
 src/core/brain.py
+src/core/context_sanitizer.py
+src/core/mcp_client.py
 src/core/orchestrator.py
 src/core/web_research.py
 src/infrastructure/__init__.py
@@ -16,6 +18,7 @@ src/infrastructure/build_vector_index.py
 src/infrastructure/celery_worker.py
 src/infrastructure/chroma_backend.py
 src/infrastructure/config_loader.py
+src/infrastructure/mcp_server.py
 src/infrastructure/pgvector_backend.py
 src/infrastructure/secret_manager.py
 src/infrastructure/semantic_cache.py

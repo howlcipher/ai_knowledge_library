@@ -180,7 +180,10 @@ class Orchestrator:
     def shutdown(self):
         for name, client in self.mcp_clients.items():
             print(f"[Orchestrator] Shutting down MCP Server: {name}...")
-            client.close()
+            try:
+                client.close()
+            except Exception:
+                pass
 
     def _build_graph(self):
         workflow = StateGraph(AgentState)
