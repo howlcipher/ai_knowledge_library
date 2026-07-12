@@ -1,8 +1,8 @@
 <div align="center">
-  <img src="assets/cyberpunk_hybrid_banner.jpg" alt="Retro CLI Banner" width="800" style="border-radius: 10px;" />
+  <img src="assets/cyberpunk_hybrid_banner.jpg" alt="Retro CLI Banner" width="800" />
   <br><br>
   <img src="https://img.shields.io/static/v1?label=AI&message=Knowledge_Library&color=blueviolet&style=for_the_badge" alt="AI Library Badge" />
-  <img src="https://img.shields.io/static/v1?label=Library_Size&message=267&color=success&style=for_the_badge" alt="Library Size Badge" />
+  <img src="https://img.shields.io/static/v1?label=Library_Size&message=385&color=success&style=for_the_badge" alt="Library Size Badge" />
   <img src="https://img.shields.io/static/v1?label=Powered_By&message=Antigravity&color=blue&style=for_the_badge&logo=google" alt="Antigravity Badge" />
 </div>
 
@@ -20,7 +20,6 @@
   <a href="https://github.com/howlcipher/ai_knowledge_library/actions/workflows/test.yml"><img src="https://github.com/howlcipher/ai_knowledge_library/actions/workflows/test.yml/badge.svg" alt="Tests" /></a>
   <a href="https://github.com/howlcipher/ai_knowledge_library/actions/workflows/docs.yml"><img src="https://github.com/howlcipher/ai_knowledge_library/actions/workflows/docs.yml/badge.svg" alt="Docs" /></a>
 </p>
-
 ***
 
 > This repository serves as the central context layer for terminal AI agents. It maps directly into the CLI to enforce coding standards, eliminate hallucinations, and provide deep architectural context tailored specifically for William Elias.
