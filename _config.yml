@@ -6,3 +6,8 @@ defaults:
       path: ""
     values:
       layout: "default"
+  -
+    scope:
+      path: "api"
+    values:
+      layout: ""
