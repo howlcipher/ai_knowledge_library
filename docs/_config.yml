@@ -1,1 +1,13 @@
-include: ["_*", ".*"]
+include: [".agents"]
+exclude: ["Makefile"]
+defaults:
+  -
+    scope:
+      path: ""
+    values:
+      layout: "default"
+  -
+    scope:
+      path: "api"
+    values:
+      layout: ""

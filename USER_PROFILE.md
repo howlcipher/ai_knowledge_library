@@ -64,3 +64,7 @@ Software engineer with over 9 years of experience spanning automation, web devel
 * B.S. Information Technology | Colorado State University Global Campus
 * B.B.A. Business Administration | Rochester College
 * Cisco Certified Network Associate (CCNA) | Cisco Networking Academy (2014 to 2017)
+
+## Engineering Philosophy & Hobbies
+* **Core Philosophy**: I believe in aggressive automation so humans can focus on creative, complex problem-solving. Code should be clean, highly maintainable, and infrastructure should be treated as code.
+* **Hobbies**: Outside of professional engineering, I build out my own personal home server lab, script and optimize Left 4 Dead 2 game servers (VScript/SourcePawn), and analyze advanced baseball sabermetrics.
