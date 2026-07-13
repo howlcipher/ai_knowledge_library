@@ -71,14 +71,29 @@ docs:
 	echo "defaults:" >> docs/_config.yml
 	echo "  -" >> docs/_config.yml
 	echo "    scope:" >> docs/_config.yml
-	echo "      path: \"\"" >> docs/_config.yml
+	echo "      path: \"documentation\"" >> docs/_config.yml
 	echo "    values:" >> docs/_config.yml
 	echo "      layout: \"default\"" >> docs/_config.yml
 	echo "  -" >> docs/_config.yml
 	echo "    scope:" >> docs/_config.yml
-	echo "      path: \"api\"" >> docs/_config.yml
+	echo "      path: \".agents\"" >> docs/_config.yml
 	echo "    values:" >> docs/_config.yml
-	echo "      layout: \"\"" >> docs/_config.yml
+	echo "      layout: \"default\"" >> docs/_config.yml
+	echo "  -" >> docs/_config.yml
+	echo "    scope:" >> docs/_config.yml
+	echo "      path: \"index.md\"" >> docs/_config.yml
+	echo "    values:" >> docs/_config.yml
+	echo "      layout: \"default\"" >> docs/_config.yml
+	echo "  -" >> docs/_config.yml
+	echo "    scope:" >> docs/_config.yml
+	echo "      path: \"GEMINI.md\"" >> docs/_config.yml
+	echo "    values:" >> docs/_config.yml
+	echo "      layout: \"default\"" >> docs/_config.yml
+	echo "  -" >> docs/_config.yml
+	echo "    scope:" >> docs/_config.yml
+	echo "      path: \"change_log.md\"" >> docs/_config.yml
+	echo "    values:" >> docs/_config.yml
+	echo "      layout: \"default\"" >> docs/_config.yml
 
 # Sync and Data
 sync:
