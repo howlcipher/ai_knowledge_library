@@ -74,6 +74,11 @@ docs:
 	echo "      path: \"\"" >> docs/_config.yml
 	echo "    values:" >> docs/_config.yml
 	echo "      layout: \"default\"" >> docs/_config.yml
+	echo "  -" >> docs/_config.yml
+	echo "    scope:" >> docs/_config.yml
+	echo "      path: \"api\"" >> docs/_config.yml
+	echo "    values:" >> docs/_config.yml
+	echo "      layout: \"\"" >> docs/_config.yml
 
 # Sync and Data
 sync:
