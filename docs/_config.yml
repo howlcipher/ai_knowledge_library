@@ -3,11 +3,26 @@ exclude: ["Makefile"]
 defaults:
   -
     scope:
-      path: ""
+      path: "documentation"
     values:
       layout: "default"
   -
     scope:
-      path: "api"
+      path: ".agents"
     values:
-      layout: ""
+      layout: "default"
+  -
+    scope:
+      path: "index.md"
+    values:
+      layout: "default"
+  -
+    scope:
+      path: "GEMINI.md"
+    values:
+      layout: "default"
+  -
+    scope:
+      path: "change_log.md"
+    values:
+      layout: "default"
