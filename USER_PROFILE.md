@@ -5,6 +5,11 @@
 * LinkedIn: linkedin.com/in/wylelias
 * GitHub: github.com/howlcipher
 
+## Career Goals & Preferences
+*   **Target Roles:** Software Engineer, DevOps Engineer, Backend Developer, SRE
+*   **Work Environment:** Remote
+*   **Target Base Salary:** $105,000+
+
 ## Professional Summary
 Software engineer with over 9 years of experience spanning automation, web development, DevOps, QA, and production support. Specialized in Python and Go development for APIs, backend systems, and infrastructure automation. Proven ability to build secure, scalable solutions that streamline operations across development and production environments. Strong foundation in networking, security (CCNA), and system integration. Highly experienced in orchestrating zero downtime migrations, building automated security auditing tools, and managing CI/CD pipelines. Passionate about writing maintainable code and solving complex technical challenges in security focused environments.
 
