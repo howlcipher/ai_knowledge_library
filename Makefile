@@ -59,7 +59,7 @@ docs:
 	mkdir -p docs/api
 	pdoc ./src ./scripts -o docs/api
 	@echo "Setting up GitHub Pages frontpage..."
-	cp README.md docs/index.md
+	cp README.md docs/docs.md
 	cp -r documentation docs/documentation
 	cp -r assets docs/assets
 	cp GEMINI.md docs/GEMINI.md
@@ -81,7 +81,7 @@ docs:
 	echo "      layout: \"default\"" >> docs/_config.yml
 	echo "  -" >> docs/_config.yml
 	echo "    scope:" >> docs/_config.yml
-	echo "      path: \"index.md\"" >> docs/_config.yml
+	echo "      path: \"docs.md\"" >> docs/_config.yml
 	echo "    values:" >> docs/_config.yml
 	echo "      layout: \"default\"" >> docs/_config.yml
 	echo "  -" >> docs/_config.yml

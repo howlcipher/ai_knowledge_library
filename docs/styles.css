@@ -24,6 +24,19 @@
     --scanline-color: rgba(10, 25, 47, 0.05);
 }
 
+[data-theme="matrix"] {
+    /* Ghost in the Shell / Matrix / Blade Runner */
+    --bg-color: #020804;
+    --text-primary: #00ff41;
+    --text-secondary: #008f11;
+    --accent-1: #00f0ff;
+    --accent-2: #39ff14;
+    --accent-3: #ff003c;
+    --panel-bg: rgba(0, 15, 5, 0.85);
+    --border-color: #00ff41;
+    --scanline-color: rgba(0, 255, 65, 0.05);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -51,8 +64,8 @@ h1, h2, h3, .logo {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     background: linear-gradient(
         to bottom,
         var(--scanline-color) 50%,
@@ -73,10 +86,10 @@ h1, h2, h3, .logo {
     letter-spacing: 1px;
 }
 
-.hud-top-left { top: 1rem; left: 1rem; }
-.hud-top-right { top: 1rem; right: 1rem; }
-.hud-bottom-left { bottom: 1rem; left: 1rem; }
-.hud-bottom-right { bottom: 1rem; right: 1rem; }
+.hud-top-left { top: 6rem; left: 2rem; }
+.hud-top-right { top: 6rem; right: 2rem; }
+.hud-bottom-left { bottom: 2rem; left: 2rem; }
+.hud-bottom-right { bottom: 2rem; right: 2rem; }
 
 /* Navigation */
 .mecha-nav {
