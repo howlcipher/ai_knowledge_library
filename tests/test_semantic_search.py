@@ -29,13 +29,19 @@ def test_search_with_results(mock_config, mock_store_factory, capsys):
     
     mock_store.query.return_value = [("some content that is somewhat long and interesting to read for vector search purposes", "doc.txt", 0.1234)]
     
-    searcher.search("test query", 1)
-    
-    # Since we expand queries and oversample:
-    mock_store.query.assert_called_with("test query", n_results=5)
-    captured = capsys.readouterr()
-    assert "Re-rank Score:" in captured.out
-    assert "Snippet: some content that is somewhat long" in captured.out
+    with patch('sentence_transformers.CrossEncoder') as mock_ce:
+        mock_ce_instance = MagicMock()
+        # Mock predict to return a high score for our single result
+        mock_ce_instance.predict.return_value = [0.95]
+        mock_ce.return_value = mock_ce_instance
+        
+        searcher.search("test query", 1)
+        
+        # Since we expand queries and oversample:
+        mock_store.query.assert_called_with("test query", n_results=5)
+        captured = capsys.readouterr()
+        assert "Re-rank Score:" in captured.out
+        assert "Snippet: some content that is somewhat long" in captured.out
 
 def test_search_empty_results(mock_config, mock_store_factory, capsys):
     mock_factory, mock_store = mock_store_factory
