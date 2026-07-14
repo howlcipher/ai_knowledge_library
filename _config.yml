@@ -13,7 +13,7 @@ defaults:
       layout: "default"
   -
     scope:
-      path: "docs.md"
+      path: "index.md"
     values:
       layout: "default"
   -
