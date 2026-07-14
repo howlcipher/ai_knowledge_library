@@ -1,5 +1,5 @@
 # Stage 1: Build dependencies
-FROM python:3.12-slim AS builder
+FROM python:3.14-slim AS builder
 WORKDIR /app
 RUN pip install --no-cache-dir uv
 
@@ -10,7 +10,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN uv pip install -e .
 
 # Stage 2: Runtime
-FROM python:3.12-slim
+FROM python:3.14-slim
 WORKDIR /app
 
 # Copy virtualenv from builder
