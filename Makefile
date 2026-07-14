@@ -59,12 +59,12 @@ docs:
 	mkdir -p docs/api
 	pdoc ./src ./scripts -o docs/api
 	@echo "Setting up GitHub Pages frontpage..."
-	cp README.md docs/docs.md
-	cp -r documentation docs/documentation
-	cp -r assets docs/assets
-	cp GEMINI.md docs/GEMINI.md
-	cp change_log.md docs/change_log.md
-	cp -r .agents docs/.agents
+	cp README.md docs/index.md
+	cp -r documentation docs/
+	cp -r assets docs/
+	cp GEMINI.md docs/
+	cp change_log.md docs/
+	cp -r .agents docs/
 	cp -r docs_theme/* docs/
 	echo "include: [\".agents\"]" > docs/_config.yml
 	echo "exclude: [\"Makefile\"]" >> docs/_config.yml
@@ -81,7 +81,7 @@ docs:
 	echo "      layout: \"default\"" >> docs/_config.yml
 	echo "  -" >> docs/_config.yml
 	echo "    scope:" >> docs/_config.yml
-	echo "      path: \"docs.md\"" >> docs/_config.yml
+	echo "      path: \"index.md\"" >> docs/_config.yml
 	echo "    values:" >> docs/_config.yml
 	echo "      layout: \"default\"" >> docs/_config.yml
 	echo "  -" >> docs/_config.yml
