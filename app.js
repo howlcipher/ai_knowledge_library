@@ -72,6 +72,9 @@ class MechaApp {
         if (theme === 'light') {
             this.root.setAttribute('data-theme', 'light');
             this.themeToggle.textContent = 'DAY';
+        } else if (theme === 'matrix') {
+            this.root.setAttribute('data-theme', 'matrix');
+            this.themeToggle.textContent = 'NEURO';
         } else {
             this.root.setAttribute('data-theme', 'dark');
             this.themeToggle.textContent = 'NIGHT';
@@ -83,7 +86,13 @@ class MechaApp {
      */
     toggleTheme() {
         const currentTheme = this.root.getAttribute('data-theme');
-        this.setTheme(currentTheme === 'light' ? 'dark' : 'light');
+        if (currentTheme === 'light') {
+            this.setTheme('matrix');
+        } else if (currentTheme === 'matrix') {
+            this.setTheme('dark');
+        } else {
+            this.setTheme('light');
+        }
     }
 
     /**
