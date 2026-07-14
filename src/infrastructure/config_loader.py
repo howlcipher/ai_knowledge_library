@@ -38,6 +38,7 @@ class AppSettings(BaseSettings):
     server: ServerSettings = ServerSettings()
     agents: AgentsSettings = AgentsSettings()
     backup: BackupSettings = BackupSettings()
+    active_mcps: list = []
     mcp_servers: dict = {}
 
     model_config = SettingsConfigDict(

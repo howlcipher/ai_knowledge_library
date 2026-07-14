@@ -13,6 +13,10 @@ agents:
   default_language: "en_US"
   max_context_tokens: 8192
 
+active_mcps:
+  - memory
+  - fetch
+
 mcp_servers:
   github:
     command: "npx"

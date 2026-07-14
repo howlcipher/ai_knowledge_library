@@ -126,9 +126,13 @@ class Orchestrator:
         # Try to load configured MCP servers
         self.mcp_clients = {}
         mcp_servers_config = self.cfg.get("mcp_servers", {})
+        active_mcps = self.cfg.get("active_mcps", [])
+
         if mcp_servers_config:
             from src.core.mcp_client import SyncMCPClient
             for name, config in mcp_servers_config.items():
+                if active_mcps and name not in active_mcps:
+                    continue
                 print(f"[Orchestrator] Connecting to MCP Server: {name}...")
                 try:
                     client = SyncMCPClient(
