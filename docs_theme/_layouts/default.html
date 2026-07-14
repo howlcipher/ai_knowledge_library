@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ page.title | default: site.title | default: "AI Knowledge Library" }}</title>
+    <title>{{ page.title | default: site.title | default: "AI_KNOWLEDGE_LIBRARY" }}</title>
     <link rel="stylesheet" href="{{ '/assets/css/cyberpunk.css' | relative_url }}">
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
   </head>
@@ -11,18 +11,18 @@
     <div class="crt-overlay"></div>
     <header class="page-header">
       <div class="header-content">
-        <h1 class="project-name">AI_KNOWLEDGE_LIBRARY // OS_INIT</h1>
+        <h1 class="project-name">SYS_CORE<span class="blink">_</span></h1>
         <div class="hamburger-menu" id="hamburger-menu">
           <span class="bar"></span>
           <span class="bar"></span>
           <span class="bar"></span>
         </div>
         <nav class="nav-links" id="nav-links">
-          <a href="{{ '/' | relative_url }}">Home</a>
-          <a href="{{ '/documentation/USER_GUIDE.html' | relative_url }}">User Guide</a>
-          <a href="{{ '/api/' | relative_url }}">API Docs</a>
-          <a href="{{ '/change_log.html' | relative_url }}">Change Log</a>
-          <a href="{{ '/GEMINI.html' | relative_url }}">Grounding Rules</a>
+          <a href="{{ '/' | relative_url }}">Index</a>
+          <a href="{{ '/documentation/USER_GUIDE.html' | relative_url }}">Manual</a>
+          <a href="{{ '/api/' | relative_url }}">API</a>
+          <a href="{{ '/change_log.html' | relative_url }}">Logs</a>
+          <a href="{{ '/GEMINI.html' | relative_url }}">Rules</a>
         </nav>
       </div>
     </header>
@@ -32,13 +32,25 @@
     </main>
 
     <footer class="site-footer">
-      <p>Powered by Antigravity // Cybernetic Underground // Neo-Kyoto</p>
+      <p>SYS_VER 1.0 // ANTIGRAVITY ENGINE // NEURAL NET ACTIVE</p>
     </footer>
 
     <script>
-      document.getElementById('hamburger-menu').addEventListener('click', function() {
-        document.getElementById('nav-links').classList.toggle('active');
+      const hamburger = document.getElementById('hamburger-menu');
+      const navLinks = document.getElementById('nav-links');
+
+      hamburger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        navLinks.classList.toggle('active');
         this.classList.toggle('open');
+      });
+
+      // Close menu when clicking outside
+      document.addEventListener('click', function(event) {
+        if (!navLinks.contains(event.target) && navLinks.classList.contains('active')) {
+          navLinks.classList.remove('active');
+          hamburger.classList.remove('open');
+        }
       });
     </script>
   </body>
