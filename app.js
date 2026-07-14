@@ -46,7 +46,7 @@ class MechaApp {
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
             this.setTheme('light');
         } else {
-            this.setTheme('dark');
+            this.setTheme('matrix');
         }
     }
 
