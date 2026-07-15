@@ -19,6 +19,7 @@ When the AI encounters a task related to a specific domain (e.g., writing a web 
 * **`cyber_security`**: Broad InfoSec principles, zero-trust policies, and threat modeling.
 * **`bug_bounty_hunter`**: Offensive security recon methodologies and safe exploitation strategies.
 * **`devops`**: CI/CD pipelines, containerization (Docker/K8s), and infrastructure as code.
+* **`devops_sre`**: Strict methodologies for Terraform modules, Kubernetes manifests, and templating Azure DevOps / CI/CD pipelines to infrastructure-as-code standards.
 * **`network_engineering`**: Subnetting, routing, firewall rules, and topology documentation.
 * **`system_administration`**: Linux administration, shell scripting standards, and crontab management.
 * **`environment_doctor`**: Strategies for bootstrapping and fixing broken local development environments.
