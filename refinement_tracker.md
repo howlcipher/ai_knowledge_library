@@ -29,7 +29,7 @@ This document tracks the multi-pass refinement process for all 38 skills within 
 | hallucination_guardrails | epistemic_skepticism, test_and_verify | [x] | [x] | [ ] | Phase 2 Done | 25ff3a1e13ed76361eb3c71bbc74a6f0229104f1 |
 | l4d2_optimization | l4d2_server_management | [x] | [ ] | [ ] | Phase 1 Done | 5ea5e36fc20956dc6691bfe13af43c9cda39a2b3 |
 | l4d2_scripting | l4d2_optimization, l4d2_server_management | [x] | [ ] | [ ] | Phase 1 Done | bd68b9fb997b2553fe2234d817fe0da52e888fab |
-| l4d2_server_management | system_administration | [x] | [ ] | [ ] | Phase 1 Done | 4b23482677e90e46d68d33499559b062764cc548 |
+| l4d2_server_management | system_administration | [x] | [x] | [ ] | Phase 2 Done | f8e054deba8d637cb199422f044f8e2231d893cd |
 | machine_learning | data_analyst | [x] | [ ] | [ ] | Phase 1 Done | cae693ada17ed09d001d627c423c4e7a2024b378 |
 | network_engineering | system_administration, devops | [x] | [x] | [ ] | Phase 2 Done | 991c1d7d7b0254ad1c0a1f99abc49bd0074a7352 |
 | product_management | technical_writing, ui_ux | [x] | [ ] | [ ] | Phase 1 Done | e4ee987985a702fb27622d4c0bec5648953771b4 |
