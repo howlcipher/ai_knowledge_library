@@ -28,7 +28,7 @@ This document tracks the multi-pass refinement process for all 38 skills within 
 | google_docs_writer | technical_writing | [x] | [ ] | [ ] | Phase 1 Done | eeaf1c24a3bac780cb267f520bf92c70cfe407e7 |
 | hallucination_guardrails | epistemic_skepticism, test_and_verify | [x] | [ ] | [ ] | Phase 1 Done | d9580e0fd8fb2818e8f44070e5ffbdfa68b2530e |
 | l4d2_optimization | l4d2_server_management | [x] | [ ] | [ ] | Phase 1 Done | 5ea5e36fc20956dc6691bfe13af43c9cda39a2b3 |
-| l4d2_scripting | l4d2_optimization, l4d2_server_management | [ ] | [ ] | [ ] | Pending | |
+| l4d2_scripting | l4d2_optimization, l4d2_server_management | [x] | [ ] | [ ] | Phase 1 Done | bd68b9fb997b2553fe2234d817fe0da52e888fab |
 | l4d2_server_management | system_administration | [ ] | [ ] | [ ] | Pending | |
 | machine_learning | data_analyst | [ ] | [ ] | [ ] | Pending | |
 | network_engineering | system_administration, devops | [ ] | [ ] | [ ] | Pending | |
