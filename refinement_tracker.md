@@ -25,7 +25,7 @@ This document tracks the multi-pass refinement process for all 38 skills within 
 | financial_theory | economic_theory, quantitative_finance | [x] | [ ] | [ ] | Phase 1 Done | 0fd1813a083f3110ae8cb149e333716a2e2163e0 |
 | frontend_engineering | ui_ux, visual_design | [x] | [ ] | [ ] | Phase 1 Done | b94758eabdf23b8f0eff57eeaf197a852a0b3dab |
 | gaming | ui_ux, color_theory | [x] | [ ] | [ ] | Phase 1 Done | dfb685fef3f11ab8912b13778654772569eb2c70 |
-| google_docs_writer | technical_writing | [x] | [ ] | [ ] | Phase 1 Done | eeaf1c24a3bac780cb267f520bf92c70cfe407e7 |
+| google_docs_writer | technical_writing | [x] | [x] | [ ] | Phase 2 Done | a374491517e7be2767aa9343ad832096b41c9fb4 |
 | hallucination_guardrails | epistemic_skepticism, test_and_verify | [x] | [x] | [ ] | Phase 2 Done | 25ff3a1e13ed76361eb3c71bbc74a6f0229104f1 |
 | l4d2_optimization | l4d2_server_management | [x] | [x] | [ ] | Phase 2 Done | ded52e5e78154414402127a60c8f863faa59c93c |
 | l4d2_scripting | l4d2_optimization, l4d2_server_management | [x] | [x] | [ ] | Phase 2 Done | f9603a8dfcd4e937569f448665689705aae1de1d |
