@@ -34,7 +34,7 @@ This document tracks the multi-pass refinement process for all 38 skills within 
 | network_engineering | system_administration, devops | [x] | [x] | [ ] | Phase 2 Done | 991c1d7d7b0254ad1c0a1f99abc49bd0074a7352 |
 | product_management | technical_writing, ui_ux | [x] | [ ] | [ ] | Phase 1 Done | e4ee987985a702fb27622d4c0bec5648953771b4 |
 | quality_assurance | test_and_verify, defensive_debugging | [x] | [x] | [ ] | Phase 2 Done | 96dc433709545db7541501876a6eeb2baecf4341 |
-| quantitative_finance | financial_theory, machine_learning | [x] | [ ] | [ ] | Phase 1 Done | fddab73e104453655340948f05c302d10213ba06 |
+| quantitative_finance | financial_theory, machine_learning | [x] | [x] | [ ] | Phase 2 Done | 855fbe5bd0c2e07b15db1989b90c674998c50b03 |
 | red_team | bug_bounty_hunter, cyber_security | [x] | [x] | [ ] | Phase 2 Done | e255abbf7c98dbb53dc6efce75469fa743981e20 |
 | software_development | architectural_guardrails, test_and_verify | [x] | [x] | [ ] | Phase 2 Done | 04316fda891b5282da81ef2c7a326c0ed00c3d6a |
 | system_administration | devops, network_engineering | [x] | [x] | [ ] | Phase 2 Done | 61286716a9e6f637c8d6f9ec9cb1d10df9fe26f8 |
