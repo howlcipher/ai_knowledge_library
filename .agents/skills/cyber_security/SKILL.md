@@ -31,3 +31,16 @@ This skill outlines the core policies, standards, and security protocols governi
 
 ### 2. Sensitive Data Disposal
 - Ensure secure disposal and sanitization of staging and development environments to prevent leakage of operational or customer data.
+
+## Adversarial Simulation and Vulnerability Analysis
+- Align security audits and vulnerability assessments with adversary simulation frameworks (e.g., MITRE ATT&CK TTPs) to identify architectural and trust boundary flaws.
+- Scan for OWASP Top 10 vulnerabilities, access control failures, and build attack path models showing propagation risks.
+- Enforce strict boundaries: obtain explicit authorization prior to scanning, restrict initial discovery to passive reconnaissance, and never generate weaponized exploit payloads.
+- Apply defensive translation by immediately pivoting from vulnerability identification to mitigation documentation.
+
+## Threat Detection and Incident Response
+- Monitor telemetry from SIEM, IDS/IPS, and EDR systems to detect real-time anomalies and credential abuse.
+- Adhere to the NIST Incident Response lifecycle (Preparation, Detection/Analysis, Containment/Eradication/Recovery, Post-Incident Activity) during breach situations.
+- Perform vulnerability management using CVSS and EPSS risk matrices to prioritize patching schedules.
+- Follow digital forensics best practices to collect and preserve evidence without compromising system stability.
+
