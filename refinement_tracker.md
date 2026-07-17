@@ -29,7 +29,7 @@ This document tracks the multi-pass refinement process for all 38 skills within 
 | hallucination_guardrails | epistemic_skepticism, test_and_verify | [x] | [ ] | [ ] | Phase 1 Done | d9580e0fd8fb2818e8f44070e5ffbdfa68b2530e |
 | l4d2_optimization | l4d2_server_management | [x] | [ ] | [ ] | Phase 1 Done | 5ea5e36fc20956dc6691bfe13af43c9cda39a2b3 |
 | l4d2_scripting | l4d2_optimization, l4d2_server_management | [x] | [ ] | [ ] | Phase 1 Done | bd68b9fb997b2553fe2234d817fe0da52e888fab |
-| l4d2_server_management | system_administration | [ ] | [ ] | [ ] | Pending | |
+| l4d2_server_management | system_administration | [x] | [ ] | [ ] | Phase 1 Done | 4b23482677e90e46d68d33499559b062764cc548 |
 | machine_learning | data_analyst | [ ] | [ ] | [ ] | Pending | |
 | network_engineering | system_administration, devops | [ ] | [ ] | [ ] | Pending | |
 | product_management | technical_writing, ui_ux | [ ] | [ ] | [ ] | Pending | |
