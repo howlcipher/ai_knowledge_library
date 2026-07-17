@@ -8,7 +8,7 @@ This document tracks the multi-pass refinement process for all 38 skills within 
 | accessibility | ui_ux, visual_design, frontend_engineering | [x] | [ ] | [ ] | Phase 1 Done | 65f429c1755bb6278567a950bb4a29ab040bb0cf |
 | architectural_guardrails | software_development, technical_writing | [x] | [x] | [ ] | Phase 2 Done | 12099e30c39d334d03849b620149bb9d8731dcf8 |
 | automation | system_administration, devops | [x] | [x] | [ ] | Phase 2 Done | b713bf4a2f301216589b0636621dfc83edc7c8c9 |
-| baseball_analytics | data_analyst, machine_learning | [x] | [ ] | [ ] | Phase 1 Done | 88ed8b1884fb993b7cfc708e37b27c5f2c7c80c9 |
+| baseball_analytics | data_analyst, machine_learning | [x] | [x] | [ ] | Phase 2 Done | d924e79f761eb99c7506291b3254e737d1f39b43 |
 | blue_team | cyber_security, system_administration | [x] | [x] | [ ] | Phase 2 Done | fad276d81543068d4893fa2ea621baab1905c439 |
 | bug_bounty_hunter | red_team, cyber_security | [x] | [x] | [ ] | Phase 2 Done | cd5757d5d6b8e6dd63b0d72065f310a923ef4009 |
 | career_assistant | technical_writing, ui_ux | [x] | [ ] | [ ] | Phase 1 Done | 801612a220283a5169cfc595b1c11fcc5573ea3f |
