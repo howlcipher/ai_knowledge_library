@@ -12,7 +12,7 @@ This document tracks the multi-pass refinement process for all 38 skills within 
 | blue_team | cyber_security, system_administration | [x] | [ ] | [ ] | Phase 1 Done | caab11809aeef112bc61b82bd260dcca1e500b77 |
 | bug_bounty_hunter | red_team, cyber_security | [x] | [ ] | [ ] | Phase 1 Done | 1a82bf6424fcc0713e8f562067b3a129b944a6bb |
 | career_assistant | technical_writing, ui_ux | [x] | [ ] | [ ] | Phase 1 Done | 801612a220283a5169cfc595b1c11fcc5573ea3f |
-| color_theory | visual_design, ui_ux | [ ] | [ ] | [ ] | Pending | |
+| color_theory | visual_design, ui_ux | [x] | [ ] | [ ] | Phase 1 Done | f796fec28c514b9ba76df8bb7be4769bae577a33 |
 | commit_and_changelog | software_development, devops | [ ] | [ ] | [ ] | Pending | |
 | cyber_security | blue_team, red_team | [ ] | [ ] | [ ] | Pending | |
 | data_analyst | machine_learning, quantitative_finance | [ ] | [ ] | [ ] | Pending | |
