@@ -24,7 +24,7 @@ This document tracks the multi-pass refinement process for all 38 skills within 
 | environment_doctor | system_administration, devops | [x] | [ ] | [ ] | Phase 1 Done | b0fe9966cf2d9a9e49595724cd3c153e145ee644 |
 | financial_theory | economic_theory, quantitative_finance | [x] | [ ] | [ ] | Phase 1 Done | 0fd1813a083f3110ae8cb149e333716a2e2163e0 |
 | frontend_engineering | ui_ux, visual_design | [x] | [ ] | [ ] | Phase 1 Done | b94758eabdf23b8f0eff57eeaf197a852a0b3dab |
-| gaming | ui_ux, color_theory | [ ] | [ ] | [ ] | Pending | |
+| gaming | ui_ux, color_theory | [x] | [ ] | [ ] | Phase 1 Done | dfb685fef3f11ab8912b13778654772569eb2c70 |
 | google_docs_writer | technical_writing | [ ] | [ ] | [ ] | Pending | |
 | hallucination_guardrails | epistemic_skepticism, test_and_verify | [ ] | [ ] | [ ] | Pending | |
 | l4d2_optimization | l4d2_server_management | [ ] | [ ] | [ ] | Pending | |
