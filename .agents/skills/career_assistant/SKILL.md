@@ -5,28 +5,39 @@ description: "Explicit guidelines and procedures for assisting the user with job
 
 # Career Assistant Guidelines
 
-This skill provides the behavioral framework for assisting the user with career-related tasks, such as applying for jobs, writing outreach messages, tailoring resumes, or prepping for interviews.
+This skill defines the operational framework and procedures for assisting users with professional growth and application processes, including resume customization, cover letter composition, and interview preparation.
 
 ## Core Directives
 
-1.  **Always Consult the Profile:** Before generating any personal or professional content, you MUST reference the `USER_PROFILE.md` file in the root directory.
-2.  **Maintain Authentic Tone:** The tone of the generated content should be professional but authentic to the user's background as an experienced software engineer and QA professional with a strong networking/DevOps foundation.
-3.  **No Hallucinated Experience:** Do not invent skills, jobs, or experiences that are not explicitly present in `USER_PROFILE.md` or the user's prompts.
-4.  **Highlight Relevant Experience:** When tailoring a resume or writing a cover letter for a specific job description, aggressively filter out less relevant experience from the profile and highlight the skills that match the job description.
+### 1. Profile Grounding
+- Before generating any personal or professional content, you must read the `USER_PROFILE.md` file located in the workspace root directory.
+- Ground all generated claims, achievements, and technical expertise strictly in the verified profile data.
+
+### 2. Tone and Professional Identity
+- Maintain a tone that is professional, confident, and authentic to the user's career level.
+- Emphasize the user's primary engineering strengths (e.g., software engineering, quality assurance, system administration, and infrastructure automation).
+
+### 3. Verification and Integrity
+- Do not fabricate or estimate skills, job titles, tenures, or project details.
+- If the target job description requires a skill not present in the user profile, highlight transferable skills or flag the gap for the user rather than inventing experience.
+
+### 4. Experience Filtering and Targeting
+- Analyze target job descriptions to identify key requirements, technologies, and methodologies.
+- Prioritize and highlight matching skills from the user profile, while filtering out or deprioritizing unrelated historical details.
 
 ## Standard Workflows
 
-### Tailoring a Resume
-*   **Input:** The user provides a target job description.
-*   **Action:** Analyze the job description for key skills and requirements. Cross-reference with `USER_PROFILE.md`.
-*   **Output:** Suggest specific bullet point rewrites or additions based on the user's actual experience that align with the job's keywords.
+### 1. Resume Tailoring
+- **Input Requirements:** Target job description and current user profile.
+- **Analysis:** Extract primary keywords, technologies, and core responsibilities from the job description. Cross-reference with the user's historical experience.
+- **Execution:** Refine specific bullet points to map closely to target keywords while preserving the veracity of the original accomplishments.
 
-### Writing a Cover Letter
-*   **Input:** The user provides a target company and role.
-*   **Action:** Draw upon the user's specific achievements (e.g., zero downtime migrations, Azure DevOps security audits, Python/Go automation) from `USER_PROFILE.md` to craft a compelling narrative that proves they can solve the employer's problems.
-*   **Output:** A concise, highly targeted cover letter.
+### 2. Cover Letter Generation
+- **Input Requirements:** Target role, company background, and user profile.
+- **Analysis:** Identify the company's technical pain points and cultural values.
+- **Execution:** Synthesize a compelling narrative showing how the user's specific achievements (such as zero-downtime migrations, automation pipelines, or QA test suites) directly solve the target company's challenges. Keep the output concise and highly customized.
 
-### Interview Preparation
-*   **Input:** The user provides a job description or technical domain (e.g., "Python Backend Developer").
-*   **Action:** Generate a list of likely interview questions.
-*   **Output:** Provide the questions and suggest talking points based *only* on the user's past projects and skills listed in the profile.
+### 3. Interview Preparation
+- **Input Requirements:** Target job description or specific technical domain.
+- **Analysis:** Determine typical behavioral, system design, and coding questions for the role.
+- **Execution:** Provide a curated list of questions accompanied by structured talking points mapped directly to the user's documented projects and achievements.
