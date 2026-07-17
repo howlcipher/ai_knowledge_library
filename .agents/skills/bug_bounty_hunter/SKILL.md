@@ -1,19 +1,43 @@
+---
 name: "bug_bounty_hunter"
 description: "Triggers during bug bounty reconnaissance, vulnerability analysis, and report generation"
+---
 
 # Bug Bounty Hunting Methodologies
 
-## Reconnaissance Rules
-* Always begin with passive reconnaissance before executing active scans to minimize detection and noise.
-* Map out the entire attack surface comprehensively, prioritizing subdomains, API endpoints, and hidden administrative directories.
-* Pay special attention to historical data, deprecated endpoints, and exposed source code.
+This skill establishes structured procedures for target reconnaissance, systematic vulnerability analysis, and standard disclosure reporting under zero-trust, safe-harbor guidelines.
 
-## Vulnerability Analysis
-* Prioritize Business Logic flaws and authorization bypasses like Insecure Direct Object References over simple automated scanner outputs.
-* Systematically check for Server Side Request Forgery, Cross Site Scripting, and injection vulnerabilities in all user input fields.
-* Never execute destructive payloads. Always construct safe, benign payloads to definitively prove the vulnerability exists without corrupting backend databases.
+## Reconnaissance and Attack Surface Mapping
 
-## Reporting Standards
-* Write all vulnerability reports using standard HackerOne or Bugcrowd documentation structures.
-* Always include a concise description, highly specific reproduction instructions, a calculated severity score, and the exact business impact.
-* Provide actionable, developer friendly remediation advice to ensure the patch is robust.
+### 1. Passive Reconnaissance
+- Always initiate target analysis with passive reconnaissance techniques (e.g., DNS history, WHOIS, certificate transparency logs, search engine hacking) before executing active scans. This minimizes discovery noise and system impact.
+
+### 2. Comprehensive Surface Mapping
+- Map the entire target attack surface systematically. Prioritize discovery of subdomains, API endpoints, parameters, and hidden administrative interfaces.
+- Examine historical archives, deprecated endpoints, and exposed source code repositories for credentials or configuration leaks.
+
+## Vulnerability Analysis and Exploitation safety
+
+### 1. Logic and Authorization Flaws
+- Prioritize identifying Business Logic vulnerabilities, authorization bypasses (e.g., Insecure Direct Object References - IDOR), and authentication flaws over automated scanner outputs.
+- Verify security assumptions on state transitions, multi-tenant boundaries, and input processing.
+
+### 2. Input and Protocol Validation
+- Systematically check for Server-Side Request Forgery (SSRF), Cross-Site Scripting (XSS), SQL/NoSQL injections, and XML External Entity (XXE) vulnerabilities in all user-supplied inputs and headers.
+
+### 3. Safe Payload Design
+- Never execute destructive payloads, denial of service exploits, or commands that modify backend systems.
+- Construct benign proof-of-concept (PoC) payloads (e.g., executing `whoami` or reading non-sensitive system properties) to prove vulnerability existence without impacting system availability or data integrity.
+
+## Vulnerability Reporting Standards
+
+### 1. Report Structure
+- Document all vulnerability disclosures using standard templates (e.g., HackerOne, Bugcrowd).
+- Include the following mandatory sections: Summary, Vulnerable Component/Endpoint, Severity (using CVSS v3.1/v4.0), Detailed Proof of Concept, Business Impact, and Remediation.
+
+### 2. Precision and Reproducibility
+- Write precise, step-by-step reproduction instructions.
+- Attach raw HTTP request/response logs, screenshot proof, or minimal exploit scripts to facilitate developer verification.
+
+### 3. Actionable Remediation
+- Provide specific, developer-friendly remediation guidance. Focus on structural fixes (e.g., parameterized queries, secure coding patterns) rather than superficial workarounds.
