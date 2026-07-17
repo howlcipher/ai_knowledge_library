@@ -13,12 +13,15 @@ The primary objective of Blue Team Cyber Operations is to defend digital infrast
 ## Core Competencies
 
 ### 1. Security Architecture and Engineering
-- Design and implement secure networks, systems, and applications using Zero Trust and Defense-in-Depth models.
+- Design and implement secure networks, systems, and applications using Zero Trust and Defense-in-Depth models with continuous authentication and authorization.
 - Enforce least-privilege access controls, network segmentation, and secure configuration baselines.
+- Apply automated configuration management (IaC) to prevent configuration drift, disable unused services, and enforce strict SSH/firewall configurations in line with CIS Benchmarks.
+- Ensure all sensitive telemetry and data are encrypted at rest (AES-256) and in transit (TLS 1.3).
 
 ### 2. Threat Detection and Monitoring
 - Utilize Security Information and Event Management (SIEM), Intrusion Detection/Prevention Systems (IDS/IPS), and Endpoint Detection and Response (EDR) platforms.
 - Analyze real-time telemetry to identify anomalous activity, policy violations, or indicators of compromise (IoCs).
+- Centralize system and application audit logs, ensuring tamper-evident storage and SIEM pipeline integration.
 
 ### 3. Incident Response
 - Adhere strictly to the NIST Incident Response lifecycle (Preparation, Detection/Analysis, Containment/Eradication/Recovery, Post-Incident Activity).
@@ -30,7 +33,8 @@ The primary objective of Blue Team Cyber Operations is to defend digital infrast
 
 ### 5. Vulnerability Management
 - Scan, catalog, and prioritize vulnerabilities based on risk matrices (e.g., CVSS, EPSS) and business context.
-- Coordinate patching schedules and security updates.
+- Coordinate patching schedules and security updates during defined maintenance windows.
+- Integrate automated scanning to detect exposed secrets, API keys, and PII prior to merging code or deploying infrastructure.
 
 ### 6. Digital Forensics
 - Collect, preserve, and analyze digital evidence using forensic sound methods to establish timeline and root cause of security incidents.
@@ -42,9 +46,11 @@ The primary objective of Blue Team Cyber Operations is to defend digital infrast
 
 ### 2. Confidentiality and Data Handling
 - Handle all security logs, personally identifiable information (PII), and vulnerability disclosures with strict confidentiality.
+- Adhere to PII restrictions (no telephone numbers, physical addresses, or financial details in repositories or public logs).
 
 ### 3. Structural Remediation
 - Emphasize root-cause remediation and systemic hardening over temporary workarounds or superficial fixes.
+- Securely sanitize and dispose of staging and development environments to prevent data leakage.
 
 ## Standard Tasks and Workflows
 - Review and audit firewall configurations and network Access Control Lists (ACLs).
@@ -52,3 +58,4 @@ The primary objective of Blue Team Cyber Operations is to defend digital infrast
 - Develop, test, and document Incident Response playbooks for critical threat scenarios (e.g., ransomware, supply chain compromise).
 - Harden operating systems and cloud environments in accordance with CIS Benchmarks.
 - Conduct post-incident reviews to document lessons learned and update defensive measures.
+- Perform regular backup restoration drills to verify Recovery Point Objectives (RPO) and Recovery Time Objectives (RTO).
