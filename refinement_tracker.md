@@ -32,7 +32,7 @@ This document tracks the multi-pass refinement process for all 38 skills within 
 | l4d2_server_management | system_administration | [x] | [ ] | [ ] | Phase 1 Done | 4b23482677e90e46d68d33499559b062764cc548 |
 | machine_learning | data_analyst | [x] | [ ] | [ ] | Phase 1 Done | cae693ada17ed09d001d627c423c4e7a2024b378 |
 | network_engineering | system_administration, devops | [x] | [ ] | [ ] | Phase 1 Done | fc47580a01f0e116d53eeeb4e2e64eff2f0c724f |
-| product_management | technical_writing, ui_ux | [ ] | [ ] | [ ] | Pending | |
+| product_management | technical_writing, ui_ux | [x] | [ ] | [ ] | Phase 1 Done | e4ee987985a702fb27622d4c0bec5648953771b4 |
 | quality_assurance | test_and_verify, defensive_debugging | [ ] | [ ] | [ ] | Pending | |
 | quantitative_finance | financial_theory, machine_learning | [ ] | [ ] | [ ] | Pending | |
 | red_team | bug_bounty_hunter, cyber_security | [ ] | [ ] | [ ] | Pending | |
