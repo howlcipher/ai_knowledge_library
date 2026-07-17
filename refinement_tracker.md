@@ -11,7 +11,7 @@ This document tracks the multi-pass refinement process for all 38 skills within 
 | baseball_analytics | data_analyst, machine_learning | [x] | [ ] | [ ] | Phase 1 Done | 88ed8b1884fb993b7cfc708e37b27c5f2c7c80c9 |
 | blue_team | cyber_security, system_administration | [x] | [ ] | [ ] | Phase 1 Done | caab11809aeef112bc61b82bd260dcca1e500b77 |
 | bug_bounty_hunter | red_team, cyber_security | [x] | [ ] | [ ] | Phase 1 Done | 1a82bf6424fcc0713e8f562067b3a129b944a6bb |
-| career_assistant | technical_writing, ui_ux | [ ] | [ ] | [ ] | Pending | |
+| career_assistant | technical_writing, ui_ux | [x] | [ ] | [ ] | Phase 1 Done | 801612a220283a5169cfc595b1c11fcc5573ea3f |
 | color_theory | visual_design, ui_ux | [ ] | [ ] | [ ] | Pending | |
 | commit_and_changelog | software_development, devops | [ ] | [ ] | [ ] | Pending | |
 | cyber_security | blue_team, red_team | [ ] | [ ] | [ ] | Pending | |
