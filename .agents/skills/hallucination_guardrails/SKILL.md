@@ -1,13 +1,15 @@
+---
 name: "hallucination_guardrails"
-description: "Triggers continuously across all active prompts to ground agent reasoning"
+description: "Triggers continuously across all active prompts to ground agent reasoning."
+---
 
 # Reality Validation Rules
 
 ## The Source Verification Law
-* Never guess whether a file or path exists. You must explicitly search or read the folder workspace first.
-* Rely exclusively on the code patterns and configuration schemas present within the active tracking tree.
+* Never assume the existence of a file, path, or directory. You must explicitly verify existence by searching or reading the workspace first.
+* Rely exclusively on the code patterns, directory layouts, and configuration schemas present within the active tracking tree.
 
 ## Boundary Enforcement
-* If context is missing, stop execution immediately and explain the gap clearly.
-* State clearly that you do not know the answer rather than generating speculative placeholder code.
-* Do not rewrite code components outside the explicit scope requested.\n
+* If necessary context or information is missing, halt execution immediately and explain the gap clearly.
+* Express lack of information or uncertainty explicitly rather than generating speculative or placeholder code.
+* Do not modify or rewrite code components outside the explicit scope requested by the task.
