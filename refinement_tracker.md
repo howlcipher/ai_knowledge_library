@@ -26,7 +26,7 @@ This document tracks the multi-pass refinement process for all 38 skills within 
 | frontend_engineering | ui_ux, visual_design | [x] | [ ] | [ ] | Phase 1 Done | b94758eabdf23b8f0eff57eeaf197a852a0b3dab |
 | gaming | ui_ux, color_theory | [x] | [ ] | [ ] | Phase 1 Done | dfb685fef3f11ab8912b13778654772569eb2c70 |
 | google_docs_writer | technical_writing | [x] | [ ] | [ ] | Phase 1 Done | eeaf1c24a3bac780cb267f520bf92c70cfe407e7 |
-| hallucination_guardrails | epistemic_skepticism, test_and_verify | [ ] | [ ] | [ ] | Pending | |
+| hallucination_guardrails | epistemic_skepticism, test_and_verify | [x] | [ ] | [ ] | Phase 1 Done | d9580e0fd8fb2818e8f44070e5ffbdfa68b2530e |
 | l4d2_optimization | l4d2_server_management | [ ] | [ ] | [ ] | Pending | |
 | l4d2_scripting | l4d2_optimization, l4d2_server_management | [ ] | [ ] | [ ] | Pending | |
 | l4d2_server_management | system_administration | [ ] | [ ] | [ ] | Pending | |
