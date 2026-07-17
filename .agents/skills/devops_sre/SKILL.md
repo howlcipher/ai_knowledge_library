@@ -3,41 +3,41 @@ name: "devops_sre"
 description: "Triggers when designing infrastructure-as-code (Terraform, Kubernetes) or building CI/CD pipelines (Azure DevOps, GitLab)."
 ---
 
-# DevOps & Site Reliability Engineering (SRE) Methodologies
+# DevOps and Site Reliability Engineering Standards
 
-This skill defines the strict architectural and operational standards for building infrastructure, automation pipelines, and deployments. As a DevOps Engineer/SRE, infrastructure must be treated as code, highly maintainable, and designed for zero-downtime migrations.
+This skill defines the mandatory architectural and operational standards for building infrastructure, automation pipelines, and software deployments. All infrastructure must be treated as code, remain highly maintainable, and be designed for zero-downtime operations and security.
 
-## 🏗️ Infrastructure as Code (IaC) - Terraform
+## Infrastructure as Code with Terraform
 
-When writing Terraform modules or configurations, adhere to the following principles:
+When designing and writing Terraform configurations, adhere to the following principles:
 
-1. **Modularity over Monoliths:** Never write massive, single-file Terraform configurations. Break infrastructure down into reusable modules (e.g., `modules/networking`, `modules/compute`).
-2. **State Management:** Always assume remote state (e.g., AWS S3 + DynamoDB locking, or Azure Storage). Never commit `terraform.tfstate` to version control.
-3. **Variable Standardization:** Use consistent naming conventions for variables (e.g., `environment`, `project_name`, `region`). Define strict types and validation rules in `variables.tf`.
-4. **Least Privilege:** When generating IAM roles or service principals, grant only the exact permissions required. Avoid wildcards (`*`).
-5. **Output Cleanliness:** Only expose necessary outputs in `outputs.tf` to avoid leaking sensitive ARNs, IDs, or configurations.
+1. **Modularity over Monoliths**: Avoid single-file or monolithic configurations. Segment infrastructure into logical, reusable modules (e.g., networking, compute, database).
+2. **Remote State Management**: Store state files in remote backends (e.g., AWS S3, Azure Blob Storage) with state locking and encryption enabled. Never commit local state files (`terraform.tfstate`) to version control.
+3. **Variable Standardization**: Enforce strict naming conventions for variables (e.g., `environment`, `project_name`, `region`). Define precise variable types and validation rules in `variables.tf`.
+4. **Least Privilege Access**: Grant the minimal necessary permissions when generating Identity and Access Management (IAM) roles or service principals. Avoid wildcards (`*`) in policy statements.
+5. **Output Integrity**: Expose only the minimum required output variables in `outputs.tf` to prevent the leakage of sensitive resource identifiers or connection strings.
 
-## 🚢 Kubernetes Manifests (K8s)
+## Kubernetes Manifests and Deployment
 
-When scaffolding Kubernetes deployments, services, or Helm charts:
+When scaffolding Kubernetes manifests, deployments, or Helm charts:
 
-1. **Declarative Integrity:** All deployments must be fully declarative. Avoid imperative `kubectl run` commands in documentation or scripts unless specifically for one-off debugging.
-2. **Resource Limits & Requests:** NEVER generate a Pod or Deployment without explicitly defining CPU and memory `requests` and `limits`. This prevents node starvation.
-3. **Liveness and Readiness Probes:** All microservices must include proper health checks. Do not deploy services that cannot self-heal or signal their readiness to the load balancer.
-4. **Security Contexts:** Enforce strict security contexts. Containers should not run as `root` (`runAsNonRoot: true`), and `allowPrivilegeEscalation` should be `false`.
-5. **Configuration Management:** Hardcode nothing. Inject all environment variables via `ConfigMaps` and sensitive credentials via `Secrets` (or external secret operators like Azure KeyVault / HashiCorp Vault).
+1. **Declarative Configuration**: Define resources fully in declarative manifests. Avoid imperative CLI commands (e.g., `kubectl run`) for production resource management.
+2. **Resource Constraints**: Define explicit CPU and memory `requests` and `limits` for all containers to ensure resource predictability and prevent node starvation.
+3. **Liveness and Readiness Probes**: Define proper liveness and readiness probes for all microservices to enable self-healing and prevent traffic routing to uninitialized or failing pods.
+4. **Pod Security Contexts**: Enforce non-root execution (`runAsNonRoot: true`), disable privilege escalation (`allowPrivilegeEscalation: false`), and restrict system capabilities.
+5. **Configuration and Secret Isolation**: Separate application logic from environment configuration. Utilize ConfigMaps for configuration settings and dynamic Secrets for credentials, certificates, and keys.
 
-## 🔄 CI/CD Pipelines (Azure DevOps / GitHub Actions)
+## CI/CD Pipelines
 
-When templating or modifying continuous integration and continuous deployment pipelines:
+When authoring or modifying continuous integration and continuous deployment pipelines (e.g., GitHub Actions, Azure DevOps):
 
-1. **Pipeline as Code:** All pipelines must be written in YAML and version-controlled alongside the application code. No UI-based pipeline configurations.
-2. **Templating and Reusability:** Build generalized, reusable pipeline templates (e.g., a standard Python test template, a standard Go build template) rather than duplicating logic across dozens of repositories.
-3. **Security Auditing & Linting:** Every pipeline must contain an early stage for security scanning (e.g., Dependabot, Bandit, Gosec) and linting. Fail the build immediately if security thresholds are violated.
-4. **Zero Downtime Deployments:** Deployments should utilize strategies like Blue/Green, Canary, or Rolling Updates to ensure absolutely zero downtime during cutovers.
-5. **Environment Segregation:** Clearly define boundaries between `dev`, `stage`, and `prod`. Production deployments must require manual human-in-the-loop approval gates.
+1. **Pipeline as Code**: Write all pipelines in declarative formats (YAML) and version-control them alongside the application code. Avoid UI-configured build steps.
+2. **Pipeline Reusability**: Implement shared, parameterized templates for common tasks (e.g., testing, building, and publishing) to eliminate duplication.
+3. **Security Analysis**: Integrate static application security testing (SAST), software composition analysis (SCA), and secret detection scanners in the pipeline. Fail builds if violations are detected.
+4. **Zero-Downtime Strategy**: Enforce safe deployment patterns (canary, blue-green, or rolling updates) with automated regression verification.
+5. **Environment Isolation**: Segment pipeline runners and environments cleanly. Require multi-party manual approval gates for production deployments.
 
-## 🛡️ Reliability and Incident Response
+## Reliability and Incident Response
 
-- **Log-First Debugging:** Ensure all infrastructure components emit structured, centralized logs. If writing a script to deploy or migrate resources, include robust exception handling and logging (e.g., using `system_logger.py`).
-- **Idempotency:** All scripts (Bash, Python, PowerShell) used in infrastructure must be idempotent. Running the script multiple times should yield the same safe state without causing errors or duplicating resources.
+- **Log Centralization**: Enforce structured, centralized logging across all applications and infrastructure tools. If writing deployment or migration scripts, implement robust error capturing and structured logging.
+- **Idempotency**: Enforce idempotency across all deployment, maintenance, and utility scripts. Multiple runs of a script must result in the same safe system state without side effects.
