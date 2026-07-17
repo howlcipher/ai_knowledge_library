@@ -17,7 +17,7 @@ This document tracks the multi-pass refinement process for all 38 skills within 
 | cyber_security | blue_team, red_team | [x] | [x] | [ ] | Phase 2 Done | fa46a5a9ee55b49b32709b930a4b62615aec088f |
 | data_analyst | machine_learning, quantitative_finance | [x] | [ ] | [ ] | Phase 1 Done | 7991b9c9120d82db5346cd566f9e9b5d5dd03211 |
 | database_management | architectural_guardrails, software_development | [x] | [ ] | [ ] | Phase 1 Done | f728480d0f308e5098ab225ad3b71ee106465cf0 |
-| defensive_debugging | software_development, quality_assurance | [x] | [ ] | [ ] | Phase 1 Done | 94fecd9315f67b43268f75397a367ab42e8cdafd |
+| defensive_debugging | software_development, quality_assurance | [x] | [x] | [ ] | Phase 2 Done | 050e50463654d8708f0b2117c066c9218cf89467 |
 | devops | devops_sre, system_administration | [x] | [ ] | [ ] | Phase 1 Done | c6a1176f6ac5a9aa43d5ce7e9311e3322dd1d649 |
 | devops_sre | devops, network_engineering | [x] | [ ] | [ ] | Phase 1 Done | bda56aa223bc38b8b79fe764632c708a16049e1c |
 | economic_theory | financial_theory, quantitative_finance | [x] | [ ] | [ ] | Phase 1 Done | 03e6e682b6b86e4525bf6d45e926ce70b8e48d1b |
