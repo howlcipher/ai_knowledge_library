@@ -18,7 +18,7 @@ This document tracks the multi-pass refinement process for all 38 skills within 
 | data_analyst | machine_learning, quantitative_finance | [x] | [ ] | [ ] | Phase 1 Done | 7991b9c9120d82db5346cd566f9e9b5d5dd03211 |
 | database_management | architectural_guardrails, software_development | [x] | [ ] | [ ] | Phase 1 Done | f728480d0f308e5098ab225ad3b71ee106465cf0 |
 | defensive_debugging | software_development, quality_assurance | [x] | [ ] | [ ] | Phase 1 Done | 94fecd9315f67b43268f75397a367ab42e8cdafd |
-| devops | devops_sre, system_administration | [ ] | [ ] | [ ] | Pending | |
+| devops | devops_sre, system_administration | [x] | [ ] | [ ] | Phase 1 Done | c6a1176f6ac5a9aa43d5ce7e9311e3322dd1d649 |
 | devops_sre | devops, network_engineering | [ ] | [ ] | [ ] | Pending | |
 | economic_theory | financial_theory, quantitative_finance | [ ] | [ ] | [ ] | Pending | |
 | environment_doctor | system_administration, devops | [ ] | [ ] | [ ] | Pending | |
