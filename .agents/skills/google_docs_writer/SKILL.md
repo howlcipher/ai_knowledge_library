@@ -1,5 +1,7 @@
+---
 name: "google_docs_writer"
 description: "Triggers when assisting with drafting, formatting, or integrating content for Google Docs."
+---
 
 # Google Docs Writing Methodologies
 
