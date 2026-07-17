@@ -30,7 +30,7 @@ This document tracks the multi-pass refinement process for all 38 skills within 
 | l4d2_optimization | l4d2_server_management | [x] | [x] | [ ] | Phase 2 Done | ded52e5e78154414402127a60c8f863faa59c93c |
 | l4d2_scripting | l4d2_optimization, l4d2_server_management | [x] | [x] | [ ] | Phase 2 Done | f9603a8dfcd4e937569f448665689705aae1de1d |
 | l4d2_server_management | system_administration | [x] | [x] | [ ] | Phase 2 Done | f8e054deba8d637cb199422f044f8e2231d893cd |
-| machine_learning | data_analyst | [x] | [ ] | [ ] | Phase 1 Done | cae693ada17ed09d001d627c423c4e7a2024b378 |
+| machine_learning | data_analyst | [x] | [x] | [ ] | Phase 2 Done | 4cd008330704a01ba46d588df45c2273fd8d386c |
 | network_engineering | system_administration, devops | [x] | [x] | [ ] | Phase 2 Done | 991c1d7d7b0254ad1c0a1f99abc49bd0074a7352 |
 | product_management | technical_writing, ui_ux | [x] | [ ] | [ ] | Phase 1 Done | e4ee987985a702fb27622d4c0bec5648953771b4 |
 | quality_assurance | test_and_verify, defensive_debugging | [x] | [x] | [ ] | Phase 2 Done | 96dc433709545db7541501876a6eeb2baecf4341 |
