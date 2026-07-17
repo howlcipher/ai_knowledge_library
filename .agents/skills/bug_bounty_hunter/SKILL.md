@@ -10,24 +10,25 @@ This skill establishes structured procedures for target reconnaissance, systemat
 ## Reconnaissance and Attack Surface Mapping
 
 ### 1. Passive Reconnaissance
-- Always initiate target analysis with passive reconnaissance techniques (e.g., DNS history, WHOIS, certificate transparency logs, search engine hacking) before executing active scans. This minimizes discovery noise and system impact.
+- Always initiate target analysis with passive reconnaissance techniques and OSINT channels (e.g., DNS history, WHOIS, certificate transparency logs, search engine hacking) before executing active scans. This minimizes discovery noise and system impact while mapping the surface from an adversary's perspective (aligning with MITRE ATT&CK).
 
 ### 2. Comprehensive Surface Mapping
 - Map the entire target attack surface systematically. Prioritize discovery of subdomains, API endpoints, parameters, and hidden administrative interfaces.
-- Examine historical archives, deprecated endpoints, and exposed source code repositories for credentials or configuration leaks.
+- Examine historical archives, deprecated endpoints, and exposed source code repositories for credentials, private keys, API tokens, or configuration leaks.
 
 ## Vulnerability Analysis and Exploitation safety
 
 ### 1. Logic and Authorization Flaws
 - Prioritize identifying Business Logic vulnerabilities, authorization bypasses (e.g., Insecure Direct Object References - IDOR), and authentication flaws over automated scanner outputs.
-- Verify security assumptions on state transitions, multi-tenant boundaries, and input processing.
+- Verify security assumptions on state transitions, multi-tenant boundaries, and input processing under Zero-Trust rules (continuous verification and least privilege).
 
 ### 2. Input and Protocol Validation
-- Systematically check for Server-Side Request Forgery (SSRF), Cross-Site Scripting (XSS), SQL/NoSQL injections, and XML External Entity (XXE) vulnerabilities in all user-supplied inputs and headers.
+- Systematically check for Server-Side Request Forgery (SSRF), Cross-Site Scripting (XSS), SQL/NoSQL injections, and XML External Entity (XXE) vulnerabilities (covering the OWASP Top 10) in all user-supplied inputs and headers.
+- Evaluate the feasibility of attack path modeling, showing how multiple low-impact vulnerabilities can be chained together to bypass defense-in-depth boundaries.
 
 ### 3. Safe Payload Design
 - Never execute destructive payloads, denial of service exploits, or commands that modify backend systems.
-- Construct benign proof-of-concept (PoC) payloads (e.g., executing `whoami` or reading non-sensitive system properties) to prove vulnerability existence without impacting system availability or data integrity.
+- Construct benign proof-of-concept (PoC) payloads (e.g., executing `whoami` or reading non-sensitive system properties) to prove vulnerability existence without impacting system availability, performance, or data integrity.
 
 ## Vulnerability Reporting Standards
 
@@ -41,3 +42,7 @@ This skill establishes structured procedures for target reconnaissance, systemat
 
 ### 3. Actionable Remediation
 - Provide specific, developer-friendly remediation guidance. Focus on structural fixes (e.g., parameterized queries, secure coding patterns) rather than superficial workarounds.
+- Apply defensive translation, pivoting immediately from the vulnerability description to mitigation steps (e.g., least privilege, secure input handling, AES-256/TLS 1.3 encryption).
+
+### 4. Privacy and PII Protection
+- Adhere strictly to PII constraints. Redact telephone numbers, physical addresses, government identification numbers, or financial details from all proof-of-concept logs, reports, and screenshots.
