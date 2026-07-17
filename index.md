@@ -33,7 +33,8 @@
 **System Definition:** A centralized, filesystem-based knowledge library and execution environment engineered for autonomous AI operatives embedded within the terminal.
 
 **The Engineering Protocol:** AI constructs frequently hallucinate or generate generic boilerplate when operating outside of a defined parameter space. By tethering this structured databank to the local environment, the AI is mathematically coerced into operating synchronously with a senior systems engineer. 
-* **Zero-Hallucination Matrix:** The AI is strictly bound by local markdown rules (`GEMINI.md`), explicit code standards, and project constraints before generating solutions.
+* **Zero-Hallucination Matrix:** The AI is strictly bound by local markdown rules (`AGENTS.md`, auto-loaded by both Gemini via `GEMINI.md` and Claude Code via `CLAUDE.md`), explicit code standards, and project constraints before generating solutions.
+* **Multi-Agent Native:** The same skills, rules, and profile context load identically into **Gemini CLI / Antigravity** and **Claude Code**. One library, every terminal agent.
 * **Automated CI/CD Guardrails:** Built-in verification pipelines (SAST, Linting, Testing) ensure the AI cannot compromise the master branch.
 * **Domain-Specific Cognitive Skills:** Pre-loaded domain nodes (e.g., UI/UX, Data Science, Threat Hunting) allow the agent to adapt logic dynamically rather than executing blindly.
 
@@ -47,7 +48,7 @@
 
 ### 🛡️ System Security & Cognitive Integrity
 When granting an AI construct access to local filesystem arrays and shell commands, security is the primary directive. This library architecture is hardened to protect the local environment from prompt injection, memory poisoning, and unauthorized automated execution:
-* **Anti-Poisoning & Grounding Protocol:** The AI is mathematically grounded in local rule files (`GEMINI.md`) and forced to apply an epistemic humility decision tree. If live network data conflicts with stale local data, or if an action violates the [`anti_manipulation.md`](.agents/rules/anti_manipulation.md) constraints, the core orchestrator will sever the connection automatically.
+* **Anti-Poisoning & Grounding Protocol:** The AI is mathematically grounded in local rule files (`AGENTS.md`) and forced to apply an epistemic humility decision tree. If live network data conflicts with stale local data, or if an action violates the [`anti_manipulation.md`](.agents/rules/anti_manipulation.md) constraints, the core orchestrator will sever the connection automatically.
 * **Human-in-the-Loop Override:** Absolutely no executable commands (like `bash` scripts or external API mutations) are initialized without explicit human consent. The operator reviews all proposed actions natively.
 * **100% Local Privacy:** The core orchestrator and vector databases (ChromaDB / PGVector) operate entirely locally. Local filesystems, cryptographic secrets, and personalized `USER_PROFILE.md` structures are never exfiltrated to a third-party training set.
 
@@ -113,7 +114,9 @@ The knowledge base is organized into specific domains that the AI agent natively
 
 | Directory or File | Primary Function |
 | :--- | :--- |
-| `GEMINI.md` | Global index and central rulebook for all agent interactions. |
+| `AGENTS.md` | Canonical global rulebook for all agent interactions. |
+| `GEMINI.md` / `CLAUDE.md` | Thin per-agent entry points that import `AGENTS.md` (Gemini CLI / Antigravity and Claude Code respectively). |
+| `.claude/skills` | Link exposing the skills library to Claude Code inside this repo. |
 | [`.agents/skills/`](.agents/skills/README.md) | The **AI Skills Library**. Domain-specific behavioral instructions parsed natively. |
 | `.agents/rules/` | Global constraints that actively shape system prompts. |
 | `scripts/` | Utilities for syncing and bootstrapping environments globally. |
