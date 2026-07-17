@@ -2,13 +2,13 @@
 """
 Web scraping tool for AI research.
 
-This tool fetches content from a given URL, verifies it using an LLM (Gemini),
-chunks the text, and inserts it into a vector database (ChromaDB or PGVector).
+This tool fetches content from a given URL, verifies it using an LLM
+(Gemini or Claude, whichever provider key is configured), chunks the text,
+and inserts it into a vector database (ChromaDB or PGVector).
 """
 
 import argparse
 import json
-import os
 import sys
 from typing import Dict, List, Optional, Tuple
 
@@ -26,12 +26,19 @@ class ContentVerifier:
         Initialize the ContentVerifier.
 
         Args:
-            api_key (Optional[str]): The Gemini API key. If None, falls back to heuristics.
+            api_key (Optional[str]): A provider API key (Gemini or Anthropic).
+                If None, the configured provider keys are used; with no key at
+                all, verification falls back to heuristics.
         """
+        from src.infrastructure.config_loader import resolve_utility_llm
+
         cfg = load_config()
-        self.api_key = (
-            api_key or cfg.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY")
-        )
+        self.model, resolved_key = resolve_utility_llm(cfg)
+        self.api_key = api_key or resolved_key
+        if api_key and not self.model:
+            # An explicit key was passed but no provider key was configured;
+            # assume the historical default provider.
+            self.model = "gemini/gemini-1.5-flash"
 
     def verify(self, text: str, source_url: str) -> Tuple[bool, int, str]:
         """
@@ -47,7 +54,8 @@ class ContentVerifier:
         print("Verifying content integrity...")
         if not self.api_key:
             print(
-                "Warning: GEMINI_API_KEY not found. Falling back to basic heuristic checks."
+                "Warning: no provider API key found (GEMINI_API_KEY or "
+                "ANTHROPIC_API_KEY). Falling back to basic heuristic checks."
             )
             return self._heuristic_check(text)
 
@@ -82,14 +90,16 @@ class ContentVerifier:
 
         try:
             fallbacks = [
-                "anthropic/claude-3-5-sonnet-20240620",
+                "anthropic/claude-haiku-4-5-20251001",
                 "openai/gpt-4o-mini",
             ]
+            if self.model in fallbacks:
+                fallbacks.remove(self.model)
             import time
 
             start_time = time.time()
             response = litellm.completion(
-                model="gemini/gemini-1.5-flash",
+                model=self.model,
                 messages=[{"role": "user", "content": prompt}],
                 fallbacks=fallbacks,
                 api_key=self.api_key,

@@ -23,6 +23,16 @@ defaults:
       layout: "default"
   -
     scope:
+      path: "AGENTS.md"
+    values:
+      layout: "default"
+  -
+    scope:
+      path: "CLAUDE.md"
+    values:
+      layout: "default"
+  -
+    scope:
       path: "change_log.md"
     values:
       layout: "default"

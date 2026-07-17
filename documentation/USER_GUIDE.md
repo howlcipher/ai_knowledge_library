@@ -25,7 +25,7 @@ You do not have to navigate the library through the command line to ask question
 ### 🖥️ Terminal UI (TUI)
 * **What it is:** A blazing-fast, terminal-native chat interface built with Python `textual`.
 * **Why use it:** It has full, unsandboxed access to your local filesystem.
-* **Feature - Multi-LLM Switching:** From the TUI sidebar, you can hot-swap your AI provider on the fly. Don't like Gemini's answer? Switch to Claude 3.5 Sonnet, GPT-4o, Grok 2, or Perplexity Sonar instantly.
+* **Feature - Multi-LLM Switching:** From the TUI sidebar, you can hot-swap your AI provider on the fly. Don't like Gemini's answer? Switch to Claude Sonnet 5, Claude Opus 4.8, GPT-4o, Grok 2, or Perplexity Sonar instantly.
 
 ### 🌐 Web UI (Streamlit)
 * **What it is:** A rich, graphical browser interface built with Python `streamlit`.

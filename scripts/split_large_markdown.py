@@ -16,7 +16,9 @@ class MarkdownSplitter:
         self.exclude_files = exclude_files or [
             "README.md",
             "change_log.md",
+            "AGENTS.md",
             "GEMINI.md",
+            "CLAUDE.md",
             "USER_PROFILE.md",
         ]
 

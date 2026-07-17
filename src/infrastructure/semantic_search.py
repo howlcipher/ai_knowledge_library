@@ -6,7 +6,6 @@ Provides an object-oriented interface for performing semantic searches
 across the configured vector database backend (PgVector or ChromaDB).
 """
 
-import os
 import sys
 
 from src.infrastructure.config_loader import load_config
@@ -34,14 +33,16 @@ class SemanticSearcher:
         print(f"Expanding query: '{query}'...")
         prompt = f"Expand the following search query into 3 similar but distinct semantic queries to improve database retrieval. Output exactly one query per line, no bullet points, no extra text. Original query: {query}"
 
-        api_key = self.cfg.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY")
+        from src.infrastructure.config_loader import resolve_utility_llm
+
+        model, api_key = resolve_utility_llm(self.cfg)
         if not api_key:
-            # Fallback to single query if no API key is available
+            # Fallback to single query if no provider API key is available
             return [query]
 
         try:
             response = litellm.completion(
-                model="gemini/gemini-1.5-flash",
+                model=model,
                 messages=[{"role": "user", "content": prompt}],
                 api_key=api_key,
             )

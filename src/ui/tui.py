@@ -80,7 +80,9 @@ class AILibraryTUI(App):
                 yield Select(
                     [
                         ("Gemini 1.5 Pro", "gemini/gemini-1.5-pro"),
-                        ("Claude 3.5 Sonnet", "anthropic/claude-3-5-sonnet-20240620"),
+                        ("Claude Sonnet 5", "anthropic/claude-sonnet-5"),
+                        ("Claude Opus 4.8", "anthropic/claude-opus-4-8"),
+                        ("Claude Haiku 4.5", "anthropic/claude-haiku-4-5-20251001"),
                         ("GPT-4o", "openai/gpt-4o"),
                         ("Grok 2", "xai/grok-2"),
                         (
@@ -142,7 +144,7 @@ class AILibraryTUI(App):
         try:
             fallbacks = [
                 "gemini/gemini-1.5-pro",
-                "anthropic/claude-3-5-sonnet-20240620",
+                "anthropic/claude-sonnet-5",
                 "openai/gpt-4o",
                 "xai/grok-2",
             ]

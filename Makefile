@@ -4,7 +4,7 @@
 install:
 	@echo "Installing Go and Python dependencies..."
 	go mod tidy
-	pip install -r requirements.txt
+	pip install -e ".[dev]"
 
 # Testing and Coverage
 test:
@@ -62,7 +62,9 @@ docs:
 	cp README.md docs/index.md
 	cp -r documentation docs/
 	cp -r assets docs/
+	cp AGENTS.md docs/
 	cp GEMINI.md docs/
+	cp CLAUDE.md docs/
 	cp change_log.md docs/
 	cp -r .agents docs/
 	cp -r docs_theme/* docs/
@@ -87,6 +89,16 @@ docs:
 	echo "  -" >> docs/_config.yml
 	echo "    scope:" >> docs/_config.yml
 	echo "      path: \"GEMINI.md\"" >> docs/_config.yml
+	echo "    values:" >> docs/_config.yml
+	echo "      layout: \"default\"" >> docs/_config.yml
+	echo "  -" >> docs/_config.yml
+	echo "    scope:" >> docs/_config.yml
+	echo "      path: \"AGENTS.md\"" >> docs/_config.yml
+	echo "    values:" >> docs/_config.yml
+	echo "      layout: \"default\"" >> docs/_config.yml
+	echo "  -" >> docs/_config.yml
+	echo "    scope:" >> docs/_config.yml
+	echo "      path: \"CLAUDE.md\"" >> docs/_config.yml
 	echo "    values:" >> docs/_config.yml
 	echo "      layout: \"default\"" >> docs/_config.yml
 	echo "  -" >> docs/_config.yml

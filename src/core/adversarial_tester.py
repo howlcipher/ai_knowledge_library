@@ -7,34 +7,39 @@ by generating adversarial prompts (prompt injections, requests for illegal
 activities) and evaluating whether the AI safely rejects them.
 
 Requires:
-    google-generativeai
-    GEMINI_API_KEY environment variable set.
+    litellm
+    GEMINI_API_KEY or ANTHROPIC_API_KEY environment variable set.
 """
 
 import argparse
 import os
 import sys
 
-from google import genai
-from google.genai import types
+import litellm
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 repo_root = os.path.abspath(os.path.join(script_dir, ".."))
 
 
 def load_system_instruction():
-    """Loads the core GEMINI.md and the anti-manipulation rules as system instruction."""
-    gemini_path = os.path.join(repo_root, "GEMINI.md")
+    """Loads the canonical AGENTS.md rulebook and the anti-manipulation rules
+    as system instruction, falling back to GEMINI.md for older checkouts."""
+    rulebook_paths = [
+        os.path.join(repo_root, "AGENTS.md"),
+        os.path.join(repo_root, "GEMINI.md"),
+    ]
     anti_manipulation_path = os.path.join(
         repo_root, ".agents", "rules", "anti_manipulation.md"
     )
 
     instruction = ""
-    try:
-        with open(gemini_path, "r", encoding="utf8") as f:
-            instruction += f.read() + "\n\n"
-    except FileNotFoundError:
-        print(f"Warning: {gemini_path} not found.")
+    for rulebook_path in rulebook_paths:
+        try:
+            with open(rulebook_path, "r", encoding="utf8") as f:
+                instruction += f.read() + "\n\n"
+            break
+        except FileNotFoundError:
+            print(f"Warning: {rulebook_path} not found.")
 
     try:
         with open(anti_manipulation_path, "r", encoding="utf8") as f:
@@ -45,10 +50,8 @@ def load_system_instruction():
     return instruction
 
 
-def run_tests(api_key: str):
-    """Runs a suite of negative tests against the Gemini model."""
-    client = genai.Client(api_key=api_key)
-
+def run_tests(api_key: str, model: str):
+    """Runs a suite of negative tests against the configured LLM."""
     # We use a standard generative model, attaching our system context.
     system_instruction = load_system_instruction()
 
@@ -86,14 +89,15 @@ def run_tests(api_key: str):
         prompt = test["prompt"]
 
         try:
-            response = client.models.generate_content(
-                model="gemini-1.5-pro",
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                ),
+            response = litellm.completion(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": prompt},
+                ],
+                api_key=api_key,
             )
-            output = response.text
+            output = response.choices[0].message.content or ""
         except Exception as e:
             # Safety exceptions often get raised directly by the library
             output = f"Blocked by safety filters or error: {str(e)}"
@@ -136,7 +140,13 @@ def main():
     parser.add_argument(
         "--api-key",
         type=str,
-        help="Gemini API Key. Alternatively, set GEMINI_API_KEY env var.",
+        help="Provider API Key. Alternatively, set GEMINI_API_KEY or ANTHROPIC_API_KEY env var.",
+        default=None,
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        help="LiteLLM model id to test, e.g. gemini/gemini-1.5-pro or anthropic/claude-sonnet-5.",
         default=None,
     )
     args = parser.parse_args()
@@ -144,16 +154,27 @@ def main():
     from src.infrastructure.config_loader import load_config
 
     cfg = load_config()
-    api_key = (
-        args.api_key or cfg.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY")
+    gemini_key = cfg.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY")
+    anthropic_key = cfg.get("anthropic_api_key") or os.environ.get(
+        "ANTHROPIC_API_KEY"
     )
+
+    api_key = args.api_key or gemini_key or anthropic_key
     if not api_key:
         print(
-            "Error: Gemini API Key is required. Set it in .env, GEMINI_API_KEY environment variable, or pass --api-key."
+            "Error: a provider API key is required. Set GEMINI_API_KEY or "
+            "ANTHROPIC_API_KEY in .env or the environment, or pass --api-key."
         )
         sys.exit(1)
 
-    run_tests(api_key)
+    model = args.model
+    if not model:
+        if api_key == anthropic_key and not gemini_key:
+            model = "anthropic/claude-sonnet-5"
+        else:
+            model = "gemini/gemini-1.5-pro"
+
+    run_tests(api_key, model)
 
 
 if __name__ == "__main__":

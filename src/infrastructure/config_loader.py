@@ -34,6 +34,7 @@ class BackupSettings(BaseModel):
 class AppSettings(BaseSettings):
     llm_model: str = "gemini/gemini-1.5-pro"
     gemini_api_key: str = ""
+    anthropic_api_key: str = ""
     database: DatabaseSettings = DatabaseSettings()
     server: ServerSettings = ServerSettings()
     agents: AgentsSettings = AgentsSettings()
@@ -95,6 +96,10 @@ class ConfigLoader:
             if aws_api_key:
                 self.settings.gemini_api_key = aws_api_key
 
+            aws_anthropic_key = secret_mgr.get_secret("ANTHROPIC_API_KEY")
+            if aws_anthropic_key:
+                self.settings.anthropic_api_key = aws_anthropic_key
+
             aws_webhook = secret_mgr.get_secret("WEBHOOK_SECRET")
             if aws_webhook:
                 self.settings.server.webhook_secret = aws_webhook
@@ -143,3 +148,24 @@ def get_chroma_db_path():
     """
     db_path = default_loader.get("database", {}).get("chroma_db_path", ".chromadb")
     return os.path.abspath(os.path.join(default_loader.get_repo_root(), db_path))
+
+
+def resolve_utility_llm(cfg=None):
+    """
+    Picks a fast, cheap LiteLLM model for internal utility calls (query
+    expansion, content verification) based on whichever provider API key
+    is configured. Returns a (model, api_key) tuple, or (None, None) if
+    no provider key is available.
+    """
+    cfg = cfg or default_loader.config
+    gemini_key = cfg.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY")
+    if gemini_key:
+        return "gemini/gemini-1.5-flash", gemini_key
+
+    anthropic_key = cfg.get("anthropic_api_key") or os.environ.get(
+        "ANTHROPIC_API_KEY"
+    )
+    if anthropic_key:
+        return "anthropic/claude-haiku-4-5-20251001", anthropic_key
+
+    return None, None

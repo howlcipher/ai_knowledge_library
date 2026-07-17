@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -146,7 +147,7 @@ func (i *Installer) Uninstall() {
 		huh.NewGroup(
 			huh.NewConfirm().
 				Title("Are you sure you want to uninstall?").
-				Description("This will remove the global AGY links to skills and rules.").
+				Description("This will remove the global Gemini (AGY) and Claude Code links to skills and rules.").
 				Value(&confirm),
 		),
 	)
@@ -159,8 +160,10 @@ func (i *Installer) Uninstall() {
 	fmt.Println("Uninstalling global links...")
 	home, _ := os.UserHomeDir()
 	agyDir := filepath.Join(home, ".gemini", "antigravity-cli")
+	claudeDir := filepath.Join(home, ".claude")
 
-	skillsDir := filepath.Join(agyDir, "skills")
+	agySkillsDir := filepath.Join(agyDir, "skills")
+	claudeSkillsDir := filepath.Join(claudeDir, "skills")
 	rulesDir := filepath.Join(agyDir, "rules")
 
 	sourceSkills := ".agents/skills"
@@ -169,9 +172,11 @@ func (i *Installer) Uninstall() {
 	entries, _ := os.ReadDir(sourceSkills)
 	for _, entry := range entries {
 		if entry.IsDir() {
-			target := filepath.Join(skillsDir, entry.Name())
-			_ = os.RemoveAll(target)
-			fmt.Println("Removed skill link:", target)
+			for _, skillsDir := range []string{agySkillsDir, claudeSkillsDir} {
+				target := filepath.Join(skillsDir, entry.Name())
+				_ = os.RemoveAll(target)
+				fmt.Println("Removed skill link:", target)
+			}
 		}
 	}
 
@@ -181,6 +186,17 @@ func (i *Installer) Uninstall() {
 			target := filepath.Join(rulesDir, entry.Name())
 			_ = os.Remove(target)
 			fmt.Println("Removed rule link:", target)
+		}
+	}
+
+	// Remove the managed library block from the global Claude memory file.
+	claudeMemory := filepath.Join(claudeDir, "CLAUDE.md")
+	if data, err := os.ReadFile(claudeMemory); err == nil { // #nosec G304 -- fixed path under the user's home directory
+		blockRe := regexp.MustCompile(`(?s)\n?<!-- ai_knowledge_library:start -->.*?<!-- ai_knowledge_library:end -->\n?`)
+		cleaned := blockRe.ReplaceAll(data, []byte("\n"))
+		if string(cleaned) != string(data) {
+			_ = os.WriteFile(claudeMemory, cleaned, 0600)
+			fmt.Println("Removed library block from:", claudeMemory)
 		}
 	}
 
@@ -309,7 +325,7 @@ func (i *Installer) ShowHelp() {
 	case "venv":
 		fmt.Println("VENV ERRORS:")
 		fmt.Println("- Ensure you run `source venv/bin/activate` before using python tools.")
-		fmt.Println("- If pdoc or pytest is missing, run `pip install -r requirements.txt` again.")
+		fmt.Println("- If pdoc or pytest is missing, run `pip install .[dev]` again.")
 	case "git":
 		fmt.Println("GIT ERRORS:")
 		fmt.Println("- If you get a 'divergent branches' error, run `git pull --rebase`.")
@@ -332,7 +348,7 @@ func (i *Installer) Install() {
 		huh.NewGroup(
 			huh.NewConfirm().
 				Title("Install Python dependencies?").
-				Description("Installs requirements.txt (pytest, google-api, etc).").
+				Description("Installs the pyproject.toml dependencies (litellm, google-genai, anthropic via litellm, etc).").
 				Value(&i.InstallDeps),
 			huh.NewConfirm().
 				Title("Set up Google Docs integration? (Optional)").
@@ -340,7 +356,7 @@ func (i *Installer) Install() {
 				Value(&i.SetupDocs),
 			huh.NewConfirm().
 				Title("Link skills and rules globally?").
-				Description("Makes this library's rules available to all your AI agents.").
+				Description("Makes this library available to Gemini (AGY) and Claude Code everywhere.").
 				Value(&i.LinkGlobal),
 		),
 	)
@@ -356,9 +372,9 @@ func (i *Installer) Install() {
 
 	if i.InstallDeps {
 		fmt.Println("\n[+] Installing Python dependencies...")
-		err := i.runInteractiveCommand("pip3", "install", "-r", "requirements.txt")
+		err := i.runInteractiveCommand("pip3", "install", ".")
 		if err != nil {
-			err = i.runInteractiveCommand("pip", "install", "-r", "requirements.txt")
+			err = i.runInteractiveCommand("pip", "install", ".")
 		}
 		if err != nil {
 			fmt.Println("Failed to install dependencies. Please install Python and pip from python.org.")
@@ -492,7 +508,7 @@ func main() {
 
 	var uninstallCmd = &cobra.Command{
 		Use:   "uninstall",
-		Short: "Uninstall global AGY links",
+		Short: "Uninstall global Gemini (AGY) and Claude Code links",
 		Run: func(cmd *cobra.Command, args []string) {
 			installer.Uninstall()
 		},
