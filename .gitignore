@@ -8,6 +8,9 @@ token.json
 client_secret.json
 *.json
 
+# Tracked JSON schemas are not credentials
+!config/schemas/*.schema.json
+
 # Ignore synced personal Google Docs
 personal_docs/
 

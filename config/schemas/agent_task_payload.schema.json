@@ -1,0 +1,273 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/howlcipher/ai_knowledge_library/config/schemas/agent_task_payload.schema.json",
+  "title": "AgentTaskPayload",
+  "description": "Envelope passed between tiered agents in the 3 pass validation loop. One envelope shape for every pass; per pass mutation rights are defined in documentation/multi_agent_payload_protocol.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "task_id",
+    "created_at",
+    "updated_at",
+    "pipeline",
+    "task",
+    "content"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+\\.[0-9]+$",
+      "description": "Semver of this schema. Major bump means breaking change."
+    },
+    "task_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Stable identifier for the task across all passes."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 UTC timestamp set at task creation, immutable."
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 UTC timestamp refreshed by the agent that last wrote the payload."
+    },
+    "pipeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pass_number", "pass_name", "tier", "agent_id", "status", "attempt"],
+      "properties": {
+        "pass_number": {"type": "integer", "minimum": 1, "maximum": 3},
+        "pass_name": {
+          "type": "string",
+          "enum": ["draft_self_correct", "peer_review", "final_synthesis"]
+        },
+        "tier": {"type": "integer", "minimum": 1, "maximum": 3},
+        "agent_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Model or agent identifier that produced this payload."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["in_progress", "approved", "rejected", "escalated", "failed"]
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Retry counter incremented by the validation gate on schema failure."
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"pass_number": {"const": 1}}},
+          "then": {
+            "properties": {
+              "tier": {"const": 3},
+              "pass_name": {"const": "draft_self_correct"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"pass_number": {"const": 2}}},
+          "then": {
+            "properties": {
+              "tier": {"const": 2},
+              "pass_name": {"const": "peer_review"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"pass_number": {"const": 3}}},
+          "then": {
+            "properties": {
+              "tier": {"const": 1},
+              "pass_name": {"const": "final_synthesis"}
+            }
+          }
+        }
+      ]
+    },
+    "routing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "matched_by"],
+            "properties": {
+              "name": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+              "matched_by": {
+                "type": "string",
+                "enum": ["trigger", "semantic", "manual"]
+              },
+              "trigger": {
+                "type": "string",
+                "description": "The frontmatter trigger keyword that matched, when matched_by is trigger."
+              },
+              "score": {
+                "type": "number",
+                "description": "Cross encoder relevance score, when matched_by is semantic."
+              }
+            }
+          },
+          "description": "Skills selected by the SkillRouter for this task. Injected once at pass 1 and copied forward unchanged."
+        }
+      }
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["objective", "domain"],
+      "properties": {
+        "objective": {"type": "string", "minLength": 1},
+        "domain": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$",
+          "description": "Domain slug, ideally matching a skill name (e.g. cyber_security)."
+        },
+        "constraints": {"type": "array", "items": {"type": "string"}},
+        "acceptance_criteria": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "body", "sha256"],
+      "properties": {
+        "format": {"type": "string", "enum": ["markdown", "plaintext"]},
+        "body": {
+          "type": "string",
+          "description": "The raw asset. Markdown lives here as an escaped JSON string, never fenced or wrapped."
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Lowercase hex SHA-256 of the UTF-8 encoded body. Gate verified at every tier boundary."
+        }
+      }
+    },
+    "critique": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verdict", "findings"],
+      "properties": {
+        "verdict": {"type": "string", "enum": ["approve", "revise", "reject"]},
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "severity", "category", "summary"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^F[0-9]{3}$",
+                "description": "Stable finding id (F001, F002). Never renumber across passes."
+              },
+              "severity": {
+                "type": "string",
+                "enum": ["critical", "high", "medium", "low", "info"]
+              },
+              "category": {
+                "type": "string",
+                "pattern": "^[a-z0-9_]+$",
+                "description": "Snake case category slug (e.g. self_correction, security, correctness)."
+              },
+              "summary": {"type": "string", "minLength": 1},
+              "evidence": {"type": "string"},
+              "suggested_fix": {"type": "string"},
+              "location": {
+                "type": "string",
+                "description": "Where in content.body the issue lives (heading, line ref, or quote)."
+              },
+              "disposition": {
+                "type": "string",
+                "enum": ["open", "fixed", "rejected", "deferred"],
+                "description": "Set by Tier 1 at pass 3 for every finding raised in passes 1 and 2."
+              }
+            }
+          }
+        },
+        "adversarial_tests": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "procedure", "expected", "observed", "passed"],
+            "properties": {
+              "name": {"type": "string", "minLength": 1},
+              "procedure": {"type": "string"},
+              "expected": {"type": "string"},
+              "observed": {"type": "string"},
+              "passed": {"type": "boolean"}
+            }
+          }
+        }
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["revision", "history"],
+      "properties": {
+        "parent_task_id": {"type": "string", "format": "uuid"},
+        "revision": {"type": "integer", "minimum": 0},
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["pass_number", "tier", "agent_id", "completed_at"],
+            "properties": {
+              "pass_number": {"type": "integer", "minimum": 1, "maximum": 3},
+              "tier": {"type": "integer", "minimum": 1, "maximum": 3},
+              "agent_id": {"type": "string", "minLength": 1},
+              "completed_at": {"type": "string", "format": "date-time"},
+              "verdict": {"type": "string", "enum": ["approve", "revise", "reject"]}
+            }
+          },
+          "description": "Append only. Each agent appends exactly one entry when it completes its pass."
+        }
+      }
+    },
+    "telemetry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "model": {"type": "string"},
+        "prompt_tokens": {"type": "integer", "minimum": 0},
+        "completion_tokens": {"type": "integer", "minimum": 0},
+        "latency_ms": {"type": "number", "minimum": 0}
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "failure_vector", "occurred_at"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z0-9_]+$",
+          "description": "Machine readable code (e.g. SCHEMA_VALIDATION_FAILED, UPSTREAM_TIMEOUT)."
+        },
+        "message": {"type": "string", "minLength": 1},
+        "failure_vector": {
+          "type": "string",
+          "description": "The exact component and operation that failed."
+        },
+        "context": {
+          "type": "object",
+          "description": "Free form contextual metadata for traceability."
+        },
+        "occurred_at": {"type": "string", "format": "date-time"}
+      }
+    }
+  }
+}
