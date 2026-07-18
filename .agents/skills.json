@@ -191,7 +191,7 @@
     },
     {
       "name": "devops_sre",
-      "description": "Triggers when designing infrastructure-as-code (Terraform, Kubernetes) or building CI/CD pipelines (Azure DevOps, GitLab).",
+      "description": "Triggers when designing infrastructure as code with Terraform, Kubernetes manifests, or Helm charts under site reliability engineering standards.",
       "triggers": [
         "sre",
         "terraform",

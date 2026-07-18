@@ -35,3 +35,7 @@ Standards and protocols for designing, configuring, monitoring, and securing net
 ## Security and Identity Governance
 - **Access Governance**: Enforce the principle of least privilege. Require multi-factor authentication (MFA) and secure identity providers for all administrator logins and remote sessions.
 - **Auditing and SIEM**: Enable centralized auditing and structured logging for all administrative commands, login attempts, and policy changes. Integrate these logs directly with a Security Information and Event Management (SIEM) pipeline.
+
+## Related Skills
+- Defer to `cyber_security` for the zero-trust, auditing, and SIEM integration baseline.
+- Defer to `system_administration` for host-level firewalls and OS hardening.
