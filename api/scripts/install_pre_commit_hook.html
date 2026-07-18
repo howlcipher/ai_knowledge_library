@@ -68,15 +68,27 @@
 </span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="s2">    echo &quot;ERROR: Attempting to commit a .env file. Commit aborted.&quot;</span>
 </span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a><span class="s2">    exit 1</span>
 </span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="s2">fi</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a><span class="s2">&quot;&quot;&quot;</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">hook_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>    <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">hook_path</span><span class="p">,</span> <span class="mo">0o755</span><span class="p">)</span>  <span class="c1"># nosec B103</span>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Pre-commit hook installed successfully.&quot;</span><span class="p">)</span>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>
-</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>    <span class="n">main</span><span class="p">()</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="s2"># Regenerate the skills manifest (AGENTS.md) and index (.agents/skills.json)</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a><span class="s2"># when any skill definition is part of the commit.</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a><span class="s2">if git diff --cached --name-only | grep -q &quot;^.agents/skills/&quot;; then</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a><span class="s2">    echo &quot;Skill files changed; regenerating skills manifest and index...&quot;</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a><span class="s2">    if python3 scripts/generate_skills_manifest.py; then</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a><span class="s2">        git add AGENTS.md .agents/skills.json</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a><span class="s2">    else</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a><span class="s2">        echo &quot;ERROR: skills manifest regeneration failed. Commit aborted.&quot;</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a><span class="s2">        exit 1</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a><span class="s2">    fi</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a><span class="s2">fi</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a><span class="s2">&quot;&quot;&quot;</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">hook_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>    <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">hook_path</span><span class="p">,</span> <span class="mo">0o755</span><span class="p">)</span>  <span class="c1"># nosec B103</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Pre-commit hook installed successfully.&quot;</span><span class="p">)</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>    <span class="n">main</span><span class="p">()</span>
 </span></pre></div>
 
 
@@ -102,11 +114,23 @@
 </span><span id="main-13"><a href="#main-13"><span class="linenos">13</span></a><span class="s2">    echo &quot;ERROR: Attempting to commit a .env file. Commit aborted.&quot;</span>
 </span><span id="main-14"><a href="#main-14"><span class="linenos">14</span></a><span class="s2">    exit 1</span>
 </span><span id="main-15"><a href="#main-15"><span class="linenos">15</span></a><span class="s2">fi</span>
-</span><span id="main-16"><a href="#main-16"><span class="linenos">16</span></a><span class="s2">&quot;&quot;&quot;</span>
-</span><span id="main-17"><a href="#main-17"><span class="linenos">17</span></a>    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">hook_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="main-18"><a href="#main-18"><span class="linenos">18</span></a>        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
-</span><span id="main-19"><a href="#main-19"><span class="linenos">19</span></a>    <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">hook_path</span><span class="p">,</span> <span class="mo">0o755</span><span class="p">)</span>  <span class="c1"># nosec B103</span>
-</span><span id="main-20"><a href="#main-20"><span class="linenos">20</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Pre-commit hook installed successfully.&quot;</span><span class="p">)</span>
+</span><span id="main-16"><a href="#main-16"><span class="linenos">16</span></a>
+</span><span id="main-17"><a href="#main-17"><span class="linenos">17</span></a><span class="s2"># Regenerate the skills manifest (AGENTS.md) and index (.agents/skills.json)</span>
+</span><span id="main-18"><a href="#main-18"><span class="linenos">18</span></a><span class="s2"># when any skill definition is part of the commit.</span>
+</span><span id="main-19"><a href="#main-19"><span class="linenos">19</span></a><span class="s2">if git diff --cached --name-only | grep -q &quot;^.agents/skills/&quot;; then</span>
+</span><span id="main-20"><a href="#main-20"><span class="linenos">20</span></a><span class="s2">    echo &quot;Skill files changed; regenerating skills manifest and index...&quot;</span>
+</span><span id="main-21"><a href="#main-21"><span class="linenos">21</span></a><span class="s2">    if python3 scripts/generate_skills_manifest.py; then</span>
+</span><span id="main-22"><a href="#main-22"><span class="linenos">22</span></a><span class="s2">        git add AGENTS.md .agents/skills.json</span>
+</span><span id="main-23"><a href="#main-23"><span class="linenos">23</span></a><span class="s2">    else</span>
+</span><span id="main-24"><a href="#main-24"><span class="linenos">24</span></a><span class="s2">        echo &quot;ERROR: skills manifest regeneration failed. Commit aborted.&quot;</span>
+</span><span id="main-25"><a href="#main-25"><span class="linenos">25</span></a><span class="s2">        exit 1</span>
+</span><span id="main-26"><a href="#main-26"><span class="linenos">26</span></a><span class="s2">    fi</span>
+</span><span id="main-27"><a href="#main-27"><span class="linenos">27</span></a><span class="s2">fi</span>
+</span><span id="main-28"><a href="#main-28"><span class="linenos">28</span></a><span class="s2">&quot;&quot;&quot;</span>
+</span><span id="main-29"><a href="#main-29"><span class="linenos">29</span></a>    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">hook_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="main-30"><a href="#main-30"><span class="linenos">30</span></a>        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+</span><span id="main-31"><a href="#main-31"><span class="linenos">31</span></a>    <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">hook_path</span><span class="p">,</span> <span class="mo">0o755</span><span class="p">)</span>  <span class="c1"># nosec B103</span>
+</span><span id="main-32"><a href="#main-32"><span class="linenos">32</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Pre-commit hook installed successfully.&quot;</span><span class="p">)</span>
 </span></pre></div>
 
 
