@@ -4,11 +4,15 @@ This document is the authoritative, ranked backlog for the AI Knowledge Library.
 
 ## Working Protocol
 
-1. **Pick the top `Pending` item** in the ranked table below (or the item the user names).
-2. **Use the assigned model.** Each item lists a suggested Claude model and Gemini model sized to the work. In Claude Code, start or switch the session with `/model`; if the session is already running on a different model, delegate the implementation to a subagent with the listed model instead. In Gemini CLI, launch with `gemini -m <model>`.
-3. **Read the detail section** for the item (linked from the table) plus any referenced docs before coding. Background docs: `documentation/multi_agent_payload_protocol.md` and ADR 0003.
-4. **Constraints:** this machine has no Anthropic or Gemini API keys; live LLM pipeline runs go through local Ollama (`curl localhost:11434/api/tags` to see current models — they change).
-5. **Finish the loop:** verify the change works, commit with `<type>(<scope>): <description>`, set the item's Status to `Done (YYYY-MM-DD)` in the table, and push.
+This protocol applies to every worked task — backlog improvements and bug fixes alike. A bug without a backlog row still gets steps 1 through 4 and 7.
+
+1. **Open a task journal.** Copy `documentation/task_journals/TEMPLATE.md` to `documentation/task_journals/YYYY-MM-DD_<slug>.md`. The journal is the resume point after a session limit or power outage: update it and commit at every milestone, and always keep its "Next step" line current so a fresh session can continue from the journal alone.
+2. **Re-evaluate the model (every run, before starting).** The table's model columns are starting suggestions, not commitments. Check what is actually available right now — currently: Claude Pro subscription (Claude Code), Gemini Pro subscription (Gemini CLI), and local Ollama (`curl localhost:11434/api/tags` — models change). Update this sentence if subscriptions change. Pick the least expensive available model that can do the job well and escalate only if the task proves harder than expected; in Claude Code switch with `/model` or delegate to a subagent with the chosen model, in Gemini CLI launch with `gemini -m <model>`. Record the choice and one line of reasoning in the journal.
+3. **Route the crafted skills.** Check the skills manifest (`.agents/skills.json` or the AGENTS.md table) for skills matching the task and read the matching SKILL.md files before planning. Honor tier precedence and the Related Skills deferrals.
+4. **Scan for helpful free tools.** Briefly consider whether a free or open source tool (a CLI already installed, a linter, a library, an MCP server) would materially improve the work. Record recommendations in the journal; use tools that are already available freely, and ask before installing anything new.
+5. **Read the detail section** for the item (linked from the table) plus any referenced docs before coding. Background docs: `documentation/multi_agent_payload_protocol.md` and ADR 0003.
+6. **Constraints:** this machine has no Anthropic or Gemini API keys; live LLM pipeline runs go through local Ollama.
+7. **Finish the loop:** verify the change works, commit with `<type>(<scope>): <description>`, set the item's Status to `Done (YYYY-MM-DD)` in the table, mark the journal complete, and push.
 
 ## Ranked Backlog (best ROI first)
 
