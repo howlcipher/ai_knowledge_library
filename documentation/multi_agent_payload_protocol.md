@@ -31,6 +31,8 @@ graph TD
 
 The schema enforces the tier and pass pairing with conditional constraints: pass 1 requires tier 3, pass 2 requires tier 2, pass 3 requires tier 1. A payload claiming pass 2 from a tier 3 agent fails validation before it reaches the next agent.
 
+Each tier can run a different model via `payload_pipeline.tier_models` in `config/settings.yaml` (`tier_1`, `tier_2`, `tier_3`); an empty value falls back to the top level `llm_model`. Match cost to responsibility: a cheap fast model for Tier 3 drafting, a strong reviewer for Tier 2, the strongest available judge for Tier 1.
+
 ## Field Mutation Matrix
 
 Zero trust boundary rule: every field an agent is not explicitly granted below must be copied through byte for byte. The gate diffs immutable fields between input and output and rejects unauthorized mutations.
