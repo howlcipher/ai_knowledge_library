@@ -29,9 +29,9 @@ venv/
 .coverage
 coverage.out
 
-# Go binaries and builds
-ai_installer
-installer
+# Go binaries and builds (root anchored so cmd/installer sources stay addable)
+/ai_installer
+/installer
 dist/
 
 # Auto-generated docs

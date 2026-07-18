@@ -195,7 +195,7 @@ func (i *Installer) Uninstall() {
 		blockRe := regexp.MustCompile(`(?s)\n?<!-- ai_knowledge_library:start -->.*?<!-- ai_knowledge_library:end -->\n?`)
 		cleaned := blockRe.ReplaceAll(data, []byte("\n"))
 		if string(cleaned) != string(data) {
-			_ = os.WriteFile(claudeMemory, cleaned, 0600)
+			_ = os.WriteFile(claudeMemory, cleaned, 0600) // #nosec G703 -- fixed path under the user's home directory
 			fmt.Println("Removed library block from:", claudeMemory)
 		}
 	}
