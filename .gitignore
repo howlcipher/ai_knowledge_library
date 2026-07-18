@@ -11,6 +11,9 @@ client_secret.json
 # Tracked JSON schemas are not credentials
 !config/schemas/*.schema.json
 
+# Generated skills index is tracked
+!.agents/skills.json
+
 # Ignore synced personal Google Docs
 personal_docs/
 

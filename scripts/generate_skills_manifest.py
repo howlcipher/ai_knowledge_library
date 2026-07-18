@@ -2,15 +2,22 @@
 """
 generate_skills_manifest.py
 
-Regenerates the auto generated skills manifest table in AGENTS.md from the
-frontmatter of every SKILL.md in the agents skills directory. The manifest
-gives agents without native skill discovery (such as Gemini CLI) a cheap
-routing surface: name, description, and path for each skill.
+Regenerates two artifacts from the frontmatter of every SKILL.md in the
+agents skills directory:
 
-Run after adding, removing, or renaming a skill:
+1. The auto generated skills manifest table in AGENTS.md, a cheap routing
+   surface for agents without native skill discovery (such as Gemini CLI).
+2. .agents/skills.json, a machine readable index (name, description,
+   triggers, path) for any tool that wants the skill list without parsing
+   markdown.
+
+Output is deterministic (no timestamps), so reruns without skill changes
+produce no diff. Runs automatically from the pre-commit hook installed by
+scripts/install_pre_commit_hook.py, or manually:
     python scripts/generate_skills_manifest.py
 """
 
+import json
 import os
 import sys
 
@@ -61,16 +68,42 @@ def update_agents_md(agents_md_path: str, table: str) -> None:
         f.write(content)
 
 
+def write_skills_index(skills, index_path: str) -> None:
+    """Writes the machine readable skills index as JSON."""
+    repo_root = default_loader.get_repo_root()
+    index = {
+        "version": 1,
+        "skills": [
+            {
+                "name": skill.name,
+                "description": skill.description,
+                "triggers": skill.triggers,
+                "path": os.path.relpath(skill.path, repo_root),
+            }
+            for skill in skills
+        ],
+    }
+    with open(index_path, "w", encoding="utf8") as f:
+        json.dump(index, f, indent=2)
+        f.write("\n")
+
+
 def main():
     router = SkillRouter()
     if not router.skills:
         print(f"No skills found in {router.skills_dir}. Nothing to do.")
         sys.exit(1)
 
-    agents_md_path = os.path.join(default_loader.get_repo_root(), "AGENTS.md")
+    repo_root = default_loader.get_repo_root()
+
+    agents_md_path = os.path.join(repo_root, "AGENTS.md")
     table = build_manifest_table(router.skills)
     update_agents_md(agents_md_path, table)
     print(f"Wrote manifest with {len(router.skills)} skills to {agents_md_path}")
+
+    index_path = os.path.join(repo_root, ".agents", "skills.json")
+    write_skills_index(router.skills, index_path)
+    print(f"Wrote skills index to {index_path}")
 
 
 if __name__ == "__main__":

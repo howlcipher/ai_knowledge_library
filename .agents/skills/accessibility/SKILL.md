@@ -1,6 +1,9 @@
 ---
 name: "accessibility"
 description: "Standards and best practices for creating accessible software and web interfaces."
+triggers:
+  - "wcag"
+  - "accessibility"
 ---
 
 # Accessibility Standards and Best Practices

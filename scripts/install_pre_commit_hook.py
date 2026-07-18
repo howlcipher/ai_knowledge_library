@@ -12,6 +12,18 @@ if git diff --cached --name-only | grep -q ".env"; then
     echo "ERROR: Attempting to commit a .env file. Commit aborted."
     exit 1
 fi
+
+# Regenerate the skills manifest (AGENTS.md) and index (.agents/skills.json)
+# when any skill definition is part of the commit.
+if git diff --cached --name-only | grep -q "^.agents/skills/"; then
+    echo "Skill files changed; regenerating skills manifest and index..."
+    if python3 scripts/generate_skills_manifest.py; then
+        git add AGENTS.md .agents/skills.json
+    else
+        echo "ERROR: skills manifest regeneration failed. Commit aborted."
+        exit 1
+    fi
+fi
 """
     with open(hook_path, "w") as f:
         f.write(content)
