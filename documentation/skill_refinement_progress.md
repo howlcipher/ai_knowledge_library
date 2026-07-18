@@ -15,7 +15,7 @@ Refine all `.agents/skills/*/SKILL.md` files against a shared rubric, organize t
 | 2 | Add `tier:` frontmatter to all 38 skills; expose tier in `SkillRouter`, `skills.json`, and the AGENTS.md manifest | Done |
 | 3 | Self-refine every skill against the rubric, in tier order, committing in batches | Done |
 | 4 | Cross-refine overlap clusters; deduplicate content, canonical owner wins | Done |
-| 5 | Final consistency sweep (naming, cross-references, manifest regen) and close out | Pending |
+| 5 | Final consistency sweep (naming, cross-references, manifest regen) and close out | Done |
 
 ## Refinement Rubric
 
@@ -23,9 +23,9 @@ Every SKILL.md must satisfy all of the following after Phase 3.
 
 ### Frontmatter
 
-1. `name` exactly matches the directory name (lowercase, underscores). Known violation: `red_team` declares `"Red Team Cyber Operations"`.
+1. `name` exactly matches the directory name (lowercase, underscores). (The historical `red_team` name violation was fixed in Phase 3.)
 2. `description` is one line, third person, and states both the domain and when the skill should trigger. It is the semantic routing surface, so keywords matter.
-3. `triggers` lists 3 to 10 lowercase keywords for deterministic routing. Security skills especially need these (known routing recall gap for `cyber_security` and `blue_team`).
+3. `triggers` lists 3 to 10 lowercase keywords for deterministic routing. Security skills especially need these (the routing recall gap for `cyber_security` and `blue_team` was closed in Phase 3).
 4. `tier` declares the skill's priority tier (0 to 3, defined below).
 
 ### Body Structure

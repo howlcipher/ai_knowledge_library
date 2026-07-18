@@ -29,14 +29,6 @@ Maintain consistent character usage for files, variables, and documentation:
 - Present complex datasets, configurations, and comparison matrices using clean, standardized Markdown tables.
 - Do not use raw text walls or poorly structured lists for multi-dimensional data.
 
-### 1. Documentation Quality and Structure
-- **Conciseness and Focus**: Keep all summaries, status updates, and architectural decisions extremely concise. Focus strictly on impact, constraints, and decisions without verbose filler text.
-- **Structured Hierarchy**: Organize documentation logically using standard Markdown header levels sequentially (H1 to H6). Do not skip heading levels.
-- **Architectural Templates**: Standardize documentation schemas (e.g., ADR formats containing context, decisions, and consequences; API specs detailing paths, request/response bodies, status codes).
-
-### 2. Visualization
-- **Architecture Visualization**: Use Mermaid.js diagrams to map system workflows, state transitions, and component interactions. Ensure all diagrams are structurally valid and self-contained.
-
 ## Execution Resiliency
 
 ### Asynchronous Execution Logic
