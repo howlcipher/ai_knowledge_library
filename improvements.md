@@ -4,7 +4,7 @@ This document is the authoritative, ranked backlog for the AI Knowledge Library.
 
 ## Working Protocol
 
-This protocol applies to every worked task — backlog improvements and bug fixes alike. A bug without a backlog row still gets steps 1 through 4 and 7.
+This protocol applies to every worked task — backlog improvements and bug fixes alike. Bugs are tracked in `issues.md`, which mirrors this file's format and shares this protocol; a hotfix without a backlog row still gets steps 1 through 4 and 7.
 
 1. **Open a task journal.** Copy `documentation/task_journals/TEMPLATE.md` to `documentation/task_journals/YYYY-MM-DD_<slug>.md`. The journal is the resume point after a session limit or power outage: update it and commit at every milestone, and always keep its "Next step" line current so a fresh session can continue from the journal alone.
 2. **Re-evaluate the model (every run, before starting).** The table's model columns are starting suggestions, not commitments. Check what is actually available right now — currently: Claude Pro subscription (Claude Code), Gemini Pro subscription (Gemini CLI), and local Ollama (`curl localhost:11434/api/tags` — models change). Update this sentence if subscriptions change. Pick the least expensive available model that can do the job well and escalate only if the task proves harder than expected; in Claude Code switch with `/model` or delegate to a subagent with the chosen model, in Gemini CLI launch with `gemini -m <model>`. Record the choice and one line of reasoning in the journal.
