@@ -31,6 +31,14 @@ class BackupSettings(BaseModel):
     filename: str = "library_backup.tar.gz"
 
 
+class SkillRouterSettings(BaseModel):
+    enabled: bool = True
+    top_k: int = 3
+    score_threshold: float = 0.0
+    max_context_chars: int = 12000
+    skills_dir: str = ".agents/skills"
+
+
 class AppSettings(BaseSettings):
     llm_model: str = "gemini/gemini-1.5-pro"
     gemini_api_key: str = ""
@@ -39,6 +47,7 @@ class AppSettings(BaseSettings):
     server: ServerSettings = ServerSettings()
     agents: AgentsSettings = AgentsSettings()
     backup: BackupSettings = BackupSettings()
+    skill_router: SkillRouterSettings = SkillRouterSettings()
     active_mcps: list = []
     mcp_servers: dict = {}
 

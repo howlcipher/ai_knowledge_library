@@ -7,18 +7,11 @@ index from the markdown documentation in the repository. It chunks the text
 and stores it in the configured vector store.
 """
 
-import glob
 import os
 
-try:
-    pass
-except ImportError:
-    pass
-
-
-# Removed boilerplate
-
 from src.infrastructure.config_loader import load_config
+
+PRUNED_DIRS = {"node_modules", "testenv", "build", "dist", "__pycache__"}
 
 
 class TextChunker:
@@ -115,7 +108,18 @@ class VectorIndexBuilder:
         Scans the repository for markdown files, reads them, and prepares chunks.
         """
         print("Scanning for markdown files...")
-        md_files = glob.glob(os.path.join(self.repo_root, "**", "*.md"), recursive=True)
+        # os.walk instead of glob: glob skips dot directories, which silently
+        # excluded .agents/skills from the index.
+        md_files = []
+        for root, dirs, files in os.walk(self.repo_root):
+            dirs[:] = [
+                d
+                for d in dirs
+                if d not in PRUNED_DIRS and (not d.startswith(".") or d == ".agents")
+            ]
+            for fname in files:
+                if fname.endswith(".md"):
+                    md_files.append(os.path.join(root, fname))
 
         for file_path in md_files:
             if self._should_skip_file(file_path):

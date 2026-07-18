@@ -1,6 +1,8 @@
 ---
 name: "l4d2_optimization"
 description: "Performance optimization and resource management for L4D2 servers and clients."
+triggers:
+  - "l4d2"
 ---
 
 # Left 4 Dead 2 Optimization

@@ -1,6 +1,10 @@
 ---
 name: "l4d2_scripting"
 description: "VScript and SourcePawn scripting for Left 4 Dead 2."
+triggers:
+  - "vscript"
+  - "sourcepawn"
+  - "sourcemod"
 ---
 
 # Left 4 Dead 2 Scripting

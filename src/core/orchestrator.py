@@ -178,6 +178,14 @@ class Orchestrator:
             model=self.default_model,
         )
 
+        try:
+            from src.core.skill_router import SkillRouter
+
+            self.skill_router = SkillRouter(cfg=self.cfg)
+        except Exception as e:
+            print(f"[Orchestrator] Skill router unavailable: {e}")
+            self.skill_router = None
+
         self.graph = self._build_graph()
         atexit.register(self.shutdown)
 
@@ -336,13 +344,23 @@ class Orchestrator:
         if past_state and past_state.values:
             past_context = past_state.values.get("draft_content", "")
 
+        # 2. Route library skills relevant to this query into the context
+        skill_context = ""
+        if self.skill_router:
+            try:
+                skill_context = self.skill_router.build_context(user_query)
+            except Exception as e:
+                print(f"[Orchestrator] Skill routing failed: {e}")
+
+        context_parts = []
+        if skill_context:
+            context_parts.append(skill_context)
+        if past_context:
+            context_parts.append(f"Previous conversation context:\n{past_context}")
+
         initial_state = {
             "query": user_query,
-            "context": (
-                f"Previous conversation context:\n{past_context}"
-                if past_context
-                else ""
-            ),
+            "context": "\n\n".join(context_parts),
             "draft_content": "",
             "tool_calls": None,
             "iteration": 1,

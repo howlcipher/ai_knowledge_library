@@ -13,6 +13,13 @@ agents:
   default_language: "en_US"
   max_context_tokens: 8192
 
+skill_router:
+  enabled: true
+  top_k: 3
+  score_threshold: 0.0
+  max_context_chars: 12000
+  skills_dir: ".agents/skills"
+
 active_mcps:
   - memory
   - fetch

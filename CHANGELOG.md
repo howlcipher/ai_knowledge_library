@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- **Skill Router**: New `src/core/skill_router.py` routes user prompts to relevant `.agents/skills/` SKILL.md files using deterministic frontmatter `triggers` plus cross encoder semantic scoring, injecting full skill bodies into the Orchestrator context with progressive disclosure and a configurable character budget (`skill_router` section in `settings.yaml`).
+- **Skills Manifest Generator**: New `scripts/generate_skills_manifest.py` regenerates an auto generated skills table in `AGENTS.md` so agents without native skill discovery (Gemini CLI, Antigravity) get a cheap routing surface.
 - **Graph-Based Orchestration**: Migrated the hand-rolled agent loop to a formal state machine using LangGraph.
 - **Dependency Inversion Vector Store Architecture**: Created `BaseVectorStore` ABC, `VectorStoreFactory`, and explicit Chroma/PgVector backends.
 - **Provider-Side Prompt Caching**: Injected explicit KV cache-control markers via LiteLLM for Anthropic/Gemini to reduce token costs.
@@ -21,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - **Docker Container Improvements**: Container no longer runs as root, utilizes multi-stage builds, and properly integrates Ollama in `docker-compose.yml`.
 
 ### Fixed
+- **Vector Index Dot Directory Blind Spot**: `build_vector_index.py` used `glob`, which skips dot directories, so `.agents/` content was never indexed. Replaced with a pruned `os.walk` that includes `.agents` while skipping `.git`, `node_modules`, and build artifacts.
 - **Memory Bug in Orchestrator**: Fixed an issue where the Researcher's previous draft was forgotten between QA cycles.
 - **Webhook Concurrency Risk**: Fixed subprocess spawning in `webhook_server.py` to eliminate locking risks for SQLite.
 - **PgVector Indexes**: Added missing `HNSW`/`IVFFlat` indexes in `pgvector_backend.py`.
