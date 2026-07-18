@@ -43,3 +43,8 @@ dist/
 
 # Auto-generated docs
 docs/api/
+
+# One-off scratch output at the repo root (logs, patches, archives from debugging sessions)
+/*.log
+/*.diff
+/*.zip
