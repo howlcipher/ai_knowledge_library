@@ -1,6 +1,9 @@
 ---
 name: "l4d2_server_management"
 description: "Setup, configuration, and administration of Left 4 Dead 2 dedicated servers."
+triggers:
+  - "l4d2"
+  - "left 4 dead"
 ---
 
 # Left 4 Dead 2 Server Management
