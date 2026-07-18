@@ -34,5 +34,12 @@ coverage.out
 /installer
 dist/
 
+# Python build output and package metadata
+/build/
+*.egg-info/
+
+# Local telemetry state
+.telemetry/
+
 # Auto-generated docs
 docs/api/
