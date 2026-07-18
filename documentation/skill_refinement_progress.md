@@ -87,28 +87,28 @@ Canonical owner listed first; other members defer and keep only their domain del
 | blue_team | 2 | Done | Done | add triggers |
 | bug_bounty_hunter | 2 | Done | Done | Security cluster |
 | color_theory | 2 | Done | Pending | Design cluster |
-| data_analyst | 2 | Done | Pending | Data/ML cluster owner |
+| data_analyst | 2 | Done | Done | Data/ML cluster owner |
 | database_management | 2 | Done | Pending | |
 | devops | 2 | Done | Done | Ops cluster owner |
 | devops_sre | 2 | Done | Done | refocus on SRE deltas |
 | frontend_engineering | 2 | Done | Pending | Design cluster |
 | google_docs_writer | 2 | Done | Pending | |
-| machine_learning | 2 | Done | Pending | Data/ML cluster |
+| machine_learning | 2 | Done | Done | Data/ML cluster |
 | network_engineering | 2 | Done | Done | overlaps devops_sre network section |
 | product_management | 2 | Done | Pending | shortest skill; may expand slightly |
 | red_team | 2 | Done | Done | fix frontmatter name |
 | system_administration | 2 | Done | Done | |
 | ui_ux | 2 | Done | Pending | Design cluster |
 | visual_design | 2 | Done | Pending | Design cluster |
-| baseball_analytics | 3 | Done | Pending | defers to data_analyst |
+| baseball_analytics | 3 | Done | Done | defers to data_analyst |
 | career_assistant | 3 | Done | Pending | grounded in USER_PROFILE.md |
-| economic_theory | 3 | Done | Pending | Finance cluster |
-| financial_theory | 3 | Done | Pending | Finance cluster owner |
+| economic_theory | 3 | Done | Done | Finance cluster |
+| financial_theory | 3 | Done | Done | Finance cluster owner |
 | gaming | 3 | Done | Pending | |
 | l4d2_optimization | 3 | Done | Pending | L4D2 cluster |
 | l4d2_scripting | 3 | Done | Pending | L4D2 cluster |
 | l4d2_server_management | 3 | Done | Pending | L4D2 cluster owner |
-| quantitative_finance | 3 | Done | Pending | Data/ML and Finance clusters |
+| quantitative_finance | 3 | Done | Done | Data/ML and Finance clusters |
 
 ## Operational Notes
 

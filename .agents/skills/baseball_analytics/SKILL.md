@@ -23,16 +23,12 @@ Prioritize context-adjusted, comprehensive metrics over traditional counting sta
 - **Fielding Independent Pitching (FIP):** Isolate a pitcher's performance from defense-dependent outcomes.
 - **Statcast Metrics:** Utilize granular data including exit velocity, launch angle, barrel rates, expected metrics (xBA, xSLG, xwOBA), and defensive metrics (Outs Above Average).
 
-### 2. Pandas Data Wrangling for Sabermetrics
-- **Vectorization**: Calculate complex sabermetric formulas (like wOBA and FIP) using vectorized pandas and NumPy operations. Avoid row-based `.iterrows()` iterations to optimize performance on large Statcast datasets.
-- **Immutability and Indexing**: Avoid modifying DataFrames in-place. Use method chaining to build data transformations, and apply `.loc` and `.iloc` explicitly to filter plate appearances and avoid `SettingWithCopyWarning`.
-- **Data Quality**: Explicitly check for and handle missing Statcast metrics (such as missing launch angles or velocities) at the data ingestion layer.
-
-### 3. Predictive Modeling and Projection Systems
-- **Rigor and Reproducibility**: Enforce determinism in all performance projections, train-test splits, and bootstrapping routines by setting a fixed random seed (e.g., `random_state=42`).
-- **Machine Learning Pipelines**: Encapsulate player preprocessing steps (such as park factor adjustments and normalization) inside Scikit-learn pipelines to prevent data leakage from test partitions.
-- **Validation and Evaluation**: Evaluate projection systems using cross-validation. Report domain-aligned regression metrics (e.g., RMSE and MAE for ERA or runs projected) and classification metrics (e.g., Precision, Recall, and F1-Score for binary outcomes like injury prediction).
+### 2. Predictive Modeling and Projection Systems
+- **Validation and Evaluation**: Report domain-aligned regression metrics (e.g., RMSE and MAE for ERA or run projections) and classification metrics (e.g., Precision, Recall, and F1-Score for binary outcomes like injury prediction), using the cross-validation standards owned by `data_analyst`.
 - **Environment and Model Drift**: Monitor projections for drift caused by changes in league run-scoring environments, rule changes, or ball composition.
 
-### 4. Strategic Optimization
+### 3. Strategic Optimization
 - Leverage platoon splits, defensive positioning vectors, pitch sequencing patterns, and base-running value calculations to optimize in-game decision making and roster construction.
+
+## Related Skills
+- Defer to `data_analyst` for pandas wrangling, pipeline encapsulation, reproducibility, and data quality standards; this skill adds only the sabermetric deltas (park factors, league environment drift, Statcast handling).
