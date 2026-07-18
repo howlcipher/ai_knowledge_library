@@ -31,12 +31,13 @@ Rank weighs impact against effort: quick unblocking fixes first, large architect
 | 9 | [Guard against oversized local models](#9-guard-against-oversized-local-models) | Pending | Sonnet 5 | Gemini 3 Flash | Small change; makes OOM/crash loops diagnosable from the log |
 | 10 | [Emit gate failures into telemetry](#10-emit-gate-failures-into-telemetry) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change; starts tracking schema failure rate per model |
 | 11 | [Install the pre-commit hook via bootstrap](#11-install-the-pre-commit-hook-via-bootstrap) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change; removes a silent per machine setup gap |
-| 12 | [`pipeline_pass` frontmatter and dispatcher](#12-pipeline_pass-frontmatter-and-dispatcher) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; routes reviewer skills into the right pipeline pass |
-| 13 | [Claude Code backend for pipeline tiers](#13-claude-code-backend-for-pipeline-tiers) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; adds a strong subscription backed judge for Tier 1 |
-| 14 | [Calibrate the skill router score threshold](#14-calibrate-the-skill-router-score-threshold) | Pending | Fable 5 | Gemini 3 Pro | Needs judgment (labeled prompt set + eval design), modest payoff beyond triggers |
-| 15 | [OpenTelemetry integration](#15-opentelemetry-integration) | Pending | Sonnet 5 | Gemini 3 Pro | Larger effort; better observability but no current outage it would have caught |
-| 16 | [Homelab MCP server](#16-homelab-mcp-server) | Pending | Fable 5 | Gemini 3 Pro | High long term value but a full architecture evaluation and build |
-| 17 | [Automated job hunting pipeline](#17-automated-job-hunting-pipeline) | Pending | Fable 5 | Gemini 3 Pro | High personal value but the largest, most open ended build |
+| 12 | [Sync the docs site changelog automatically](#12-sync-the-docs-site-changelog-automatically) | Pending | Haiku 4.5 | Gemini 3 Flash | Two line hook addition; stops docs/change_log.md drifting from the real changelog |
+| 13 | [`pipeline_pass` frontmatter and dispatcher](#13-pipeline_pass-frontmatter-and-dispatcher) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; routes reviewer skills into the right pipeline pass |
+| 14 | [Claude Code backend for pipeline tiers](#14-claude-code-backend-for-pipeline-tiers) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; adds a strong subscription backed judge for Tier 1 |
+| 15 | [Calibrate the skill router score threshold](#15-calibrate-the-skill-router-score-threshold) | Pending | Fable 5 | Gemini 3 Pro | Needs judgment (labeled prompt set + eval design), modest payoff beyond triggers |
+| 16 | [OpenTelemetry integration](#16-opentelemetry-integration) | Pending | Sonnet 5 | Gemini 3 Pro | Larger effort; better observability but no current outage it would have caught |
+| 17 | [Homelab MCP server](#17-homelab-mcp-server) | Pending | Fable 5 | Gemini 3 Pro | High long term value but a full architecture evaluation and build |
+| 18 | [Automated job hunting pipeline](#18-automated-job-hunting-pipeline) | Pending | Fable 5 | Gemini 3 Pro | High personal value but the largest, most open ended build |
 
 ## Details
 
@@ -73,22 +74,25 @@ The validation gate prints failures but does not log them through `telemetry_log
 ### 11. Install the pre-commit hook via bootstrap
 `.git/hooks` is not versioned; each machine needs a one time `python scripts/install_pre_commit_hook.py` (which now includes the skills manifest/index regeneration and the fixed `.env` guard). Wire it into `scripts/bootstrap.py` or the installer so it happens automatically.
 
-### 12. `pipeline_pass` frontmatter and dispatcher
+### 12. Sync the docs site changelog automatically
+`docs/change_log.md` is a manual byte-for-byte copy of `change_log.md` for the GitHub Pages site and will drift as soon as someone updates the changelog without remembering the copy. Extend the pre-commit hook in `scripts/install_pre_commit_hook.py` to copy `change_log.md` to `docs/change_log.md` and stage it whenever the changelog is part of a commit (same pattern as the skills manifest regeneration). Consider whether `docs/docs.md` and `docs/index.md`, which duplicate README content, deserve the same treatment.
+
+### 13. `pipeline_pass` frontmatter and dispatcher
 Skills now declare a priority `tier:` (0 meta, 1 governance, 2 domain, 3 application) consumed by `SkillRouter`, `skills.json`, and the AGENTS.md manifest. Pipeline pass affinity is a separate concept and still open: add a distinct key (e.g. `pipeline_pass: 2` for reviewer skills like `cyber_security`) so the payload pipeline dispatcher injects each skill into the pass where it belongs (reviewer skills into pass 2, not pass 1) without colliding with the priority tier semantics.
 
-### 13. Claude Code backend for pipeline tiers
+### 14. Claude Code backend for pipeline tiers
 Add a `claude_code` option to `payload_pipeline.tier_models`, handled before LiteLLM by shelling out to headless Claude Code (`claude -p "<prompt>" --output-format json`). Uses the subscription login instead of an API key; bills session usage per run. Best fit: Tier 1 judging. Note this item can only be exercised on a machine with Claude Code logged in.
 
-### 14. Calibrate the skill router score threshold
+### 15. Calibrate the skill router score threshold
 All 38 skills now declare `triggers` frontmatter, which closed the deterministic routing gap. The semantic fallback is still uncalibrated: build a small labeled prompt set and tune `skill_router.score_threshold` (and possibly `top_k`) against it so semantic recall is measured rather than guessed.
 
-### 15. OpenTelemetry integration
+### 16. OpenTelemetry integration
 Integrate OpenTelemetry into the existing `system_logger.py` for advanced metrics and traces.
 
-### 16. Homelab MCP server
+### 17. Homelab MCP server
 Build a homelab MCP server to autonomously monitor, debug, and manage local Docker containers and network infrastructure. Per the global rules, present a pros/cons evaluation of the technology options before committing to an architecture.
 
-### 17. Automated job hunting pipeline
+### 18. Automated job hunting pipeline
 Script an automated pipeline using web-search MCPs to scrape job postings, map against `USER_PROFILE.md`, and generate tailored resumes and cover letters. Follow the `career_assistant` skill's grounding rules (no fabricated experience).
 
 ## ✅ Completed
