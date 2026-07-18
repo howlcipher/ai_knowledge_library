@@ -11,7 +11,7 @@ Refine all `.agents/skills/*/SKILL.md` files against a shared rubric, organize t
 | Phase | Description | Status |
 | --- | --- | --- |
 | 0 | Create this tracker with rubric, tier model, and status tables | Done |
-| 1 | Extend `systems_logic` with the skill tiering and conflict precedence methodology | Pending |
+| 1 | Extend `systems_logic` with the skill tiering and conflict precedence methodology | Done |
 | 2 | Add `tier:` frontmatter to all 38 skills; expose tier in `SkillRouter`, `skills.json`, and the AGENTS.md manifest | Pending |
 | 3 | Self-refine every skill against the rubric, in tier order, committing in batches | Pending |
 | 4 | Cross-refine overlap clusters; deduplicate content, canonical owner wins | Pending |
