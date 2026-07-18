@@ -1,6 +1,13 @@
 ---
 name: "financial_theory"
 description: "Corporate finance, investment analysis, and financial modeling."
+triggers:
+  - "finance"
+  - "valuation"
+  - "dcf"
+  - "capm"
+  - "portfolio"
+tier: 3
 ---
 
 # Financial Theory Standards
@@ -34,3 +41,7 @@ This skill defines the mathematical frameworks, valuation methodologies, and ris
 
 - **Mathematical Rigor**: All financial models must be accompanied by explicit assumptions, sensitivity tables, and validation checks to prevent formula errors.
 - **Fiduciary Responsibility**: Align all recommendations and models with standard professional ethics, transparency guidelines, and compliance/regulatory mandates.
+
+## Related Skills
+- Defer to `quantitative_finance` for algorithmic implementation, backtesting, and time-series modeling of these frameworks.
+- Defer to `economic_theory` for the macroeconomic context behind rates, cycles, and policy impacts.

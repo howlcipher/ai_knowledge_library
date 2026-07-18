@@ -1,6 +1,14 @@
 ---
 name: "data_analyst"
 description: "Explicit methodologies for pandas data wrangling, jupyter notebooks, and scikit-learn machine learning pipelines."
+triggers:
+  - "pandas"
+  - "dataframe"
+  - "jupyter"
+  - "notebook"
+  - "scikit-learn"
+  - "data analysis"
+tier: 2
 ---
 
 # Data Analyst Skill
@@ -30,3 +38,6 @@ This skill defines and enforces core engineering standards, best practices, and 
 
 - **Version Control**: Clear all output cells before committing notebook `.ipynb` files to version control. This prevents the exposure of sensitive data, reduces file size, and avoids large git diff noise.
 - **Structure**: Keep notebook cells small, modular, and single-purpose. Consolidate all package imports, environment configurations, and global constants in the first code cell.
+
+## Related Skills
+- Defer to `machine_learning` for production deployment, model monitoring, drift detection, and fairness auditing.

@@ -1,6 +1,12 @@
 ---
 name: "commit_and_changelog"
 description: "Triggers during git staging reviews, workspace checkins, or summary generation"
+triggers:
+  - "commit"
+  - "changelog"
+  - "git staging"
+  - "release notes"
+tier: 1
 ---
 
 # Workspace History Standards
@@ -31,3 +37,7 @@ This skill governs the conventions for reviewing workspace changes, writing git 
 ## Release Integration and Pipeline Compliance
 - **Pipeline Gate Alignment**: Ensure every committed change scope aligns with continuous integration automated gates (such as syntax validation, style linters, unit tests, and security scans).
 - **Deployment and Parity Impacts**: Detail configuration changes that modify runtime environment variables or IaC states. This ensures clear tracking for zero-downtime deployment strategies (rolling, canary) and rollback verification.
+
+## Related Skills
+- Defer to `cyber_security` for the credential and PII scanning baseline applied to staged changes.
+- Defer to `devops` for the CI gates every committed change must align with.

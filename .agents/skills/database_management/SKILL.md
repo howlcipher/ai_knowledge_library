@@ -1,6 +1,14 @@
 ---
 name: "database_management"
 description: "Guidelines and standards for database schema design, migrations, security, and query optimization."
+triggers:
+  - "database"
+  - "sql"
+  - "schema"
+  - "migration"
+  - "query"
+  - "index"
+tier: 2
 ---
 
 # Database Management Standards
@@ -41,3 +49,7 @@ This skill defines the mandatory standards and operational guidelines for databa
 
 - **Backup Verification**: Establish automated, scheduled database backup routines (including full, differential, and transaction log backups) with encryption at rest.
 - **Restoration Drills**: Conduct periodic disaster recovery simulations and database restoration drills to ensure recovery time objectives (RTO) and recovery point objectives (RPO) can be consistently met.
+
+## Related Skills
+- Defer to `software_development` for general defensive error handling and structured failure reporting.
+- Defer to `cyber_security` for secret management and least privilege baselines.

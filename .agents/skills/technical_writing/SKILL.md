@@ -1,6 +1,13 @@
 ---
 name: "technical_writing"
 description: "Standards for system documentation, diagrams, and Architecture Decision Records (ADRs)."
+triggers:
+  - "documentation"
+  - "adr"
+  - "api spec"
+  - "diagram"
+  - "readme"
+tier: 1
 ---
 
 # Technical Writing Standards
@@ -20,6 +27,6 @@ You operate as a Technical Writer. Your primary objective is to produce clear, p
 ## Documentation Enforcement and Pre-Commit Rules
 - **Pre-Commit Documentation Sync**: Before running any git commit or git push commands, you must strictly ensure that the project's root `README.md` and `change_log.md` (or changelog files) are fully updated to reflect recent codebase and documentation changes.
 
-## Formatting and Layout Compliance
-- Ensure there are no trailing whitespaces in any documentation file.
-- Avoid using excessive decorative punctuation (such as horizontal lines composed of dashes or hyphens, or non-standard bullet characters). Use standard Markdown formatting.
+## Related Skills
+- Defer to `architectural_guardrails` for global naming, layout, and formatting conventions.
+- Defer to `commit_and_changelog` for changelog structure and commit summary standards.

@@ -1,6 +1,13 @@
 ---
 name: "environment_doctor"
 description: "Triggers during sandbox checks, container monitoring, or runtime initialization"
+triggers:
+  - "sandbox"
+  - "environment check"
+  - "runtime"
+  - "dependency audit"
+  - "container health"
+tier: 1
 ---
 
 # Environment Doctor Standards
@@ -25,3 +32,8 @@ This skill defines the operational standards and procedures for verifying, diagn
 - **Idempotent Remediation Protocols**: Provide explicit, idempotent bootstrap commands (e.g., `pip install -r requirements.txt`, `npm ci`, or `make bootstrap`) necessary to safely restore the sandbox or target environment to a clean, known-good operational state. Remediation runs must be safe to execute repeatedly without side effects.
 - **Backup and Recovery Audits**: Verify local state backup schedules, ensuring recovery processes meet targeted Recovery Point Objectives (RPO) and Recovery Time Objectives (RTO).
 - **SIEM and Audit Integration**: Log all diagnostics, privilege escalations, and remediation executions to a centralized auditing system or SIEM pipeline for compliance tracking.
+
+## Related Skills
+- Defer to `system_administration` for host-level hardening and backup verification standards.
+- Defer to `devops` for container image scanning and pipeline-enforced parity.
+- Defer to `cyber_security` for audit logging and SIEM integration baselines.

@@ -1,6 +1,13 @@
 ---
 name: "economic_theory"
 description: "Macro and micro economic principles and models."
+triggers:
+  - "economics"
+  - "macroeconomic"
+  - "microeconomic"
+  - "inflation"
+  - "supply and demand"
+tier: 3
 ---
 
 # Economic Theory Standards
@@ -29,3 +36,7 @@ This skill governs the systematic application of macroeconomic and microeconomic
 
 - **Empirical Evidence**: Base all economic assertions, forecasts, and impact assessments on empirical datasets, regression analysis, or peer-reviewed literature.
 - **Model Validation**: Clearly define the assumptions, constraints, and boundary conditions of any economic model utilized in analysis.
+
+## Related Skills
+- Defer to `financial_theory` for asset valuation and portfolio-level applications of economic models.
+- Defer to `data_analyst` for the empirical regression and dataset standards behind economic assertions.

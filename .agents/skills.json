@@ -6,142 +6,300 @@
       "description": "Standards and best practices for creating accessible software and web interfaces.",
       "triggers": [
         "wcag",
-        "accessibility"
+        "accessibility",
+        "aria",
+        "screen reader",
+        "keyboard navigation"
       ],
+      "tier": 2,
       "path": ".agents/skills/accessibility/SKILL.md"
     },
     {
       "name": "architectural_guardrails",
       "description": "Triggers during project initialization, layout mapping, or structural documentation routines",
-      "triggers": [],
+      "triggers": [
+        "project structure",
+        "naming conventions",
+        "scaffolding",
+        "layout mapping",
+        "structural"
+      ],
+      "tier": 1,
       "path": ".agents/skills/architectural_guardrails/SKILL.md"
     },
     {
       "name": "automation",
       "description": "Triggers during scripting, task scheduling, and repetitive workflow optimization",
-      "triggers": [],
+      "triggers": [
+        "automation",
+        "scripting",
+        "cron",
+        "scheduled task",
+        "workflow"
+      ],
+      "tier": 1,
       "path": ".agents/skills/automation/SKILL.md"
     },
     {
       "name": "baseball_analytics",
       "description": "Sabermetrics, statistical modeling, and baseball strategy.",
-      "triggers": [],
+      "triggers": [
+        "baseball",
+        "sabermetrics",
+        "statcast",
+        "woba",
+        "war"
+      ],
+      "tier": 3,
       "path": ".agents/skills/baseball_analytics/SKILL.md"
     },
     {
       "name": "blue_team",
       "description": "Focuses on defensive security, incident response, threat hunting, and securing infrastructure against cyber threats.",
-      "triggers": [],
+      "triggers": [
+        "blue team",
+        "incident response",
+        "threat hunting",
+        "siem",
+        "forensics",
+        "detection",
+        "defense"
+      ],
+      "tier": 2,
       "path": ".agents/skills/blue_team/SKILL.md"
     },
     {
       "name": "bug_bounty_hunter",
       "description": "Triggers during bug bounty reconnaissance, vulnerability analysis, and report generation",
-      "triggers": [],
+      "triggers": [
+        "bug bounty",
+        "recon",
+        "disclosure",
+        "proof of concept",
+        "cvss"
+      ],
+      "tier": 2,
       "path": ".agents/skills/bug_bounty_hunter/SKILL.md"
     },
     {
       "name": "career_assistant",
       "description": "Explicit guidelines and procedures for assisting the user with job applications, tailoring resumes, writing cover letters, and personal branding.",
-      "triggers": [],
+      "triggers": [
+        "resume",
+        "cover letter",
+        "job application",
+        "interview",
+        "personal branding"
+      ],
+      "tier": 3,
       "path": ".agents/skills/career_assistant/SKILL.md"
     },
     {
       "name": "color_theory",
       "description": "Principles of color theory for visual harmony and contrast.",
-      "triggers": [],
+      "triggers": [
+        "color",
+        "palette",
+        "hue",
+        "color contrast"
+      ],
+      "tier": 2,
       "path": ".agents/skills/color_theory/SKILL.md"
     },
     {
       "name": "commit_and_changelog",
       "description": "Triggers during git staging reviews, workspace checkins, or summary generation",
-      "triggers": [],
+      "triggers": [
+        "commit",
+        "changelog",
+        "git staging",
+        "release notes"
+      ],
+      "tier": 1,
       "path": ".agents/skills/commit_and_changelog/SKILL.md"
     },
     {
       "name": "cyber_security",
       "description": "Triggers during security audits, credential scanning, and vulnerability assessments",
-      "triggers": [],
+      "triggers": [
+        "security",
+        "hardening",
+        "security audit",
+        "vulnerability",
+        "credentials",
+        "secrets",
+        "zero trust",
+        "encryption"
+      ],
+      "tier": 1,
       "path": ".agents/skills/cyber_security/SKILL.md"
     },
     {
       "name": "data_analyst",
       "description": "Explicit methodologies for pandas data wrangling, jupyter notebooks, and scikit-learn machine learning pipelines.",
-      "triggers": [],
+      "triggers": [
+        "pandas",
+        "dataframe",
+        "jupyter",
+        "notebook",
+        "scikit-learn",
+        "data analysis"
+      ],
+      "tier": 2,
       "path": ".agents/skills/data_analyst/SKILL.md"
     },
     {
       "name": "database_management",
       "description": "Guidelines and standards for database schema design, migrations, security, and query optimization.",
-      "triggers": [],
+      "triggers": [
+        "database",
+        "sql",
+        "schema",
+        "migration",
+        "query",
+        "index"
+      ],
+      "tier": 2,
       "path": ".agents/skills/database_management/SKILL.md"
     },
     {
       "name": "defensive_debugging",
       "description": "Triggers during error troubleshooting, crash analysis, or runtime exception reviews",
-      "triggers": [],
+      "triggers": [
+        "debug",
+        "stack trace",
+        "crash",
+        "exception",
+        "root cause",
+        "troubleshoot"
+      ],
+      "tier": 1,
       "path": ".agents/skills/defensive_debugging/SKILL.md"
     },
     {
       "name": "devops",
       "description": "Triggers during CI/CD pipeline creation, containerization, and infrastructure deployment",
-      "triggers": [],
+      "triggers": [
+        "ci/cd",
+        "pipeline",
+        "docker",
+        "container",
+        "deployment"
+      ],
+      "tier": 2,
       "path": ".agents/skills/devops/SKILL.md"
     },
     {
       "name": "devops_sre",
-      "description": "Triggers when designing infrastructure-as-code (Terraform, Kubernetes) or building CI/CD pipelines (Azure DevOps, GitLab).",
-      "triggers": [],
+      "description": "Triggers when designing infrastructure as code with Terraform, Kubernetes manifests, or Helm charts under site reliability engineering standards.",
+      "triggers": [
+        "sre",
+        "terraform",
+        "kubernetes",
+        "helm",
+        "reliability",
+        "infrastructure as code"
+      ],
+      "tier": 2,
       "path": ".agents/skills/devops_sre/SKILL.md"
     },
     {
       "name": "economic_theory",
       "description": "Macro and micro economic principles and models.",
-      "triggers": [],
+      "triggers": [
+        "economics",
+        "macroeconomic",
+        "microeconomic",
+        "inflation",
+        "supply and demand"
+      ],
+      "tier": 3,
       "path": ".agents/skills/economic_theory/SKILL.md"
     },
     {
       "name": "environment_doctor",
       "description": "Triggers during sandbox checks, container monitoring, or runtime initialization",
-      "triggers": [],
+      "triggers": [
+        "sandbox",
+        "environment check",
+        "runtime",
+        "dependency audit",
+        "container health"
+      ],
+      "tier": 1,
       "path": ".agents/skills/environment_doctor/SKILL.md"
     },
     {
       "name": "financial_theory",
       "description": "Corporate finance, investment analysis, and financial modeling.",
-      "triggers": [],
+      "triggers": [
+        "finance",
+        "valuation",
+        "dcf",
+        "capm",
+        "portfolio"
+      ],
+      "tier": 3,
       "path": ".agents/skills/financial_theory/SKILL.md"
     },
     {
       "name": "frontend_engineering",
       "description": "Best practices and constraints for modern frontend web development.",
-      "triggers": [],
+      "triggers": [
+        "frontend",
+        "react",
+        "typescript",
+        "component",
+        "state management"
+      ],
+      "tier": 2,
       "path": ".agents/skills/frontend_engineering/SKILL.md"
     },
     {
       "name": "gaming",
       "description": "Game design theory, mechanics, and industry analysis.",
-      "triggers": [],
+      "triggers": [
+        "game design",
+        "gameplay",
+        "game mechanics",
+        "balancing",
+        "player"
+      ],
+      "tier": 3,
       "path": ".agents/skills/gaming/SKILL.md"
     },
     {
       "name": "google_docs_writer",
       "description": "Triggers when assisting with drafting, formatting, or integrating content for Google Docs.",
-      "triggers": [],
+      "triggers": [
+        "google docs",
+        "docs formatting"
+      ],
+      "tier": 2,
       "path": ".agents/skills/google_docs_writer/SKILL.md"
     },
     {
       "name": "hallucination_guardrails",
       "description": "Triggers continuously across all active prompts to ground agent reasoning.",
-      "triggers": [],
+      "triggers": [
+        "grounding",
+        "hallucination",
+        "fabrication",
+        "verify sources",
+        "uncertainty"
+      ],
+      "tier": 0,
       "path": ".agents/skills/hallucination_guardrails/SKILL.md"
     },
     {
       "name": "l4d2_optimization",
       "description": "Performance optimization and resource management for L4D2 servers and clients.",
       "triggers": [
-        "l4d2"
+        "l4d2",
+        "tickrate",
+        "source engine"
       ],
+      "tier": 3,
       "path": ".agents/skills/l4d2_optimization/SKILL.md"
     },
     {
@@ -150,8 +308,11 @@
       "triggers": [
         "vscript",
         "sourcepawn",
-        "sourcemod"
+        "sourcemod",
+        "squirrel",
+        "l4d2"
       ],
+      "tier": 3,
       "path": ".agents/skills/l4d2_scripting/SKILL.md"
     },
     {
@@ -159,86 +320,184 @@
       "description": "Setup, configuration, and administration of Left 4 Dead 2 dedicated servers.",
       "triggers": [
         "l4d2",
-        "left 4 dead"
+        "left 4 dead",
+        "srcds",
+        "dedicated server"
       ],
+      "tier": 3,
       "path": ".agents/skills/l4d2_server_management/SKILL.md"
     },
     {
       "name": "machine_learning",
       "description": "Protocols for building, deploying, and evaluating AI and ML models.",
-      "triggers": [],
+      "triggers": [
+        "machine learning",
+        "model training",
+        "mlops",
+        "inference",
+        "model drift"
+      ],
+      "tier": 2,
       "path": ".agents/skills/machine_learning/SKILL.md"
     },
     {
       "name": "network_engineering",
       "description": "Triggers during network design, configuration, and monitoring tasks.",
-      "triggers": [],
+      "triggers": [
+        "network",
+        "firewall",
+        "vlan",
+        "routing",
+        "dns",
+        "switch"
+      ],
+      "tier": 2,
       "path": ".agents/skills/network_engineering/SKILL.md"
     },
     {
       "name": "product_management",
       "description": "Methodologies for product strategy, scoping, and requirement definition.",
-      "triggers": [],
+      "triggers": [
+        "product strategy",
+        "mvp",
+        "user story",
+        "prd",
+        "okr",
+        "roadmap"
+      ],
+      "tier": 2,
       "path": ".agents/skills/product_management/SKILL.md"
     },
     {
       "name": "quality_assurance",
       "description": "Triggers during testing, validation, and QA processes.",
-      "triggers": [],
+      "triggers": [
+        "testing",
+        "test coverage",
+        "regression",
+        "validation",
+        "qa"
+      ],
+      "tier": 1,
       "path": ".agents/skills/quality_assurance/SKILL.md"
     },
     {
       "name": "quantitative_finance",
       "description": "Mathematical modeling and algorithmic approaches to finance.",
-      "triggers": [],
+      "triggers": [
+        "quant",
+        "backtest",
+        "algorithmic trading",
+        "time series",
+        "volatility"
+      ],
+      "tier": 3,
       "path": ".agents/skills/quantitative_finance/SKILL.md"
     },
     {
-      "name": "Red Team Cyber Operations",
+      "name": "red_team",
       "description": "Simulates adversarial techniques and penetration testing methodologies to identify vulnerabilities and improve defensive posture.",
-      "triggers": [],
+      "triggers": [
+        "red team",
+        "penetration test",
+        "pentest",
+        "exploit",
+        "adversary",
+        "attack simulation"
+      ],
+      "tier": 2,
       "path": ".agents/skills/red_team/SKILL.md"
     },
     {
       "name": "software_development",
       "description": "Triggers during general coding, application design, and feature implementation",
-      "triggers": [],
+      "triggers": [
+        "coding",
+        "implementation",
+        "refactor",
+        "feature",
+        "clean code"
+      ],
+      "tier": 1,
       "path": ".agents/skills/software_development/SKILL.md"
     },
     {
       "name": "system_administration",
       "description": "Triggers during server provisioning, OS configuration, and system maintenance",
-      "triggers": [],
+      "triggers": [
+        "server provisioning",
+        "linux",
+        "patching",
+        "systemd",
+        "os configuration"
+      ],
+      "tier": 2,
       "path": ".agents/skills/system_administration/SKILL.md"
     },
     {
       "name": "systems_logic",
-      "description": "Triggers when orchestrating complex dependency graphs, preventing circular logic, and defining execution hierarchies.",
-      "triggers": [],
+      "description": "Triggers when orchestrating dependency graphs, preventing circular logic, defining execution hierarchies, or assigning priority tiers to skills, tasks, and components.",
+      "triggers": [
+        "dependency graph",
+        "circular logic",
+        "execution order",
+        "topological",
+        "tier",
+        "orchestration",
+        "precedence"
+      ],
+      "tier": 0,
       "path": ".agents/skills/systems_logic/SKILL.md"
     },
     {
       "name": "technical_writing",
       "description": "Standards for system documentation, diagrams, and Architecture Decision Records (ADRs).",
-      "triggers": [],
+      "triggers": [
+        "documentation",
+        "adr",
+        "api spec",
+        "diagram",
+        "readme"
+      ],
+      "tier": 1,
       "path": ".agents/skills/technical_writing/SKILL.md"
     },
     {
       "name": "test_and_verify",
       "description": "Triggers during feature validations, build cycles, or local environment checks",
-      "triggers": [],
+      "triggers": [
+        "verify",
+        "test suite",
+        "build",
+        "lint",
+        "verification"
+      ],
+      "tier": 1,
       "path": ".agents/skills/test_and_verify/SKILL.md"
     },
     {
       "name": "ui_ux",
       "description": "Methodologies for user interface and user experience design.",
-      "triggers": [],
+      "triggers": [
+        "ui",
+        "ux",
+        "wireframe",
+        "user experience",
+        "usability"
+      ],
+      "tier": 2,
       "path": ".agents/skills/ui_ux/SKILL.md"
     },
     {
       "name": "visual_design",
       "description": "Best practices for layout, typography, and visual hierarchy.",
-      "triggers": [],
+      "triggers": [
+        "typography",
+        "visual hierarchy",
+        "whitespace",
+        "layout grid"
+      ],
+      "tier": 2,
       "path": ".agents/skills/visual_design/SKILL.md"
     }
   ]

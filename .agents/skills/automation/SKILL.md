@@ -1,6 +1,13 @@
 ---
 name: "automation"
 description: "Triggers during scripting, task scheduling, and repetitive workflow optimization"
+triggers:
+  - "automation"
+  - "scripting"
+  - "cron"
+  - "scheduled task"
+  - "workflow"
+tier: 1
 ---
 
 # Automation Guidelines and Standards
@@ -29,16 +36,7 @@ This skill establishes best practices for writing scripts, scheduling tasks, and
 - Enforce the principle of least privilege: configure scripts, API tokens, and runner agents with the minimum system and network access required.
 - Maintain environment parity across development, staging, and production environments. Inject configuration parameters exclusively via runtime environment variables.
 
-## Infrastructure and Deployment Automation
-
-### 1. Declarative Infrastructure-as-Code
-- Define all infrastructure and provisioning tasks using declarative IaC tools (e.g., Terraform, Ansible). Avoid interactive script-based provisioning ("click-ops").
-- Run automated syntax validation, linting (e.g., `tflint`), and security scanning (e.g., `tfsec`, `checkov`) on all declarative configurations prior to execution.
-
-### 2. Secure Containerized Execution
-- Build automation scripts running inside containers using minimal, trusted base images (e.g., distroless, Alpine Linux) to minimize the attack surface.
-- Run containers as non-root users, set root filesystems to read-only, and limit container runtime capabilities.
-
-### 3. Automated System Maintenance and Backups
-- Automate OS patching, kernel upgrades, and packages during defined maintenance windows to minimize system downtime.
-- Implement automated backup schedules for critical configurations and data, and schedule regular restoration drills to programmatically verify Recovery Point Objectives (RPO) and Recovery Time Objectives (RTO).
+## Related Skills
+- Defer to `devops_sre` for declarative infrastructure-as-code standards and to `devops` for pipeline integration.
+- Defer to `system_administration` for OS maintenance windows, patching, and backup schedules.
+- Defer to `cyber_security` for secret management and least privilege baselines.
