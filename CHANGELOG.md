@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- **Validation Gate Wiring**: New `src/core/validation_gate.py` implements the protocol gate (strict JSON parse, schema validation, sha256 verification, field mutation matrix diff, bounded retry with VALIDATION ERROR feedback, structured failed payloads). `Orchestrator.run_payload_loop` now runs the tiered 3 pass pipeline behind `payload_pipeline.enabled` in `settings.yaml` or the `--payload` CLI flag, using the tier prompts in `src/core/tier_prompts.py`, injecting SkillRouter results into `routing.skills`, and persisting each validated pass to `logs/payloads/<task_id>/`.
 - **Skill Router**: New `src/core/skill_router.py` routes user prompts to relevant `.agents/skills/` SKILL.md files using deterministic frontmatter `triggers` plus cross encoder semantic scoring, injecting full skill bodies into the Orchestrator context with progressive disclosure and a configurable character budget (`skill_router` section in `settings.yaml`).
 - **Skills Manifest Generator**: New `scripts/generate_skills_manifest.py` regenerates an auto generated skills table in `AGENTS.md` so agents without native skill discovery (Gemini CLI, Antigravity) get a cheap routing surface.
 - **Graph-Based Orchestration**: Migrated the hand-rolled agent loop to a formal state machine using LangGraph.

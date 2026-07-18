@@ -8,6 +8,7 @@ now migrated to a formal StateGraph using LangGraph.
 """
 
 import json
+import os
 import sys
 from typing import Any, List, Optional, TypedDict
 
@@ -17,7 +18,7 @@ from langgraph.graph import END, StateGraph
 from langchain_core.runnables.config import RunnableConfig
 from langsmith import Client
 
-from src.infrastructure.config_loader import load_config
+from src.infrastructure.config_loader import default_loader, load_config
 from src.infrastructure.telemetry_logger import log_telemetry
 import atexit
 
@@ -186,6 +187,8 @@ class Orchestrator:
             print(f"[Orchestrator] Skill router unavailable: {e}")
             self.skill_router = None
 
+        self.payload_cfg = self.cfg.get("payload_pipeline", {}) or {}
+
         self.graph = self._build_graph()
         atexit.register(self.shutdown)
 
@@ -332,7 +335,103 @@ class Orchestrator:
                 print("[HumanProxy] Action REJECTED.")
                 return False
 
+    def _persist_payload(self, payload: dict):
+        """Writes one JSON file per pass under the task id for replay and audit."""
+        try:
+            artifact_dir = os.path.join(
+                default_loader.get_repo_root(),
+                self.payload_cfg.get("artifact_dir", "logs/payloads"),
+                payload["task_id"],
+            )
+            os.makedirs(artifact_dir, exist_ok=True)
+            pass_number = payload["pipeline"]["pass_number"]
+            path = os.path.join(artifact_dir, f"pass_{pass_number}.json")
+            with open(path, "w", encoding="utf8") as f:
+                json.dump(payload, f, indent=2)
+        except Exception as e:
+            print(f"[Orchestrator] Failed to persist payload: {e}")
+
+    def run_payload_loop(self, user_query: str):
+        """
+        Tiered 3 pass pipeline with a code level validation gate at every
+        boundary, per documentation/multi_agent_payload_protocol.md. Agents
+        exchange AgentTaskPayload JSON; tool calls are disabled because they
+        conflict with the JSON only output contract.
+        """
+        from src.core.tier_prompts import TIER1_PROMPT, TIER2_PROMPT, TIER3_PROMPT
+        from src.core.validation_gate import ValidationGate, build_initial_payload
+
+        print("\n=== Starting 3 Pass Payload Pipeline ===")
+        print(f"Query: {user_query}\n")
+
+        gate = ValidationGate(max_attempts=self.payload_cfg.get("max_attempts", 3))
+
+        # Dispatch: route skills once; they ride in routing.skills for all passes.
+        skills = []
+        skill_context = ""
+        if self.skill_router:
+            try:
+                for skill, score, reason in self.skill_router.route(user_query):
+                    entry = {"name": skill.name}
+                    if reason.startswith("trigger"):
+                        entry["matched_by"] = "trigger"
+                        if "'" in reason:
+                            entry["trigger"] = reason.split("'")[1]
+                    else:
+                        entry["matched_by"] = "semantic"
+                        entry["score"] = round(score, 4)
+                    skills.append(entry)
+                skill_context = self.skill_router.build_context(user_query)
+            except Exception as e:
+                print(f"[Orchestrator] Skill routing failed: {e}")
+
+        domain = skills[0]["name"] if skills else "general"
+        initial = build_initial_payload(user_query, domain, skills)
+
+        tiers = [
+            (1, Agent("Tier3_Executor", TIER3_PROMPT, self.default_model)),
+            (2, Agent("Tier2_Specialist", TIER2_PROMPT, self.default_model)),
+            (3, Agent("Tier1_Orchestrator", TIER1_PROMPT, self.default_model)),
+        ]
+
+        payload = initial
+        for pass_number, agent in tiers:
+            print(f"\n--- Pass {pass_number}: {agent.name} ---")
+
+            def call_fn(feedback, agent=agent, payload=payload):
+                user_msg = json.dumps(payload)
+                if skill_context:
+                    user_msg += f"\n\nSKILL DIRECTIVES (binding):\n{skill_context}"
+                if feedback:
+                    user_msg += f"\n\n{feedback}"
+                message = agent.generate_response(user_msg)
+                return message.content if message and message.content else ""
+
+            result = gate.run(call_fn, prev=payload, expected_pass=pass_number)
+            if result.payload:
+                self._persist_payload(result.payload)
+            if not result.ok:
+                print(
+                    f"[Orchestrator] Pass {pass_number} failed validation after "
+                    f"{result.attempts} attempts: {result.errors[0]}"
+                )
+                return result.payload
+            payload = result.payload
+            verdict = (payload.get("critique") or {}).get("verdict", "n/a")
+            print(
+                f"[Gate] Pass {pass_number} valid on attempt {result.attempts} "
+                f"(verdict: {verdict})"
+            )
+
+        print(f"\n[Orchestrator] Final status: {payload['pipeline']['status']}")
+        print("\n[Orchestrator] Final Output:")
+        print(payload["content"]["body"])
+        return payload
+
     def run_loop(self, user_query: str):
+        if self.payload_cfg.get("enabled", False):
+            return self.run_payload_loop(user_query)
+
         print("\n=== Starting Multi-Agent Orchestration ===")
         print(f"Query: {user_query}\n")
 
@@ -432,9 +531,14 @@ def main():
 
     orchestrator = Orchestrator()
 
+    args = sys.argv[1:]
+    if "--payload" in args:
+        args.remove("--payload")
+        orchestrator.payload_cfg = dict(orchestrator.payload_cfg, enabled=True)
+
     # Check if a single query was passed via arguments
-    if len(sys.argv) > 1:
-        query = " ".join(sys.argv[1:])
+    if args:
+        query = " ".join(args)
         orchestrator.run_loop(query)
         return
 

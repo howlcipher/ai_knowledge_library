@@ -13,6 +13,14 @@ agents:
   default_language: "en_US"
   max_context_tokens: 8192
 
+# Tiered 3 pass JSON payload pipeline (documentation/multi_agent_payload_protocol.md).
+# When enabled, run_loop routes through the validation gated tier agents instead
+# of the free text researcher/QA loop. Also switchable per run with --payload.
+payload_pipeline:
+  enabled: false
+  max_attempts: 3
+  artifact_dir: "logs/payloads"
+
 skill_router:
   enabled: true
   top_k: 3

@@ -31,6 +31,12 @@ class BackupSettings(BaseModel):
     filename: str = "library_backup.tar.gz"
 
 
+class PayloadPipelineSettings(BaseModel):
+    enabled: bool = False
+    max_attempts: int = 3
+    artifact_dir: str = "logs/payloads"
+
+
 class SkillRouterSettings(BaseModel):
     enabled: bool = True
     top_k: int = 3
@@ -48,6 +54,7 @@ class AppSettings(BaseSettings):
     agents: AgentsSettings = AgentsSettings()
     backup: BackupSettings = BackupSettings()
     skill_router: SkillRouterSettings = SkillRouterSettings()
+    payload_pipeline: PayloadPipelineSettings = PayloadPipelineSettings()
     active_mcps: list = []
     mcp_servers: dict = {}
 
