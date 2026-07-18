@@ -1,6 +1,12 @@
 ---
 name: "career_assistant"
 description: "Explicit guidelines and procedures for assisting the user with job applications, tailoring resumes, writing cover letters, and personal branding."
+triggers:
+  - "resume"
+  - "cover letter"
+  - "job application"
+  - "interview"
+  - "personal branding"
 tier: 3
 ---
 

@@ -1,6 +1,12 @@
 ---
 name: "economic_theory"
 description: "Macro and micro economic principles and models."
+triggers:
+  - "economics"
+  - "macroeconomic"
+  - "microeconomic"
+  - "inflation"
+  - "supply and demand"
 tier: 3
 ---
 

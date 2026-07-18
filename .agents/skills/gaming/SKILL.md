@@ -1,6 +1,12 @@
 ---
 name: "gaming"
 description: "Game design theory, mechanics, and industry analysis."
+triggers:
+  - "game design"
+  - "gameplay"
+  - "game mechanics"
+  - "balancing"
+  - "player"
 tier: 3
 ---
 

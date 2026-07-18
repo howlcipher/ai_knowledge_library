@@ -1,6 +1,12 @@
 ---
 name: "financial_theory"
 description: "Corporate finance, investment analysis, and financial modeling."
+triggers:
+  - "finance"
+  - "valuation"
+  - "dcf"
+  - "capm"
+  - "portfolio"
 tier: 3
 ---
 

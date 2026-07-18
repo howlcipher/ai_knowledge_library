@@ -1,6 +1,12 @@
 ---
 name: "baseball_analytics"
 description: "Sabermetrics, statistical modeling, and baseball strategy."
+triggers:
+  - "baseball"
+  - "sabermetrics"
+  - "statcast"
+  - "woba"
+  - "war"
 tier: 3
 ---
 

@@ -13,7 +13,7 @@ Refine all `.agents/skills/*/SKILL.md` files against a shared rubric, organize t
 | 0 | Create this tracker with rubric, tier model, and status tables | Done |
 | 1 | Extend `systems_logic` with the skill tiering and conflict precedence methodology | Done |
 | 2 | Add `tier:` frontmatter to all 38 skills; expose tier in `SkillRouter`, `skills.json`, and the AGENTS.md manifest | Done |
-| 3 | Self-refine every skill against the rubric, in tier order, committing in batches | Pending |
+| 3 | Self-refine every skill against the rubric, in tier order, committing in batches | Done |
 | 4 | Cross-refine overlap clusters; deduplicate content, canonical owner wins | Pending |
 | 5 | Final consistency sweep (naming, cross-references, manifest regen) and close out | Pending |
 
@@ -100,15 +100,15 @@ Canonical owner listed first; other members defer and keep only their domain del
 | system_administration | 2 | Done | Pending | |
 | ui_ux | 2 | Done | Pending | Design cluster |
 | visual_design | 2 | Done | Pending | Design cluster |
-| baseball_analytics | 3 | Pending | Pending | defers to data_analyst |
-| career_assistant | 3 | Pending | Pending | grounded in USER_PROFILE.md |
-| economic_theory | 3 | Pending | Pending | Finance cluster |
-| financial_theory | 3 | Pending | Pending | Finance cluster owner |
-| gaming | 3 | Pending | Pending | |
-| l4d2_optimization | 3 | Pending | Pending | L4D2 cluster |
-| l4d2_scripting | 3 | Pending | Pending | L4D2 cluster |
-| l4d2_server_management | 3 | Pending | Pending | L4D2 cluster owner |
-| quantitative_finance | 3 | Pending | Pending | Data/ML and Finance clusters |
+| baseball_analytics | 3 | Done | Pending | defers to data_analyst |
+| career_assistant | 3 | Done | Pending | grounded in USER_PROFILE.md |
+| economic_theory | 3 | Done | Pending | Finance cluster |
+| financial_theory | 3 | Done | Pending | Finance cluster owner |
+| gaming | 3 | Done | Pending | |
+| l4d2_optimization | 3 | Done | Pending | L4D2 cluster |
+| l4d2_scripting | 3 | Done | Pending | L4D2 cluster |
+| l4d2_server_management | 3 | Done | Pending | L4D2 cluster owner |
+| quantitative_finance | 3 | Done | Pending | Data/ML and Finance clusters |
 
 ## Operational Notes
 
