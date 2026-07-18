@@ -48,7 +48,7 @@ Zero trust boundary rule: every field an agent is not explicitly granted below m
 
 ## Validation Gate
 
-Between every pass, the orchestrating code (not an LLM) must:
+Implemented in `src/core/validation_gate.py` and wired into `Orchestrator.run_payload_loop`. Enable via `payload_pipeline.enabled: true` in `config/settings.yaml` or the `--payload` CLI flag; validated payloads are persisted per pass under `payload_pipeline.artifact_dir`. Between every pass, the orchestrating code (not an LLM) must:
 
 1. Parse the raw model output as JSON. Strip nothing; a response that is not pure JSON is a failure.
 2. Validate against the schema (Python: `jsonschema` with format checking; Go: `santhosh-tekuri/jsonschema/v6`).
