@@ -73,16 +73,16 @@ Canonical owner listed first; other members defer and keep only their domain del
 | --- | --- | --- | --- | --- |
 | hallucination_guardrails | 0 | Done | Pending | drop formatting boilerplate |
 | systems_logic | 0 | Done | Pending | extended in P1 |
-| architectural_guardrails | 1 | Done | Pending | Structure cluster owner |
+| architectural_guardrails | 1 | Done | Done | Structure cluster owner |
 | automation | 1 | Done | Pending | overlaps devops IaC content |
 | commit_and_changelog | 1 | Done | Pending | |
 | cyber_security | 1 | Done | Pending | add triggers; Security cluster owner |
-| defensive_debugging | 1 | Done | Pending | Verification cluster |
+| defensive_debugging | 1 | Done | Done | Verification cluster |
 | environment_doctor | 1 | Done | Pending | |
-| quality_assurance | 1 | Done | Pending | Verification cluster owner |
-| software_development | 1 | Done | Pending | drop embedded verification section |
-| technical_writing | 1 | Done | Pending | Structure cluster |
-| test_and_verify | 1 | Done | Pending | Verification cluster |
+| quality_assurance | 1 | Done | Done | Verification cluster owner |
+| software_development | 1 | Done | Done | drop embedded verification section |
+| technical_writing | 1 | Done | Done | Structure cluster |
+| test_and_verify | 1 | Done | Done | Verification cluster |
 | accessibility | 2 | Done | Pending | Design cluster WCAG owner |
 | blue_team | 2 | Done | Pending | add triggers |
 | bug_bounty_hunter | 2 | Done | Pending | Security cluster |
