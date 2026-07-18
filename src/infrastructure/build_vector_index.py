@@ -11,7 +11,9 @@ import os
 
 from src.infrastructure.config_loader import load_config
 
-PRUNED_DIRS = {"node_modules", "testenv", "build", "dist", "__pycache__"}
+# "docs" is the generated GitHub Pages mirror of documentation/ and
+# .agents/; indexing it duplicates every canonical page.
+PRUNED_DIRS = {"node_modules", "testenv", "build", "dist", "__pycache__", "docs"}
 
 
 class TextChunker:

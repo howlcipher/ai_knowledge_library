@@ -20,84 +20,95 @@ Rank weighs impact against effort: quick unblocking fixes first, large architect
 
 | # | Improvement | Status | Claude model | Gemini model | ROI rationale |
 | --- | --- | --- | --- | --- | --- |
-| 1 | [Rebuild the vector index](#1-rebuild-the-vector-index) | Pending | Haiku 4.5 | Gemini 3 Flash | Minutes of work; unblocks semantic search over the newly refined skills |
+| 1 | [Rebuild the vector index](#1-rebuild-the-vector-index) | Done (2026-07-18) | Haiku 4.5 | Gemini 3 Flash | Minutes of work; unblocks semantic search over the newly refined skills |
 | 2 | [Ignore build artifacts and local state in git](#2-ignore-build-artifacts-and-local-state-in-git) | Pending | Haiku 4.5 | Gemini 3 Flash | Minutes of work; clears permanent noise from git status and prevents accidental commits |
-| 3 | [Preflight the provider before a run](#3-preflight-the-provider-before-a-run) | Pending | Sonnet 5 | Gemini 3 Flash | Small change; stops entire runs being wasted on a dead server or missing model tag |
-| 4 | [Per tier LLM timeout](#4-per-tier-llm-timeout) | Pending | Haiku 4.5 | Gemini 3 Flash | Config plumbing only; removes a known hard failure for 30B local models |
-| 5 | [Separate transport failures from validation failures](#5-separate-transport-failures-from-validation-failures) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; makes every future failure diagnosable instead of masked |
-| 6 | [Provider enforced structured outputs](#6-provider-enforced-structured-outputs) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; biggest single reliability win for small local models |
-| 7 | [Show exact object shapes in tier prompts](#7-show-exact-object-shapes-in-tier-prompts) | Pending | Sonnet 5 | Gemini 3 Flash | Small prompt change; directly cuts the observed schema misses, complements #6 |
-| 8 | [Persist all attempt errors](#8-persist-all-attempt-errors) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change; preserves post mortem evidence currently thrown away |
-| 9 | [Guard against oversized local models](#9-guard-against-oversized-local-models) | Pending | Sonnet 5 | Gemini 3 Flash | Small change; makes OOM/crash loops diagnosable from the log |
-| 10 | [Emit gate failures into telemetry](#10-emit-gate-failures-into-telemetry) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change; starts tracking schema failure rate per model |
-| 11 | [Install the pre-commit hook via bootstrap](#11-install-the-pre-commit-hook-via-bootstrap) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change; removes a silent per machine setup gap |
-| 12 | [Sync the docs site changelog automatically](#12-sync-the-docs-site-changelog-automatically) | Pending | Haiku 4.5 | Gemini 3 Flash | Two line hook addition; stops docs/change_log.md drifting from the real changelog |
-| 13 | [`pipeline_pass` frontmatter and dispatcher](#13-pipeline_pass-frontmatter-and-dispatcher) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; routes reviewer skills into the right pipeline pass |
-| 14 | [Claude Code backend for pipeline tiers](#14-claude-code-backend-for-pipeline-tiers) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; adds a strong subscription backed judge for Tier 1 |
-| 15 | [Calibrate the skill router score threshold](#15-calibrate-the-skill-router-score-threshold) | Pending | Fable 5 | Gemini 3 Pro | Needs judgment (labeled prompt set + eval design), modest payoff beyond triggers |
-| 16 | [OpenTelemetry integration](#16-opentelemetry-integration) | Pending | Sonnet 5 | Gemini 3 Pro | Larger effort; better observability but no current outage it would have caught |
-| 17 | [Homelab MCP server](#17-homelab-mcp-server) | Pending | Fable 5 | Gemini 3 Pro | High long term value but a full architecture evaluation and build |
-| 18 | [Automated job hunting pipeline](#18-automated-job-hunting-pipeline) | Pending | Fable 5 | Gemini 3 Pro | High personal value but the largest, most open ended build |
+| 3 | [Make vector index rebuilds idempotent](#3-make-vector-index-rebuilds-idempotent) | Pending | Haiku 4.5 | Gemini 3 Flash | Minutes of work; prevents stale chunks from silently corrupting every future rebuild |
+| 4 | [Preflight the provider before a run](#4-preflight-the-provider-before-a-run) | Pending | Sonnet 5 | Gemini 3 Flash | Small change; stops entire runs being wasted on a dead server or missing model tag |
+| 5 | [Per tier LLM timeout](#5-per-tier-llm-timeout) | Pending | Haiku 4.5 | Gemini 3 Flash | Config plumbing only; removes a known hard failure for 30B local models |
+| 6 | [Separate transport failures from validation failures](#6-separate-transport-failures-from-validation-failures) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; makes every future failure diagnosable instead of masked |
+| 7 | [Provider enforced structured outputs](#7-provider-enforced-structured-outputs) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; biggest single reliability win for small local models |
+| 8 | [Show exact object shapes in tier prompts](#8-show-exact-object-shapes-in-tier-prompts) | Pending | Sonnet 5 | Gemini 3 Flash | Small prompt change; directly cuts the observed schema misses, complements #7 |
+| 9 | [Persist all attempt errors](#9-persist-all-attempt-errors) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change; preserves post mortem evidence currently thrown away |
+| 10 | [Guard against oversized local models](#10-guard-against-oversized-local-models) | Pending | Sonnet 5 | Gemini 3 Flash | Small change; makes OOM/crash loops diagnosable from the log |
+| 11 | [Emit gate failures into telemetry](#11-emit-gate-failures-into-telemetry) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change; starts tracking schema failure rate per model |
+| 12 | [Install the pre-commit hook via bootstrap](#12-install-the-pre-commit-hook-via-bootstrap) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change; removes a silent per machine setup gap |
+| 13 | [Sync the docs site changelog automatically](#13-sync-the-docs-site-changelog-automatically) | Pending | Haiku 4.5 | Gemini 3 Flash | Two line hook addition; stops docs/change_log.md drifting from the real changelog |
+| 14 | [Fix the self-nesting docs site mirror](#14-fix-the-self-nesting-docs-site-mirror) | Pending | Haiku 4.5 | Gemini 3 Flash | Small Makefile fix; stops the Pages mirror doubling itself on every `make docs` re-run |
+| 15 | [`pipeline_pass` frontmatter and dispatcher](#15-pipeline_pass-frontmatter-and-dispatcher) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; routes reviewer skills into the right pipeline pass |
+| 16 | [Claude Code backend for pipeline tiers](#16-claude-code-backend-for-pipeline-tiers) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; adds a strong subscription backed judge for Tier 1 |
+| 17 | [Calibrate the skill router score threshold](#17-calibrate-the-skill-router-score-threshold) | Pending | Fable 5 | Gemini 3 Pro | Needs judgment (labeled prompt set + eval design), modest payoff beyond triggers |
+| 18 | [OpenTelemetry integration](#18-opentelemetry-integration) | Pending | Sonnet 5 | Gemini 3 Pro | Larger effort; better observability but no current outage it would have caught |
+| 19 | [Homelab MCP server](#19-homelab-mcp-server) | Pending | Fable 5 | Gemini 3 Pro | High long term value but a full architecture evaluation and build |
+| 20 | [Automated job hunting pipeline](#20-automated-job-hunting-pipeline) | Pending | Fable 5 | Gemini 3 Pro | High personal value but the largest, most open ended build |
 
 ## Details
 
 ### 1. Rebuild the vector index
 `build_vector_index.py` was fixed to include dot directories (`.agents/skills/**` was invisible to the old glob), but the index has not been rebuilt since. The full skill refinement of 2026-07-18 (tiers, triggers, deduplicated content, Related Skills sections) is therefore invisible to semantic search. Run the rebuild so semantic search retrieves the refined skill content, and spot check a few queries (e.g. a security prompt should surface `cyber_security`).
 
+**Done 2026-07-18:** Index rebuilt (219 chunks) with the `docs/` Pages mirror pruned from the scan — the first build indexed the mirror too (410 chunks) because the mirror paths contain the `.agents`/`documentation` substrings the file filter keeps, and duplicate copies crowded out results. Spot checks pass: security → `cyber_security`, crash triage → `defensive_debugging`, Terraform/K8s → `devops_sre`, resume → `career_assistant`. Findings spawned items 3 and 14. Journal: `documentation/task_journals/2026-07-18_rebuild-vector-index.md`.
+
 ### 2. Ignore build artifacts and local state in git
 Several generated or local-state files are tracked or untracked-dirty and permanently clutter `git status`: `.telemetry/telemetry.db`, `build/lib/**`, `src/ai_knowledge_library.egg-info/**`, `__pycache__/` (including `scripts/__pycache__`), and the compiled Go binary `installer` (ELF executable rebuilt locally; track its source, not the binary). Add `.gitignore` entries, `git rm --cached` the already-tracked ones, and verify a fresh clone plus build still works. Check the existing installer-related `.gitignore` anchoring from commit `ce4309e` so the rules do not conflict.
 
-### 3. Preflight the provider before a run
+### 3. Make vector index rebuilds idempotent
+`build_vector_index.py` only upserts; it never deletes existing chunks. Chunk ids are `<path>_<n>`, so when a file shrinks, moves, or is deleted, its leftover ids stay in the collection and every rebuild after content changes strands stale chunks (the 2026-07-18 rebuild required a manual `rm -rf .chroma` to purge the mirror duplicates). Drop and recreate the collection at the start of the build (or delete ids absent from the new scan) so a plain rerun always yields a clean index. Apply the same fix to the pgvector backend path.
+
+### 4. Preflight the provider before a run
 Run 1 (2026-07-17) spent all three validation attempts against a crashed Ollama server, and run 2 against a model tag that had been removed mid session. A cheap ping before pass 1 (list models, verify the configured tag exists, one token generation) would fail fast with an actionable error.
 
-### 4. Per tier LLM timeout
+### 5. Per tier LLM timeout
 The 30B model timed out at LiteLLM's default 600s while generating the full payload envelope. Add a `timeout` setting to `payload_pipeline` (or per entry in `tier_models`) and pass it through `litellm.completion`.
 
-### 5. Separate transport failures from validation failures
+### 6. Separate transport failures from validation failures
 `litellm.APIConnectionError` (server crash, model not found, timeout) surfaces as an empty response, which the gate scores as a `parse` failure and burns one of the three validation attempts. The persisted failed payload then reports `failure_vector: validation_gate.parse`, masking the real cause. Catch provider exceptions in the tier call path, retry them with backoff without consuming a validation attempt, and record a distinct error code (e.g. `UPSTREAM_UNAVAILABLE`) with the provider message in `error.context`.
 
-### 6. Provider enforced structured outputs
+### 7. Provider enforced structured outputs
 `qwen3:30b-instruct` produced parseable JSON but invented fields on both real attempts (`lineage.history[0].action/details/timestamp`, then `critique.findings[0].description`). The VALIDATION ERROR feedback loop measurably improved attempt 2, but prompt discipline alone is weak on small local models. Ollama and LiteLLM support `response_format` with a JSON schema; passing `agent_task_payload.schema.json` (or a per pass subset) would make schema compliance mechanical instead of behavioral.
 
-### 7. Show exact object shapes in tier prompts
+### 8. Show exact object shapes in tier prompts
 The invented `lineage.history` fields suggest the model never saw the required entry shape. Embed a one line example of each nested object (history entry, finding, adversarial test) in the tier prompts, or echo the relevant schema fragment inside the VALIDATION ERROR feedback.
 
-### 8. Persist all attempt errors
+### 9. Persist all attempt errors
 The failed payload keeps only the final attempt's errors, so the schema violations from attempts 1 and 2 of run 3 are lost. Append a per attempt error history to `error.context` for post mortems.
 
-### 9. Guard against oversized local models
+### 10. Guard against oversized local models
 `qwen3:30b-a3b` crashed the Ollama server mid load (29GB RAM host). When the configured model is served by a local endpoint, surface the provider's error body (Ollama returns JSON error messages) instead of the generic connection error, so OOM/crash loops are diagnosable from the pipeline log.
 
-### 10. Emit gate failures into telemetry
+### 11. Emit gate failures into telemetry
 The validation gate prints failures but does not log them through `telemetry_logger`, so schema failure rate per model is not yet a tracked metric (recommended in `documentation/multi_agent_payload_protocol.md`).
 
-### 11. Install the pre-commit hook via bootstrap
+### 12. Install the pre-commit hook via bootstrap
 `.git/hooks` is not versioned; each machine needs a one time `python scripts/install_pre_commit_hook.py` (which now includes the skills manifest/index regeneration and the fixed `.env` guard). Wire it into `scripts/bootstrap.py` or the installer so it happens automatically.
 
-### 12. Sync the docs site changelog automatically
+### 13. Sync the docs site changelog automatically
 `docs/change_log.md` is a manual byte-for-byte copy of `change_log.md` for the GitHub Pages site and will drift as soon as someone updates the changelog without remembering the copy. Extend the pre-commit hook in `scripts/install_pre_commit_hook.py` to copy `change_log.md` to `docs/change_log.md` and stage it whenever the changelog is part of a commit (same pattern as the skills manifest regeneration). Consider whether `docs/docs.md` and `docs/index.md`, which duplicate README content, deserve the same treatment.
 
-### 13. `pipeline_pass` frontmatter and dispatcher
+### 14. Fix the self-nesting docs site mirror
+The `docs` target in the Makefile mirrors content with `cp -r documentation docs/` and `cp -r .agents docs/`. When the destination directory already exists, `cp -r` copies the source *into* it, so every `make docs` re-run without a prior `make clean` nests another copy: `docs/documentation/documentation/**` and `docs/.agents/.agents/**` exist in the repo today. Fix the target to remove (or `rsync --delete` into) the mirror subdirectories before copying, delete the committed nested trees, and confirm the Pages site still renders. Found during item 1, where the mirror also doubled the vector index (410 vs 219 chunks).
+
+### 15. `pipeline_pass` frontmatter and dispatcher
 Skills now declare a priority `tier:` (0 meta, 1 governance, 2 domain, 3 application) consumed by `SkillRouter`, `skills.json`, and the AGENTS.md manifest. Pipeline pass affinity is a separate concept and still open: add a distinct key (e.g. `pipeline_pass: 2` for reviewer skills like `cyber_security`) so the payload pipeline dispatcher injects each skill into the pass where it belongs (reviewer skills into pass 2, not pass 1) without colliding with the priority tier semantics.
 
-### 14. Claude Code backend for pipeline tiers
+### 16. Claude Code backend for pipeline tiers
 Add a `claude_code` option to `payload_pipeline.tier_models`, handled before LiteLLM by shelling out to headless Claude Code (`claude -p "<prompt>" --output-format json`). Uses the subscription login instead of an API key; bills session usage per run. Best fit: Tier 1 judging. Note this item can only be exercised on a machine with Claude Code logged in.
 
-### 15. Calibrate the skill router score threshold
+### 17. Calibrate the skill router score threshold
 All 38 skills now declare `triggers` frontmatter, which closed the deterministic routing gap. The semantic fallback is still uncalibrated: build a small labeled prompt set and tune `skill_router.score_threshold` (and possibly `top_k`) against it so semantic recall is measured rather than guessed.
 
-### 16. OpenTelemetry integration
+### 18. OpenTelemetry integration
 Integrate OpenTelemetry into the existing `system_logger.py` for advanced metrics and traces.
 
-### 17. Homelab MCP server
+### 19. Homelab MCP server
 Build a homelab MCP server to autonomously monitor, debug, and manage local Docker containers and network infrastructure. Per the global rules, present a pros/cons evaluation of the technology options before committing to an architecture.
 
-### 18. Automated job hunting pipeline
+### 20. Automated job hunting pipeline
 Script an automated pipeline using web-search MCPs to scrape job postings, map against `USER_PROFILE.md`, and generate tailored resumes and cover letters. Follow the `career_assistant` skill's grounding rules (no fabricated experience).
 
 ## ✅ Completed
 
+- **Rebuild the vector index (done 2026-07-18):** fresh 219 chunk index over canonical sources only; `docs/` Pages mirror pruned from the scanner. Spot checks route security, debugging, IaC, and career prompts to the right skills. Spawned items 3 (idempotent rebuilds) and 14 (self-nesting docs mirror).
 - **DevOps / IaC skill node (done 2026-07-17):** `.agents/skills/devops_sre/SKILL.md` exists; scope narrowed to Terraform/Kubernetes design during the 2026-07-18 skill refinement.
-- **Skill routing recall gap for security prompts (done 2026-07-18):** all 38 skills declare `triggers` frontmatter; the failing prompt ("security hardening runbook for a FastAPI webhook server") now routes `cyber_security` deterministically. Threshold calibration continues as item 13.
-- **Priority `tier` frontmatter (done 2026-07-18):** every SKILL.md declares `tier:` 0 to 3, parsed by `SkillRouter` and exposed in `skills.json` and the AGENTS.md manifest. See `documentation/skill_refinement_progress.md`. Pipeline pass affinity continues as item 11.
+- **Skill routing recall gap for security prompts (done 2026-07-18):** all 38 skills declare `triggers` frontmatter; the failing prompt ("security hardening runbook for a FastAPI webhook server") now routes `cyber_security` deterministically. Threshold calibration continues as item 17.
+- **Priority `tier` frontmatter (done 2026-07-18):** every SKILL.md declares `tier:` 0 to 3, parsed by `SkillRouter` and exposed in `skills.json` and the AGENTS.md manifest. See `documentation/skill_refinement_progress.md`. Pipeline pass affinity continues as item 15.
 - **Skill library refinement (done 2026-07-18):** all 38 skills refined against a shared rubric, tiered, and cross deduplicated with Related Skills deferrals; tracked in `documentation/skill_refinement_progress.md`.
