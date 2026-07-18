@@ -1,6 +1,7 @@
 ---
 name: "bug_bounty_hunter"
 description: "Triggers during bug bounty reconnaissance, vulnerability analysis, and report generation"
+tier: 2
 ---
 
 # Bug Bounty Hunting Methodologies

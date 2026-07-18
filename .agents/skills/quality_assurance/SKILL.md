@@ -1,6 +1,7 @@
 ---
 name: "quality_assurance"
 description: "Triggers during testing, validation, and QA processes."
+tier: 1
 ---
 
 # Quality Assurance Guidelines

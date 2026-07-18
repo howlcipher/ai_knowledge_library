@@ -1,6 +1,7 @@
 ---
 name: "network_engineering"
 description: "Triggers during network design, configuration, and monitoring tasks."
+tier: 2
 ---
 
 # Network Engineering Standards

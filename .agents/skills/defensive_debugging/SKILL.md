@@ -1,6 +1,7 @@
 ---
 name: "defensive_debugging"
 description: "Triggers during error troubleshooting, crash analysis, or runtime exception reviews"
+tier: 1
 ---
 
 # Defensive Debugging Standards

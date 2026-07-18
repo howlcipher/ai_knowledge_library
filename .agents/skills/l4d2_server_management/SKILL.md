@@ -4,6 +4,7 @@ description: "Setup, configuration, and administration of Left 4 Dead 2 dedicate
 triggers:
   - "l4d2"
   - "left 4 dead"
+tier: 3
 ---
 
 # Left 4 Dead 2 Server Management

@@ -1,6 +1,7 @@
 ---
 name: "financial_theory"
 description: "Corporate finance, investment analysis, and financial modeling."
+tier: 3
 ---
 
 # Financial Theory Standards

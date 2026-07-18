@@ -1,6 +1,7 @@
 ---
 name: "quantitative_finance"
 description: "Mathematical modeling and algorithmic approaches to finance."
+tier: 3
 ---
 
 # Quantitative Finance Methodologies

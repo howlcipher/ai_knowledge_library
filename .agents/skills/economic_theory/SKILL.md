@@ -1,6 +1,7 @@
 ---
 name: "economic_theory"
 description: "Macro and micro economic principles and models."
+tier: 3
 ---
 
 # Economic Theory Standards

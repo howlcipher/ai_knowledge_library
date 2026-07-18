@@ -1,6 +1,7 @@
 ---
 name: "frontend_engineering"
 description: "Best practices and constraints for modern frontend web development."
+tier: 2
 ---
 
 # Frontend Engineering Standards

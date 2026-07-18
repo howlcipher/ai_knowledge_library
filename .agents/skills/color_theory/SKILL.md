@@ -1,6 +1,7 @@
 ---
 name: "color_theory"
 description: "Principles of color theory for visual harmony and contrast."
+tier: 2
 ---
 
 # Color Theory Principles

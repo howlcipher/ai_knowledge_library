@@ -1,6 +1,7 @@
 ---
 name: "cyber_security"
 description: "Triggers during security audits, credential scanning, and vulnerability assessments"
+tier: 1
 ---
 
 # Cyber Security Directives

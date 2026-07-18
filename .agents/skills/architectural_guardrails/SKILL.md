@@ -1,6 +1,7 @@
 ---
 name: "architectural_guardrails"
 description: "Triggers during project initialization, layout mapping, or structural documentation routines"
+tier: 1
 ---
 
 # Global Architectural Standards

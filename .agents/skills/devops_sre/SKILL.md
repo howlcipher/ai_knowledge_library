@@ -1,6 +1,7 @@
 ---
 name: "devops_sre"
 description: "Triggers when designing infrastructure-as-code (Terraform, Kubernetes) or building CI/CD pipelines (Azure DevOps, GitLab)."
+tier: 2
 ---
 
 # DevOps and Site Reliability Engineering Standards

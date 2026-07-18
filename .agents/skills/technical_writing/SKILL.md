@@ -1,6 +1,7 @@
 ---
 name: "technical_writing"
 description: "Standards for system documentation, diagrams, and Architecture Decision Records (ADRs)."
+tier: 1
 ---
 
 # Technical Writing Standards

@@ -1,6 +1,7 @@
 ---
 name: "software_development"
 description: "Triggers during general coding, application design, and feature implementation"
+tier: 1
 ---
 
 # Software Development Standards

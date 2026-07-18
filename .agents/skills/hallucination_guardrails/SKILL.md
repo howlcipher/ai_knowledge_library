@@ -1,6 +1,7 @@
 ---
 name: "hallucination_guardrails"
 description: "Triggers continuously across all active prompts to ground agent reasoning."
+tier: 0
 ---
 
 # Reality Validation Rules

@@ -1,6 +1,7 @@
 ---
 name: "baseball_analytics"
 description: "Sabermetrics, statistical modeling, and baseball strategy."
+tier: 3
 ---
 
 # Baseball Analytics and Sabermetrics

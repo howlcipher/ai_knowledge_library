@@ -1,6 +1,7 @@
 ---
 name: "ui_ux"
 description: "Methodologies for user interface and user experience design."
+tier: 2
 ---
 
 # User Interface and User Experience Design

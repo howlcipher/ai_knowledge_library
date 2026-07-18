@@ -1,6 +1,7 @@
 ---
 name: "visual_design"
 description: "Best practices for layout, typography, and visual hierarchy."
+tier: 2
 ---
 
 # Visual Design Standards

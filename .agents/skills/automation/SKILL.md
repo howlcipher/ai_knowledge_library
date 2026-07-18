@@ -1,6 +1,7 @@
 ---
 name: "automation"
 description: "Triggers during scripting, task scheduling, and repetitive workflow optimization"
+tier: 1
 ---
 
 # Automation Guidelines and Standards

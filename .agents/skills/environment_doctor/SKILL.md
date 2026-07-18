@@ -1,6 +1,7 @@
 ---
 name: "environment_doctor"
 description: "Triggers during sandbox checks, container monitoring, or runtime initialization"
+tier: 1
 ---
 
 # Environment Doctor Standards

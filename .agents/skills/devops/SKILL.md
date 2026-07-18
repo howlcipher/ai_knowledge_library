@@ -1,6 +1,7 @@
 ---
 name: "devops"
 description: "Triggers during CI/CD pipeline creation, containerization, and infrastructure deployment"
+tier: 2
 ---
 
 # DevOps Practices and Standards

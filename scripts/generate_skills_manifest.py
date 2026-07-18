@@ -34,14 +34,15 @@ def build_manifest_table(skills) -> str:
     """Renders the skills as a markdown table."""
     lines = [
         MANIFEST_START,
-        "| Skill | Description | Path |",
-        "| --- | --- | --- |",
+        "| Skill | Tier | Description | Path |",
+        "| --- | --- | --- | --- |",
     ]
     repo_root = default_loader.get_repo_root()
     for skill in skills:
         rel_path = os.path.relpath(skill.path, repo_root)
         description = skill.description.replace("|", "\\|")
-        lines.append(f"| {skill.name} | {description} | `{rel_path}` |")
+        tier = skill.tier if skill.tier is not None else ""
+        lines.append(f"| {skill.name} | {tier} | {description} | `{rel_path}` |")
     lines.append(MANIFEST_END)
     return "\n".join(lines)
 
@@ -78,6 +79,7 @@ def write_skills_index(skills, index_path: str) -> None:
                 "name": skill.name,
                 "description": skill.description,
                 "triggers": skill.triggers,
+                "tier": skill.tier,
                 "path": os.path.relpath(skill.path, repo_root),
             }
             for skill in skills

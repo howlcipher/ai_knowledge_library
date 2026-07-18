@@ -1,6 +1,7 @@
 ---
 name: "career_assistant"
 description: "Explicit guidelines and procedures for assisting the user with job applications, tailoring resumes, writing cover letters, and personal branding."
+tier: 3
 ---
 
 # Career Assistant Guidelines

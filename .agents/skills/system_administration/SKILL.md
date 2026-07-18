@@ -1,6 +1,7 @@
 ---
 name: "system_administration"
 description: "Triggers during server provisioning, OS configuration, and system maintenance"
+tier: 2
 ---
 
 # System Administration Standards

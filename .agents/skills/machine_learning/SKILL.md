@@ -1,6 +1,7 @@
 ---
 name: "machine_learning"
 description: "Protocols for building, deploying, and evaluating AI and ML models."
+tier: 2
 ---
 
 # Machine Learning Engineering

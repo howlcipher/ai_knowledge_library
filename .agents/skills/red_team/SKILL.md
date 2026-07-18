@@ -1,6 +1,7 @@
 ---
 name: "Red Team Cyber Operations"
 description: "Simulates adversarial techniques and penetration testing methodologies to identify vulnerabilities and improve defensive posture."
+tier: 2
 ---
 
 # Red Team Cyber Operations

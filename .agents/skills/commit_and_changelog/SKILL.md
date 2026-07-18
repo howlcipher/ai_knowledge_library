@@ -1,6 +1,7 @@
 ---
 name: "commit_and_changelog"
 description: "Triggers during git staging reviews, workspace checkins, or summary generation"
+tier: 1
 ---
 
 # Workspace History Standards

@@ -1,6 +1,7 @@
 ---
 name: "product_management"
 description: "Methodologies for product strategy, scoping, and requirement definition."
+tier: 2
 ---
 
 # Product Management Methodologies

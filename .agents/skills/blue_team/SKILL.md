@@ -1,6 +1,7 @@
 ---
 name: "blue_team"
 description: "Focuses on defensive security, incident response, threat hunting, and securing infrastructure against cyber threats."
+tier: 2
 ---
 
 # Blue Team Cyber Operations

@@ -5,6 +5,7 @@ triggers:
   - "vscript"
   - "sourcepawn"
   - "sourcemod"
+tier: 3
 ---
 
 # Left 4 Dead 2 Scripting

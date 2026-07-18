@@ -1,6 +1,7 @@
 ---
 name: "data_analyst"
 description: "Explicit methodologies for pandas data wrangling, jupyter notebooks, and scikit-learn machine learning pipelines."
+tier: 2
 ---
 
 # Data Analyst Skill

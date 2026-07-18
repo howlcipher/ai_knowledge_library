@@ -75,6 +75,7 @@ class Skill:
     description: str
     path: str
     triggers: List[str] = field(default_factory=list)
+    tier: Optional[int] = None
 
     def load_content(self) -> str:
         """Reads and returns the full SKILL.md body."""
@@ -133,12 +134,18 @@ class SkillRouter:
                 triggers = meta.get("triggers") or []
                 if isinstance(triggers, str):
                     triggers = [triggers]
+                tier = meta.get("tier")
+                try:
+                    tier = int(tier) if tier is not None else None
+                except (TypeError, ValueError):
+                    tier = None
                 skills.append(
                     Skill(
                         name=str(meta.get("name", entry)),
                         description=str(meta.get("description", "")),
                         path=skill_path,
                         triggers=[str(t).lower() for t in triggers],
+                        tier=tier,
                     )
                 )
             except Exception as e:

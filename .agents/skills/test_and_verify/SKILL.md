@@ -1,6 +1,7 @@
 ---
 name: "test_and_verify"
 description: "Triggers during feature validations, build cycles, or local environment checks"
+tier: 1
 ---
 
 # Test and Verify Validation Standards

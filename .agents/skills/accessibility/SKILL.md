@@ -4,6 +4,7 @@ description: "Standards and best practices for creating accessible software and 
 triggers:
   - "wcag"
   - "accessibility"
+tier: 2
 ---
 
 # Accessibility Standards and Best Practices

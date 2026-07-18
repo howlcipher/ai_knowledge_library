@@ -1,6 +1,7 @@
 ---
 name: "gaming"
 description: "Game design theory, mechanics, and industry analysis."
+tier: 3
 ---
 
 # Game Design and Industry Standards

@@ -1,6 +1,7 @@
 ---
 name: "database_management"
 description: "Guidelines and standards for database schema design, migrations, security, and query optimization."
+tier: 2
 ---
 
 # Database Management Standards
