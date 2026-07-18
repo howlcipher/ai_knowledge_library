@@ -1,6 +1,13 @@
 ---
-name: "Red Team Cyber Operations"
+name: "red_team"
 description: "Simulates adversarial techniques and penetration testing methodologies to identify vulnerabilities and improve defensive posture."
+triggers:
+  - "red team"
+  - "penetration test"
+  - "pentest"
+  - "exploit"
+  - "adversary"
+  - "attack simulation"
 tier: 2
 ---
 

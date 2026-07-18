@@ -1,6 +1,14 @@
 ---
 name: "blue_team"
 description: "Focuses on defensive security, incident response, threat hunting, and securing infrastructure against cyber threats."
+triggers:
+  - "blue team"
+  - "incident response"
+  - "threat hunting"
+  - "siem"
+  - "forensics"
+  - "detection"
+  - "defense"
 tier: 2
 ---
 

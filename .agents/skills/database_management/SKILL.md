@@ -1,6 +1,13 @@
 ---
 name: "database_management"
 description: "Guidelines and standards for database schema design, migrations, security, and query optimization."
+triggers:
+  - "database"
+  - "sql"
+  - "schema"
+  - "migration"
+  - "query"
+  - "index"
 tier: 2
 ---
 

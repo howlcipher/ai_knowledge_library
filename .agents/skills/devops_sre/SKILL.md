@@ -1,6 +1,13 @@
 ---
 name: "devops_sre"
 description: "Triggers when designing infrastructure-as-code (Terraform, Kubernetes) or building CI/CD pipelines (Azure DevOps, GitLab)."
+triggers:
+  - "sre"
+  - "terraform"
+  - "kubernetes"
+  - "helm"
+  - "reliability"
+  - "infrastructure as code"
 tier: 2
 ---
 

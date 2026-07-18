@@ -1,6 +1,12 @@
 ---
 name: "frontend_engineering"
 description: "Best practices and constraints for modern frontend web development."
+triggers:
+  - "frontend"
+  - "react"
+  - "typescript"
+  - "component"
+  - "state management"
 tier: 2
 ---
 

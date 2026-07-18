@@ -1,6 +1,12 @@
 ---
 name: "bug_bounty_hunter"
 description: "Triggers during bug bounty reconnaissance, vulnerability analysis, and report generation"
+triggers:
+  - "bug bounty"
+  - "recon"
+  - "disclosure"
+  - "proof of concept"
+  - "cvss"
 tier: 2
 ---
 

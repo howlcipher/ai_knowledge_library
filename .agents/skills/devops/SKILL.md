@@ -1,6 +1,12 @@
 ---
 name: "devops"
 description: "Triggers during CI/CD pipeline creation, containerization, and infrastructure deployment"
+triggers:
+  - "ci/cd"
+  - "pipeline"
+  - "docker"
+  - "container"
+  - "deployment"
 tier: 2
 ---
 

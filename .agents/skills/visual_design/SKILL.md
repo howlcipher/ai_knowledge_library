@@ -1,6 +1,11 @@
 ---
 name: "visual_design"
 description: "Best practices for layout, typography, and visual hierarchy."
+triggers:
+  - "typography"
+  - "visual hierarchy"
+  - "whitespace"
+  - "layout grid"
 tier: 2
 ---
 
@@ -18,7 +23,3 @@ You operate as a Visual Design Specialist. Your primary objective is to create a
 ## Typography and Design Tokens
 - **Typography Scaling**: Define and apply a consistent typographic scale (e.g., major third, perfect fourth) to establish clear distinctions between headings, subheadings, body text, and captions.
 - **Color Contrast and Semantics**: Ensure all text and UI elements meet minimum contrast ratios (e.g., WCAG AAA for body text, AA for large text) against backgrounds. Use color purposefully to signify state changes, errors, warnings, and successes.
-
-## Formatting Guidelines
-- Ensure all files contain no trailing whitespaces.
-- Maintain a clean Markdown hierarchy using standard header nesting without decorative symbols.

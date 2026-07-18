@@ -83,23 +83,23 @@ Canonical owner listed first; other members defer and keep only their domain del
 | software_development | 1 | Done | Pending | drop embedded verification section |
 | technical_writing | 1 | Done | Pending | Structure cluster |
 | test_and_verify | 1 | Done | Pending | Verification cluster |
-| accessibility | 2 | Pending | Pending | Design cluster WCAG owner |
-| blue_team | 2 | Pending | Pending | add triggers |
-| bug_bounty_hunter | 2 | Pending | Pending | Security cluster |
-| color_theory | 2 | Pending | Pending | Design cluster |
-| data_analyst | 2 | Pending | Pending | Data/ML cluster owner |
-| database_management | 2 | Pending | Pending | |
-| devops | 2 | Pending | Pending | Ops cluster owner |
-| devops_sre | 2 | Pending | Pending | refocus on SRE deltas |
-| frontend_engineering | 2 | Pending | Pending | Design cluster |
-| google_docs_writer | 2 | Pending | Pending | |
-| machine_learning | 2 | Pending | Pending | Data/ML cluster |
-| network_engineering | 2 | Pending | Pending | overlaps devops_sre network section |
-| product_management | 2 | Pending | Pending | shortest skill; may expand slightly |
-| red_team | 2 | Pending | Pending | fix frontmatter name |
-| system_administration | 2 | Pending | Pending | |
-| ui_ux | 2 | Pending | Pending | Design cluster |
-| visual_design | 2 | Pending | Pending | Design cluster |
+| accessibility | 2 | Done | Pending | Design cluster WCAG owner |
+| blue_team | 2 | Done | Pending | add triggers |
+| bug_bounty_hunter | 2 | Done | Pending | Security cluster |
+| color_theory | 2 | Done | Pending | Design cluster |
+| data_analyst | 2 | Done | Pending | Data/ML cluster owner |
+| database_management | 2 | Done | Pending | |
+| devops | 2 | Done | Pending | Ops cluster owner |
+| devops_sre | 2 | Done | Pending | refocus on SRE deltas |
+| frontend_engineering | 2 | Done | Pending | Design cluster |
+| google_docs_writer | 2 | Done | Pending | |
+| machine_learning | 2 | Done | Pending | Data/ML cluster |
+| network_engineering | 2 | Done | Pending | overlaps devops_sre network section |
+| product_management | 2 | Done | Pending | shortest skill; may expand slightly |
+| red_team | 2 | Done | Pending | fix frontmatter name |
+| system_administration | 2 | Done | Pending | |
+| ui_ux | 2 | Done | Pending | Design cluster |
+| visual_design | 2 | Done | Pending | Design cluster |
 | baseball_analytics | 3 | Pending | Pending | defers to data_analyst |
 | career_assistant | 3 | Pending | Pending | grounded in USER_PROFILE.md |
 | economic_theory | 3 | Pending | Pending | Finance cluster |

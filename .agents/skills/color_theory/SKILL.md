@@ -1,6 +1,11 @@
 ---
 name: "color_theory"
 description: "Principles of color theory for visual harmony and contrast."
+triggers:
+  - "color"
+  - "palette"
+  - "hue"
+  - "color contrast"
 tier: 2
 ---
 
