@@ -1,6 +1,13 @@
 ---
 name: "defensive_debugging"
 description: "Triggers during error troubleshooting, crash analysis, or runtime exception reviews"
+triggers:
+  - "debug"
+  - "stack trace"
+  - "crash"
+  - "exception"
+  - "root cause"
+  - "troubleshoot"
 tier: 1
 ---
 

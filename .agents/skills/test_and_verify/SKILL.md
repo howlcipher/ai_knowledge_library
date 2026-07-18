@@ -1,6 +1,12 @@
 ---
 name: "test_and_verify"
 description: "Triggers during feature validations, build cycles, or local environment checks"
+triggers:
+  - "verify"
+  - "test suite"
+  - "build"
+  - "lint"
+  - "verification"
 tier: 1
 ---
 

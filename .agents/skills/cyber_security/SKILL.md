@@ -1,6 +1,15 @@
 ---
 name: "cyber_security"
 description: "Triggers during security audits, credential scanning, and vulnerability assessments"
+triggers:
+  - "security"
+  - "hardening"
+  - "security audit"
+  - "vulnerability"
+  - "credentials"
+  - "secrets"
+  - "zero trust"
+  - "encryption"
 tier: 1
 ---
 
@@ -44,4 +53,3 @@ This skill outlines the core policies, standards, and security protocols governi
 - Adhere to the NIST Incident Response lifecycle (Preparation, Detection/Analysis, Containment/Eradication/Recovery, Post-Incident Activity) during breach situations.
 - Perform vulnerability management using CVSS and EPSS risk matrices to prioritize patching schedules.
 - Follow digital forensics best practices to collect and preserve evidence without compromising system stability.
-

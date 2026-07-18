@@ -1,6 +1,12 @@
 ---
 name: "architectural_guardrails"
 description: "Triggers during project initialization, layout mapping, or structural documentation routines"
+triggers:
+  - "project structure"
+  - "naming conventions"
+  - "scaffolding"
+  - "layout mapping"
+  - "structural"
 tier: 1
 ---
 

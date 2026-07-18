@@ -1,6 +1,11 @@
 ---
 name: "commit_and_changelog"
 description: "Triggers during git staging reviews, workspace checkins, or summary generation"
+triggers:
+  - "commit"
+  - "changelog"
+  - "git staging"
+  - "release notes"
 tier: 1
 ---
 

@@ -71,18 +71,18 @@ Canonical owner listed first; other members defer and keep only their domain del
 
 | Skill | Tier | Self-refined (P3) | Cross-refined (P4) | Notes |
 | --- | --- | --- | --- | --- |
-| hallucination_guardrails | 0 | Pending | Pending | drop formatting boilerplate |
-| systems_logic | 0 | Pending | Pending | extended in P1 |
-| architectural_guardrails | 1 | Pending | Pending | Structure cluster owner |
-| automation | 1 | Pending | Pending | overlaps devops IaC content |
-| commit_and_changelog | 1 | Pending | Pending | |
-| cyber_security | 1 | Pending | Pending | add triggers; Security cluster owner |
-| defensive_debugging | 1 | Pending | Pending | Verification cluster |
-| environment_doctor | 1 | Pending | Pending | |
-| quality_assurance | 1 | Pending | Pending | Verification cluster owner |
-| software_development | 1 | Pending | Pending | drop embedded verification section |
-| technical_writing | 1 | Pending | Pending | Structure cluster |
-| test_and_verify | 1 | Pending | Pending | Verification cluster |
+| hallucination_guardrails | 0 | Done | Pending | drop formatting boilerplate |
+| systems_logic | 0 | Done | Pending | extended in P1 |
+| architectural_guardrails | 1 | Done | Pending | Structure cluster owner |
+| automation | 1 | Done | Pending | overlaps devops IaC content |
+| commit_and_changelog | 1 | Done | Pending | |
+| cyber_security | 1 | Done | Pending | add triggers; Security cluster owner |
+| defensive_debugging | 1 | Done | Pending | Verification cluster |
+| environment_doctor | 1 | Done | Pending | |
+| quality_assurance | 1 | Done | Pending | Verification cluster owner |
+| software_development | 1 | Done | Pending | drop embedded verification section |
+| technical_writing | 1 | Done | Pending | Structure cluster |
+| test_and_verify | 1 | Done | Pending | Verification cluster |
 | accessibility | 2 | Pending | Pending | Design cluster WCAG owner |
 | blue_team | 2 | Pending | Pending | add triggers |
 | bug_bounty_hunter | 2 | Pending | Pending | Security cluster |

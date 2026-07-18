@@ -1,6 +1,12 @@
 ---
 name: "automation"
 description: "Triggers during scripting, task scheduling, and repetitive workflow optimization"
+triggers:
+  - "automation"
+  - "scripting"
+  - "cron"
+  - "scheduled task"
+  - "workflow"
 tier: 1
 ---
 
