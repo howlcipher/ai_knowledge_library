@@ -8,7 +8,7 @@ def main():
     hook_path = os.path.join(hook_dir, "pre-commit")
 
     content = """#!/usr/bin/env bash
-if git diff --cached --name-only | grep -q ".env"; then
+if git diff --cached --name-only | grep -qE '(^|/)\\.env(\\.|$)'; then
     echo "ERROR: Attempting to commit a .env file. Commit aborted."
     exit 1
 fi
