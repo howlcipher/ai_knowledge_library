@@ -31,3 +31,7 @@ This skill defines the standards for analyzing and designing game mechanics, pla
 - **Asset and Memory Optimization**: Enforce strict budgets for memory, draw calls, and vertex counts. Optimize asset pipelines (e.g., texture compression, Level of Detail (LOD) systems) to ensure high frame rates.
 - **State Serialization**: Implement robust, secure save-game serialization and networking state-sync protocols to prevent data corruption and cheating in multiplayer environments.
 - **Platform Portability**: Design inputs and rendering configurations to adapt dynamically to diverse hardware profiles (e.g., PC, console, mobile).
+
+## Related Skills
+- Defer to `ui_ux` for HUD and menu usability standards.
+- Defer to `software_development` for engine-side implementation and serialization code quality.

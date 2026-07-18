@@ -26,7 +26,7 @@ Methodologies for setting up, configuring, and managing Left 4 Dead 2 (L4D2) ded
 ## Infrastructure and Security
 
 ### Networking and Performance Tuning
-- **Rate and Network Tuning**: Configure CVARs for optimal client connection (e.g., `rate`, `cl_updaterate`, `cl_cmdrate`). Eliminate network bottlenecks.
+- **Rate and Network Tuning**: Apply the tickrate and rate cvar standards owned by `l4d2_optimization`.
 - **Port Management and Firewalls**: Apply a default-deny host firewall policy. Explicitly permit only authorized protocols and ports (typically UDP/TCP 27015 for game traffic and FastDL ports).
 - **Resource Monitoring**: Continuously monitor server CPU utilization, memory usage, and tickrate stability to alert on performance anomalies.
 
@@ -35,3 +35,8 @@ Methodologies for setting up, configuring, and managing Left 4 Dead 2 (L4D2) ded
 - **Access Control**: Keep server RCON passwords highly secure, rotated, and never written in plaintext within public repositories or logs. Enforce strict firewall rules to restrict admin command queries.
 - **Least Privilege Execution**: Run the SRCDS process under a dedicated, unprivileged system user account (never as root) to limit impact in case of system compromise.
 - **Console Logging and Auditing**: Enable central logging of server console outputs and admin command execution, forwarding logs to centralized storage for auditing.
+
+## Related Skills
+- Defer to `l4d2_optimization` for tickrate targets, rate cvars, and entity/edict budgets.
+- Defer to `l4d2_scripting` for SourceMod plugin and VScript development standards.
+- Defer to `system_administration` for host hardening and `network_engineering` for firewall design.

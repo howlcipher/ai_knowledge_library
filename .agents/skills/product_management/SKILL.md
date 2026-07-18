@@ -27,3 +27,7 @@ Principles and practices for defining product strategy, scoping development effo
 
 ## Cross-Functional Collaboration
 - **Interdisciplinary Alignment**: Serve as the central communication link between Engineering, Design (UI/UX), and business stakeholders to resolve conflicting priorities and maintain focus on product goals.
+
+## Related Skills
+- Defer to `ui_ux` for design collaboration and user journey validation.
+- Defer to `technical_writing` for PRD and requirement documentation structure.

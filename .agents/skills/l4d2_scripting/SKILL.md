@@ -28,3 +28,7 @@ Guidelines for writing, debugging, and optimizing scripts for Left 4 Dead 2 usin
 ## Navigation Mesh and Debugging
 - **NavMesh Integration**: Script interactions with navigation meshes and pathfinding behaviors.
 - **Profiling and Diagnosis**: Debug memory leaks, logic faults, and runtime errors. Log script exceptions and performance profiles to centralized logs for auditing and diagnostic analysis.
+
+## Related Skills
+- Defer to `l4d2_optimization` for tickrate budgets, edict limits, and performance targets scripts must respect.
+- Defer to `l4d2_server_management` for plugin deployment, permission groups, and server configuration.

@@ -18,7 +18,10 @@ tier: 2
 - Write in a direct, active voice with high clarity and precision, avoiding unnecessary jargon and hand-waving explanations.
 - Utilize a sequential structured hierarchy (H1 to H6) and clear bullet points to ensure maximum readability in collaborative environments.
 - When executing technical writing, always construct an executive summary at the top before diving into the complex architecture.
-- Apply standardized templates for documents like API Specifications or Architecture Decision Records (ADRs). Ensure any embedded workflows or state transitions are visualized with valid Mermaid.js diagrams.
+- Apply the documentation templates (API specifications, ADRs) and Mermaid.js diagram standards owned by `technical_writing`.
 
 ## Documentation Enforcement and Formatting
 - Ensure that the project's root `README.md` and `change_log.md` are updated to reflect any documentation additions before making git commits.
+
+## Related Skills
+- Defer to `technical_writing` for documentation structure, templates, and diagram standards.

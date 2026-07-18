@@ -14,7 +14,7 @@ Refine all `.agents/skills/*/SKILL.md` files against a shared rubric, organize t
 | 1 | Extend `systems_logic` with the skill tiering and conflict precedence methodology | Done |
 | 2 | Add `tier:` frontmatter to all 38 skills; expose tier in `SkillRouter`, `skills.json`, and the AGENTS.md manifest | Done |
 | 3 | Self-refine every skill against the rubric, in tier order, committing in batches | Done |
-| 4 | Cross-refine overlap clusters; deduplicate content, canonical owner wins | Pending |
+| 4 | Cross-refine overlap clusters; deduplicate content, canonical owner wins | Done |
 | 5 | Final consistency sweep (naming, cross-references, manifest regen) and close out | Pending |
 
 ## Refinement Rubric
@@ -71,11 +71,11 @@ Canonical owner listed first; other members defer and keep only their domain del
 
 | Skill | Tier | Self-refined (P3) | Cross-refined (P4) | Notes |
 | --- | --- | --- | --- | --- |
-| hallucination_guardrails | 0 | Done | Pending | drop formatting boilerplate |
-| systems_logic | 0 | Done | Pending | extended in P1 |
+| hallucination_guardrails | 0 | Done | Done | drop formatting boilerplate |
+| systems_logic | 0 | Done | Done | extended in P1 |
 | architectural_guardrails | 1 | Done | Done | Structure cluster owner |
 | automation | 1 | Done | Done | overlaps devops IaC content |
-| commit_and_changelog | 1 | Done | Pending | |
+| commit_and_changelog | 1 | Done | Done | |
 | cyber_security | 1 | Done | Done | add triggers; Security cluster owner |
 | defensive_debugging | 1 | Done | Done | Verification cluster |
 | environment_doctor | 1 | Done | Done | |
@@ -83,31 +83,31 @@ Canonical owner listed first; other members defer and keep only their domain del
 | software_development | 1 | Done | Done | drop embedded verification section |
 | technical_writing | 1 | Done | Done | Structure cluster |
 | test_and_verify | 1 | Done | Done | Verification cluster |
-| accessibility | 2 | Done | Pending | Design cluster WCAG owner |
+| accessibility | 2 | Done | Done | Design cluster WCAG owner |
 | blue_team | 2 | Done | Done | add triggers |
 | bug_bounty_hunter | 2 | Done | Done | Security cluster |
-| color_theory | 2 | Done | Pending | Design cluster |
+| color_theory | 2 | Done | Done | Design cluster |
 | data_analyst | 2 | Done | Done | Data/ML cluster owner |
-| database_management | 2 | Done | Pending | |
+| database_management | 2 | Done | Done | |
 | devops | 2 | Done | Done | Ops cluster owner |
 | devops_sre | 2 | Done | Done | refocus on SRE deltas |
-| frontend_engineering | 2 | Done | Pending | Design cluster |
-| google_docs_writer | 2 | Done | Pending | |
+| frontend_engineering | 2 | Done | Done | Design cluster |
+| google_docs_writer | 2 | Done | Done | |
 | machine_learning | 2 | Done | Done | Data/ML cluster |
 | network_engineering | 2 | Done | Done | overlaps devops_sre network section |
-| product_management | 2 | Done | Pending | shortest skill; may expand slightly |
+| product_management | 2 | Done | Done | shortest skill; may expand slightly |
 | red_team | 2 | Done | Done | fix frontmatter name |
 | system_administration | 2 | Done | Done | |
-| ui_ux | 2 | Done | Pending | Design cluster |
-| visual_design | 2 | Done | Pending | Design cluster |
+| ui_ux | 2 | Done | Done | Design cluster |
+| visual_design | 2 | Done | Done | Design cluster |
 | baseball_analytics | 3 | Done | Done | defers to data_analyst |
-| career_assistant | 3 | Done | Pending | grounded in USER_PROFILE.md |
+| career_assistant | 3 | Done | Done | grounded in USER_PROFILE.md |
 | economic_theory | 3 | Done | Done | Finance cluster |
 | financial_theory | 3 | Done | Done | Finance cluster owner |
-| gaming | 3 | Done | Pending | |
-| l4d2_optimization | 3 | Done | Pending | L4D2 cluster |
-| l4d2_scripting | 3 | Done | Pending | L4D2 cluster |
-| l4d2_server_management | 3 | Done | Pending | L4D2 cluster owner |
+| gaming | 3 | Done | Done | |
+| l4d2_optimization | 3 | Done | Done | L4D2 cluster |
+| l4d2_scripting | 3 | Done | Done | L4D2 cluster |
+| l4d2_server_management | 3 | Done | Done | L4D2 cluster owner |
 | quantitative_finance | 3 | Done | Done | Data/ML and Finance clusters |
 
 ## Operational Notes

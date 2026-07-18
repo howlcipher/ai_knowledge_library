@@ -48,3 +48,7 @@ This skill defines the operational framework and procedures for assisting users 
 - **Input Requirements:** Target job description or specific technical domain.
 - **Analysis:** Determine typical behavioral, system design, and coding questions for the role.
 - **Execution:** Provide a curated list of questions accompanied by structured talking points mapped directly to the user's documented projects and achievements.
+
+## Related Skills
+- Defer to `hallucination_guardrails` for the no-fabrication verification rules behind profile grounding.
+- Defer to `google_docs_writer` when application materials are drafted for Google Docs.

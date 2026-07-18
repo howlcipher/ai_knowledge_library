@@ -25,12 +25,9 @@ Utilize established color relationships to construct balanced, intentional palet
 - Implement the 60-30-10 rule (60% dominant base tone, 30% secondary structural tone, 10% accent color) to maintain visual hierarchy.
 - Establish consistent semantic mapping (e.g., specific colors for success, warning, error, info, and disabled states).
 
-## Accessibility and Psychological Impact
-
-### 1. Contrast Compliance
-- Ensure all color selections satisfy WCAG contrast ratio requirements.
-- Maintain a minimum contrast ratio of 4.5:1 for standard text and 3:1 for large text and interactive components.
-- Validate color readability across dark and light mode implementations.
-
-### 2. Psychological and Cultural Associations
+## Psychological and Cultural Associations
 - Choose colors that align with the user-experience goals and evoke appropriate emotional responses based on target audience demographics and cultural context.
+
+## Related Skills
+- Defer to `accessibility` for WCAG contrast ratios and dark/light mode readability validation.
+- Defer to `visual_design` for applying palettes within layout hierarchy and typography.

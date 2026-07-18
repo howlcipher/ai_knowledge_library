@@ -25,13 +25,13 @@ This skill governs the development of client-side web applications, establishing
 - **Predictable Data Flow**: Enforce unidirectional data flow. Keep local component state isolated.
 - **Global State Isolation**: Utilize lightweight, predictable global state managers (e.g., Zustand, Redux Toolkit, Pinia) only for truly global concern-states (e.g., authentication, user preferences). Avoid over-reliance on context APIs for high-frequency updates to prevent unnecessary re-rendering.
 
-## Web Accessibility and Standards
-
-- **Semantic Markup**: Write clean, semantic HTML5 markup (e.g., `<main>`, `<article>`, `<nav>`, `<header>`) rather than generic `<div>` containers.
-- **WCAG Compliance**: Align design and markup with the Web Content Accessibility Guidelines (WCAG 2.1 AA). Ensure all interactive elements are keyboard-navigable and contain appropriate ARIA roles and labels.
-
 ## Performance Optimization
 
 - **Bundle Optimization**: Implement code-splitting and dynamic imports (`React.lazy`, Next.js dynamic imports) to minimize initial bundle size and optimize time-to-interactive (TTI).
 - **Asset Management**: Optimize and compress all static assets. Serve responsive images using modern formats (e.g., WebP, AVIF) and correct sizing.
 - **Rendering Efficiency**: Minimize component re-renders by utilizing memoization (e.g., `useMemo`, `useCallback`) and profiling component trees using framework-specific developer tools.
+
+## Related Skills
+- Defer to `accessibility` for WCAG compliance, semantic HTML, ARIA, and keyboard navigation standards.
+- Defer to `ui_ux` for interaction design and `visual_design` for hierarchy and typography decisions.
+- Defer to `software_development` for general defensive coding and modularity standards.

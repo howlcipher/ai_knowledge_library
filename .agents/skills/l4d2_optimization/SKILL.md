@@ -30,3 +30,7 @@ Focus on extracting maximum performance from the Source Engine for Left 4 Dead 2
 - **Autoexec files**: Standardize client network rates and performance settings (`rate`, `cl_updaterate`, `cl_cmdrate`) matching the server's target update rates.
 - **Launch Options**: Optimize startup arguments for thread allocation, memory usage, and display rates.
 - **Visual settings**: Maximize visibility and frame rates by disabling high-cost aesthetic rendering features.
+
+## Related Skills
+- Defer to `l4d2_server_management` for srcds deployment, SourceMod administration, and access control.
+- Defer to `l4d2_scripting` for profiling and fixing plugin-level performance costs.
