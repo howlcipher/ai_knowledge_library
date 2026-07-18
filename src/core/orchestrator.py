@@ -388,10 +388,15 @@ class Orchestrator:
         domain = skills[0]["name"] if skills else "general"
         initial = build_initial_payload(user_query, domain, skills)
 
+        tier_models = self.payload_cfg.get("tier_models", {}) or {}
+
+        def model_for(tier: int) -> str:
+            return tier_models.get(f"tier_{tier}") or self.default_model
+
         tiers = [
-            (1, Agent("Tier3_Executor", TIER3_PROMPT, self.default_model)),
-            (2, Agent("Tier2_Specialist", TIER2_PROMPT, self.default_model)),
-            (3, Agent("Tier1_Orchestrator", TIER1_PROMPT, self.default_model)),
+            (1, Agent("Tier3_Executor", TIER3_PROMPT, model_for(3))),
+            (2, Agent("Tier2_Specialist", TIER2_PROMPT, model_for(2))),
+            (3, Agent("Tier1_Orchestrator", TIER1_PROMPT, model_for(1))),
         ]
 
         payload = initial

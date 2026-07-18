@@ -31,10 +31,17 @@ class BackupSettings(BaseModel):
     filename: str = "library_backup.tar.gz"
 
 
+class TierModelsSettings(BaseModel):
+    tier_1: str = ""
+    tier_2: str = ""
+    tier_3: str = ""
+
+
 class PayloadPipelineSettings(BaseModel):
     enabled: bool = False
     max_attempts: int = 3
     artifact_dir: str = "logs/payloads"
+    tier_models: TierModelsSettings = TierModelsSettings()
 
 
 class SkillRouterSettings(BaseModel):
