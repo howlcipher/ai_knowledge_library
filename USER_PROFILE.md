@@ -15,7 +15,7 @@ Automation and systems engineer with over 9 years of experience spanning infrast
 
 ## Core Skills
 * Programming and Development: Python, Go, PowerShell, SQL, REST APIs, ETL
-* DevOps and Cloud: Azure DevOps, CI/CD, Git, Bitbucket, IIS
+* DevOps and Cloud: Azure DevOps, Application Insights, Key Vault, Azure Monitor, CI/CD, Git, Bitbucket, IIS
 * Systems and Infrastructure: Windows Server, automation scripting, log monitoring, job scheduling
 * Networking and Security: Cisco/Meraki, VLANs, Firewalls, Packet Capture, Monitoring Tools
 * Databases: SQL Server, SQLite, migrations, stored procedures, reporting
@@ -76,7 +76,6 @@ Automation and systems engineer with over 9 years of experience spanning infrast
 * M.S. Cyber Defense (In Progress) | Dakota State University
 * B.S. Information Technology | Colorado State University Global Campus
 * B.B.A. Business Administration | Rochester College
-* AWS Certified Solutions Architect Associate (In Progress)
 * Cisco Certified Network Associate (CCNA) | Cisco Networking Academy (2014 to 2017)
 
 ## Engineering Philosophy & Hobbies
