@@ -238,11 +238,14 @@ class ValidationGate:
         call_fn: Callable[[Optional[str]], str],
         prev: Optional[dict],
         expected_pass: int,
+        on_attempt_failure: Optional[Callable[[int, str, List[str]], None]] = None,
     ) -> GateResult:
         """
         Bounded retry loop. call_fn receives None on the first attempt and a
         "VALIDATION ERROR:" feedback string on retries, and returns the raw
         model response. On exhaustion, returns a failed payload built from prev.
+        on_attempt_failure, if given, is called with (attempt, stage, errors)
+        after every failed attempt, including the final exhausting one.
         """
         feedback = None
         last = GateResult(False, None, ["no attempts executed"], "none")
@@ -258,6 +261,8 @@ class ValidationGate:
                 f"[ValidationGate] Pass {expected_pass} attempt {attempt} failed "
                 f"at stage '{last.stage}': {last.errors[0]}"
             )
+            if on_attempt_failure:
+                on_attempt_failure(attempt, last.stage, last.errors)
 
         failed = self.build_failed_payload(prev, last.errors, last.stage)
         return GateResult(False, failed, last.errors, last.stage, self.max_attempts)

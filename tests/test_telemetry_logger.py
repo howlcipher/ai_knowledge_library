@@ -76,6 +76,62 @@ def test_get_telemetry_data_without_pandas(mock_db_path, monkeypatch):
     assert data[0]["model"] == "test-model"
     assert data[0]["prompt_tokens"] == 10
 
+def test_init_db_gate_failures(mock_db_path):
+    telemetry_logger.init_db()
+
+    conn = sqlite3.connect(mock_db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='gate_failures'")
+    assert cursor.fetchone() is not None
+    conn.close()
+
+def test_log_gate_failure(mock_db_path):
+    telemetry_logger.log_gate_failure("test-model", 1, 2, "schema", "field x is required")
+
+    conn = sqlite3.connect(mock_db_path)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT model, pass_number, attempt, stage, error_message FROM gate_failures"
+    )
+    row = cursor.fetchone()
+
+    assert row is not None
+    assert row[0] == "test-model"
+    assert row[1] == 1
+    assert row[2] == 2
+    assert row[3] == "schema"
+    assert row[4] == "field x is required"
+    conn.close()
+
+def test_get_gate_failure_data_with_pandas(mock_db_path):
+    telemetry_logger.log_gate_failure("test-model", 1, 1, "parse", "not json")
+    df = telemetry_logger.get_gate_failure_data()
+
+    assert isinstance(df, pd.DataFrame)
+    assert not df.empty
+    assert len(df) == 1
+    assert df.iloc[0]["model"] == "test-model"
+    assert df.iloc[0]["stage"] == "parse"
+
+def test_get_gate_failure_data_without_pandas(mock_db_path, monkeypatch):
+    telemetry_logger.log_gate_failure("test-model", 1, 1, "parse", "not json")
+
+    import builtins
+    real_import = builtins.__import__
+    def mock_import(name, *args, **kwargs):
+        if name == 'pandas':
+            raise ImportError("No module named pandas")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", mock_import)
+
+    data = telemetry_logger.get_gate_failure_data()
+
+    assert isinstance(data, list)
+    assert len(data) == 1
+    assert data[0]["model"] == "test-model"
+    assert data[0]["stage"] == "parse"
+
 def test_main(mock_db_path, capsys):
     telemetry_logger.log_telemetry("test-main", 5, 5, 10, 0.01, 0.5)
     telemetry_logger.main()

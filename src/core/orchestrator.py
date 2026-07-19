@@ -19,7 +19,7 @@ from langchain_core.runnables.config import RunnableConfig
 from langsmith import Client
 
 from src.infrastructure.config_loader import default_loader, load_config
-from src.infrastructure.telemetry_logger import log_telemetry
+from src.infrastructure.telemetry_logger import log_gate_failure, log_telemetry
 import atexit
 
 
@@ -502,8 +502,21 @@ class Orchestrator:
                 )
                 return message.content if message and message.content else ""
 
+            def on_attempt_failure(attempt, stage, errors, agent=agent, pass_number=pass_number):
+                try:
+                    log_gate_failure(
+                        agent.model, pass_number, attempt, stage, "; ".join(errors)[:2000]
+                    )
+                except Exception as e:
+                    print(f"[Orchestrator] Failed to log gate failure telemetry: {e}")
+
             try:
-                result = gate.run(call_fn, prev=payload, expected_pass=pass_number)
+                result = gate.run(
+                    call_fn,
+                    prev=payload,
+                    expected_pass=pass_number,
+                    on_attempt_failure=on_attempt_failure,
+                )
             except ProviderTransportError as e:
                 print(
                     f"[Orchestrator] Pass {pass_number} aborted: provider for "

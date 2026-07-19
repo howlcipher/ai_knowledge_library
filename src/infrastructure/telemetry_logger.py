@@ -48,6 +48,18 @@ def init_db():
     except sqlite3.OperationalError:
         pass  # Column likely already exists
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS gate_failures (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT NOT NULL,
+            model TEXT NOT NULL,
+            pass_number INTEGER,
+            attempt INTEGER,
+            stage TEXT,
+            error_message TEXT
+        )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -89,6 +101,63 @@ def log_telemetry(
 
     conn.commit()
     conn.close()
+
+
+def log_gate_failure(
+    model: str,
+    pass_number: int,
+    attempt: int,
+    stage: str,
+    error_message: str,
+):
+    """
+    Logs a validation gate failed attempt to the telemetry database.
+    """
+    init_db()
+    db_path = get_telemetry_db_path()
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    timestamp = datetime.now().isoformat()
+    cursor.execute(
+        """
+        INSERT INTO gate_failures (timestamp, model, pass_number, attempt, stage, error_message)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """,
+        (timestamp, model, pass_number, attempt, stage, error_message),
+    )
+
+    conn.commit()
+    conn.close()
+
+
+def get_gate_failure_data():
+    """
+    Retrieves all gate failure data. Returns a pandas DataFrame if pandas is
+    installed, otherwise returns a list of dictionaries.
+    """
+    init_db()
+    db_path = get_telemetry_db_path()
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT timestamp, model, pass_number, attempt, stage, error_message FROM gate_failures"
+    )
+    rows = cursor.fetchall()
+    columns = ["timestamp", "model", "pass_number", "attempt", "stage", "error_message"]
+
+    conn.close()
+
+    try:
+        import pandas as pd
+
+        df = pd.DataFrame(rows, columns=columns)
+        if not df.empty:
+            df["timestamp"] = pd.to_datetime(df["timestamp"])
+        return df
+    except ImportError:
+        return [dict(zip(columns, row)) for row in rows]
 
 
 def get_telemetry_data():

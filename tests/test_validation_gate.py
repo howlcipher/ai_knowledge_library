@@ -239,6 +239,48 @@ def test_run_exhaustion_builds_failed_payload(gate):
     assert gate.schema_errors(failed) == []
 
 
+def test_run_retries_with_callback(gate):
+    initial = make_initial()
+    good = json.dumps(make_pass1(initial))
+    calls = []
+
+    def call_fn(feedback):
+        return "```json\n{}\n```" if feedback is None else good
+
+    result = gate.run(
+        call_fn,
+        prev=initial,
+        expected_pass=1,
+        on_attempt_failure=lambda attempt, stage, errors: calls.append(
+            (attempt, stage, errors)
+        ),
+    )
+    assert result.ok
+    assert len(calls) == 1
+    assert calls[0][0] == 1
+    assert calls[0][1] == "parse"
+
+
+def test_run_exhaustion_calls_callback_each_attempt(gate):
+    initial = make_initial()
+    calls = []
+    result = gate.run(
+        lambda fb: "not json at all",
+        prev=initial,
+        expected_pass=1,
+        on_attempt_failure=lambda attempt, stage, errors: calls.append(attempt),
+    )
+    assert not result.ok
+    assert calls == [1, 2, 3]
+
+
+def test_run_without_callback_behaves_as_before(gate):
+    initial = make_initial()
+    result = gate.run(lambda fb: "not json at all", prev=initial, expected_pass=1)
+    assert not result.ok
+    assert result.attempts == 3
+
+
 def make_llm_response(content):
     response = MagicMock()
     response.choices = [MagicMock(message=MagicMock(content=content, tool_calls=None))]
