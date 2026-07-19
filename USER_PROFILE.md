@@ -6,42 +6,43 @@
 * GitHub: github.com/howlcipher
 
 ## Career Goals & Preferences
-*   **Target Roles:** Software Engineer, DevOps Engineer, Backend Developer, SRE
+*   **Target Roles:** Site Reliability Engineer, DevSecOps Engineer, DevOps Engineer, Software Engineer, Backend Developer
 *   **Work Environment:** Remote
 *   **Target Base Salary:** $105,000+
 
 ## Professional Summary
-Software engineer with over 9 years of experience spanning automation, web development, DevOps, QA, and production support. Specialized in Python and Go development for APIs, backend systems, and infrastructure automation. Proven ability to build secure, scalable solutions that streamline operations across development and production environments. Strong foundation in networking, security (CCNA), and system integration. Highly experienced in orchestrating zero downtime migrations, building automated security auditing tools, and managing CI/CD pipelines. Passionate about writing maintainable code and solving complex technical challenges in security focused environments.
+Automation and systems engineer with over 9 years of experience spanning infrastructure automation, DevOps, and production support. Specialized in Python and Go development for APIs, backend systems, and automated deployment pipelines. Proven ability to build secure and scalable solutions that streamline operations across development and production environments. Strong foundation in enterprise networking, security controls, and system integration. Passionate about writing maintainable code and solving complex technical challenges in security focused environments.
 
 ## Core Skills
-* Programming and Development: Python, Go, PowerShell, SQL, REST APIs, ETL, FastAPI
-* DevOps and Cloud: Azure DevOps, Azure Cloud Services, Docker, CI/CD, Git, Bitbucket, IIS
-* Systems and Infrastructure: Windows Server, automation scripting, log monitoring
-* Networking and Security: Cisco/Meraki, VLANs, Firewalls, Packet Capture, Monitoring
-* Databases: SQL Server, SQLite, migrations, automated PII masking, stored procedures
+* Programming and Development: Python, Go, PowerShell, SQL, REST APIs, ETL
+* DevOps and Cloud: Azure DevOps, CI/CD, Git, Bitbucket, IIS
+* Systems and Infrastructure: Windows Server, automation scripting, log monitoring, job scheduling
+* Networking and Security: Cisco/Meraki, VLANs, Firewalls, Packet Capture, Monitoring Tools
+* Databases: SQL Server, SQLite, migrations, stored procedures, reporting
 
 ## Professional Experience
 
 ### Stellantis Financial Services
-* Role: Software Engineer (Python/Go, Automation and CI/CD)
+* Role: Production Support Engineer (Automation & CI/CD)
 * Dates: Feb 2023 to Present
 * Location: Auburn Hills, MI
-* Engineered a Python automation script to audit and permanently remove historical password traces and exposed credentials across over 100 Azure DevOps repositories, significantly enhancing organizational security posture.
-* Developed a Python database transfer utility featuring automated Personally Identifiable Information (PII) masking to secure sensitive client data during migrations to lower environments.
-* Orchestrated a massive disaster recovery cutover to new Windows servers, coordinating across Dev, IT, and DBA teams to migrate applications, firewalls, and load balancers with zero downtime.
-* Modernized deployment workflows by creating standardized CI/CD pipeline templates for Python and .Net applications, alongside implementing UV for highly efficient Python dependency management.
-* Designed and deployed a FastAPI Query Viewer and automated Python scripts to extract failed MuleSoft payloads, drastically reducing manual log analysis and accelerating incident resolution.
-* Built automated file copying and service installation scripts for IIS staging environments to guarantee reliable, controlled testing for rapidly changing application builds.
+* Developed a Python automation system converting TXT reports to Excel, saving several hours of manual work daily while improving overall system reliability.
+* Built custom tools with Go and PowerShell, successfully streamlining deployment processes by 30 percent.
+* Implemented database migration strategies between environments with zero data loss.
+* Managed IIS applications including configuration, troubleshooting, and performance optimization.
+* Led weekly releases and deployments using Git workflows and Bitbucket.
+* Built backend scripts for log parsing, anomaly detection, and data validation to support production operations.
 
 ### HBK Engineering Solutions
-* Role: Software Developer (Python Automation)
+* Role: DevOps Engineer (Python Automation)
 * Dates: Jul 2020 to Feb 2023
 * Location: Southfield, MI
-* Designed and implemented an automated XML to database pipeline in Python, significantly improving data processing speed and accuracy.
-* Built reusable Python libraries and internal tools to eliminate repetitive tasks for engineering teams.
-* Developed deployment automation with validation logic to ensure secure and reliable software packaging using NSIS.
+* Created an XML output automation system with Python and Tkinter, reducing data processing time by 60 percent.
+* Automated SQL output processing with Python scripts, saving over 40 hours monthly.
+* Developed custom database configuration tools that streamlined customer onboarding workflows.
+* Built installer and uninstaller packages using NSIS scripting for seamless application deployment.
 * Maintained version control best practices and developer tooling with Git.
-* Provided technical support and troubleshooting for internal applications.
+* Provided direct technical support to customers through live interactive troubleshooting sessions.
 
 ### Intrepid Control Systems
 * Role: QA Developer
@@ -50,19 +51,32 @@ Software engineer with over 9 years of experience spanning automation, web devel
 * Wrote and executed Mocha test cases for internal applications.
 * Debugged and validated API alongside software and hardware integrations.
 
-### Earlier Roles (Network Engineering, Security, Infrastructure)
-* Companies: Ford, Project Worldwide, Trendset Communications Group
-* Dates: 2015 to 2020
-* Designed and deployed secure network infrastructure using Cisco/Meraki equipment.
-* Automated network configurations and monitoring across enterprise environments.
-* Standardized security configurations for routers, switches, and firewalls.
-* Conducted security audits, network segmentation, and monitoring tool deployments.
-* Provided production support for critical network and IT infrastructure.
+### Project Worldwide
+* Role: Network Engineer
+* Dates: Jan 2020 to Mar 2020
+* Configured Cisco switches and Meraki access points across multiple enterprise company locations.
+* Developed comprehensive network documentation standards including specific IP addressing schemes.
+* Executed multi state network migration projects with minimal operational downtime.
+
+### Ford Motor Company
+* Role: Network Standards Engineer
+* Dates: Sep 2019 to Dec 2019
+* Implemented global network configuration standards across distributed enterprise infrastructure.
+* Created documentation templates and IP management databases to scale organizational efficiency.
+* Supported large scale network migrations with comprehensive planning and technical execution.
+
+### Trendset Communications Group
+* Role: IT Network Engineer
+* Dates: Sep 2015 to Jun 2019
+* Enforced strict network standards and performed comprehensive audits covering ports, IPs, and VLANs.
+* Maintained complex configuration files for diverse network equipment environments.
+* Provided tier production support for critical network infrastructure and organizational uptime.
 
 ## Education and Certifications
 * M.S. Cyber Defense (In Progress) | Dakota State University
 * B.S. Information Technology | Colorado State University Global Campus
 * B.B.A. Business Administration | Rochester College
+* AWS Certified Solutions Architect Associate (In Progress)
 * Cisco Certified Network Associate (CCNA) | Cisco Networking Academy (2014 to 2017)
 
 ## Engineering Philosophy & Hobbies
