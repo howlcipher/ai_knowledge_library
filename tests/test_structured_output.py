@@ -3,6 +3,7 @@ import json
 from src.core.structured_output import (
     default_schema_path,
     payload_response_format,
+    verification_response_format,
 )
 
 
@@ -42,3 +43,20 @@ def test_custom_schema_path(tmp_path):
     path.write_text(json.dumps({"$schema": "x", "$id": "y", "type": "object"}))
     rf = payload_response_format(str(path))
     assert rf["json_schema"]["schema"] == {"type": "object"}
+
+
+def test_verification_response_format_shape():
+    rf = verification_response_format()
+    assert rf["type"] == "json_schema"
+    assert rf["json_schema"]["name"] == "content_verification"
+    schema = rf["json_schema"]["schema"]
+    assert set(schema["properties"]) == {"verified", "confidence", "reason"}
+    assert schema["required"] == ["verified", "confidence", "reason"]
+    assert schema["additionalProperties"] is False
+
+
+def test_verification_response_format_qualifies_for_strict_mode():
+    # No optional fields and additionalProperties is False, so unlike the
+    # payload schema this one meets OpenAI's strict-mode requirements.
+    rf = verification_response_format()
+    assert rf["json_schema"]["strict"] is True

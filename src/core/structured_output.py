@@ -50,3 +50,29 @@ def payload_response_format(schema_path: Optional[str] = None) -> dict:
             "strict": False,
         },
     }
+
+
+def verification_response_format() -> dict:
+    """
+    Returns the ``response_format`` dict for the ``web_research`` content
+    verifier's ``{verified, confidence, reason}`` shape. Unlike the payload
+    schema, this one has no optional fields, so it qualifies for OpenAI
+    strict mode and ``strict`` is True.
+    """
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "content_verification",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "verified": {"type": "boolean"},
+                    "confidence": {"type": "integer", "minimum": 0, "maximum": 100},
+                    "reason": {"type": "string"},
+                },
+                "required": ["verified", "confidence", "reason"],
+                "additionalProperties": False,
+            },
+            "strict": True,
+        },
+    }

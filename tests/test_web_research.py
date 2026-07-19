@@ -87,10 +87,23 @@ class TestContentVerifier:
 
         verifier = ContentVerifier(api_key="key")
         is_verified, score, reason = verifier._llm_check("text", "url")
-        
+
         assert not is_verified
         assert score == 10
         assert reason == "spam"
+
+    @patch("litellm.completion")
+    def test_llm_check_passes_structured_response_format(self, mock_completion):
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(content='{"verified": true, "confidence": 85, "reason": "good"}'))]
+        mock_completion.return_value = mock_response
+
+        verifier = ContentVerifier(api_key="key")
+        verifier._llm_check("text", "url")
+
+        _, kwargs = mock_completion.call_args
+        assert kwargs["response_format"]["type"] == "json_schema"
+        assert kwargs["response_format"]["json_schema"]["name"] == "content_verification"
 
 
 class TestWebScraper:

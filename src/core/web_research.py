@@ -97,12 +97,15 @@ class ContentVerifier:
                 fallbacks.remove(self.model)
             import time
 
+            from src.core.structured_output import verification_response_format
+
             start_time = time.time()
             response = litellm.completion(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
                 fallbacks=fallbacks,
                 api_key=self.api_key,
+                response_format=verification_response_format(),
             )
             latency = time.time() - start_time
             content = response.choices[0].message.content.strip()
