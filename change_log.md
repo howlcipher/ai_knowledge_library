@@ -33,6 +33,7 @@ All notable changes to this project will be documented in this file.
 - **Docker Container Improvements**: Container no longer runs as root, utilizes multi-stage builds, and properly integrates Ollama in `docker-compose.yml`.
 
 ### Fixed
+- **Non-Idempotent Vector Index Rebuilds**: `build_vector_index.py` only upserted, so chunk ids from files that shrank, moved, or were deleted survived every rebuild (the 2026-07-18 rebuild needed a manual `rm -rf .chroma`), and the pgvector path duplicated every row on rerun. A new `BaseVectorStore.reset()` empties the store (Chroma collection drop, pgvector `TRUNCATE`) at the start of each build so a plain rerun always yields a clean index.
 - **Pre-Commit .env Guard False Positive**: the hook's unescaped `grep -q ".env"` matched any path containing `/env` (e.g. `.agents/skills/environment_doctor/`), aborting legitimate commits. Now anchored to real `.env` files.
 - **red_team Frontmatter Name Mismatch**: declared name "Red Team Cyber Operations" now matches its directory (`red_team`) so routing and the manifest are consistent.
 - **Security Prompt Routing Recall Gap**: security prompts (e.g. "security hardening runbook") previously routed zero skills; deterministic triggers on `cyber_security`/`blue_team` now route them reliably.

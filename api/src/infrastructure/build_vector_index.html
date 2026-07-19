@@ -291,34 +291,38 @@ and stores it in the configured vector store.</p>
 </span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a>
 </span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a>        <span class="n">store</span> <span class="o">=</span> <span class="n">VectorStoreFactory</span><span class="o">.</span><span class="n">get_store</span><span class="p">()</span>
 </span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a>        <span class="n">store</span><span class="o">.</span><span class="n">init_db</span><span class="p">()</span>
-</span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a>
-</span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
-</span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a>            <span class="n">store</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
-</span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a>                <span class="n">docs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
-</span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
-</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a>                <span class="n">ids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
-</span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a>            <span class="p">)</span>
-</span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a>
-</span><span id="L-171"><a href="#L-171"><span class="linenos">171</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Knowledge base indexing complete!&quot;</span><span class="p">)</span>
-</span><span id="L-172"><a href="#L-172"><span class="linenos">172</span></a>
-</span><span id="L-173"><a href="#L-173"><span class="linenos">173</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-174"><a href="#L-174"><span class="linenos">174</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a><span class="sd">        Executes the entire indexing pipeline.</span>
-</span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-177"><a href="#L-177"><span class="linenos">177</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">scan_files</span><span class="p">()</span>
-</span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">insert_chunks</span><span class="p">()</span>
-</span><span id="L-179"><a href="#L-179"><span class="linenos">179</span></a>
-</span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a>
-</span><span id="L-181"><a href="#L-181"><span class="linenos">181</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="L-182"><a href="#L-182"><span class="linenos">182</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-183"><a href="#L-183"><span class="linenos">183</span></a><span class="sd">    Main entry point for the vector indexing script.</span>
-</span><span id="L-184"><a href="#L-184"><span class="linenos">184</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-185"><a href="#L-185"><span class="linenos">185</span></a>    <span class="n">builder</span> <span class="o">=</span> <span class="n">VectorIndexBuilder</span><span class="p">()</span>
-</span><span id="L-186"><a href="#L-186"><span class="linenos">186</span></a>    <span class="n">builder</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
-</span><span id="L-187"><a href="#L-187"><span class="linenos">187</span></a>
-</span><span id="L-188"><a href="#L-188"><span class="linenos">188</span></a>
-</span><span id="L-189"><a href="#L-189"><span class="linenos">189</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-</span><span id="L-190"><a href="#L-190"><span class="linenos">190</span></a>    <span class="n">main</span><span class="p">()</span>
+</span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a>        <span class="c1"># Start from an empty store: chunk ids are &lt;path&gt;_&lt;n&gt;, so without a</span>
+</span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a>        <span class="c1"># reset any id absent from this scan (file shrank, moved, or was</span>
+</span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a>        <span class="c1"># deleted) would survive the upsert and pollute query results.</span>
+</span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a>        <span class="n">store</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+</span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a>
+</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
+</span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a>            <span class="n">store</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
+</span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a>                <span class="n">docs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="L-171"><a href="#L-171"><span class="linenos">171</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="L-172"><a href="#L-172"><span class="linenos">172</span></a>                <span class="n">ids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="L-173"><a href="#L-173"><span class="linenos">173</span></a>            <span class="p">)</span>
+</span><span id="L-174"><a href="#L-174"><span class="linenos">174</span></a>
+</span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Knowledge base indexing complete!&quot;</span><span class="p">)</span>
+</span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a>
+</span><span id="L-177"><a href="#L-177"><span class="linenos">177</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-179"><a href="#L-179"><span class="linenos">179</span></a><span class="sd">        Executes the entire indexing pipeline.</span>
+</span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-181"><a href="#L-181"><span class="linenos">181</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">scan_files</span><span class="p">()</span>
+</span><span id="L-182"><a href="#L-182"><span class="linenos">182</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">insert_chunks</span><span class="p">()</span>
+</span><span id="L-183"><a href="#L-183"><span class="linenos">183</span></a>
+</span><span id="L-184"><a href="#L-184"><span class="linenos">184</span></a>
+</span><span id="L-185"><a href="#L-185"><span class="linenos">185</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="L-186"><a href="#L-186"><span class="linenos">186</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-187"><a href="#L-187"><span class="linenos">187</span></a><span class="sd">    Main entry point for the vector indexing script.</span>
+</span><span id="L-188"><a href="#L-188"><span class="linenos">188</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-189"><a href="#L-189"><span class="linenos">189</span></a>    <span class="n">builder</span> <span class="o">=</span> <span class="n">VectorIndexBuilder</span><span class="p">()</span>
+</span><span id="L-190"><a href="#L-190"><span class="linenos">190</span></a>    <span class="n">builder</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</span><span id="L-191"><a href="#L-191"><span class="linenos">191</span></a>
+</span><span id="L-192"><a href="#L-192"><span class="linenos">192</span></a>
+</span><span id="L-193"><a href="#L-193"><span class="linenos">193</span></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+</span><span id="L-194"><a href="#L-194"><span class="linenos">194</span></a>    <span class="n">main</span><span class="p">()</span>
 </span></pre></div>
 
 
@@ -326,7 +330,7 @@ and stores it in the configured vector store.</p>
                 <section id="PRUNED_DIRS">
                     <div class="attr variable">
             <span class="name">PRUNED_DIRS</span>        =
-<span class="default_value">{&#39;dist&#39;, &#39;__pycache__&#39;, &#39;docs&#39;, &#39;build&#39;, &#39;node_modules&#39;, &#39;testenv&#39;}</span>
+<span class="default_value">{&#39;build&#39;, &#39;testenv&#39;, &#39;dist&#39;, &#39;docs&#39;, &#39;__pycache__&#39;, &#39;node_modules&#39;}</span>
 
         
     </div>
@@ -596,22 +600,26 @@ and stores it in the configured vector store.</p>
 </span><span id="VectorIndexBuilder-161"><a href="#VectorIndexBuilder-161"><span class="linenos">161</span></a>
 </span><span id="VectorIndexBuilder-162"><a href="#VectorIndexBuilder-162"><span class="linenos">162</span></a>        <span class="n">store</span> <span class="o">=</span> <span class="n">VectorStoreFactory</span><span class="o">.</span><span class="n">get_store</span><span class="p">()</span>
 </span><span id="VectorIndexBuilder-163"><a href="#VectorIndexBuilder-163"><span class="linenos">163</span></a>        <span class="n">store</span><span class="o">.</span><span class="n">init_db</span><span class="p">()</span>
-</span><span id="VectorIndexBuilder-164"><a href="#VectorIndexBuilder-164"><span class="linenos">164</span></a>
-</span><span id="VectorIndexBuilder-165"><a href="#VectorIndexBuilder-165"><span class="linenos">165</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
-</span><span id="VectorIndexBuilder-166"><a href="#VectorIndexBuilder-166"><span class="linenos">166</span></a>            <span class="n">store</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
-</span><span id="VectorIndexBuilder-167"><a href="#VectorIndexBuilder-167"><span class="linenos">167</span></a>                <span class="n">docs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
-</span><span id="VectorIndexBuilder-168"><a href="#VectorIndexBuilder-168"><span class="linenos">168</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
-</span><span id="VectorIndexBuilder-169"><a href="#VectorIndexBuilder-169"><span class="linenos">169</span></a>                <span class="n">ids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
-</span><span id="VectorIndexBuilder-170"><a href="#VectorIndexBuilder-170"><span class="linenos">170</span></a>            <span class="p">)</span>
-</span><span id="VectorIndexBuilder-171"><a href="#VectorIndexBuilder-171"><span class="linenos">171</span></a>
-</span><span id="VectorIndexBuilder-172"><a href="#VectorIndexBuilder-172"><span class="linenos">172</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Knowledge base indexing complete!&quot;</span><span class="p">)</span>
-</span><span id="VectorIndexBuilder-173"><a href="#VectorIndexBuilder-173"><span class="linenos">173</span></a>
-</span><span id="VectorIndexBuilder-174"><a href="#VectorIndexBuilder-174"><span class="linenos">174</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="VectorIndexBuilder-175"><a href="#VectorIndexBuilder-175"><span class="linenos">175</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="VectorIndexBuilder-176"><a href="#VectorIndexBuilder-176"><span class="linenos">176</span></a><span class="sd">        Executes the entire indexing pipeline.</span>
-</span><span id="VectorIndexBuilder-177"><a href="#VectorIndexBuilder-177"><span class="linenos">177</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="VectorIndexBuilder-178"><a href="#VectorIndexBuilder-178"><span class="linenos">178</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">scan_files</span><span class="p">()</span>
-</span><span id="VectorIndexBuilder-179"><a href="#VectorIndexBuilder-179"><span class="linenos">179</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">insert_chunks</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder-164"><a href="#VectorIndexBuilder-164"><span class="linenos">164</span></a>        <span class="c1"># Start from an empty store: chunk ids are &lt;path&gt;_&lt;n&gt;, so without a</span>
+</span><span id="VectorIndexBuilder-165"><a href="#VectorIndexBuilder-165"><span class="linenos">165</span></a>        <span class="c1"># reset any id absent from this scan (file shrank, moved, or was</span>
+</span><span id="VectorIndexBuilder-166"><a href="#VectorIndexBuilder-166"><span class="linenos">166</span></a>        <span class="c1"># deleted) would survive the upsert and pollute query results.</span>
+</span><span id="VectorIndexBuilder-167"><a href="#VectorIndexBuilder-167"><span class="linenos">167</span></a>        <span class="n">store</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder-168"><a href="#VectorIndexBuilder-168"><span class="linenos">168</span></a>
+</span><span id="VectorIndexBuilder-169"><a href="#VectorIndexBuilder-169"><span class="linenos">169</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder-170"><a href="#VectorIndexBuilder-170"><span class="linenos">170</span></a>            <span class="n">store</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
+</span><span id="VectorIndexBuilder-171"><a href="#VectorIndexBuilder-171"><span class="linenos">171</span></a>                <span class="n">docs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="VectorIndexBuilder-172"><a href="#VectorIndexBuilder-172"><span class="linenos">172</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="VectorIndexBuilder-173"><a href="#VectorIndexBuilder-173"><span class="linenos">173</span></a>                <span class="n">ids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="VectorIndexBuilder-174"><a href="#VectorIndexBuilder-174"><span class="linenos">174</span></a>            <span class="p">)</span>
+</span><span id="VectorIndexBuilder-175"><a href="#VectorIndexBuilder-175"><span class="linenos">175</span></a>
+</span><span id="VectorIndexBuilder-176"><a href="#VectorIndexBuilder-176"><span class="linenos">176</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Knowledge base indexing complete!&quot;</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder-177"><a href="#VectorIndexBuilder-177"><span class="linenos">177</span></a>
+</span><span id="VectorIndexBuilder-178"><a href="#VectorIndexBuilder-178"><span class="linenos">178</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder-179"><a href="#VectorIndexBuilder-179"><span class="linenos">179</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-180"><a href="#VectorIndexBuilder-180"><span class="linenos">180</span></a><span class="sd">        Executes the entire indexing pipeline.</span>
+</span><span id="VectorIndexBuilder-181"><a href="#VectorIndexBuilder-181"><span class="linenos">181</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder-182"><a href="#VectorIndexBuilder-182"><span class="linenos">182</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">scan_files</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder-183"><a href="#VectorIndexBuilder-183"><span class="linenos">183</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">insert_chunks</span><span class="p">()</span>
 </span></pre></div>
 
 
@@ -865,15 +873,19 @@ and stores it in the configured vector store.</p>
 </span><span id="VectorIndexBuilder.insert_chunks-161"><a href="#VectorIndexBuilder.insert_chunks-161"><span class="linenos">161</span></a>
 </span><span id="VectorIndexBuilder.insert_chunks-162"><a href="#VectorIndexBuilder.insert_chunks-162"><span class="linenos">162</span></a>        <span class="n">store</span> <span class="o">=</span> <span class="n">VectorStoreFactory</span><span class="o">.</span><span class="n">get_store</span><span class="p">()</span>
 </span><span id="VectorIndexBuilder.insert_chunks-163"><a href="#VectorIndexBuilder.insert_chunks-163"><span class="linenos">163</span></a>        <span class="n">store</span><span class="o">.</span><span class="n">init_db</span><span class="p">()</span>
-</span><span id="VectorIndexBuilder.insert_chunks-164"><a href="#VectorIndexBuilder.insert_chunks-164"><span class="linenos">164</span></a>
-</span><span id="VectorIndexBuilder.insert_chunks-165"><a href="#VectorIndexBuilder.insert_chunks-165"><span class="linenos">165</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
-</span><span id="VectorIndexBuilder.insert_chunks-166"><a href="#VectorIndexBuilder.insert_chunks-166"><span class="linenos">166</span></a>            <span class="n">store</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
-</span><span id="VectorIndexBuilder.insert_chunks-167"><a href="#VectorIndexBuilder.insert_chunks-167"><span class="linenos">167</span></a>                <span class="n">docs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
-</span><span id="VectorIndexBuilder.insert_chunks-168"><a href="#VectorIndexBuilder.insert_chunks-168"><span class="linenos">168</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
-</span><span id="VectorIndexBuilder.insert_chunks-169"><a href="#VectorIndexBuilder.insert_chunks-169"><span class="linenos">169</span></a>                <span class="n">ids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
-</span><span id="VectorIndexBuilder.insert_chunks-170"><a href="#VectorIndexBuilder.insert_chunks-170"><span class="linenos">170</span></a>            <span class="p">)</span>
-</span><span id="VectorIndexBuilder.insert_chunks-171"><a href="#VectorIndexBuilder.insert_chunks-171"><span class="linenos">171</span></a>
-</span><span id="VectorIndexBuilder.insert_chunks-172"><a href="#VectorIndexBuilder.insert_chunks-172"><span class="linenos">172</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Knowledge base indexing complete!&quot;</span><span class="p">)</span>
+</span><span id="VectorIndexBuilder.insert_chunks-164"><a href="#VectorIndexBuilder.insert_chunks-164"><span class="linenos">164</span></a>        <span class="c1"># Start from an empty store: chunk ids are &lt;path&gt;_&lt;n&gt;, so without a</span>
+</span><span id="VectorIndexBuilder.insert_chunks-165"><a href="#VectorIndexBuilder.insert_chunks-165"><span class="linenos">165</span></a>        <span class="c1"># reset any id absent from this scan (file shrank, moved, or was</span>
+</span><span id="VectorIndexBuilder.insert_chunks-166"><a href="#VectorIndexBuilder.insert_chunks-166"><span class="linenos">166</span></a>        <span class="c1"># deleted) would survive the upsert and pollute query results.</span>
+</span><span id="VectorIndexBuilder.insert_chunks-167"><a href="#VectorIndexBuilder.insert_chunks-167"><span class="linenos">167</span></a>        <span class="n">store</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder.insert_chunks-168"><a href="#VectorIndexBuilder.insert_chunks-168"><span class="linenos">168</span></a>
+</span><span id="VectorIndexBuilder.insert_chunks-169"><a href="#VectorIndexBuilder.insert_chunks-169"><span class="linenos">169</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder.insert_chunks-170"><a href="#VectorIndexBuilder.insert_chunks-170"><span class="linenos">170</span></a>            <span class="n">store</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
+</span><span id="VectorIndexBuilder.insert_chunks-171"><a href="#VectorIndexBuilder.insert_chunks-171"><span class="linenos">171</span></a>                <span class="n">docs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">docs_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="VectorIndexBuilder.insert_chunks-172"><a href="#VectorIndexBuilder.insert_chunks-172"><span class="linenos">172</span></a>                <span class="n">metadatas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="VectorIndexBuilder.insert_chunks-173"><a href="#VectorIndexBuilder.insert_chunks-173"><span class="linenos">173</span></a>                <span class="n">ids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ids_to_insert</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+</span><span id="VectorIndexBuilder.insert_chunks-174"><a href="#VectorIndexBuilder.insert_chunks-174"><span class="linenos">174</span></a>            <span class="p">)</span>
+</span><span id="VectorIndexBuilder.insert_chunks-175"><a href="#VectorIndexBuilder.insert_chunks-175"><span class="linenos">175</span></a>
+</span><span id="VectorIndexBuilder.insert_chunks-176"><a href="#VectorIndexBuilder.insert_chunks-176"><span class="linenos">176</span></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Knowledge base indexing complete!&quot;</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -893,12 +905,12 @@ and stores it in the configured vector store.</p>
 
     </div>
     <a class="headerlink" href="#VectorIndexBuilder.run"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="VectorIndexBuilder.run-174"><a href="#VectorIndexBuilder.run-174"><span class="linenos">174</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="VectorIndexBuilder.run-175"><a href="#VectorIndexBuilder.run-175"><span class="linenos">175</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="VectorIndexBuilder.run-176"><a href="#VectorIndexBuilder.run-176"><span class="linenos">176</span></a><span class="sd">        Executes the entire indexing pipeline.</span>
-</span><span id="VectorIndexBuilder.run-177"><a href="#VectorIndexBuilder.run-177"><span class="linenos">177</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="VectorIndexBuilder.run-178"><a href="#VectorIndexBuilder.run-178"><span class="linenos">178</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">scan_files</span><span class="p">()</span>
-</span><span id="VectorIndexBuilder.run-179"><a href="#VectorIndexBuilder.run-179"><span class="linenos">179</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">insert_chunks</span><span class="p">()</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="VectorIndexBuilder.run-178"><a href="#VectorIndexBuilder.run-178"><span class="linenos">178</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="VectorIndexBuilder.run-179"><a href="#VectorIndexBuilder.run-179"><span class="linenos">179</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder.run-180"><a href="#VectorIndexBuilder.run-180"><span class="linenos">180</span></a><span class="sd">        Executes the entire indexing pipeline.</span>
+</span><span id="VectorIndexBuilder.run-181"><a href="#VectorIndexBuilder.run-181"><span class="linenos">181</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="VectorIndexBuilder.run-182"><a href="#VectorIndexBuilder.run-182"><span class="linenos">182</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">scan_files</span><span class="p">()</span>
+</span><span id="VectorIndexBuilder.run-183"><a href="#VectorIndexBuilder.run-183"><span class="linenos">183</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">insert_chunks</span><span class="p">()</span>
 </span></pre></div>
 
 
@@ -919,12 +931,12 @@ and stores it in the configured vector store.</p>
 
     </div>
     <a class="headerlink" href="#main"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="main-182"><a href="#main-182"><span class="linenos">182</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-</span><span id="main-183"><a href="#main-183"><span class="linenos">183</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="main-184"><a href="#main-184"><span class="linenos">184</span></a><span class="sd">    Main entry point for the vector indexing script.</span>
-</span><span id="main-185"><a href="#main-185"><span class="linenos">185</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="main-186"><a href="#main-186"><span class="linenos">186</span></a>    <span class="n">builder</span> <span class="o">=</span> <span class="n">VectorIndexBuilder</span><span class="p">()</span>
-</span><span id="main-187"><a href="#main-187"><span class="linenos">187</span></a>    <span class="n">builder</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="main-186"><a href="#main-186"><span class="linenos">186</span></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="main-187"><a href="#main-187"><span class="linenos">187</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="main-188"><a href="#main-188"><span class="linenos">188</span></a><span class="sd">    Main entry point for the vector indexing script.</span>
+</span><span id="main-189"><a href="#main-189"><span class="linenos">189</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="main-190"><a href="#main-190"><span class="linenos">190</span></a>    <span class="n">builder</span> <span class="o">=</span> <span class="n">VectorIndexBuilder</span><span class="p">()</span>
+</span><span id="main-191"><a href="#main-191"><span class="linenos">191</span></a>    <span class="n">builder</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </span></pre></div>
 
 

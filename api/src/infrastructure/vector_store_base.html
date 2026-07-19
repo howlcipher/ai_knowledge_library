@@ -37,6 +37,9 @@
                                 <a class="function" href="#BaseVectorStore.init_db">init_db</a>
                         </li>
                         <li>
+                                <a class="function" href="#BaseVectorStore.reset">reset</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#BaseVectorStore.upsert">upsert</a>
                         </li>
                         <li>
@@ -78,20 +81,29 @@
 </span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the database (e.g. creating tables/extensions).&quot;&quot;&quot;</span>
 </span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>
 </span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">upsert</span><span class="p">(</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">docs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">metadatas</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> <span class="n">ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a><span class="sd">        Upsert documents into the vector store.</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">n_results</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a><span class="sd">        Query the vector store for similar documents.</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a><span class="sd">        Returns:</span>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a><span class="sd">            A list of tuples: (content, source, distance).</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a><span class="sd">        Remove all previously indexed documents so a full rebuild starts from</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="sd">        an empty store. Rebuilds must be idempotent: without a reset, chunk</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a><span class="sd">        ids that disappear from the scan (file shrank, moved, or was deleted)</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a><span class="sd">        would survive every subsequent upsert.</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">upsert</span><span class="p">(</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">docs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">metadatas</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> <span class="n">ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a><span class="sd">        Upsert documents into the vector store.</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">n_results</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a><span class="sd">        Query the vector store for similar documents.</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a><span class="sd">        Returns:</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a><span class="sd">            A list of tuples: (content, source, distance).</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span></pre></div>
 
 
@@ -115,20 +127,29 @@
 </span><span id="BaseVectorStore-11"><a href="#BaseVectorStore-11"><span class="linenos">11</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the database (e.g. creating tables/extensions).&quot;&quot;&quot;</span>
 </span><span id="BaseVectorStore-12"><a href="#BaseVectorStore-12"><span class="linenos">12</span></a>
 </span><span id="BaseVectorStore-13"><a href="#BaseVectorStore-13"><span class="linenos">13</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="BaseVectorStore-14"><a href="#BaseVectorStore-14"><span class="linenos">14</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">upsert</span><span class="p">(</span>
-</span><span id="BaseVectorStore-15"><a href="#BaseVectorStore-15"><span class="linenos">15</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">docs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">metadatas</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> <span class="n">ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="BaseVectorStore-16"><a href="#BaseVectorStore-16"><span class="linenos">16</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="BaseVectorStore-17"><a href="#BaseVectorStore-17"><span class="linenos">17</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="BaseVectorStore-18"><a href="#BaseVectorStore-18"><span class="linenos">18</span></a><span class="sd">        Upsert documents into the vector store.</span>
-</span><span id="BaseVectorStore-19"><a href="#BaseVectorStore-19"><span class="linenos">19</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="BaseVectorStore-20"><a href="#BaseVectorStore-20"><span class="linenos">20</span></a>
-</span><span id="BaseVectorStore-21"><a href="#BaseVectorStore-21"><span class="linenos">21</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="BaseVectorStore-22"><a href="#BaseVectorStore-22"><span class="linenos">22</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">n_results</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
-</span><span id="BaseVectorStore-23"><a href="#BaseVectorStore-23"><span class="linenos">23</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="BaseVectorStore-24"><a href="#BaseVectorStore-24"><span class="linenos">24</span></a><span class="sd">        Query the vector store for similar documents.</span>
-</span><span id="BaseVectorStore-25"><a href="#BaseVectorStore-25"><span class="linenos">25</span></a><span class="sd">        Returns:</span>
-</span><span id="BaseVectorStore-26"><a href="#BaseVectorStore-26"><span class="linenos">26</span></a><span class="sd">            A list of tuples: (content, source, distance).</span>
-</span><span id="BaseVectorStore-27"><a href="#BaseVectorStore-27"><span class="linenos">27</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BaseVectorStore-14"><a href="#BaseVectorStore-14"><span class="linenos">14</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="BaseVectorStore-15"><a href="#BaseVectorStore-15"><span class="linenos">15</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="BaseVectorStore-16"><a href="#BaseVectorStore-16"><span class="linenos">16</span></a><span class="sd">        Remove all previously indexed documents so a full rebuild starts from</span>
+</span><span id="BaseVectorStore-17"><a href="#BaseVectorStore-17"><span class="linenos">17</span></a><span class="sd">        an empty store. Rebuilds must be idempotent: without a reset, chunk</span>
+</span><span id="BaseVectorStore-18"><a href="#BaseVectorStore-18"><span class="linenos">18</span></a><span class="sd">        ids that disappear from the scan (file shrank, moved, or was deleted)</span>
+</span><span id="BaseVectorStore-19"><a href="#BaseVectorStore-19"><span class="linenos">19</span></a><span class="sd">        would survive every subsequent upsert.</span>
+</span><span id="BaseVectorStore-20"><a href="#BaseVectorStore-20"><span class="linenos">20</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BaseVectorStore-21"><a href="#BaseVectorStore-21"><span class="linenos">21</span></a>
+</span><span id="BaseVectorStore-22"><a href="#BaseVectorStore-22"><span class="linenos">22</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="BaseVectorStore-23"><a href="#BaseVectorStore-23"><span class="linenos">23</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">upsert</span><span class="p">(</span>
+</span><span id="BaseVectorStore-24"><a href="#BaseVectorStore-24"><span class="linenos">24</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">docs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">metadatas</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> <span class="n">ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="BaseVectorStore-25"><a href="#BaseVectorStore-25"><span class="linenos">25</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="BaseVectorStore-26"><a href="#BaseVectorStore-26"><span class="linenos">26</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="BaseVectorStore-27"><a href="#BaseVectorStore-27"><span class="linenos">27</span></a><span class="sd">        Upsert documents into the vector store.</span>
+</span><span id="BaseVectorStore-28"><a href="#BaseVectorStore-28"><span class="linenos">28</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="BaseVectorStore-29"><a href="#BaseVectorStore-29"><span class="linenos">29</span></a>
+</span><span id="BaseVectorStore-30"><a href="#BaseVectorStore-30"><span class="linenos">30</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="BaseVectorStore-31"><a href="#BaseVectorStore-31"><span class="linenos">31</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">n_results</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+</span><span id="BaseVectorStore-32"><a href="#BaseVectorStore-32"><span class="linenos">32</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="BaseVectorStore-33"><a href="#BaseVectorStore-33"><span class="linenos">33</span></a><span class="sd">        Query the vector store for similar documents.</span>
+</span><span id="BaseVectorStore-34"><a href="#BaseVectorStore-34"><span class="linenos">34</span></a><span class="sd">        Returns:</span>
+</span><span id="BaseVectorStore-35"><a href="#BaseVectorStore-35"><span class="linenos">35</span></a><span class="sd">            A list of tuples: (content, source, distance).</span>
+</span><span id="BaseVectorStore-36"><a href="#BaseVectorStore-36"><span class="linenos">36</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span></pre></div>
 
 
@@ -159,6 +180,37 @@
 
 
                             </div>
+                            <div id="BaseVectorStore.reset" class="classattr">
+                                        <input id="BaseVectorStore.reset-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+                    <div class="decorator decorator-abstractmethod">@abstractmethod</div>
+
+        <span class="def">def</span>
+        <span class="name">reset</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">) -> <span class="kc">None</span>:</span></span>
+
+                <label class="view-source-button" for="BaseVectorStore.reset-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#BaseVectorStore.reset"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="BaseVectorStore.reset-13"><a href="#BaseVectorStore.reset-13"><span class="linenos">13</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="BaseVectorStore.reset-14"><a href="#BaseVectorStore.reset-14"><span class="linenos">14</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="BaseVectorStore.reset-15"><a href="#BaseVectorStore.reset-15"><span class="linenos">15</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="BaseVectorStore.reset-16"><a href="#BaseVectorStore.reset-16"><span class="linenos">16</span></a><span class="sd">        Remove all previously indexed documents so a full rebuild starts from</span>
+</span><span id="BaseVectorStore.reset-17"><a href="#BaseVectorStore.reset-17"><span class="linenos">17</span></a><span class="sd">        an empty store. Rebuilds must be idempotent: without a reset, chunk</span>
+</span><span id="BaseVectorStore.reset-18"><a href="#BaseVectorStore.reset-18"><span class="linenos">18</span></a><span class="sd">        ids that disappear from the scan (file shrank, moved, or was deleted)</span>
+</span><span id="BaseVectorStore.reset-19"><a href="#BaseVectorStore.reset-19"><span class="linenos">19</span></a><span class="sd">        would survive every subsequent upsert.</span>
+</span><span id="BaseVectorStore.reset-20"><a href="#BaseVectorStore.reset-20"><span class="linenos">20</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Remove all previously indexed documents so a full rebuild starts from
+an empty store. Rebuilds must be idempotent: without a reset, chunk
+ids that disappear from the scan (file shrank, moved, or was deleted)
+would survive every subsequent upsert.</p>
+</div>
+
+
+                            </div>
                             <div id="BaseVectorStore.upsert" class="classattr">
                                         <input id="BaseVectorStore.upsert-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -171,13 +223,13 @@
 
     </div>
     <a class="headerlink" href="#BaseVectorStore.upsert"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="BaseVectorStore.upsert-13"><a href="#BaseVectorStore.upsert-13"><span class="linenos">13</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="BaseVectorStore.upsert-14"><a href="#BaseVectorStore.upsert-14"><span class="linenos">14</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">upsert</span><span class="p">(</span>
-</span><span id="BaseVectorStore.upsert-15"><a href="#BaseVectorStore.upsert-15"><span class="linenos">15</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">docs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">metadatas</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> <span class="n">ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="BaseVectorStore.upsert-16"><a href="#BaseVectorStore.upsert-16"><span class="linenos">16</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="BaseVectorStore.upsert-17"><a href="#BaseVectorStore.upsert-17"><span class="linenos">17</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="BaseVectorStore.upsert-18"><a href="#BaseVectorStore.upsert-18"><span class="linenos">18</span></a><span class="sd">        Upsert documents into the vector store.</span>
-</span><span id="BaseVectorStore.upsert-19"><a href="#BaseVectorStore.upsert-19"><span class="linenos">19</span></a><span class="sd">        &quot;&quot;&quot;</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="BaseVectorStore.upsert-22"><a href="#BaseVectorStore.upsert-22"><span class="linenos">22</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="BaseVectorStore.upsert-23"><a href="#BaseVectorStore.upsert-23"><span class="linenos">23</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">upsert</span><span class="p">(</span>
+</span><span id="BaseVectorStore.upsert-24"><a href="#BaseVectorStore.upsert-24"><span class="linenos">24</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">docs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">metadatas</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> <span class="n">ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="BaseVectorStore.upsert-25"><a href="#BaseVectorStore.upsert-25"><span class="linenos">25</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="BaseVectorStore.upsert-26"><a href="#BaseVectorStore.upsert-26"><span class="linenos">26</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="BaseVectorStore.upsert-27"><a href="#BaseVectorStore.upsert-27"><span class="linenos">27</span></a><span class="sd">        Upsert documents into the vector store.</span>
+</span><span id="BaseVectorStore.upsert-28"><a href="#BaseVectorStore.upsert-28"><span class="linenos">28</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span></pre></div>
 
 
@@ -198,13 +250,13 @@
 
     </div>
     <a class="headerlink" href="#BaseVectorStore.query"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="BaseVectorStore.query-21"><a href="#BaseVectorStore.query-21"><span class="linenos">21</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="BaseVectorStore.query-22"><a href="#BaseVectorStore.query-22"><span class="linenos">22</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">n_results</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
-</span><span id="BaseVectorStore.query-23"><a href="#BaseVectorStore.query-23"><span class="linenos">23</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="BaseVectorStore.query-24"><a href="#BaseVectorStore.query-24"><span class="linenos">24</span></a><span class="sd">        Query the vector store for similar documents.</span>
-</span><span id="BaseVectorStore.query-25"><a href="#BaseVectorStore.query-25"><span class="linenos">25</span></a><span class="sd">        Returns:</span>
-</span><span id="BaseVectorStore.query-26"><a href="#BaseVectorStore.query-26"><span class="linenos">26</span></a><span class="sd">            A list of tuples: (content, source, distance).</span>
-</span><span id="BaseVectorStore.query-27"><a href="#BaseVectorStore.query-27"><span class="linenos">27</span></a><span class="sd">        &quot;&quot;&quot;</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="BaseVectorStore.query-30"><a href="#BaseVectorStore.query-30"><span class="linenos">30</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="BaseVectorStore.query-31"><a href="#BaseVectorStore.query-31"><span class="linenos">31</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">n_results</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+</span><span id="BaseVectorStore.query-32"><a href="#BaseVectorStore.query-32"><span class="linenos">32</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="BaseVectorStore.query-33"><a href="#BaseVectorStore.query-33"><span class="linenos">33</span></a><span class="sd">        Query the vector store for similar documents.</span>
+</span><span id="BaseVectorStore.query-34"><a href="#BaseVectorStore.query-34"><span class="linenos">34</span></a><span class="sd">        Returns:</span>
+</span><span id="BaseVectorStore.query-35"><a href="#BaseVectorStore.query-35"><span class="linenos">35</span></a><span class="sd">            A list of tuples: (content, source, distance).</span>
+</span><span id="BaseVectorStore.query-36"><a href="#BaseVectorStore.query-36"><span class="linenos">36</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span></pre></div>
 
 
