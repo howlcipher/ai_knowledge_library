@@ -65,6 +65,12 @@ class SkillRouterSettings(BaseModel):
     skills_dir: str = ".agents/skills"
 
 
+class IndexingSettings(BaseModel):
+    collection_name: str = "ai_library_knowledge"
+    max_chunk_length: int = 1000
+    batch_size: int = 100
+
+
 class AppSettings(BaseSettings):
     llm_model: str = "gemini/gemini-1.5-pro"
     gemini_api_key: str = ""
@@ -74,6 +80,7 @@ class AppSettings(BaseSettings):
     agents: AgentsSettings = AgentsSettings()
     backup: BackupSettings = BackupSettings()
     skill_router: SkillRouterSettings = SkillRouterSettings()
+    indexing: IndexingSettings = IndexingSettings()
     payload_pipeline: PayloadPipelineSettings = PayloadPipelineSettings()
     active_mcps: list = []
     mcp_servers: dict = {}

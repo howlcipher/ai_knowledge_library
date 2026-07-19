@@ -77,9 +77,6 @@ class VectorIndexBuilder:
         self.index_config = self.cfg.get("indexing", {})
         self.max_chunk_len = self.index_config.get("max_chunk_length", 1000)
         self.batch_size = self.index_config.get("batch_size", 100)
-        self.collection_name = self.index_config.get(
-            "collection_name", "ai_library_knowledge"
-        )
 
         self.chunker = TextChunker(max_len=self.max_chunk_len)
 

@@ -16,4 +16,4 @@ class VectorStoreFactory:
         else:
             from src.infrastructure.chroma_backend import ChromaVectorStore
 
-            return ChromaVectorStore()
+            return ChromaVectorStore(collection_name=default_loader.get("indexing", {}).get("collection_name", "ai_library_knowledge"))
