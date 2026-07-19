@@ -1,18 +1,18 @@
 <div align="center">
-  <img src="assets/cyberpunk_hybrid_banner.jpg" alt="Retro CLI Banner" width="800" />
+  <img src="assets/cyberpunk_hybrid_banner.jpg" alt="SYS_CORE Banner" width="800" />
   <br><br>
-  <img src="https://img.shields.io/static/v1?label=AI&message=Knowledge_Library&color=blueviolet&style=for_the_badge" alt="AI Library Badge" />
-  <img src="https://img.shields.io/static/v1?label=Library_Size&message=386&color=success&style=for_the_badge" alt="Library Size Badge" />
-  <img src="https://img.shields.io/static/v1?label=Powered_By&message=Antigravity&color=blue&style=for_the_badge&logo=google" alt="Antigravity Badge" />
+  <img src="https://img.shields.io/static/v1?label=SYS_CORE&message=Active&color=00f0ff&style=for_the_badge" alt="AI Library Badge" />
+  <img src="https://img.shields.io/static/v1?label=Neural_Nodes&message=386&color=00ff41&style=for_the_badge" alt="Library Size Badge" />
+  <img src="https://img.shields.io/static/v1?label=Powered_By&message=Antigravity&color=ff003c&style=for_the_badge" alt="Antigravity Badge" />
 </div>
 
-<h1 align="center">Personal AI Knowledge Library</h1>
+<h1 align="center">SYS_CORE // AI Knowledge Construct</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/static/v1?label=Language&message=Python&color=3776AB&style=flat_square&logo=python" alt="Python Badge" />
-  <img src="https://img.shields.io/static/v1?label=Language&message=Go&color=00ADD8&style=flat_square&logo=go" alt="Go Badge" />
-  <img src="https://img.shields.io/static/v1?label=Platform&message=Docker&color=2496ED&style=flat_square&logo=docker" alt="Docker Badge" />
-  <img src="https://img.shields.io/static/v1?label=OS&message=Linux&color=FCC624&style=flat_square&logo=linux" alt="Linux Badge" />
+  <img src="https://img.shields.io/static/v1?label=Runtime&message=Python&color=3776AB&style=flat_square&logo=python" alt="Python Badge" />
+  <img src="https://img.shields.io/static/v1?label=Binary&message=Go&color=00ADD8&style=flat_square&logo=go" alt="Go Badge" />
+  <img src="https://img.shields.io/static/v1?label=Container&message=Docker&color=2496ED&style=flat_square&logo=docker" alt="Docker Badge" />
+  <img src="https://img.shields.io/static/v1?label=Env&message=Linux&color=FCC624&style=flat_square&logo=linux" alt="Linux Badge" />
 </p>
 
 <p align="center">
@@ -22,20 +22,21 @@
 </p>
 ***
 
-> This repository serves as the central context layer for terminal AI agents. It maps directly into the CLI to enforce coding standards, eliminate hallucinations, and provide deep architectural context tailored specifically for William Elias.
+> This repository serves as the central neural matrix for autonomous terminal AI agents. It maps directly into the local host environment to enforce hardcoded architectural constraints, eliminate logic hallucinations, and inject deep personalized profile contexts directly into the AI's execution pipeline.
 
 ***
 
-## 🧠 Core Value Proposition
+## 🧠 Core Architecture
 
-### 📚 Quick Start: [Read the Official User Wiki & Guide](documentation/USER_GUIDE.md)
+### 📚 Operator Manual: [Access User Guide](documentation/USER_GUIDE.md)
 
-**What it is:** A centralized, filesystem-based knowledge library and execution environment specifically engineered for AI agents operating within the terminal.
+**System Definition:** A centralized, filesystem-based knowledge library and execution environment engineered for autonomous AI operatives embedded within the terminal.
 
-**The Engineering Value:** AI agents frequently hallucinate or generate generic boilerplate when operating blindly. By linking this structured library to your local environment, you mathematically force the AI to operate exactly like a senior engineer on your team. The immediate benefits include:
-* **Zero-Hallucination Architecture:** The AI is strictly bound by local markdown rules, coding standards, and project constraints before generating code.
-* **Automated QA & Guardrails:** Built-in CI/CD pipelines (SAST, Linting, Testing) ensure the AI cannot break the master branch.
-* **Domain-Specific Expertise:** Pre-loaded domain skills (e.g., UI/UX, Data Science, Security) allow the AI to adapt its logic to the specific task rather than guessing.
+**The Engineering Protocol:** AI constructs frequently hallucinate or generate generic boilerplate when operating outside of a defined parameter space. By tethering this structured databank to the local environment, the AI is mathematically coerced into operating synchronously with a senior systems engineer. 
+* **Zero-Hallucination Matrix:** The AI is strictly bound by local markdown rules (`AGENTS.md`, auto-loaded by both Gemini via `GEMINI.md` and Claude Code via `CLAUDE.md`), explicit code standards, and project constraints before generating solutions.
+* **Multi-Agent Native:** The same skills, rules, and profile context load identically into **Gemini CLI / Antigravity** and **Claude Code**. One library, every terminal agent.
+* **Automated CI/CD Guardrails:** Built-in verification pipelines (SAST, Linting, Testing) ensure the AI cannot compromise the master branch.
+* **Domain-Specific Cognitive Skills:** Pre-loaded domain nodes (e.g., UI/UX, Data Science, Threat Hunting) allow the agent to adapt logic dynamically rather than executing blindly.
 
 ### 🔌 The Model Context Protocol (MCP) Advantage
 **Why is MCP important?** Historically, AI models have been trapped in a sandbox, limited only to their outdated training data and what you type in the chat box. Writing custom integrations for every external service (like Jira, AWS, or Wikipedia) required hundreds of lines of brittle code. 
@@ -45,11 +46,11 @@
 * **Full Autonomy:** The Orchestrator is armed with **Docker, Kubernetes, AWS, GitLab, Shodan, Puppeteer, Sentry, and Jira**. You can command it to find a bug in Jira, spin up a headless browser to reproduce it, fix the local code, and push the commit.
 * **Cognitive Persistence:** Powered by the **Memory** and **Sequential Thinking** MCPs, the agent permanently remembers your project preferences and can break down complex math or debugging loops step-by-step.
 
-### 🛡️ Security, Privacy & Trust
-When giving an AI access to your local filesystem and commands, security is paramount. This library is designed from the ground up to protect your local environment from prompt injection, AI poisoning, and hallucinated actions:
-* **Anti-Poisoning & Grounding Protocol:** The AI is mathematically grounded in local rule files (like [`GEMINI.md`](GEMINI.md)) and forced to apply an epistemic humility decision tree. If live data conflicts with stale data, or if an action violates the [`anti_manipulation.md`](.agents/rules/anti_manipulation.md) constraints, the Orchestrator will automatically halt.
-* **Strict Human-in-the-Loop:** Absolutely no executable commands (like `bash` scripts or destructive API calls) are run without explicit human consent. You will see exactly what the AI wants to run and can approve or reject it natively.
-* **100% Local Privacy:** The Orchestrator and vector databases (ChromaDB / PGVector) run entirely locally. Your local filesystem, secrets, and project architecture are never ingested into a third-party training set.
+### 🛡️ System Security & Cognitive Integrity
+When granting an AI construct access to local filesystem arrays and shell commands, security is the primary directive. This library architecture is hardened to protect the local environment from prompt injection, memory poisoning, and unauthorized automated execution:
+* **Anti-Poisoning & Grounding Protocol:** The AI is mathematically grounded in local rule files (`AGENTS.md`) and forced to apply an epistemic humility decision tree. If live network data conflicts with stale local data, or if an action violates the [`anti_manipulation.md`](.agents/rules/anti_manipulation.md) constraints, the core orchestrator will sever the connection automatically.
+* **Human-in-the-Loop Override:** Absolutely no executable commands (like `bash` scripts or external API mutations) are initialized without explicit human consent. The operator reviews all proposed actions natively.
+* **100% Local Privacy:** The core orchestrator and vector databases (ChromaDB / PGVector) operate entirely locally. Local filesystems, cryptographic secrets, and personalized `USER_PROFILE.md` structures are never exfiltrated to a third-party training set.
 
 ***
 
@@ -113,7 +114,9 @@ The knowledge base is organized into specific domains that the AI agent natively
 
 | Directory or File | Primary Function |
 | :--- | :--- |
-| `GEMINI.md` | Global index and central rulebook for all agent interactions. |
+| `AGENTS.md` | Canonical global rulebook for all agent interactions. |
+| `GEMINI.md` / `CLAUDE.md` | Thin per-agent entry points that import `AGENTS.md` (Gemini CLI / Antigravity and Claude Code respectively). |
+| `.claude/skills` | Link exposing the skills library to Claude Code inside this repo. |
 | [`.agents/skills/`](.agents/skills/README.md) | The **AI Skills Library**. Domain-specific behavioral instructions parsed natively. |
 | `.agents/rules/` | Global constraints that actively shape system prompts. |
 | `scripts/` | Utilities for syncing and bootstrapping environments globally. |
@@ -139,9 +142,11 @@ This repository relies on several automated workflows to maintain structure and 
 
 ***
 
-## 🧑‍💻 Forking and Customization
+## 🧑‍💻 Identity Customization & Profiling
 
-If you are forking this repository for your own use, you can easily customize the core user identity. Run the profile setup script to generate your own metadata while choosing to keep, supplement, or entirely replace the default William Elias profile.
+If you are cloning this repository for your own network operations, you MUST initialize your own core identity. The system leverages personalized user profiles to ground the AI in your specific career background, communication style, and local preferences.
+
+Run the profile bootstrapper script to generate your metadata matrix. You can choose to supplement or entirely override the default `USER_PROFILE.md`:
 
 ```bash
 python scripts/setup_profile.py
