@@ -60,6 +60,7 @@ build:
 # Documentation
 docs:
 	@echo "Generating API documentation via pdoc..."
+	rm -rf docs/api docs/documentation docs/assets docs/.agents
 	mkdir -p docs/api
 	pdoc ./src ./scripts -o docs/api
 	@echo "Setting up GitHub Pages frontpage..."
