@@ -33,12 +33,26 @@ class AgentState(TypedDict):
     max_iterations: int
 
 
+def tier_setting(overrides: dict, tier: int, default):
+    """Resolves a per tier override (key ``tier_<n>``), falling back to the
+    default when the override is missing, empty, or zero."""
+    return (overrides or {}).get(f"tier_{tier}") or default
+
+
 class Agent:
-    def __init__(self, name: str, system_prompt: str, model: str, tools: list = None):
+    def __init__(
+        self,
+        name: str,
+        system_prompt: str,
+        model: str,
+        tools: list = None,
+        timeout: Optional[float] = None,
+    ):
         self.name = name
         self.system_prompt = system_prompt
         self.model = model
         self.tools = tools
+        self.timeout = timeout
 
     def generate_response(self, user_prompt: str, context: str = ""):
         # Anthropic explicit caching injection on system message
@@ -66,6 +80,8 @@ class Agent:
             kwargs = {"model": self.model, "messages": messages}
             if self.tools:
                 kwargs["tools"] = self.tools
+            if self.timeout:
+                kwargs["timeout"] = self.timeout
 
             response = litellm.completion(**kwargs)
 
@@ -389,9 +405,14 @@ class Orchestrator:
         initial = build_initial_payload(user_query, domain, skills)
 
         tier_models = self.payload_cfg.get("tier_models", {}) or {}
+        tier_timeouts = self.payload_cfg.get("tier_timeouts", {}) or {}
+        default_timeout = self.payload_cfg.get("timeout", 600.0)
 
         def model_for(tier: int) -> str:
-            return tier_models.get(f"tier_{tier}") or self.default_model
+            return tier_setting(tier_models, tier, self.default_model)
+
+        def timeout_for(tier: int) -> float:
+            return tier_setting(tier_timeouts, tier, default_timeout)
 
         if self.payload_cfg.get("preflight", True):
             from src.core.provider_preflight import preflight_models
@@ -412,9 +433,9 @@ class Orchestrator:
             print(f"[Preflight] OK ({', '.join(preflight.checked_models)})")
 
         tiers = [
-            (1, Agent("Tier3_Executor", TIER3_PROMPT, model_for(3))),
-            (2, Agent("Tier2_Specialist", TIER2_PROMPT, model_for(2))),
-            (3, Agent("Tier1_Orchestrator", TIER1_PROMPT, model_for(1))),
+            (1, Agent("Tier3_Executor", TIER3_PROMPT, model_for(3), timeout=timeout_for(3))),
+            (2, Agent("Tier2_Specialist", TIER2_PROMPT, model_for(2), timeout=timeout_for(2))),
+            (3, Agent("Tier1_Orchestrator", TIER1_PROMPT, model_for(1), timeout=timeout_for(1))),
         ]
 
         payload = initial

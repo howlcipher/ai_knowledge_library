@@ -37,13 +37,21 @@ class TierModelsSettings(BaseModel):
     tier_3: str = ""
 
 
+class TierTimeoutsSettings(BaseModel):
+    tier_1: float = 0.0
+    tier_2: float = 0.0
+    tier_3: float = 0.0
+
+
 class PayloadPipelineSettings(BaseModel):
     enabled: bool = False
     max_attempts: int = 3
     artifact_dir: str = "logs/payloads"
     preflight: bool = True
     preflight_timeout: float = 120.0
+    timeout: float = 600.0
     tier_models: TierModelsSettings = TierModelsSettings()
+    tier_timeouts: TierTimeoutsSettings = TierTimeoutsSettings()
 
 
 class SkillRouterSettings(BaseModel):

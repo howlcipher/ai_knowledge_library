@@ -1,7 +1,7 @@
 import pytest
 import json
 from unittest.mock import patch, MagicMock
-from src.core.orchestrator import Agent, Orchestrator
+from src.core.orchestrator import Agent, Orchestrator, tier_setting
 
 class MockMessage:
     def __init__(self, content, tool_calls=None):
@@ -41,6 +41,49 @@ def test_agent_generate_response(mock_completion, mock_cost):
         mock_log.assert_called_once()
         args, kwargs = mock_log.call_args
         assert kwargs["prompt_tokens"] == 10
+
+@patch("litellm.completion_cost", return_value=0.0)
+@patch("litellm.completion")
+def test_agent_timeout_passed_to_litellm(mock_completion, mock_cost):
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock(message=MagicMock(content="ok"))]
+    mock_response.usage.prompt_tokens = 1
+    mock_response.usage.completion_tokens = 1
+    mock_response.usage.total_tokens = 2
+    mock_completion.return_value = mock_response
+
+    agent = Agent("TestAgent", "You are a test.", "ollama/qwen3", timeout=1800.0)
+    with patch("src.core.orchestrator.log_telemetry"):
+        agent.generate_response("Hello")
+    assert mock_completion.call_args.kwargs["timeout"] == 1800.0
+
+
+@patch("litellm.completion_cost", return_value=0.0)
+@patch("litellm.completion")
+def test_agent_without_timeout_omits_kwarg(mock_completion, mock_cost):
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock(message=MagicMock(content="ok"))]
+    mock_response.usage.prompt_tokens = 1
+    mock_response.usage.completion_tokens = 1
+    mock_response.usage.total_tokens = 2
+    mock_completion.return_value = mock_response
+
+    agent = Agent("TestAgent", "You are a test.", "ollama/qwen3")
+    with patch("src.core.orchestrator.log_telemetry"):
+        agent.generate_response("Hello")
+    assert "timeout" not in mock_completion.call_args.kwargs
+
+
+def test_tier_setting_fallbacks():
+    overrides = {"tier_1": 900.0, "tier_2": 0.0}
+    assert tier_setting(overrides, 1, 600.0) == 900.0
+    # Zero and missing overrides both fall back to the default.
+    assert tier_setting(overrides, 2, 600.0) == 600.0
+    assert tier_setting(overrides, 3, 600.0) == 600.0
+    assert tier_setting(None, 1, 600.0) == 600.0
+    # Same helper backs per tier models: empty string falls back too.
+    assert tier_setting({"tier_1": ""}, 1, "default-model") == "default-model"
+
 
 def test_human_proxy_no_command():
     orchestrator = Orchestrator()

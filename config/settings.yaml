@@ -25,12 +25,23 @@ payload_pipeline:
   # per model and generous so a large local model can cold load.
   preflight: true
   preflight_timeout: 120.0
+  # Request timeout in seconds for each tier LLM call (passed to
+  # litellm.completion). 600 matches LiteLLM's own default; raise it when a
+  # large local model needs longer to generate the full payload envelope.
+  timeout: 600.0
   # Per tier model overrides. Empty string falls back to the top level llm_model.
   # Tier 1 judges deserve the strongest model; Tier 3 drafting can run cheap and fast.
   tier_models:
     tier_1: ""  # e.g. "anthropic/claude-fable-5"
     tier_2: ""  # e.g. "anthropic/claude-sonnet-5"
     tier_3: ""  # e.g. "gemini/gemini-1.5-flash"
+  # Per tier timeout overrides in seconds. 0 falls back to the timeout above.
+  # A slow 30B local drafting model may need a long tier_3 while a hosted
+  # tier_1 judge stays tight.
+  tier_timeouts:
+    tier_1: 0
+    tier_2: 0
+    tier_3: 0
 
 skill_router:
   enabled: true

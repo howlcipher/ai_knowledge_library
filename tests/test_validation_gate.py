@@ -349,3 +349,46 @@ def test_orchestrator_uses_per_tier_models(tmp_path, monkeypatch):
         "anthropic/claude-sonnet-5",
         "anthropic/claude-fable-5",
     ]
+
+
+def test_orchestrator_uses_per_tier_timeouts(tmp_path, monkeypatch):
+    cfg = {
+        "llm_model": "gemini/gemini-1.5-pro",
+        "active_mcps": [],
+        "mcp_servers": {},
+        "skill_router": {"enabled": False},
+        "payload_pipeline": {
+            "enabled": True,
+            "max_attempts": 3,
+            "preflight": False,
+            "artifact_dir": str(tmp_path / "payloads"),
+            "timeout": 900.0,
+            "tier_timeouts": {"tier_1": 0, "tier_2": 0, "tier_3": 1800.0},
+        },
+    }
+    monkeypatch.setattr("src.core.orchestrator.load_config", lambda: cfg)
+
+    from src.core.orchestrator import Orchestrator
+
+    orchestrator = Orchestrator()
+    orchestrator.skill_router = None
+
+    query = "Write a runbook."
+    initial = make_initial(query)
+    pass1 = make_pass1(initial)
+    pass2 = make_pass2(pass1)
+    pass3 = make_pass3(pass2)
+    responses = [make_llm_response(json.dumps(p)) for p in (pass1, pass2, pass3)]
+
+    with (
+        patch("litellm.completion", side_effect=responses) as mock_completion,
+        patch("litellm.completion_cost", return_value=0.0),
+        patch("src.core.orchestrator.log_telemetry"),
+    ):
+        final = orchestrator.run_loop(query)
+
+    assert final["pipeline"]["status"] == "approved"
+    timeouts_used = [c.kwargs["timeout"] for c in mock_completion.call_args_list]
+    # Pass order is tier 3 draft, tier 2 review, tier 1 synthesis; zero
+    # overrides fall back to the pipeline level timeout.
+    assert timeouts_used == [1800.0, 900.0, 900.0]
