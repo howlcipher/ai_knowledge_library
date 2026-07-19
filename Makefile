@@ -1,4 +1,4 @@
-.PHONY: install test lint format clean coverage build docs sync
+.PHONY: install test test-changed lint format clean coverage build docs sync
 
 # Environment and Setup
 install:
@@ -12,6 +12,10 @@ test:
 	PYTHONPATH=. pytest tests/ -v
 	@echo "Running Go tests..."
 	go test -v ./...
+
+test-changed:
+	@echo "Selecting tests relevant to the current change set..."
+	PYTHONPATH=. python scripts/select_relevant_tests.py
 
 coverage-python:
 	@echo "Generating Python coverage..."
