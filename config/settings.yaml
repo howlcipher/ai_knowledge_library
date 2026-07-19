@@ -29,6 +29,12 @@ payload_pipeline:
   # litellm.completion). 600 matches LiteLLM's own default; raise it when a
   # large local model needs longer to generate the full payload envelope.
   timeout: 600.0
+  # Provider exceptions (connection refused, timeout, HTTP 5xx) are retried
+  # this many extra times with exponential backoff (transport_backoff * 2^n
+  # seconds) before the pass aborts with UPSTREAM_UNAVAILABLE. Transport
+  # retries never consume validation gate attempts.
+  transport_retries: 2
+  transport_backoff: 2.0
   # Per tier model overrides. Empty string falls back to the top level llm_model.
   # Tier 1 judges deserve the strongest model; Tier 3 drafting can run cheap and fast.
   tier_models:

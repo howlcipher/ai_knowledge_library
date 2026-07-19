@@ -54,7 +54,9 @@ class Agent:
         self.tools = tools
         self.timeout = timeout
 
-    def generate_response(self, user_prompt: str, context: str = ""):
+    def generate_response(
+        self, user_prompt: str, context: str = "", raise_errors: bool = False
+    ):
         # Anthropic explicit caching injection on system message
         messages = [
             {
@@ -84,8 +86,13 @@ class Agent:
                 kwargs["timeout"] = self.timeout
 
             response = litellm.completion(**kwargs)
+        except Exception as e:
+            print(f"[{self.name}] Error generating response: {e}")
+            if raise_errors:
+                raise
+            return None
 
-            # Log telemetry
+        try:
             usage = response.usage
             cost = litellm.completion_cost(completion_response=response) or 0.0
 
@@ -108,11 +115,11 @@ class Agent:
                 latency=0.0,
                 cached_tokens=cached_tokens,
             )
-
-            return response.choices[0].message
         except Exception as e:
-            print(f"[{self.name}] Error generating response: {e}")
-            return None
+            # A telemetry failure must never discard a successful completion.
+            print(f"[{self.name}] Telemetry logging failed: {e}")
+
+        return response.choices[0].message
 
 
 class Orchestrator:
@@ -375,6 +382,10 @@ class Orchestrator:
         conflict with the JSON only output contract.
         """
         from src.core.tier_prompts import TIER1_PROMPT, TIER2_PROMPT, TIER3_PROMPT
+        from src.core.transport_retry import (
+            ProviderTransportError,
+            call_with_transport_retry,
+        )
         from src.core.validation_gate import ValidationGate, build_initial_payload
 
         print("\n=== Starting 3 Pass Payload Pipeline ===")
@@ -438,6 +449,9 @@ class Orchestrator:
             (3, Agent("Tier1_Orchestrator", TIER1_PROMPT, model_for(1), timeout=timeout_for(1))),
         ]
 
+        transport_retries = self.payload_cfg.get("transport_retries", 2)
+        transport_backoff = self.payload_cfg.get("transport_backoff", 2.0)
+
         payload = initial
         for pass_number, agent in tiers:
             print(f"\n--- Pass {pass_number}: {agent.name} ---")
@@ -448,10 +462,41 @@ class Orchestrator:
                     user_msg += f"\n\nSKILL DIRECTIVES (binding):\n{skill_context}"
                 if feedback:
                     user_msg += f"\n\n{feedback}"
-                message = agent.generate_response(user_msg)
+                # Provider exceptions are retried here with backoff so they
+                # never reach the gate as fake parse failures; on exhaustion
+                # ProviderTransportError aborts the pass without spending a
+                # validation attempt.
+                message = call_with_transport_retry(
+                    lambda: agent.generate_response(user_msg, raise_errors=True),
+                    retries=transport_retries,
+                    backoff=transport_backoff,
+                    model=agent.model,
+                )
                 return message.content if message and message.content else ""
 
-            result = gate.run(call_fn, prev=payload, expected_pass=pass_number)
+            try:
+                result = gate.run(call_fn, prev=payload, expected_pass=pass_number)
+            except ProviderTransportError as e:
+                print(
+                    f"[Orchestrator] Pass {pass_number} aborted: provider for "
+                    f"{e.model} unavailable after "
+                    f"{len(e.attempt_errors)} transport attempts: {e}"
+                )
+                failed = gate.build_failed_payload(
+                    payload,
+                    [str(e)],
+                    stage="transport",
+                    code="UPSTREAM_UNAVAILABLE",
+                    failure_vector="llm_transport.completion",
+                    context={
+                        "model": e.model,
+                        "transport_attempts": len(e.attempt_errors),
+                        "attempt_errors": e.attempt_errors,
+                    },
+                )
+                if failed:
+                    self._persist_payload(failed)
+                return failed
             if result.payload:
                 self._persist_payload(result.payload)
             if not result.ok:

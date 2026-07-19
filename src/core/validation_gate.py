@@ -254,9 +254,20 @@ class ValidationGate:
         return GateResult(False, failed, last.errors, last.stage, self.max_attempts)
 
     def build_failed_payload(
-        self, prev: Optional[dict], errors: List[str], stage: str
+        self,
+        prev: Optional[dict],
+        errors: List[str],
+        stage: str,
+        code: str = "SCHEMA_VALIDATION_FAILED",
+        failure_vector: Optional[str] = None,
+        context: Optional[dict] = None,
     ) -> Optional[dict]:
-        """Marks the previous payload failed with a structured error object."""
+        """Marks the previous payload failed with a structured error object.
+
+        The defaults describe gate exhaustion; callers reporting other failure
+        classes (e.g. UPSTREAM_UNAVAILABLE from the transport layer) override
+        code, failure_vector, and context so the real cause is not masked.
+        """
         if prev is None:
             return None
         failed = json.loads(json.dumps(prev))
@@ -264,10 +275,12 @@ class ValidationGate:
         failed["pipeline"]["attempt"] = self.max_attempts
         failed["updated_at"] = utc_now()
         failed["error"] = {
-            "code": "SCHEMA_VALIDATION_FAILED",
+            "code": code,
             "message": "; ".join(errors)[:2000] or "unknown validation failure",
-            "failure_vector": f"validation_gate.{stage}",
-            "context": {"max_attempts": self.max_attempts},
+            "failure_vector": failure_vector or f"validation_gate.{stage}",
+            "context": context
+            if context is not None
+            else {"max_attempts": self.max_attempts},
             "occurred_at": utc_now(),
         }
         return failed

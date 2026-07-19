@@ -50,6 +50,8 @@ class PayloadPipelineSettings(BaseModel):
     preflight: bool = True
     preflight_timeout: float = 120.0
     timeout: float = 600.0
+    transport_retries: int = 2
+    transport_backoff: float = 2.0
     tier_models: TierModelsSettings = TierModelsSettings()
     tier_timeouts: TierTimeoutsSettings = TierTimeoutsSettings()
 

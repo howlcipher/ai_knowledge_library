@@ -351,6 +351,131 @@ def test_orchestrator_uses_per_tier_models(tmp_path, monkeypatch):
     ]
 
 
+def test_build_failed_payload_custom_code_vector_and_context(gate):
+    prev = make_initial()
+    failed = gate.build_failed_payload(
+        prev,
+        ["Provider unavailable after 3 attempts: ConnectionError: refused"],
+        stage="transport",
+        code="UPSTREAM_UNAVAILABLE",
+        failure_vector="llm_transport.completion",
+        context={"model": "ollama/qwen3", "attempt_errors": ["refused"]},
+    )
+    assert failed["pipeline"]["status"] == "failed"
+    assert failed["error"]["code"] == "UPSTREAM_UNAVAILABLE"
+    assert failed["error"]["failure_vector"] == "llm_transport.completion"
+    assert failed["error"]["context"]["model"] == "ollama/qwen3"
+    assert failed["error"]["context"]["attempt_errors"] == ["refused"]
+    # Defaults are unchanged for gate exhaustion callers.
+    default = gate.build_failed_payload(prev, ["bad json"], stage="parse")
+    assert default["error"]["code"] == "SCHEMA_VALIDATION_FAILED"
+    assert default["error"]["failure_vector"] == "validation_gate.parse"
+    assert default["error"]["context"] == {"max_attempts": 3}
+
+
+def test_orchestrator_dead_provider_reports_upstream_unavailable(
+    tmp_path, monkeypatch
+):
+    """A provider that stays down is retried at the transport layer only and
+    aborts with UPSTREAM_UNAVAILABLE; no validation attempt is consumed."""
+    cfg = {
+        "llm_model": "gemini/gemini-1.5-pro",
+        "active_mcps": [],
+        "mcp_servers": {},
+        "skill_router": {"enabled": False},
+        "payload_pipeline": {
+            "enabled": True,
+            "max_attempts": 3,
+            "preflight": False,
+            "artifact_dir": str(tmp_path / "payloads"),
+            "transport_retries": 1,
+            "transport_backoff": 0.0,
+        },
+    }
+    monkeypatch.setattr("src.core.orchestrator.load_config", lambda: cfg)
+
+    from src.core.orchestrator import Orchestrator
+
+    orchestrator = Orchestrator()
+    orchestrator.skill_router = None
+
+    with (
+        patch(
+            "litellm.completion",
+            side_effect=ConnectionError("connection refused"),
+        ) as mock_completion,
+        patch("src.core.transport_retry.time.sleep"),
+    ):
+        final = orchestrator.run_loop("Write a runbook.")
+
+    assert final["pipeline"]["status"] == "failed"
+    assert final["error"]["code"] == "UPSTREAM_UNAVAILABLE"
+    assert final["error"]["failure_vector"] == "llm_transport.completion"
+    assert final["error"]["context"]["model"] == "gemini/gemini-1.5-pro"
+    assert final["error"]["context"]["transport_attempts"] == 2
+    assert all(
+        "connection refused" in e
+        for e in final["error"]["context"]["attempt_errors"]
+    )
+    # Transport retries only: 1 + 1 retry. With the old behavior the gate
+    # would have burned all 3 validation attempts (3 calls) on parse errors.
+    assert mock_completion.call_count == 2
+    # The failed payload is persisted for the post mortem.
+    artifact_dir = tmp_path / "payloads" / TASK_ID
+    assert [p.name for p in artifact_dir.iterdir()] == ["pass_1.json"]
+
+
+def test_orchestrator_transient_provider_failure_recovers(tmp_path, monkeypatch):
+    """One connection error is retried with backoff and the run completes
+    without the gate ever seeing an empty response."""
+    cfg = {
+        "llm_model": "gemini/gemini-1.5-pro",
+        "active_mcps": [],
+        "mcp_servers": {},
+        "skill_router": {"enabled": False},
+        "payload_pipeline": {
+            "enabled": True,
+            "max_attempts": 3,
+            "preflight": False,
+            "artifact_dir": str(tmp_path / "payloads"),
+            "transport_retries": 2,
+            "transport_backoff": 0.0,
+        },
+    }
+    monkeypatch.setattr("src.core.orchestrator.load_config", lambda: cfg)
+
+    from src.core.orchestrator import Orchestrator
+
+    orchestrator = Orchestrator()
+    orchestrator.skill_router = None
+
+    query = "Write a runbook."
+    initial = make_initial(query)
+    pass1 = make_pass1(initial)
+    pass2 = make_pass2(pass1)
+    pass3 = make_pass3(pass2)
+    responses = [
+        ConnectionError("blip"),
+        make_llm_response(json.dumps(pass1)),
+        make_llm_response(json.dumps(pass2)),
+        make_llm_response(json.dumps(pass3)),
+    ]
+
+    with (
+        patch("litellm.completion", side_effect=responses) as mock_completion,
+        patch("litellm.completion_cost", return_value=0.0),
+        patch("src.core.orchestrator.log_telemetry"),
+        patch("src.core.transport_retry.time.sleep"),
+    ):
+        final = orchestrator.run_loop(query)
+
+    assert final["pipeline"]["status"] == "approved"
+    assert final["pipeline"]["pass_number"] == 3
+    # The retried call is a transport retry, not a validation attempt.
+    assert final["pipeline"]["attempt"] == 1
+    assert mock_completion.call_count == 4
+
+
 def test_orchestrator_uses_per_tier_timeouts(tmp_path, monkeypatch):
     cfg = {
         "llm_model": "gemini/gemini-1.5-pro",
