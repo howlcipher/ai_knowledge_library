@@ -6,7 +6,7 @@
 * GitHub: github.com/howlcipher
 
 ## Career Goals & Preferences
-*   **Target Roles:** Site Reliability Engineer, DevSecOps Engineer, DevOps Engineer, Software Engineer, Backend Developer
+*   **Target Roles:** DevOps Engineer, Site Reliability Engineer, DevSecOps Engineer, Software Engineer, Backend Developer
 *   **Work Environment:** Remote
 *   **Target Base Salary:** $105,000+
 
