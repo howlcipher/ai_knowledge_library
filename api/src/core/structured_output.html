@@ -36,6 +36,9 @@
             <li>
                     <a class="function" href="#payload_response_format">payload_response_format</a>
             </li>
+            <li>
+                    <a class="function" href="#verification_response_format">verification_response_format</a>
+            </li>
     </ul>
 
 
@@ -119,6 +122,32 @@ provider constraint is defense in depth, not a replacement for the gate.</p>
 </span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a>            <span class="s2">&quot;strict&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>        <span class="p">},</span>
 </span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a>    <span class="p">}</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a>
+</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a>
+</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a><span class="k">def</span><span class="w"> </span><span class="nf">verification_response_format</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a><span class="sd">    Returns the ``response_format`` dict for the ``web_research`` content</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a><span class="sd">    verifier&#39;s ``{verified, confidence, reason}`` shape. Unlike the payload</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a><span class="sd">    schema, this one has no optional fields, so it qualifies for OpenAI</span>
+</span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a><span class="sd">    strict mode and ``strict`` is True.</span>
+</span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a>    <span class="k">return</span> <span class="p">{</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos">63</span></a>        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;json_schema&quot;</span><span class="p">,</span>
+</span><span id="L-64"><a href="#L-64"><span class="linenos">64</span></a>        <span class="s2">&quot;json_schema&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="L-65"><a href="#L-65"><span class="linenos">65</span></a>            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;content_verification&quot;</span><span class="p">,</span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos">66</span></a>            <span class="s2">&quot;schema&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos">67</span></a>                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+</span><span id="L-68"><a href="#L-68"><span class="linenos">68</span></a>                <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="L-69"><a href="#L-69"><span class="linenos">69</span></a>                    <span class="s2">&quot;verified&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;boolean&quot;</span><span class="p">},</span>
+</span><span id="L-70"><a href="#L-70"><span class="linenos">70</span></a>                    <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">,</span> <span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
+</span><span id="L-71"><a href="#L-71"><span class="linenos">71</span></a>                    <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos">72</span></a>                <span class="p">},</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos">73</span></a>                <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;verified&quot;</span><span class="p">,</span> <span class="s2">&quot;confidence&quot;</span><span class="p">,</span> <span class="s2">&quot;reason&quot;</span><span class="p">],</span>
+</span><span id="L-74"><a href="#L-74"><span class="linenos">74</span></a>                <span class="s2">&quot;additionalProperties&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="L-75"><a href="#L-75"><span class="linenos">75</span></a>            <span class="p">},</span>
+</span><span id="L-76"><a href="#L-76"><span class="linenos">76</span></a>            <span class="s2">&quot;strict&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="L-77"><a href="#L-77"><span class="linenos">77</span></a>        <span class="p">},</span>
+</span><span id="L-78"><a href="#L-78"><span class="linenos">78</span></a>    <span class="p">}</span>
 </span></pre></div>
 
 
@@ -184,6 +213,52 @@ provider constraint is defense in depth, not a replacement for the gate.</p>
 the AgentTaskPayload schema. <code>strict</code> is False because the schema has
 optional fields at every level, which OpenAI strict mode rejects; Ollama
 ignores the flag and always constrains decoding to the schema.</p>
+</div>
+
+
+                </section>
+                <section id="verification_response_format">
+                            <input id="verification_response_format-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">verification_response_format</span><span class="signature pdoc-code condensed">(<span class="return-annotation">) -> <span class="nb">dict</span>:</span></span>
+
+                <label class="view-source-button" for="verification_response_format-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#verification_response_format"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="verification_response_format-56"><a href="#verification_response_format-56"><span class="linenos">56</span></a><span class="k">def</span><span class="w"> </span><span class="nf">verification_response_format</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span id="verification_response_format-57"><a href="#verification_response_format-57"><span class="linenos">57</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="verification_response_format-58"><a href="#verification_response_format-58"><span class="linenos">58</span></a><span class="sd">    Returns the ``response_format`` dict for the ``web_research`` content</span>
+</span><span id="verification_response_format-59"><a href="#verification_response_format-59"><span class="linenos">59</span></a><span class="sd">    verifier&#39;s ``{verified, confidence, reason}`` shape. Unlike the payload</span>
+</span><span id="verification_response_format-60"><a href="#verification_response_format-60"><span class="linenos">60</span></a><span class="sd">    schema, this one has no optional fields, so it qualifies for OpenAI</span>
+</span><span id="verification_response_format-61"><a href="#verification_response_format-61"><span class="linenos">61</span></a><span class="sd">    strict mode and ``strict`` is True.</span>
+</span><span id="verification_response_format-62"><a href="#verification_response_format-62"><span class="linenos">62</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="verification_response_format-63"><a href="#verification_response_format-63"><span class="linenos">63</span></a>    <span class="k">return</span> <span class="p">{</span>
+</span><span id="verification_response_format-64"><a href="#verification_response_format-64"><span class="linenos">64</span></a>        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;json_schema&quot;</span><span class="p">,</span>
+</span><span id="verification_response_format-65"><a href="#verification_response_format-65"><span class="linenos">65</span></a>        <span class="s2">&quot;json_schema&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="verification_response_format-66"><a href="#verification_response_format-66"><span class="linenos">66</span></a>            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;content_verification&quot;</span><span class="p">,</span>
+</span><span id="verification_response_format-67"><a href="#verification_response_format-67"><span class="linenos">67</span></a>            <span class="s2">&quot;schema&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="verification_response_format-68"><a href="#verification_response_format-68"><span class="linenos">68</span></a>                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+</span><span id="verification_response_format-69"><a href="#verification_response_format-69"><span class="linenos">69</span></a>                <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="verification_response_format-70"><a href="#verification_response_format-70"><span class="linenos">70</span></a>                    <span class="s2">&quot;verified&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;boolean&quot;</span><span class="p">},</span>
+</span><span id="verification_response_format-71"><a href="#verification_response_format-71"><span class="linenos">71</span></a>                    <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">,</span> <span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
+</span><span id="verification_response_format-72"><a href="#verification_response_format-72"><span class="linenos">72</span></a>                    <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+</span><span id="verification_response_format-73"><a href="#verification_response_format-73"><span class="linenos">73</span></a>                <span class="p">},</span>
+</span><span id="verification_response_format-74"><a href="#verification_response_format-74"><span class="linenos">74</span></a>                <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;verified&quot;</span><span class="p">,</span> <span class="s2">&quot;confidence&quot;</span><span class="p">,</span> <span class="s2">&quot;reason&quot;</span><span class="p">],</span>
+</span><span id="verification_response_format-75"><a href="#verification_response_format-75"><span class="linenos">75</span></a>                <span class="s2">&quot;additionalProperties&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="verification_response_format-76"><a href="#verification_response_format-76"><span class="linenos">76</span></a>            <span class="p">},</span>
+</span><span id="verification_response_format-77"><a href="#verification_response_format-77"><span class="linenos">77</span></a>            <span class="s2">&quot;strict&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="verification_response_format-78"><a href="#verification_response_format-78"><span class="linenos">78</span></a>        <span class="p">},</span>
+</span><span id="verification_response_format-79"><a href="#verification_response_format-79"><span class="linenos">79</span></a>    <span class="p">}</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Returns the <code>response_format</code> dict for the <code>web_research</code> content
+verifier's <code>{verified, confidence, reason}</code> shape. Unlike the payload
+schema, this one has no optional fields, so it qualifies for OpenAI
+strict mode and <code>strict</code> is True.</p>
 </div>
 
 
