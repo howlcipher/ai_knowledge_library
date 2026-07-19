@@ -232,6 +232,7 @@ def test_orchestrator_payload_loop_end_to_end(tmp_path, monkeypatch):
         "payload_pipeline": {
             "enabled": True,
             "max_attempts": 3,
+            "preflight": False,
             "artifact_dir": str(tmp_path / "payloads"),
         },
     }
@@ -277,6 +278,7 @@ def test_orchestrator_payload_loop_halts_on_invalid_output(tmp_path, monkeypatch
         "payload_pipeline": {
             "enabled": True,
             "max_attempts": 2,
+            "preflight": False,
             "artifact_dir": str(tmp_path / "payloads"),
         },
     }
@@ -308,6 +310,7 @@ def test_orchestrator_uses_per_tier_models(tmp_path, monkeypatch):
         "payload_pipeline": {
             "enabled": True,
             "max_attempts": 3,
+            "preflight": False,
             "artifact_dir": str(tmp_path / "payloads"),
             "tier_models": {
                 "tier_1": "anthropic/claude-fable-5",

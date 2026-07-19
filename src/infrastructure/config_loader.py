@@ -41,6 +41,8 @@ class PayloadPipelineSettings(BaseModel):
     enabled: bool = False
     max_attempts: int = 3
     artifact_dir: str = "logs/payloads"
+    preflight: bool = True
+    preflight_timeout: float = 120.0
     tier_models: TierModelsSettings = TierModelsSettings()
 
 

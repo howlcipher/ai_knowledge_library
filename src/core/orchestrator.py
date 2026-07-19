@@ -393,6 +393,24 @@ class Orchestrator:
         def model_for(tier: int) -> str:
             return tier_models.get(f"tier_{tier}") or self.default_model
 
+        if self.payload_cfg.get("preflight", True):
+            from src.core.provider_preflight import preflight_models
+
+            print("[Preflight] Checking providers before pass 1...")
+            preflight = preflight_models(
+                [model_for(3), model_for(2), model_for(1)],
+                timeout=self.payload_cfg.get("preflight_timeout", 120.0),
+            )
+            if not preflight.ok:
+                for error in preflight.errors:
+                    print(f"[Preflight] {error}")
+                print(
+                    "[Orchestrator] Aborting run: provider preflight failed "
+                    "before any validation attempt was spent."
+                )
+                return None
+            print(f"[Preflight] OK ({', '.join(preflight.checked_models)})")
+
         tiers = [
             (1, Agent("Tier3_Executor", TIER3_PROMPT, model_for(3))),
             (2, Agent("Tier2_Specialist", TIER2_PROMPT, model_for(2))),

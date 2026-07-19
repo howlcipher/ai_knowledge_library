@@ -12,7 +12,7 @@ This protocol applies to every worked task — backlog improvements and bug fixe
 4. **Scan for helpful free tools.** Briefly consider whether a free or open source tool (a CLI already installed, a linter, a library, an MCP server) would materially improve the work. Record recommendations in the journal; use tools that are already available freely, and ask before installing anything new.
 5. **Read the detail section** for the item (linked from the table) plus any referenced docs before coding. Background docs: `documentation/multi_agent_payload_protocol.md` and ADR 0003.
 6. **Constraints:** this machine has no Anthropic or Gemini API keys; live LLM pipeline runs go through local Ollama.
-7. **Finish the loop:** verify the change works, commit with `<type>(<scope>): <description>`, set the item's Status to `Done (YYYY-MM-DD)` in the table, delete the task journal in the final commit (its durable record is the Done note and the changelog; a journal left behind means the task is unfinished), and push.
+7. **Finish the loop:** verify the change works, commit with `<type>(<scope>): <description>`, set the item's Status to `Done (YYYY-MM-DD)` in the table, delete the task journal in the final commit (its durable record is the Done note and the changelog; a journal left behind means the task is unfinished), and push. Committing and pushing verified work is the default and needs no per-task approval; only destructive or history-rewriting git operations require asking first.
 
 ## Ranked Backlog (best ROI first)
 
@@ -24,7 +24,7 @@ Rank weighs impact against effort: quick unblocking fixes first, large architect
 | 2 | [Ignore build artifacts and local state in git](#2-ignore-build-artifacts-and-local-state-in-git) | Done (2026-07-18) | Haiku 4.5 | Gemini 3 Flash | Minutes of work; clears permanent noise from git status and prevents accidental commits |
 | 3 | [Purge tracked scratch files from the repo root](#3-purge-tracked-scratch-files-from-the-repo-root) | Done (2026-07-18) | Haiku 4.5 | Gemini 3 Flash | Minutes of work; stops one-off scratch files traveling with every clone |
 | 4 | [Make vector index rebuilds idempotent](#4-make-vector-index-rebuilds-idempotent) | Done (2026-07-18) | Haiku 4.5 | Gemini 3 Flash | Minutes of work; prevents stale chunks from silently corrupting every future rebuild |
-| 5 | [Preflight the provider before a run](#5-preflight-the-provider-before-a-run) | Pending | Sonnet 5 | Gemini 3 Flash | Small change; stops entire runs being wasted on a dead server or missing model tag |
+| 5 | [Preflight the provider before a run](#5-preflight-the-provider-before-a-run) | Done (2026-07-18) | Sonnet 5 | Gemini 3 Flash | Small change; stops entire runs being wasted on a dead server or missing model tag |
 | 6 | [Per tier LLM timeout](#6-per-tier-llm-timeout) | Pending | Haiku 4.5 | Gemini 3 Flash | Config plumbing only; removes a known hard failure for 30B local models |
 | 7 | [Separate transport failures from validation failures](#7-separate-transport-failures-from-validation-failures) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; makes every future failure diagnosable instead of masked |
 | 8 | [Provider enforced structured outputs](#8-provider-enforced-structured-outputs) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; biggest single reliability win for small local models |
@@ -44,6 +44,7 @@ Rank weighs impact against effort: quick unblocking fixes first, large architect
 | 22 | [OpenTelemetry integration](#22-opentelemetry-integration) | Pending | Sonnet 5 | Gemini 3 Pro | Larger effort; better observability but no current outage it would have caught |
 | 23 | [Homelab MCP server](#23-homelab-mcp-server) | Pending | Fable 5 | Gemini 3 Pro | High long term value but a full architecture evaluation and build |
 | 24 | [Automated job hunting pipeline](#24-automated-job-hunting-pipeline) | Pending | Fable 5 | Gemini 3 Pro | High personal value but the largest, most open ended build |
+| 25 | [Preflight the provider in the legacy free-text loop](#25-preflight-the-provider-in-the-legacy-free-text-loop) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change reusing item 5's module; the researcher/QA loop still burns iterations on a dead provider |
 
 ## Details
 
@@ -69,6 +70,8 @@ One-off working files are committed at the repo root and travel with every clone
 
 ### 5. Preflight the provider before a run
 Run 1 (2026-07-17) spent all three validation attempts against a crashed Ollama server, and run 2 against a model tag that had been removed mid session. A cheap ping before pass 1 (list models, verify the configured tag exists, one token generation) would fail fast with an actionable error.
+
+**Done 2026-07-18:** New `src/core/provider_preflight.py`, wired into `run_payload_loop` before pass 1 behind `payload_pipeline.preflight` (default on) with a per model `preflight_timeout` (default 120s, generous so a large local model can cold load — which also leaves it warm for pass 1). Each distinct tier model is checked once: Ollama models get a `/api/tags` reachability and tag-existence check (honoring `OLLAMA_API_BASE`, bare tags match `:latest`) before a one token generation; non-Ollama models go straight to the generation ping. All failures are collected, printed with actionable hints (`ollama serve`, available tags plus `ollama pull <tag>`, provider error body), and the run aborts returning `None` with zero validation attempts spent. Verified live against local Ollama: healthy tag passes (23s cold load), bogus tag lists the three available tags, dead server names the endpoint; 10 new unit tests, full suite 108 passing. Gate-focused tests in `test_validation_gate.py` now set `preflight: false` because their mocked `litellm.completion` side-effect lists are sized for exactly three passes. Findings spawned item 25 (the legacy free-text loop has the same failure mode).
 
 ### 6. Per tier LLM timeout
 The 30B model timed out at LiteLLM's default 600s while generating the full payload envelope. Add a `timeout` setting to `payload_pipeline` (or per entry in `tier_models`) and pass it through `litellm.completion`.
@@ -127,8 +130,12 @@ Build a homelab MCP server to autonomously monitor, debug, and manage local Dock
 ### 24. Automated job hunting pipeline
 Script an automated pipeline using web-search MCPs to scrape job postings, map against `USER_PROFILE.md`, and generate tailored resumes and cover letters. Follow the `career_assistant` skill's grounding rules (no fabricated experience).
 
+### 25. Preflight the provider in the legacy free-text loop
+Item 5 added provider preflight to `run_payload_loop` only. The legacy researcher/QA loop (`run_loop` when `payload_pipeline.enabled` is false) has the same failure mode: a dead server or missing tag makes every `Agent.generate_response` return `None` and the graph burns its three iterations printing "Failed to get response". Reuse `src/core/provider_preflight.py` on `self.default_model` at the top of the non-payload `run_loop` path, honoring the same `payload_pipeline.preflight` toggle (or promote the setting out of `payload_pipeline` to a top level `preflight` section since it now guards both loops). Found during item 5.
+
 ## ✅ Completed
 
+- **Preflight the provider before a run (done 2026-07-18):** `src/core/provider_preflight.py` checks every distinct tier model before pass 1 (Ollama server and tag via `/api/tags`, then a one token generation) and aborts with actionable hints instead of burning validation attempts on a dead provider. Config: `payload_pipeline.preflight` / `preflight_timeout`. Spawned item 25 (same guard for the legacy free-text loop).
 - **Make vector index rebuilds idempotent (done 2026-07-18):** `BaseVectorStore` gained a `reset()` contract; the builder now empties the store (Chroma collection drop, pgvector table truncate) before upserting, so a plain rerun always yields a clean index with no manual `rm -rf .chroma`. Proven by a probe-file add/delete cycle and stable chunk counts across consecutive rebuilds. Spawned items 16 (collection name config ignored) and 17 (pgvector upsert is a plain INSERT).
 - **Purge tracked scratch files from the repo root (done 2026-07-18):** eight one-off debugging files (`annotations.txt`, `coverage.out`, `logs.zip`, `parsed.txt`, `patch.diff`, two `test_312_*` logs, `test_make.mk`) removed after per-file triage confirmed none held unique evidence; root-anchored `/*.log`, `/*.diff`, `/*.zip` ignore rules prevent recurrence. `logs/payloads/**` deliberately stays ignored.
 - **Ignore build artifacts and local state in git (done 2026-07-18):** `.gitignore` gained `/build/`, `*.egg-info/`, and `.telemetry/`; 60+ tracked artifacts (telemetry db, `build/lib/**`, installer binary, `__pycache__` caches, egg-info) untracked via `git rm --cached`. Go installer and editable pip install both rebuild cleanly with no new git noise. Spawned item 3 (tracked scratch files at the repo root).
