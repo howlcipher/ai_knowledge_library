@@ -10,6 +10,15 @@ class BaseVectorStore(ABC):
         """Initialize the database (e.g. creating tables/extensions)."""
 
     @abstractmethod
+    def reset(self) -> None:
+        """
+        Remove all previously indexed documents so a full rebuild starts from
+        an empty store. Rebuilds must be idempotent: without a reset, chunk
+        ids that disappear from the scan (file shrank, moved, or was deleted)
+        would survive every subsequent upsert.
+        """
+
+    @abstractmethod
     def upsert(
         self, docs: List[str], metadatas: List[Dict], ids: Optional[List[str]] = None
     ) -> None:

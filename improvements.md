@@ -23,7 +23,7 @@ Rank weighs impact against effort: quick unblocking fixes first, large architect
 | 1 | [Rebuild the vector index](#1-rebuild-the-vector-index) | Done (2026-07-18) | Haiku 4.5 | Gemini 3 Flash | Minutes of work; unblocks semantic search over the newly refined skills |
 | 2 | [Ignore build artifacts and local state in git](#2-ignore-build-artifacts-and-local-state-in-git) | Done (2026-07-18) | Haiku 4.5 | Gemini 3 Flash | Minutes of work; clears permanent noise from git status and prevents accidental commits |
 | 3 | [Purge tracked scratch files from the repo root](#3-purge-tracked-scratch-files-from-the-repo-root) | Done (2026-07-18) | Haiku 4.5 | Gemini 3 Flash | Minutes of work; stops one-off scratch files traveling with every clone |
-| 4 | [Make vector index rebuilds idempotent](#4-make-vector-index-rebuilds-idempotent) | Pending | Haiku 4.5 | Gemini 3 Flash | Minutes of work; prevents stale chunks from silently corrupting every future rebuild |
+| 4 | [Make vector index rebuilds idempotent](#4-make-vector-index-rebuilds-idempotent) | Done (2026-07-18) | Haiku 4.5 | Gemini 3 Flash | Minutes of work; prevents stale chunks from silently corrupting every future rebuild |
 | 5 | [Preflight the provider before a run](#5-preflight-the-provider-before-a-run) | Pending | Sonnet 5 | Gemini 3 Flash | Small change; stops entire runs being wasted on a dead server or missing model tag |
 | 6 | [Per tier LLM timeout](#6-per-tier-llm-timeout) | Pending | Haiku 4.5 | Gemini 3 Flash | Config plumbing only; removes a known hard failure for 30B local models |
 | 7 | [Separate transport failures from validation failures](#7-separate-transport-failures-from-validation-failures) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; makes every future failure diagnosable instead of masked |
@@ -35,12 +35,14 @@ Rank weighs impact against effort: quick unblocking fixes first, large architect
 | 13 | [Install the pre-commit hook via bootstrap](#13-install-the-pre-commit-hook-via-bootstrap) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change; removes a silent per machine setup gap |
 | 14 | [Sync the docs site changelog automatically](#14-sync-the-docs-site-changelog-automatically) | Pending | Haiku 4.5 | Gemini 3 Flash | Two line hook addition; stops docs/change_log.md drifting from the real changelog |
 | 15 | [Fix the self-nesting docs site mirror](#15-fix-the-self-nesting-docs-site-mirror) | Pending | Haiku 4.5 | Gemini 3 Flash | Small Makefile fix; stops the Pages mirror doubling itself on every `make docs` re-run |
-| 16 | [`pipeline_pass` frontmatter and dispatcher](#16-pipeline_pass-frontmatter-and-dispatcher) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; routes reviewer skills into the right pipeline pass |
-| 17 | [Claude Code backend for pipeline tiers](#17-claude-code-backend-for-pipeline-tiers) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; adds a strong subscription backed judge for Tier 1 |
-| 18 | [Calibrate the skill router score threshold](#18-calibrate-the-skill-router-score-threshold) | Pending | Fable 5 | Gemini 3 Pro | Needs judgment (labeled prompt set + eval design), modest payoff beyond triggers |
-| 19 | [OpenTelemetry integration](#19-opentelemetry-integration) | Pending | Sonnet 5 | Gemini 3 Pro | Larger effort; better observability but no current outage it would have caught |
-| 20 | [Homelab MCP server](#20-homelab-mcp-server) | Pending | Fable 5 | Gemini 3 Pro | High long term value but a full architecture evaluation and build |
-| 21 | [Automated job hunting pipeline](#21-automated-job-hunting-pipeline) | Pending | Fable 5 | Gemini 3 Pro | High personal value but the largest, most open ended build |
+| 16 | [Pass the configured collection name to the vector store](#16-pass-the-configured-collection-name-to-the-vector-store) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change; stops `indexing.collection_name` config being silently ignored |
+| 17 | [Make `PgVectorStore.upsert` a true upsert](#17-make-pgvectorstoreupsert-a-true-upsert) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change; removes the duplicate-row hazard for any future incremental pgvector use |
+| 18 | [`pipeline_pass` frontmatter and dispatcher](#18-pipeline_pass-frontmatter-and-dispatcher) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; routes reviewer skills into the right pipeline pass |
+| 19 | [Claude Code backend for pipeline tiers](#19-claude-code-backend-for-pipeline-tiers) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; adds a strong subscription backed judge for Tier 1 |
+| 20 | [Calibrate the skill router score threshold](#20-calibrate-the-skill-router-score-threshold) | Pending | Fable 5 | Gemini 3 Pro | Needs judgment (labeled prompt set + eval design), modest payoff beyond triggers |
+| 21 | [OpenTelemetry integration](#21-opentelemetry-integration) | Pending | Sonnet 5 | Gemini 3 Pro | Larger effort; better observability but no current outage it would have caught |
+| 22 | [Homelab MCP server](#22-homelab-mcp-server) | Pending | Fable 5 | Gemini 3 Pro | High long term value but a full architecture evaluation and build |
+| 23 | [Automated job hunting pipeline](#23-automated-job-hunting-pipeline) | Pending | Fable 5 | Gemini 3 Pro | High personal value but the largest, most open ended build |
 
 ## Details
 
@@ -61,6 +63,8 @@ One-off working files are committed at the repo root and travel with every clone
 
 ### 4. Make vector index rebuilds idempotent
 `build_vector_index.py` only upserts; it never deletes existing chunks. Chunk ids are `<path>_<n>`, so when a file shrinks, moves, or is deleted, its leftover ids stay in the collection and every rebuild after content changes strands stale chunks (the 2026-07-18 rebuild required a manual `rm -rf .chroma` to purge the mirror duplicates). Drop and recreate the collection at the start of the build (or delete ids absent from the new scan) so a plain rerun always yields a clean index. Apply the same fix to the pgvector backend path.
+
+**Done 2026-07-18:** Added an abstract `reset()` to `BaseVectorStore`; the Chroma backend drops the collection (recreated lazily by `upsert`) and the pgvector backend truncates the `documents` table (its `upsert` is a plain INSERT, so reruns duplicated every row). `build_vector_index.py` calls `reset()` after `init_db()`. Verified: two consecutive rebuilds hold a stable 230 chunks; a probe file indexed then deleted disappears from ids and query results on the next plain rerun; the security spot-check query still routes to `cyber_security`; all 98 tests pass. Findings spawned items 16 and 17. Journal: `documentation/task_journals/2026-07-18_idempotent-index-rebuilds.md`.
 
 ### 5. Preflight the provider before a run
 Run 1 (2026-07-17) spent all three validation attempts against a crashed Ollama server, and run 2 against a model tag that had been removed mid session. A cheap ping before pass 1 (list models, verify the configured tag exists, one token generation) would fail fast with an actionable error.
@@ -95,30 +99,37 @@ The validation gate prints failures but does not log them through `telemetry_log
 ### 15. Fix the self-nesting docs site mirror
 The `docs` target in the Makefile mirrors content with `cp -r documentation docs/` and `cp -r .agents docs/`. When the destination directory already exists, `cp -r` copies the source *into* it, so every `make docs` re-run without a prior `make clean` nests another copy: `docs/documentation/documentation/**` and `docs/.agents/.agents/**` exist in the repo today. Fix the target to remove (or `rsync --delete` into) the mirror subdirectories before copying, delete the committed nested trees, and confirm the Pages site still renders. Found during item 1, where the mirror also doubled the vector index (410 vs 219 chunks).
 
-### 16. `pipeline_pass` frontmatter and dispatcher
+### 16. Pass the configured collection name to the vector store
+`VectorIndexBuilder` reads `indexing.collection_name` from `settings.yaml`, but `VectorStoreFactory.get_store()` constructs `ChromaVectorStore()` with its hardcoded default, so a custom collection name in config is silently ignored (everything happens to work today only because both sides fall back to the same default). Plumb the configured name through the factory into the backend constructors, and make the builder use the store's value rather than keeping a parallel copy. Found during item 4.
+
+### 17. Make `PgVectorStore.upsert` a true upsert
+`PgVectorStore.upsert` ignores the `ids` argument and issues a plain `INSERT` with no unique constraint, so it is not an upsert at all: any incremental (non-full-rebuild) use duplicates rows. Item 4's `reset()` masks this for full rebuilds only. Add a chunk id column with a unique constraint and use `INSERT ... ON CONFLICT DO UPDATE`, and store the chunk metadata alongside (`chunk` index is currently dropped on insert). Found during item 4.
+
+### 18. `pipeline_pass` frontmatter and dispatcher
 Skills now declare a priority `tier:` (0 meta, 1 governance, 2 domain, 3 application) consumed by `SkillRouter`, `skills.json`, and the AGENTS.md manifest. Pipeline pass affinity is a separate concept and still open: add a distinct key (e.g. `pipeline_pass: 2` for reviewer skills like `cyber_security`) so the payload pipeline dispatcher injects each skill into the pass where it belongs (reviewer skills into pass 2, not pass 1) without colliding with the priority tier semantics.
 
-### 17. Claude Code backend for pipeline tiers
+### 19. Claude Code backend for pipeline tiers
 Add a `claude_code` option to `payload_pipeline.tier_models`, handled before LiteLLM by shelling out to headless Claude Code (`claude -p "<prompt>" --output-format json`). Uses the subscription login instead of an API key; bills session usage per run. Best fit: Tier 1 judging. Note this item can only be exercised on a machine with Claude Code logged in.
 
-### 18. Calibrate the skill router score threshold
+### 20. Calibrate the skill router score threshold
 All 38 skills now declare `triggers` frontmatter, which closed the deterministic routing gap. The semantic fallback is still uncalibrated: build a small labeled prompt set and tune `skill_router.score_threshold` (and possibly `top_k`) against it so semantic recall is measured rather than guessed.
 
-### 19. OpenTelemetry integration
+### 21. OpenTelemetry integration
 Integrate OpenTelemetry into the existing `system_logger.py` for advanced metrics and traces.
 
-### 20. Homelab MCP server
+### 22. Homelab MCP server
 Build a homelab MCP server to autonomously monitor, debug, and manage local Docker containers and network infrastructure. Per the global rules, present a pros/cons evaluation of the technology options before committing to an architecture.
 
-### 21. Automated job hunting pipeline
+### 23. Automated job hunting pipeline
 Script an automated pipeline using web-search MCPs to scrape job postings, map against `USER_PROFILE.md`, and generate tailored resumes and cover letters. Follow the `career_assistant` skill's grounding rules (no fabricated experience).
 
 ## ✅ Completed
 
+- **Make vector index rebuilds idempotent (done 2026-07-18):** `BaseVectorStore` gained a `reset()` contract; the builder now empties the store (Chroma collection drop, pgvector table truncate) before upserting, so a plain rerun always yields a clean index with no manual `rm -rf .chroma`. Proven by a probe-file add/delete cycle and stable chunk counts across consecutive rebuilds. Spawned items 16 (collection name config ignored) and 17 (pgvector upsert is a plain INSERT).
 - **Purge tracked scratch files from the repo root (done 2026-07-18):** eight one-off debugging files (`annotations.txt`, `coverage.out`, `logs.zip`, `parsed.txt`, `patch.diff`, two `test_312_*` logs, `test_make.mk`) removed after per-file triage confirmed none held unique evidence; root-anchored `/*.log`, `/*.diff`, `/*.zip` ignore rules prevent recurrence. `logs/payloads/**` deliberately stays ignored.
 - **Ignore build artifacts and local state in git (done 2026-07-18):** `.gitignore` gained `/build/`, `*.egg-info/`, and `.telemetry/`; 60+ tracked artifacts (telemetry db, `build/lib/**`, installer binary, `__pycache__` caches, egg-info) untracked via `git rm --cached`. Go installer and editable pip install both rebuild cleanly with no new git noise. Spawned item 3 (tracked scratch files at the repo root).
 - **Rebuild the vector index (done 2026-07-18):** fresh 219 chunk index over canonical sources only; `docs/` Pages mirror pruned from the scanner. Spot checks route security, debugging, IaC, and career prompts to the right skills. Spawned items 4 (idempotent rebuilds) and 15 (self-nesting docs mirror).
 - **DevOps / IaC skill node (done 2026-07-17):** `.agents/skills/devops_sre/SKILL.md` exists; scope narrowed to Terraform/Kubernetes design during the 2026-07-18 skill refinement.
-- **Skill routing recall gap for security prompts (done 2026-07-18):** all 38 skills declare `triggers` frontmatter; the failing prompt ("security hardening runbook for a FastAPI webhook server") now routes `cyber_security` deterministically. Threshold calibration continues as item 18.
-- **Priority `tier` frontmatter (done 2026-07-18):** every SKILL.md declares `tier:` 0 to 3, parsed by `SkillRouter` and exposed in `skills.json` and the AGENTS.md manifest. See `documentation/skill_refinement_progress.md`. Pipeline pass affinity continues as item 16.
+- **Skill routing recall gap for security prompts (done 2026-07-18):** all 38 skills declare `triggers` frontmatter; the failing prompt ("security hardening runbook for a FastAPI webhook server") now routes `cyber_security` deterministically. Threshold calibration continues as item 20.
+- **Priority `tier` frontmatter (done 2026-07-18):** every SKILL.md declares `tier:` 0 to 3, parsed by `SkillRouter` and exposed in `skills.json` and the AGENTS.md manifest. See `documentation/skill_refinement_progress.md`. Pipeline pass affinity continues as item 18.
 - **Skill library refinement (done 2026-07-18):** all 38 skills refined against a shared rubric, tiered, and cross deduplicated with Related Skills deferrals; tracked in `documentation/skill_refinement_progress.md`.

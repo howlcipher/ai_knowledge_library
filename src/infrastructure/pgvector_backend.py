@@ -65,6 +65,16 @@ class PgVectorStore(BaseVectorStore):
             """)
         self.conn.commit()
 
+    def reset(self) -> None:
+        """
+        Empty the documents table so a rebuild starts clean. Required for
+        idempotency: upsert() below is a plain INSERT, so rerunning a build
+        without a reset duplicates every row.
+        """
+        with self.conn.cursor() as cur:
+            cur.execute("TRUNCATE TABLE documents RESTART IDENTITY")
+        self.conn.commit()
+
     def upsert(self, docs: list, metadatas: list, ids: list = None) -> None:
         """
         Encodes documents into embeddings and inserts them into the database.

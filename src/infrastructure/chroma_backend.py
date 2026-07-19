@@ -24,6 +24,14 @@ class ChromaVectorStore(BaseVectorStore):
     def init_db(self) -> None:
         """ChromaDB initializes implicitly."""
 
+    def reset(self) -> None:
+        """Drop the collection so a rebuild starts empty; upsert recreates it."""
+        try:
+            self.client.delete_collection(name=self.collection_name)
+        except Exception:
+            # Collection does not exist yet; nothing to drop.
+            pass
+
     def upsert(
         self, docs: List[str], metadatas: List[Dict], ids: Optional[List[str]] = None
     ) -> None:

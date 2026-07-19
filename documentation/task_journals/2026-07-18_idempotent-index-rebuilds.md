@@ -3,7 +3,7 @@
 ## Summary
 
 - **Task:** Improvement #4 — Make vector index rebuilds idempotent
-- **Status:** In progress
+- **Status:** Complete
 - **Started:** 2026-07-18
 - **Agent and model:** Claude Code / Fable 5
 
@@ -15,12 +15,12 @@
 
 ## Plan
 
-- [ ] Add an abstract `reset()` to `BaseVectorStore`
-- [ ] Chroma backend: `reset()` drops the collection if it exists (recreated lazily by `upsert`)
-- [ ] PgVector backend: `reset()` truncates the `documents` table (its `upsert` is a plain INSERT, so reruns duplicated rows too)
-- [ ] `build_vector_index.py`: call `store.reset()` after `init_db()` before inserting
-- [ ] Verify: rebuild twice → same chunk count; add a temp md file, build, delete it, rebuild → its chunks are gone and the count returns to baseline
-- [ ] Update improvements.md status, changelog, commit, push
+- [x] Add an abstract `reset()` to `BaseVectorStore`
+- [x] Chroma backend: `reset()` drops the collection if it exists (recreated lazily by `upsert`)
+- [x] PgVector backend: `reset()` truncates the `documents` table (its `upsert` is a plain INSERT, so reruns duplicated rows too)
+- [x] `build_vector_index.py`: call `store.reset()` after `init_db()` before inserting
+- [x] Verify: rebuild twice → same chunk count; add a temp md file, build, delete it, rebuild → its chunks are gone and the count returns to baseline
+- [x] Update improvements.md status, changelog, commit, push
 
 ## Findings (candidate new backlog items)
 
@@ -30,7 +30,10 @@
 ## Progress Log
 
 - 2026-07-18 — Journal opened; code read (`build_vector_index.py`, both backends, factory, base). Root cause confirmed: builder only upserts, chunk ids `<path>_<n>` strand stale entries; pgvector path duplicates rows on every run.
+- 2026-07-18 — Implemented `reset()` (abstract in base, collection drop in Chroma, `TRUNCATE ... RESTART IDENTITY` in pgvector) and wired it into `insert_chunks()` after `init_db()`. No other `BaseVectorStore` subclasses exist (grep confirmed), so the new abstract method breaks nothing.
+- 2026-07-18 — Verified: two consecutive rebuilds both insert a stable 230 chunks (baseline was 219 from the last build; the delta is new docs written since). Probe test: added `documentation/temp_idempotency_probe.md`, rebuild → 231 chunks and probe id present; deleted it, plain rebuild → 230 chunks, probe id absent, marker absent from query results. Security spot-check query still routes `cyber_security` first. Pgvector path is compile-checked only (no live Postgres on this host). Full suite: 98 passed.
+- 2026-07-18 — Two findings recorded as new backlog items #16 (`indexing.collection_name` config is never passed to the store — factory hardcodes the default) and #17 (pgvector `upsert` is a plain INSERT that ignores `ids`); old items 16–21 renumbered to 18–23 with cross references in the Completed section updated. Changelog updated under Fixed and mirrored to `docs/change_log.md` (item 14 automation still pending).
 
 ## Next Step
 
-Implement `reset()` in vector_store_base / chroma_backend / pgvector_backend and call it from `build_vector_index.py`.
+None — task complete. Next backlog item is #5 (preflight the provider before a run).

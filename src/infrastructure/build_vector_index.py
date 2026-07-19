@@ -160,6 +160,10 @@ class VectorIndexBuilder:
 
         store = VectorStoreFactory.get_store()
         store.init_db()
+        # Start from an empty store: chunk ids are <path>_<n>, so without a
+        # reset any id absent from this scan (file shrank, moved, or was
+        # deleted) would survive the upsert and pollute query results.
+        store.reset()
 
         for i in range(0, len(self.docs_to_insert), self.batch_size):
             store.upsert(
