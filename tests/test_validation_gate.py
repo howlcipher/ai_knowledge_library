@@ -130,13 +130,38 @@ def test_wrong_pass_number_rejected(gate):
     assert result.stage == "pass_check"
 
 
-def test_hash_mismatch_rejected(gate):
+def test_pass2_hash_mismatch_rejected(gate):
     initial = make_initial()
-    payload = make_pass1(initial)
+    pass1 = make_pass1(initial)
+    # Start with a correct pass2 payload
+    payload = make_pass2(pass1)
+    # Tamper body without updating sha256 (which will be correct from make_pass2)
     payload["content"]["body"] += " tampered"
-    result = gate.check(json.dumps(payload), prev=initial, expected_pass=1)
+    # Keep the original sha256 (so mismatch)
+    result = gate.check(json.dumps(payload), prev=pass1, expected_pass=2)
     assert not result.ok
     assert result.stage == "hash"
+
+
+def test_pass1_hash_stamped_not_verified(gate):
+    initial = make_initial()
+    payload = make_pass1(initial)
+    body = payload["content"]["body"]
+    payload["content"]["sha256"] = "0" * 64
+    result = gate.check(json.dumps(payload), prev=initial, expected_pass=1)
+    assert result.ok, result.errors
+    assert result.payload["content"]["sha256"] == sha256_of(body)
+
+
+def test_pass3_hash_stamped_not_verified(gate):
+    pass1 = make_pass1(make_initial())
+    pass2 = make_pass2(pass1)
+    payload = make_pass3(pass2)
+    body = payload["content"]["body"]
+    payload["content"]["sha256"] = "0" * 64
+    result = gate.check(json.dumps(payload), prev=pass2, expected_pass=3)
+    assert result.ok, result.errors
+    assert result.payload["content"]["sha256"] == sha256_of(body)
 
 
 def test_task_mutation_rejected(gate):

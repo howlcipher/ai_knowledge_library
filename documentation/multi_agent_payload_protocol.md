@@ -48,13 +48,15 @@ Zero trust boundary rule: every field an agent is not explicitly granted below m
 | lineage.history | append own entry | append own entry | append own entry |
 | updated_at | refresh | refresh | refresh |
 
+`content.sha256` is a special case: on the write passes (1 and 3) the gate recomputes it from `content.body` and overwrites whatever the agent wrote, since LLMs cannot reliably compute SHA-256 by hand. Only on pass 2, where `content` is read only, does the gate verify the agent-supplied value against the body and reject on mismatch.
+
 ## Validation Gate
 
 Implemented in `src/core/validation_gate.py` and wired into `Orchestrator.run_payload_loop`. Enable via `payload_pipeline.enabled: true` in `config/settings.yaml` or the `--payload` CLI flag; validated payloads are persisted per pass under `payload_pipeline.artifact_dir`. Between every pass, the orchestrating code (not an LLM) must:
 
 1. Parse the raw model output as JSON. Strip nothing; a response that is not pure JSON is a failure.
 2. Validate against the schema (Python: `jsonschema` with format checking; Go: `santhosh-tekuri/jsonschema/v6`).
-3. Recompute `sha256(content.body)` and compare with `content.sha256`.
+3. On passes 1 and 3, recompute `sha256(content.body)` and overwrite `content.sha256` unconditionally. On pass 2, recompute `sha256(content.body)` and compare with `content.sha256`, rejecting on mismatch.
 4. Diff the immutable fields against the input payload per the mutation matrix.
 5. On failure: increment `pipeline.attempt`, feed the exact validator error back to the same agent, and retry. After 3 attempts, emit a payload with `pipeline.status` set to `failed` and a populated `error` object, and halt the branch. A failure in one task branch must never cascade to unrelated branches.
 
@@ -83,7 +85,7 @@ You are a Tier 3 execution agent in a 3 pass validation pipeline. You receive an
 
 PROCEDURE:
 1. Read task.objective, task.constraints, task.acceptance_criteria, and every skill listed in routing.skills. Skills are binding directives, not suggestions.
-2. Write the full draft as Markdown into content.body. Set content.format to "markdown" and content.sha256 to the lowercase hex SHA-256 of the UTF-8 bytes of content.body.
+2. Write the full draft as Markdown into content.body. Set content.format to "markdown" and set content.sha256 to a placeholder of 64 zero characters ("0000000000000000000000000000000000000000000000000000000000000000"); the gate will recompute and stamp the real hash after validation.
 3. Self correct: re-read your draft against each acceptance criterion and each constraint. Fix every issue you can. Record each issue you found and fixed as a critique.findings entry with category "self_correction", sequential ids starting at F001, and disposition "fixed".
 4. Set critique.verdict to "revise" (your draft always goes to peer review), pipeline.pass_number to 1, pipeline.pass_name to "draft_self_correct", pipeline.tier to 3, pipeline.status to "in_progress".
 5. Append exactly one entry for yourself to lineage.history and refresh updated_at (RFC 3339 UTC).
@@ -118,7 +120,7 @@ You are a Tier 1 orchestrator judge in a 3 pass validation pipeline. You receive
 
 PROCEDURE:
 1. For every critique.findings entry, decide and set its disposition: "fixed" (you applied the suggested fix or a better one), "rejected" (the finding is wrong; state why by appending a rebuttal finding with category "review_rebuttal"), or "deferred" (out of scope; justified against task.constraints). No finding may remain with disposition unset or "open" unless you set pipeline.status to "escalated".
-2. Rewrite content.body as the final asset incorporating every fixed finding. Recompute content.sha256.
+2. Rewrite content.body as the final asset incorporating every fixed finding. Set content.sha256 to a placeholder of 64 zero characters ("0000000000000000000000000000000000000000000000000000000000000000"); the gate will recompute and stamp the real hash after validation.
 3. Verify the final body against every acceptance criterion and every failed adversarial test in critique.adversarial_tests. Do not mark a finding "fixed" unless the fix is present in content.body.
 4. Set critique.verdict to "approve" or "reject". Set pipeline.status: "approved" when the asset meets all acceptance criteria, "rejected" when it cannot, "escalated" when a human decision is required.
 5. Set pipeline.pass_number to 3, pipeline.pass_name to "final_synthesis", pipeline.tier to 1. Append exactly one entry to lineage.history and refresh updated_at.

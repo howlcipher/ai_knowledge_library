@@ -7,7 +7,8 @@ the contract in documentation/multi_agent_payload_protocol.md:
 
 1. Parse raw model output as pure JSON (no fences, no prose).
 2. Validate against config/schemas/agent_task_payload.schema.json.
-3. Recompute and verify content.sha256.
+3. Recompute content.sha256: stamp (overwrite) it on write passes 1 and 3,
+   verify it against the agent-supplied value on the read only pass 2.
 4. Diff immutable fields against the input payload per the mutation matrix.
 5. On failure feed the exact validator errors back to the agent and retry;
    after max_attempts emit a failed payload with a structured error object.
@@ -35,6 +36,9 @@ IMMUTABLE_BY_PASS = {
     2: [["content"]],
     3: [["critique", "adversarial_tests"]],
 }
+
+# Passes that write content and therefore have the gate stamp the correct SHA-256.
+PASS_NUMS_STAMP = {1, 3}
 
 
 def utc_now() -> str:
@@ -213,9 +217,14 @@ class ValidationGate:
                 "pass_check",
             )
 
-        hash_err = self.hash_error(payload)
-        if hash_err:
-            return GateResult(False, payload, [hash_err], "hash")
+        if actual_pass in PASS_NUMS_STAMP:
+            # Stamp correct hash for write passes (1 and 3).
+            # LLMs cannot reliably compute SHA-256, so we overwrite any agent-provided value.
+            payload["content"]["sha256"] = sha256_of(payload["content"].get("body", ""))
+        else:
+            hash_err = self.hash_error(payload)
+            if hash_err:
+                return GateResult(False, payload, [hash_err], "hash")
 
         if prev is not None:
             errors = self.mutation_errors(prev, payload, actual_pass)

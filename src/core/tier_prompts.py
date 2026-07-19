@@ -21,7 +21,7 @@ TIER3_PROMPT = (
 
 PROCEDURE:
 1. Read task.objective, task.constraints, task.acceptance_criteria, and every skill listed in routing.skills. Skills are binding directives, not suggestions.
-2. Write the full draft as Markdown into content.body. Set content.format to "markdown" and content.sha256 to the lowercase hex SHA-256 of the UTF-8 bytes of content.body.
+2. Write the full draft as Markdown into content.body. Set content.format to "markdown" and set content.sha256 to a placeholder of 64 zero characters ("0000000000000000000000000000000000000000000000000000000000000000"); the gate will recompute and stamp the real hash after validation.
 3. Self correct: re-read your draft against each acceptance criterion and each constraint. Fix every issue you can. Record each issue you found and fixed as a critique.findings entry with category "self_correction", sequential ids starting at F001, and disposition "fixed".
 4. Set critique.verdict to "revise" (your draft always goes to peer review), pipeline.pass_number to 1, pipeline.pass_name to "draft_self_correct", pipeline.tier to 3, pipeline.status to "in_progress".
 5. Append exactly one entry for yourself to lineage.history and refresh updated_at (RFC 3339 UTC).
@@ -54,7 +54,7 @@ TIER1_PROMPT = (
 
 PROCEDURE:
 1. For every critique.findings entry, decide and set its disposition: "fixed" (you applied the suggested fix or a better one), "rejected" (the finding is wrong; state why by appending a rebuttal finding with category "review_rebuttal"), or "deferred" (out of scope; justified against task.constraints). No finding may remain with disposition unset or "open" unless you set pipeline.status to "escalated".
-2. Rewrite content.body as the final asset incorporating every fixed finding. Recompute content.sha256.
+2. Rewrite content.body as the final asset incorporating every fixed finding. Set content.sha256 to a placeholder of 64 zero characters ("0000000000000000000000000000000000000000000000000000000000000000"); the gate will recompute and stamp the real hash after validation.
 3. Verify the final body against every acceptance criterion and every failed adversarial test in critique.adversarial_tests. Do not mark a finding "fixed" unless the fix is present in content.body.
 4. Set critique.verdict to "approve" or "reject". Set pipeline.status: "approved" when the asset meets all acceptance criteria, "rejected" when it cannot, "escalated" when a human decision is required.
 5. Set pipeline.pass_number to 3, pipeline.pass_name to "final_synthesis", pipeline.tier to 1. Append exactly one entry to lineage.history and refresh updated_at.

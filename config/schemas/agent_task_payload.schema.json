@@ -149,7 +149,7 @@
         "sha256": {
           "type": "string",
           "pattern": "^[a-f0-9]{64}$",
-          "description": "Lowercase hex SHA-256 of the UTF-8 encoded body. Gate verified at every tier boundary."
+          "description": "Lowercase hex SHA-256 of the UTF-8 encoded body. Gate stamped (recomputed and overwritten) on write passes 1 and 3; gate verified on the read only pass 2."
         }
       }
     },
