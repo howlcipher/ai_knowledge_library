@@ -6,7 +6,7 @@ Reusable task prompts for any agent working in this repository. Each `.md` file 
 
 | Prompt | Purpose |
 | --- | --- |
-| `work_next_item.md` | Work the single highest-priority open item across `issues.md` and `improvements.md`, end to end, per the Working Protocol |
+| `work_next_item.md` | Work the single highest-priority open item across `issues.md` and `improvements.md`, end to end, per the Working Protocol, delegating implementation to non-Claude models to preserve Claude session limits |
 | `resume_task.md` | Resume an interrupted task from its journal in `documentation/task_journals/` |
 | `groom_backlogs.md` | Re-evaluate, re-rank, and clean up both backlogs and stale journals without implementing anything |
 
