@@ -23,11 +23,10 @@ def test_no_nested_mirror_paths_tracked():
         assert not path.startswith("docs/assets/assets/")
 
 
-def test_docs_target_cleans_mirrors_before_copy():
+def test_docs_target_builds_into_staging_before_swapping_live_dirs():
     """
-    Verify that the 'docs' target in Makefile first removes existing mirrors
-    (docs/documentation and docs/.agents) with 'rm -rf' before copying new content
-    with 'cp -r documentation'. This keeps the mirror free of stale and nested files.
+    Verify that the 'docs' target builds documentation into a staging directory,
+    then removes live directories, then moves built subtrees into place.
     """
     repo_root = Path(__file__).resolve().parents[1]
     makefile_path = repo_root / "Makefile"
@@ -46,14 +45,28 @@ def test_docs_target_cleans_mirrors_before_copy():
                 break
             docs_recipe_lines.append(line)
 
-    rm_line = None
-    cp_line = None
+    # Find indices
+    rm_tmp_idx = None
+    build_idx = None
+    swap_rm_idx = None
+    mv_indices = []
+    final_rm_idx = None
     for i, line in enumerate(docs_recipe_lines):
-        if "rm -rf" in line and "docs/documentation" in line and "docs/.agents" in line:
-            rm_line = i
-        if "cp -r documentation" in line and cp_line is None:
-            cp_line = i
+        if "rm -rf docs/.build-tmp" in line and rm_tmp_idx is None:
+            rm_tmp_idx = i
+        if "pdoc" in line and "docs/.build-tmp/api" in line:
+            build_idx = i
+        if "rm -rf" in line and all(x in line for x in ["docs/api", "docs/documentation", "docs/assets", "docs/.agents"]):
+            swap_rm_idx = i
+        if line.lstrip().startswith("mv") and "docs/.build-tmp/" in line:
+            mv_indices.append(i)
+        if "rm -rf docs/.build-tmp" in line and i != rm_tmp_idx:
+            final_rm_idx = i
 
-    assert rm_line is not None, "Makefile 'docs' target must remove old mirrors with 'rm -rf'"
-    assert cp_line is not None, "Makefile 'docs' target must copy documentation with 'cp -r'"
-    assert rm_line < cp_line, "Makefile 'docs' target must remove mirrors before copying"
+    assert rm_tmp_idx is not None, "Makefile should start by removing staging dir with 'rm -rf docs/.build-tmp'"
+    assert build_idx is not None, "Makefile should have a staging build step with pdoc"
+    assert swap_rm_idx is not None, "Makefile should remove live dirs before moving built content"
+    assert len(mv_indices) == 4, f"Makefile should have four mv lines, found {len(mv_indices)}"
+    last_mv_idx = max(mv_indices)
+    assert final_rm_idx is not None, "Makefile should clean up staging dir after moving"
+    assert rm_tmp_idx < build_idx < swap_rm_idx < last_mv_idx < final_rm_idx, "Staging build before removal and move sequence must be correct"

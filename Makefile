@@ -39,6 +39,8 @@ lint:
 	@echo "Running pre-commit checks if installed..."
 	pre-commit run --all-files || true
 
+
+
 format:
 	@echo "Formatting Python code (black)..."
 	black src/ scripts/ tests/
@@ -58,21 +60,30 @@ build:
 	@echo "Build complete: ./ai_installer"
 
 # Documentation
+
 docs:
 	@echo "Generating API documentation via pdoc..."
+	rm -rf docs/.build-tmp
+	mkdir -p docs/.build-tmp/api
+	pdoc ./src ./scripts -o docs/.build-tmp/api
+	cp -r documentation docs/.build-tmp/documentation
+	cp -r assets docs/.build-tmp/assets
+	cp -r docs_theme/assets/. docs/.build-tmp/assets/
+	cp -r .agents docs/.build-tmp/.agents
+	@echo "Swapping in freshly built docs subtrees..."
 	rm -rf docs/api docs/documentation docs/assets docs/.agents
-	mkdir -p docs/api
-	pdoc ./src ./scripts -o docs/api
+	mv docs/.build-tmp/api docs/api
+	mv docs/.build-tmp/documentation docs/documentation
+	mv docs/.build-tmp/assets docs/assets
+	mv docs/.build-tmp/.agents docs/.agents
+	rm -rf docs/.build-tmp
 	@echo "Setting up GitHub Pages frontpage..."
 	cp README.md docs/index.md
-	cp -r documentation docs/
-	cp -r assets docs/
 	cp AGENTS.md docs/
 	cp GEMINI.md docs/
 	cp CLAUDE.md docs/
 	cp change_log.md docs/
-	cp -r .agents docs/
-	cp -r docs_theme/* docs/
+	cp -r docs_theme/_layouts docs/
 	echo "include: [\".agents\"]" > docs/_config.yml
 	echo "exclude: [\"Makefile\"]" >> docs/_config.yml
 	echo "defaults:" >> docs/_config.yml
