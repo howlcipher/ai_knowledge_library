@@ -11,7 +11,7 @@
 *   **Target Base Salary:** $105,000+
 
 ## Professional Summary
-Automation and systems engineer with over 9 years of experience spanning infrastructure automation, DevOps, and production support. Specialized in Python and Go development for APIs, backend systems, and automated deployment pipelines. Proven ability to build secure and scalable solutions that streamline operations across development and production environments. Strong foundation in enterprise networking, security controls, and system integration. Passionate about writing maintainable code and solving complex technical challenges in security focused environments.
+Automation and systems engineer with over 9 years of experience spanning infrastructure automation, DevOps, and production support. Specialized in Python and Go development for APIs, backend systems, and automated deployment pipelines. Proven ability to build secure and scalable solutions that streamline operations across development and production environments. Strong foundation in enterprise networking, security controls, and system integration. Outside of work, directs AI coding agents (Claude Code, Gemini CLI) through prompt engineering to architect, build, and test personal automation platforms end to end. Passionate about writing maintainable code and solving complex technical challenges in security focused environments.
 
 ## Core Skills
 * Programming and Development: Python, Go, PowerShell, SQL, REST APIs, ETL
@@ -19,6 +19,23 @@ Automation and systems engineer with over 9 years of experience spanning infrast
 * Systems and Infrastructure: Windows Server, automation scripting, log monitoring, job scheduling
 * Networking and Security: Cisco/Meraki, VLANs, Firewalls, Packet Capture, Monitoring Tools
 * Databases: SQL Server, SQLite, migrations, stored procedures, reporting
+* AI and Automation: AI-augmented development, prompt engineering, Claude Code, Gemini CLI, LLM API integration, ChromaDB/RAG
+
+## Projects
+
+### AI Knowledge Library
+* Multi-agent orchestration platform (Python, Go)
+* Directed AI coding agents (Claude Code, Gemini CLI) through prompt engineering to design, implement, and test a platform that routes engineering work across multiple AI providers (Claude, Gemini, local Ollama models) with shared skills, rules, and project context.
+* Built a skill-routing system with keyword and ChromaDB semantic-search fallback to automatically surface relevant domain knowledge into AI agent sessions.
+* Enforced production-grade quality with a 148-test Python and Go suite, bandit SAST scanning, and pre-push CI gates that block unverified code from shipping.
+* Packaged as a Go-built CLI installer with a Helm chart and Docker/GitHub Actions deployment.
+
+### Career Agent Core
+* AI-powered job search assistant (Go)
+* Directed AI coding agents (Claude Code, Gemini CLI) through prompt engineering to architect and build a Go service that aggregates remote job postings and scores them against a structured profile, salary floor, and remote-work requirements using the Gemini API.
+* Built an AI tailoring pipeline that synthesizes job descriptions against a candidate profile to generate customized resumes, cover letters, and interview prep notes.
+* Hardened the system against untrusted third-party content with a prompt-injection quarantine layer and SSRF protections.
+* Tracked application history in a SQLite-backed dashboard (WAL mode) with architecture decisions documented as ADRs.
 
 ## Professional Experience
 
