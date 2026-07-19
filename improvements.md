@@ -116,6 +116,8 @@ The invented `lineage.history` fields suggest the model never saw the required e
 ### 10. Persist all attempt errors
 The failed payload keeps only the final attempt's errors, so the schema violations from attempts 1 and 2 of run 3 are lost. Append a per attempt error history to `error.context` for post mortems. Also fix `pipeline.attempt` fidelity while there: `build_failed_payload` always stamps `attempt: max_attempts`, which is wrong for non-gate failures — a transport abort (item 7's `UPSTREAM_UNAVAILABLE` path) spends zero validation attempts yet the artifact claims all of them were used. Item 7 already persists transport attempt errors in `error.context.attempt_errors`; mirror that shape for gate attempts. Found during item 7.
 
+**2026-07-19 groom (decay check):** item 11 (same broad diagnosability theme) closed today, but decay stays at 0.5, not 0.25 — item 11 shipped zero production code (it verified item 7's existing mechanism and added a regression test), so it added no new polish to this surface for the diminishing-returns model to discount. Score unchanged at 1.0.
+
 ### 11. Guard against oversized local models
 `qwen3:30b-a3b` crashed the Ollama server mid load (29GB RAM host). When the configured model is served by a local endpoint, surface the provider's error body (Ollama returns JSON error messages) instead of the generic connection error, so OOM/crash loops are diagnosable from the pipeline log.
 
