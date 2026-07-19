@@ -6,13 +6,13 @@ This document is the authoritative, ranked backlog for the AI Knowledge Library.
 
 This protocol applies to every worked task — backlog improvements and bug fixes alike. Bugs are tracked in `issues.md`, which mirrors this file's format and shares this protocol; a hotfix without a backlog row still gets steps 1 through 4 and 7.
 
-1. **Open a task journal.** Copy `documentation/task_journals/TEMPLATE.md` to `documentation/task_journals/YYYY-MM-DD_<slug>.md`. The journal is the resume point after a session limit or power outage: update it and commit at every milestone, and always keep its "Next step" line current so a fresh session can continue from the journal alone.
+1. **Open a task journal.** Copy `documentation/task_journals/TEMPLATE.md` to `documentation/task_journals/YYYY-MM-DD_<slug>.md`. The journal is the resume point after a session limit or power outage: update it and commit at every milestone, and always keep its "Next step" line current so a fresh session can continue from the journal alone. It is a resume artifact, not permanent documentation — it gets deleted in step 7, so anything durable (findings, decisions, verification evidence) must land in the item's Done note, the changelog, or a proper doc before the task closes.
 2. **Re-evaluate the model (every run, before starting).** The table's model columns are starting suggestions, not commitments. Check what is actually available right now — currently: Claude Pro subscription (Claude Code), Gemini Pro subscription (Gemini CLI), and local Ollama (`curl localhost:11434/api/tags` — models change). Update this sentence if subscriptions change. Pick the least expensive available model that can do the job well and escalate only if the task proves harder than expected; in Claude Code switch with `/model` or delegate to a subagent with the chosen model, in Gemini CLI launch with `gemini -m <model>`. Record the choice and one line of reasoning in the journal.
 3. **Route the crafted skills.** Check the skills manifest (`.agents/skills.json` or the AGENTS.md table) for skills matching the task and read the matching SKILL.md files before planning. Honor tier precedence and the Related Skills deferrals.
 4. **Scan for helpful free tools.** Briefly consider whether a free or open source tool (a CLI already installed, a linter, a library, an MCP server) would materially improve the work. Record recommendations in the journal; use tools that are already available freely, and ask before installing anything new.
 5. **Read the detail section** for the item (linked from the table) plus any referenced docs before coding. Background docs: `documentation/multi_agent_payload_protocol.md` and ADR 0003.
 6. **Constraints:** this machine has no Anthropic or Gemini API keys; live LLM pipeline runs go through local Ollama.
-7. **Finish the loop:** verify the change works, commit with `<type>(<scope>): <description>`, set the item's Status to `Done (YYYY-MM-DD)` in the table, mark the journal complete, and push.
+7. **Finish the loop:** verify the change works, commit with `<type>(<scope>): <description>`, set the item's Status to `Done (YYYY-MM-DD)` in the table, delete the task journal in the final commit (its durable record is the Done note and the changelog; a journal left behind means the task is unfinished), and push.
 
 ## Ranked Backlog (best ROI first)
 
@@ -37,34 +37,35 @@ Rank weighs impact against effort: quick unblocking fixes first, large architect
 | 15 | [Fix the self-nesting docs site mirror](#15-fix-the-self-nesting-docs-site-mirror) | Pending | Haiku 4.5 | Gemini 3 Flash | Small Makefile fix; stops the Pages mirror doubling itself on every `make docs` re-run |
 | 16 | [Pass the configured collection name to the vector store](#16-pass-the-configured-collection-name-to-the-vector-store) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change; stops `indexing.collection_name` config being silently ignored |
 | 17 | [Make `PgVectorStore.upsert` a true upsert](#17-make-pgvectorstoreupsert-a-true-upsert) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change; removes the duplicate-row hazard for any future incremental pgvector use |
-| 18 | [`pipeline_pass` frontmatter and dispatcher](#18-pipeline_pass-frontmatter-and-dispatcher) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; routes reviewer skills into the right pipeline pass |
-| 19 | [Claude Code backend for pipeline tiers](#19-claude-code-backend-for-pipeline-tiers) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; adds a strong subscription backed judge for Tier 1 |
-| 20 | [Calibrate the skill router score threshold](#20-calibrate-the-skill-router-score-threshold) | Pending | Fable 5 | Gemini 3 Pro | Needs judgment (labeled prompt set + eval design), modest payoff beyond triggers |
-| 21 | [OpenTelemetry integration](#21-opentelemetry-integration) | Pending | Sonnet 5 | Gemini 3 Pro | Larger effort; better observability but no current outage it would have caught |
-| 22 | [Homelab MCP server](#22-homelab-mcp-server) | Pending | Fable 5 | Gemini 3 Pro | High long term value but a full architecture evaluation and build |
-| 23 | [Automated job hunting pipeline](#23-automated-job-hunting-pipeline) | Pending | Fable 5 | Gemini 3 Pro | High personal value but the largest, most open ended build |
+| 18 | [Free model and tool discovery protocol](#18-free-model-and-tool-discovery-protocol) | Pending | Haiku 4.5 | Gemini 3 Flash | Small doc and protocol change; every future task can deliberately pull in extra free models and tools |
+| 19 | [`pipeline_pass` frontmatter and dispatcher](#19-pipeline_pass-frontmatter-and-dispatcher) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; routes reviewer skills into the right pipeline pass |
+| 20 | [Claude Code backend for pipeline tiers](#20-claude-code-backend-for-pipeline-tiers) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; adds a strong subscription backed judge for Tier 1 |
+| 21 | [Calibrate the skill router score threshold](#21-calibrate-the-skill-router-score-threshold) | Pending | Fable 5 | Gemini 3 Pro | Needs judgment (labeled prompt set + eval design), modest payoff beyond triggers |
+| 22 | [OpenTelemetry integration](#22-opentelemetry-integration) | Pending | Sonnet 5 | Gemini 3 Pro | Larger effort; better observability but no current outage it would have caught |
+| 23 | [Homelab MCP server](#23-homelab-mcp-server) | Pending | Fable 5 | Gemini 3 Pro | High long term value but a full architecture evaluation and build |
+| 24 | [Automated job hunting pipeline](#24-automated-job-hunting-pipeline) | Pending | Fable 5 | Gemini 3 Pro | High personal value but the largest, most open ended build |
 
 ## Details
 
 ### 1. Rebuild the vector index
 `build_vector_index.py` was fixed to include dot directories (`.agents/skills/**` was invisible to the old glob), but the index has not been rebuilt since. The full skill refinement of 2026-07-18 (tiers, triggers, deduplicated content, Related Skills sections) is therefore invisible to semantic search. Run the rebuild so semantic search retrieves the refined skill content, and spot check a few queries (e.g. a security prompt should surface `cyber_security`).
 
-**Done 2026-07-18:** Index rebuilt (219 chunks) with the `docs/` Pages mirror pruned from the scan — the first build indexed the mirror too (410 chunks) because the mirror paths contain the `.agents`/`documentation` substrings the file filter keeps, and duplicate copies crowded out results. Spot checks pass: security → `cyber_security`, crash triage → `defensive_debugging`, Terraform/K8s → `devops_sre`, resume → `career_assistant`. Findings spawned items 4 and 15. Journal: `documentation/task_journals/2026-07-18_rebuild-vector-index.md`.
+**Done 2026-07-18:** Index rebuilt (219 chunks) with the `docs/` Pages mirror pruned from the scan — the first build indexed the mirror too (410 chunks) because the mirror paths contain the `.agents`/`documentation` substrings the file filter keeps, and duplicate copies crowded out results. Spot checks pass: security → `cyber_security`, crash triage → `defensive_debugging`, Terraform/K8s → `devops_sre`, resume → `career_assistant`. Findings spawned items 4 and 15.
 
 ### 2. Ignore build artifacts and local state in git
 Several generated or local-state files are tracked or untracked-dirty and permanently clutter `git status`: `.telemetry/telemetry.db`, `build/lib/**`, `src/ai_knowledge_library.egg-info/**`, `__pycache__/` (including `scripts/__pycache__`), and the compiled Go binary `installer` (ELF executable rebuilt locally; track its source, not the binary). Add `.gitignore` entries, `git rm --cached` the already-tracked ones, and verify a fresh clone plus build still works. Check the existing installer-related `.gitignore` anchoring from commit `ce4309e` so the rules do not conflict.
 
-**Done 2026-07-18:** Added `/build/`, `*.egg-info/`, and `.telemetry/` rules (installer and `__pycache__/` rules already existed from `ce4309e`; those files were simply committed before the rules landed) and untracked 60+ artifact files. Verified every path now matches an ignore rule via `git check-ignore -v`, and that the artifacts regenerate from source: `go build ./cmd/installer` and `pip install -e .` both succeed and leave `git status` clean. Findings spawned item 3 (tracked scratch files). Journal: `documentation/task_journals/2026-07-18_gitignore-build-artifacts.md`.
+**Done 2026-07-18:** Added `/build/`, `*.egg-info/`, and `.telemetry/` rules (installer and `__pycache__/` rules already existed from `ce4309e`; those files were simply committed before the rules landed) and untracked 60+ artifact files. Verified every path now matches an ignore rule via `git check-ignore -v`, and that the artifacts regenerate from source: `go build ./cmd/installer` and `pip install -e .` both succeed and leave `git status` clean. Findings spawned item 3 (tracked scratch files).
 
 ### 3. Purge tracked scratch files from the repo root
 One-off working files are committed at the repo root and travel with every clone: `annotations.txt`, `coverage.out` (tracked before its ignore rule landed), `logs.zip`, `parsed.txt`, `patch.diff`, `test_312_output.log`, `test_312_sudo.log`, and `test_make.mk`. Decide per file whether it is evidence worth keeping (relocate under `documentation/` or `logs/`) or scratch (delete and `git rm`), then untrack the scratch set and add ignore rules for the recurring patterns (`*.log`, `*.diff`, `*.zip` at root, or specific names). Found during item 2, which fixed the generated-artifact half of the same problem. Related observation: the blanket `*.json` ignore rule silently hides `logs/payloads/**` pipeline run evidence from git; decide deliberately whether that should stay ignored or get a negation rule.
 
-**Done 2026-07-18:** All eight files triaged as scratch and removed with `git rm` — none was evidence worth relocating (the CI failures they captured are fixed in history, `patch.diff`'s commit `07d2146` is merged on main, `logs.zip` was not even a valid archive, `test_312_sudo.log` was empty). Added root-anchored `/*.log`, `/*.diff`, `/*.zip` ignore rules; verified they match root probes only and hide no tracked file. Decision on `logs/payloads/**`: stays ignored — payload dirs are churny per-run LLM output, and the durable conclusions already live in `issues.md`, this backlog (items 5–12), and task journals. Journal: `documentation/task_journals/2026-07-18_purge-root-scratch-files.md`.
+**Done 2026-07-18:** All eight files triaged as scratch and removed with `git rm` — none was evidence worth relocating (the CI failures they captured are fixed in history, `patch.diff`'s commit `07d2146` is merged on main, `logs.zip` was not even a valid archive, `test_312_sudo.log` was empty). Added root-anchored `/*.log`, `/*.diff`, `/*.zip` ignore rules; verified they match root probes only and hide no tracked file. Decision on `logs/payloads/**`: stays ignored — payload dirs are churny per-run LLM output, and the durable conclusions already live in `issues.md`, this backlog (items 5–12), and the backlog Done notes.
 
 ### 4. Make vector index rebuilds idempotent
 `build_vector_index.py` only upserts; it never deletes existing chunks. Chunk ids are `<path>_<n>`, so when a file shrinks, moves, or is deleted, its leftover ids stay in the collection and every rebuild after content changes strands stale chunks (the 2026-07-18 rebuild required a manual `rm -rf .chroma` to purge the mirror duplicates). Drop and recreate the collection at the start of the build (or delete ids absent from the new scan) so a plain rerun always yields a clean index. Apply the same fix to the pgvector backend path.
 
-**Done 2026-07-18:** Added an abstract `reset()` to `BaseVectorStore`; the Chroma backend drops the collection (recreated lazily by `upsert`) and the pgvector backend truncates the `documents` table (its `upsert` is a plain INSERT, so reruns duplicated every row). `build_vector_index.py` calls `reset()` after `init_db()`. Verified: two consecutive rebuilds hold a stable 230 chunks; a probe file indexed then deleted disappears from ids and query results on the next plain rerun; the security spot-check query still routes to `cyber_security`; all 98 tests pass. Findings spawned items 16 and 17. Journal: `documentation/task_journals/2026-07-18_idempotent-index-rebuilds.md`.
+**Done 2026-07-18:** Added an abstract `reset()` to `BaseVectorStore`; the Chroma backend drops the collection (recreated lazily by `upsert`) and the pgvector backend truncates the `documents` table (its `upsert` is a plain INSERT, so reruns duplicated every row). `build_vector_index.py` calls `reset()` after `init_db()`. Verified: two consecutive rebuilds hold a stable 230 chunks; a probe file indexed then deleted disappears from ids and query results on the next plain rerun; the security spot-check query still routes to `cyber_security`; all 98 tests pass. Findings spawned items 16 and 17.
 
 ### 5. Preflight the provider before a run
 Run 1 (2026-07-17) spent all three validation attempts against a crashed Ollama server, and run 2 against a model tag that had been removed mid session. A cheap ping before pass 1 (list models, verify the configured tag exists, one token generation) would fail fast with an actionable error.
@@ -105,22 +106,25 @@ The `docs` target in the Makefile mirrors content with `cp -r documentation docs
 ### 17. Make `PgVectorStore.upsert` a true upsert
 `PgVectorStore.upsert` ignores the `ids` argument and issues a plain `INSERT` with no unique constraint, so it is not an upsert at all: any incremental (non-full-rebuild) use duplicates rows. Item 4's `reset()` masks this for full rebuilds only. Add a chunk id column with a unique constraint and use `INSERT ... ON CONFLICT DO UPDATE`, and store the chunk metadata alongside (`chunk` index is currently dropped on insert). Found during item 4.
 
-### 18. `pipeline_pass` frontmatter and dispatcher
+### 18. Free model and tool discovery protocol
+The Working Protocol's model re-evaluation (step 2) and free tool scan (step 4) currently rely on whatever the session already knows about. Build a maintained roster, e.g. `documentation/model_tool_roster.md`, of models and tools an agent may reach for beyond the defaults: local Ollama tags (queried live, they change), the Claude and Gemini subscriptions, free-tier hosted models, already-installed CLIs, and free MCP servers. Include discovery sources to consult when the roster has no fit — directories like There's An AI For That (theresanaiforthat.com), the MCP server registry, and package indexes — so a session can find a candidate rather than guess. Wire the roster into protocol steps 2 and 4. Hard rule to encode: anything free and already available may be used autonomously; anything paid, requiring signup or an API key, or needing a new install must be discussed with the user first. Requested 2026-07-18.
+
+### 19. `pipeline_pass` frontmatter and dispatcher
 Skills now declare a priority `tier:` (0 meta, 1 governance, 2 domain, 3 application) consumed by `SkillRouter`, `skills.json`, and the AGENTS.md manifest. Pipeline pass affinity is a separate concept and still open: add a distinct key (e.g. `pipeline_pass: 2` for reviewer skills like `cyber_security`) so the payload pipeline dispatcher injects each skill into the pass where it belongs (reviewer skills into pass 2, not pass 1) without colliding with the priority tier semantics.
 
-### 19. Claude Code backend for pipeline tiers
+### 20. Claude Code backend for pipeline tiers
 Add a `claude_code` option to `payload_pipeline.tier_models`, handled before LiteLLM by shelling out to headless Claude Code (`claude -p "<prompt>" --output-format json`). Uses the subscription login instead of an API key; bills session usage per run. Best fit: Tier 1 judging. Note this item can only be exercised on a machine with Claude Code logged in.
 
-### 20. Calibrate the skill router score threshold
+### 21. Calibrate the skill router score threshold
 All 38 skills now declare `triggers` frontmatter, which closed the deterministic routing gap. The semantic fallback is still uncalibrated: build a small labeled prompt set and tune `skill_router.score_threshold` (and possibly `top_k`) against it so semantic recall is measured rather than guessed.
 
-### 21. OpenTelemetry integration
+### 22. OpenTelemetry integration
 Integrate OpenTelemetry into the existing `system_logger.py` for advanced metrics and traces.
 
-### 22. Homelab MCP server
+### 23. Homelab MCP server
 Build a homelab MCP server to autonomously monitor, debug, and manage local Docker containers and network infrastructure. Per the global rules, present a pros/cons evaluation of the technology options before committing to an architecture.
 
-### 23. Automated job hunting pipeline
+### 24. Automated job hunting pipeline
 Script an automated pipeline using web-search MCPs to scrape job postings, map against `USER_PROFILE.md`, and generate tailored resumes and cover letters. Follow the `career_assistant` skill's grounding rules (no fabricated experience).
 
 ## ✅ Completed
@@ -130,6 +134,6 @@ Script an automated pipeline using web-search MCPs to scrape job postings, map a
 - **Ignore build artifacts and local state in git (done 2026-07-18):** `.gitignore` gained `/build/`, `*.egg-info/`, and `.telemetry/`; 60+ tracked artifacts (telemetry db, `build/lib/**`, installer binary, `__pycache__` caches, egg-info) untracked via `git rm --cached`. Go installer and editable pip install both rebuild cleanly with no new git noise. Spawned item 3 (tracked scratch files at the repo root).
 - **Rebuild the vector index (done 2026-07-18):** fresh 219 chunk index over canonical sources only; `docs/` Pages mirror pruned from the scanner. Spot checks route security, debugging, IaC, and career prompts to the right skills. Spawned items 4 (idempotent rebuilds) and 15 (self-nesting docs mirror).
 - **DevOps / IaC skill node (done 2026-07-17):** `.agents/skills/devops_sre/SKILL.md` exists; scope narrowed to Terraform/Kubernetes design during the 2026-07-18 skill refinement.
-- **Skill routing recall gap for security prompts (done 2026-07-18):** all 38 skills declare `triggers` frontmatter; the failing prompt ("security hardening runbook for a FastAPI webhook server") now routes `cyber_security` deterministically. Threshold calibration continues as item 20.
-- **Priority `tier` frontmatter (done 2026-07-18):** every SKILL.md declares `tier:` 0 to 3, parsed by `SkillRouter` and exposed in `skills.json` and the AGENTS.md manifest. See `documentation/skill_refinement_progress.md`. Pipeline pass affinity continues as item 18.
+- **Skill routing recall gap for security prompts (done 2026-07-18):** all 38 skills declare `triggers` frontmatter; the failing prompt ("security hardening runbook for a FastAPI webhook server") now routes `cyber_security` deterministically. Threshold calibration continues as item 21.
+- **Priority `tier` frontmatter (done 2026-07-18):** every SKILL.md declares `tier:` 0 to 3, parsed by `SkillRouter` and exposed in `skills.json` and the AGENTS.md manifest. See `documentation/skill_refinement_progress.md`. Pipeline pass affinity continues as item 19.
 - **Skill library refinement (done 2026-07-18):** all 38 skills refined against a shared rubric, tiered, and cross deduplicated with Related Skills deferrals; tracked in `documentation/skill_refinement_progress.md`.
