@@ -12,10 +12,18 @@ Work exactly one item end to end, leaving the repository in a state where this c
 - Confirm the item is still worth doing and that its stated requirements still match the current code and environment; both may have changed since the item was filed.
 - If it is stale, update the row and detail section, merge it into another item, or close it with a dated note explaining why. A well-documented closure counts as completing this run.
 
-## 3. Execute
+## 3. Execute, delegating the heavy work to non-Claude models
 
-- Follow the Working Protocol in `improvements.md` exactly: open a task journal from `documentation/task_journals/TEMPLATE.md`, re-evaluate the model against what is currently available, route the matching skills, scan for free tools, read the item's detail section, then implement with tests.
-- Update the journal and commit it at every milestone, keeping its Next Step line current so a fresh session can resume from the journal alone after a session limit or power outage.
+This session is the orchestrator, not the implementer. To preserve Claude session limits, keep only selection, re-evaluation, backlog and journal edits, verification, and the commit in this session; delegate the implementation itself to a non-Claude model.
+
+- Follow the Working Protocol in `improvements.md`: open a task journal from `documentation/task_journals/TEMPLATE.md`, route the matching skills, scan for free tools, and read the item's detail section before writing the delegation brief.
+- Write a self-contained brief for the delegate: the item's detail section, the specific files involved, the tests to add or update, and the relevant protocol constraints (test commands, commit conventions do not apply to the delegate; it edits only). The delegate starts with zero repository context, so the brief must stand alone.
+- Pick the delegate from what is live right now, starting from the item's Gemini model column:
+  - **Antigravity CLI (headless):** `agy -p "<brief>" --model "<model>" --mode accept-edits --print-timeout 30m` from the repo root. List live model names with `agy models`; quota is tracked per model, so on a quota error step to another tier (Gemini Flash and Pro tiers, GPT-OSS 120B) rather than giving up. Antigravity's Claude Sonnet and Opus models bill the Google subscription, not Claude Code limits, and are a valid escalation for hard items.
+  - **Local Ollama:** for small, well-bounded subtasks (draft a function, review a diff, write a doc section) where a local model suffices. Check live tags with `curl localhost:11434/api/tags`.
+  - Never delegate to Claude Code subagents (the Agent tool) for limit-saving; they bill the same Claude plan as this session.
+- Require a clean `git status` before launching a delegate so its diff is exactly attributable. Afterward, review the full `git diff` yourself, run the tests yourself (`make test-changed`, then `make test`), and either fix small gaps directly or re-delegate with concrete feedback. Never commit a delegate's work unreviewed.
+- Update the journal and commit it at every milestone, recording each delegation (model, brief summary, outcome) and keeping its Next Step line current so a fresh session can resume from the journal alone after a session limit or power outage.
 
 ## 4. Close the loop
 
