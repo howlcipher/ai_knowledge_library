@@ -16,44 +16,53 @@ This protocol applies to every worked task — backlog improvements and bug fixe
 
 ## Ranked Backlog (best ROI first)
 
-Rank weighs impact against effort: quick unblocking fixes first, large architecture efforts last.
+Pending rows are ranked by a diminishing-returns score, recomputed at every groom (see `.agents/prompts/groom_backlogs.md`):
 
-| # | Improvement | Status | Claude model | Gemini model | ROI rationale |
-| --- | --- | --- | --- | --- | --- |
-| 1 | [Rebuild the vector index](#1-rebuild-the-vector-index) | Done (2026-07-18) | Haiku 4.5 | Gemini 3 Flash | Minutes of work; unblocks semantic search over the newly refined skills |
-| 2 | [Ignore build artifacts and local state in git](#2-ignore-build-artifacts-and-local-state-in-git) | Done (2026-07-18) | Haiku 4.5 | Gemini 3 Flash | Minutes of work; clears permanent noise from git status and prevents accidental commits |
-| 3 | [Purge tracked scratch files from the repo root](#3-purge-tracked-scratch-files-from-the-repo-root) | Done (2026-07-18) | Haiku 4.5 | Gemini 3 Flash | Minutes of work; stops one-off scratch files traveling with every clone |
-| 4 | [Make vector index rebuilds idempotent](#4-make-vector-index-rebuilds-idempotent) | Done (2026-07-18) | Haiku 4.5 | Gemini 3 Flash | Minutes of work; prevents stale chunks from silently corrupting every future rebuild |
-| 5 | [Preflight the provider before a run](#5-preflight-the-provider-before-a-run) | Done (2026-07-18) | Sonnet 5 | Gemini 3 Flash | Small change; stops entire runs being wasted on a dead server or missing model tag |
-| 6 | [Per tier LLM timeout](#6-per-tier-llm-timeout) | Done (2026-07-18) | Haiku 4.5 | Gemini 3 Flash | Config plumbing only; removes a known hard failure for 30B local models |
-| 7 | [Separate transport failures from validation failures](#7-separate-transport-failures-from-validation-failures) | Done (2026-07-18) | Sonnet 5 | Gemini 3 Pro | Medium effort; makes every future failure diagnosable instead of masked |
-| 8 | [Provider enforced structured outputs](#8-provider-enforced-structured-outputs) | Done (2026-07-18) | Sonnet 5 | Gemini 3 Pro | Medium effort; biggest single reliability win for small local models |
-| 26 | [Dynamic test selection and tests-with-every-change protocol](#26-dynamic-test-selection-and-tests-with-every-change-protocol) | Done (2026-07-18) | Haiku 4.5 | Gemini 3 Flash | Small script plus protocol edit; every future item gets a fast relevant-test loop and guaranteed test coverage |
-| 31 | [Stamp `content.sha256` in code at the gate](#31-stamp-contentsha256-in-code-at-the-gate) | Pending | Sonnet 5 | Gemini 3 Pro | Small gate change; removes the one failure class LLMs can never fix themselves, now the dominant one after item 8 |
-| 15 | [Fix the self-nesting docs site mirror](#15-fix-the-self-nesting-docs-site-mirror) | Pending | Haiku 4.5 | Gemini 3 Flash | Small Makefile fix; stops the Pages mirror doubling itself on every `make docs` re-run and unblocks #27 |
-| 10 | [Persist all attempt errors](#10-persist-all-attempt-errors) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change; preserves post mortem evidence currently thrown away and fixes `pipeline.attempt` fidelity |
-| 12 | [Emit gate failures into telemetry](#12-emit-gate-failures-into-telemetry) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change; starts tracking schema failure rate per model |
-| 33 | [Harden the legacy loop and standalone LLM call sites](#33-harden-the-legacy-loop-and-standalone-llm-call-sites) | Pending | Haiku 4.5 | Gemini 3 Flash | One pass reusing items 5/6/7's shipped modules over the same four call sites (subsumes #25, #29, #30) |
-| 32 | [Structured JSON output for the web_research verifier](#32-structured-json-output-for-the-web_research-verifier) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change reusing item 8's pattern; natural companion to #33 (same call site) |
-| 13 | [Install the pre-commit hook via bootstrap](#13-install-the-pre-commit-hook-via-bootstrap) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change; removes a silent per machine setup gap |
-| 34 | [Detect stranded worktree branches during item selection](#34-detect-stranded-worktree-branches-during-item-selection) | Pending | Haiku 4.5 | Gemini 3 Flash | One-paragraph prompt edit; prevents a whole finished task being silently redone |
-| 16 | [Pass the configured collection name to the vector store](#16-pass-the-configured-collection-name-to-the-vector-store) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change; stops `indexing.collection_name` config being silently ignored |
-| 17 | [Make `PgVectorStore.upsert` a true upsert](#17-make-pgvectorstoreupsert-a-true-upsert) | Pending | Haiku 4.5 | Gemini 3 Flash | Small change; removes the duplicate-row hazard for any future incremental pgvector use |
-| 11 | [Guard against oversized local models](#11-guard-against-oversized-local-models) | Pending | Haiku 4.5 | Gemini 3 Flash | Mostly covered by #7's attempt_errors; verify an OOM loop surfaces the Ollama error body, then close |
-| 27 | [Keep README, documentation, and the Pages site in sync on every commit](#27-keep-readme-documentation-and-the-pages-site-in-sync-on-every-commit) | Pending | Haiku 4.5 | Gemini 3 Flash | Hook plus CI work; removes the whole class of hand-synced docs copies that drift (subsumes #14, builds on #15) |
-| 28 | [Audit and dynamize the GitHub Actions workflows](#28-audit-and-dynamize-the-github-actions-workflows) | Pending | Sonnet 5 | Gemini 3 Pro | Workflow audit; cuts wasted CI minutes, drops dead workflows, and gates publishes on green tests |
-| 18 | [Free model and tool discovery protocol](#18-free-model-and-tool-discovery-protocol) | Pending | Haiku 4.5 | Gemini 3 Flash | Small doc and protocol change; every future task can deliberately pull in extra free models and tools |
-| 19 | [`pipeline_pass` frontmatter and dispatcher](#19-pipeline_pass-frontmatter-and-dispatcher) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; routes reviewer skills into the right pipeline pass |
-| 20 | [Claude Code backend for pipeline tiers](#20-claude-code-backend-for-pipeline-tiers) | Pending | Sonnet 5 | Gemini 3 Pro | Medium effort; adds a strong subscription backed judge for Tier 1 |
-| 21 | [Calibrate the skill router score threshold](#21-calibrate-the-skill-router-score-threshold) | Pending | Fable 5 | Gemini 3 Pro | Needs judgment (labeled prompt set + eval design), modest payoff beyond triggers |
-| 22 | [OpenTelemetry integration](#22-opentelemetry-integration) | Pending | Sonnet 5 | Gemini 3 Pro | Larger effort; better observability but no current outage it would have caught |
-| 23 | [Homelab MCP server](#23-homelab-mcp-server) | Pending | Fable 5 | Gemini 3 Pro | High long term value but a full architecture evaluation and build |
-| 24 | [Automated job hunting pipeline](#24-automated-job-hunting-pipeline) | Pending | Fable 5 | Gemini 3 Pro | High personal value but the largest, most open ended build |
-| 9 | [Show exact object shapes in tier prompts](#9-show-exact-object-shapes-in-tier-prompts) | Closed (2026-07-18) | Sonnet 5 | Gemini 3 Flash | Superseded by #8's provider enforcement; shape examples would only serve the degraded fallback path |
-| 14 | [Sync the docs site changelog automatically](#14-sync-the-docs-site-changelog-automatically) | Merged into #27 (2026-07-18) | Haiku 4.5 | Gemini 3 Flash | Two line hook addition; stops docs/change_log.md drifting from the real changelog |
-| 25 | [Preflight the provider in the legacy free-text loop](#25-preflight-the-provider-in-the-legacy-free-text-loop) | Merged into #33 (2026-07-18) | Haiku 4.5 | Gemini 3 Flash | Small change reusing item 5's module; the researcher/QA loop still burns iterations on a dead provider |
-| 29 | [Propagate the LLM timeout to the remaining call sites](#29-propagate-the-llm-timeout-to-the-remaining-call-sites) | Merged into #33 (2026-07-18) | Haiku 4.5 | Gemini 3 Flash | Small change reusing item 6's plumbing; four other `litellm.completion` sites still hang on the 600s default |
-| 30 | [Transport retry for the legacy loop and standalone call sites](#30-transport-retry-for-the-legacy-loop-and-standalone-call-sites) | Merged into #33 (2026-07-18) | Haiku 4.5 | Gemini 3 Flash | Small change reusing item 7's module; the legacy loop still burns iterations on transient provider blips |
+**Score = (Value × Decay) ÷ Effort**
+
+- **Value (1–8):** pain or risk removed if the item ships.
+- **Decay:** geometric halving per already-shipped item in the same theme (1.0 → 0.5 → 0.25 …) — the second polish pass on a theme is worth roughly half the first. New-capability items that open a new curve (e.g. #23, #24) always keep Decay 1.0; diminishing returns applies to polish, not to new ground.
+- **Effort (1–8):** roughly log-scale; 1 = minutes, 8 = weeks.
+- **ROI floor = 0.5:** items scoring below the floor stay open but are flagged ⚠️ and must not be worked without explicit user confirmation. At selection time the default is to skip past them to the highest-scoring above-floor item and ask the user whether to confirm, re-scope (shrink until it clears the floor), or close the flagged item.
+
+Scores apply to Pending rows only; Done, Closed, and Merged rows show `—`.
+
+| # | Improvement | Status | Score (V×D÷E) | Claude model | Gemini model | ROI rationale |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | [Rebuild the vector index](#1-rebuild-the-vector-index) | Done (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Minutes of work; unblocks semantic search over the newly refined skills |
+| 2 | [Ignore build artifacts and local state in git](#2-ignore-build-artifacts-and-local-state-in-git) | Done (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Minutes of work; clears permanent noise from git status and prevents accidental commits |
+| 3 | [Purge tracked scratch files from the repo root](#3-purge-tracked-scratch-files-from-the-repo-root) | Done (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Minutes of work; stops one-off scratch files traveling with every clone |
+| 4 | [Make vector index rebuilds idempotent](#4-make-vector-index-rebuilds-idempotent) | Done (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Minutes of work; prevents stale chunks from silently corrupting every future rebuild |
+| 5 | [Preflight the provider before a run](#5-preflight-the-provider-before-a-run) | Done (2026-07-18) | — | Sonnet 5 | Gemini 3 Flash | Small change; stops entire runs being wasted on a dead server or missing model tag |
+| 6 | [Per tier LLM timeout](#6-per-tier-llm-timeout) | Done (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Config plumbing only; removes a known hard failure for 30B local models |
+| 7 | [Separate transport failures from validation failures](#7-separate-transport-failures-from-validation-failures) | Done (2026-07-18) | — | Sonnet 5 | Gemini 3 Pro | Medium effort; makes every future failure diagnosable instead of masked |
+| 8 | [Provider enforced structured outputs](#8-provider-enforced-structured-outputs) | Done (2026-07-18) | — | Sonnet 5 | Gemini 3 Pro | Medium effort; biggest single reliability win for small local models |
+| 26 | [Dynamic test selection and tests-with-every-change protocol](#26-dynamic-test-selection-and-tests-with-every-change-protocol) | Done (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Small script plus protocol edit; every future item gets a fast relevant-test loop and guaranteed test coverage |
+| 15 | [Fix the self-nesting docs site mirror](#15-fix-the-self-nesting-docs-site-mirror) | Pending | 5.0 = 5×1.0÷1 | Haiku 4.5 | Gemini 3 Flash | Small Makefile fix; stops the Pages mirror doubling itself on every `make docs` re-run and unblocks #27 |
+| 34 | [Detect stranded worktree branches during item selection](#34-detect-stranded-worktree-branches-during-item-selection) | Pending | 4.0 = 4×1.0÷1 | Haiku 4.5 | Gemini 3 Flash | One-paragraph prompt edit; prevents a whole finished task being silently redone |
+| 31 | [Stamp `content.sha256` in code at the gate](#31-stamp-contentsha256-in-code-at-the-gate) | Pending | 3.5 = 7×1.0÷2 | Sonnet 5 | Gemini 3 Pro | Small gate change; removes the one failure class LLMs can never fix themselves, now the dominant one after item 8 |
+| 13 | [Install the pre-commit hook via bootstrap](#13-install-the-pre-commit-hook-via-bootstrap) | Pending | 3.0 = 3×1.0÷1 | Haiku 4.5 | Gemini 3 Flash | Small change; removes a silent per machine setup gap |
+| 12 | [Emit gate failures into telemetry](#12-emit-gate-failures-into-telemetry) | Pending | 2.0 = 4×1.0÷2 | Haiku 4.5 | Gemini 3 Flash | Small change; starts tracking schema failure rate per model |
+| 16 | [Pass the configured collection name to the vector store](#16-pass-the-configured-collection-name-to-the-vector-store) | Pending | 2.0 = 2×1.0÷1 | Haiku 4.5 | Gemini 3 Flash | Small change; stops `indexing.collection_name` config being silently ignored |
+| 11 | [Guard against oversized local models](#11-guard-against-oversized-local-models) | Pending | 2.0 = 2×1.0÷1 | Haiku 4.5 | Gemini 3 Flash | Mostly covered by #7's attempt_errors; verify an OOM loop surfaces the Ollama error body, then close |
+| 32 | [Structured JSON output for the web_research verifier](#32-structured-json-output-for-the-web_research-verifier) | Pending | 1.5 = 3×0.5÷1 | Haiku 4.5 | Gemini 3 Flash | Small change reusing item 8's pattern; natural companion to #33 (same call site) |
+| 18 | [Free model and tool discovery protocol](#18-free-model-and-tool-discovery-protocol) | Pending | 1.5 = 3×1.0÷2 | Haiku 4.5 | Gemini 3 Flash | Small doc and protocol change; every future task can deliberately pull in extra free models and tools |
+| 28 | [Audit and dynamize the GitHub Actions workflows](#28-audit-and-dynamize-the-github-actions-workflows) | Pending | 1.25 = 5×1.0÷4 | Sonnet 5 | Gemini 3 Pro | Workflow audit; cuts wasted CI minutes, drops dead workflows, and gates publishes on green tests |
+| 27 | [Keep README, documentation, and the Pages site in sync on every commit](#27-keep-readme-documentation-and-the-pages-site-in-sync-on-every-commit) | Pending | 1.2 = 6×1.0÷5 | Haiku 4.5 | Gemini 3 Flash | Hook plus CI work; removes the whole class of hand-synced docs copies that drift (subsumes #14, builds on #15) |
+| 10 | [Persist all attempt errors](#10-persist-all-attempt-errors) | Pending | 1.0 = 4×0.5÷2 | Haiku 4.5 | Gemini 3 Flash | Small change; preserves post mortem evidence currently thrown away and fixes `pipeline.attempt` fidelity (item 7 already captured the transport half) |
+| 17 | [Make `PgVectorStore.upsert` a true upsert](#17-make-pgvectorstoreupsert-a-true-upsert) | Pending | 1.0 = 2×1.0÷2 | Haiku 4.5 | Gemini 3 Flash | Small change; removes the duplicate-row hazard for any future incremental pgvector use |
+| 19 | [`pipeline_pass` frontmatter and dispatcher](#19-pipeline_pass-frontmatter-and-dispatcher) | Pending | 1.0 = 4×1.0÷4 | Sonnet 5 | Gemini 3 Pro | Medium effort; routes reviewer skills into the right pipeline pass |
+| 20 | [Claude Code backend for pipeline tiers](#20-claude-code-backend-for-pipeline-tiers) | Pending | 1.0 = 4×1.0÷4 | Sonnet 5 | Gemini 3 Pro | Medium effort; adds a strong subscription backed judge for Tier 1 |
+| 24 | [Automated job hunting pipeline](#24-automated-job-hunting-pipeline) | Pending | 0.88 = 7×1.0÷8 | Fable 5 | Gemini 3 Pro | High personal value; largest build, but a new curve — no decay applies |
+| 23 | [Homelab MCP server](#23-homelab-mcp-server) | Pending | 0.86 = 6×1.0÷7 | Fable 5 | Gemini 3 Pro | High long term value; full architecture evaluation and build, but a new curve — no decay applies |
+| 33 | [Harden the legacy loop and standalone LLM call sites](#33-harden-the-legacy-loop-and-standalone-llm-call-sites) | Pending ⚠️ below floor | 0.42 = 5×0.25÷3 | Haiku 4.5 | Gemini 3 Flash | Third pass of the hardening theme onto the less-used legacy path (subsumes #25, #29, #30); confirm before working |
+| 22 | [OpenTelemetry integration](#22-opentelemetry-integration) | Pending ⚠️ below floor | 0.4 = 2×1.0÷5 | Sonnet 5 | Gemini 3 Pro | Larger effort; better observability but no current outage it would have caught; confirm before working |
+| 21 | [Calibrate the skill router score threshold](#21-calibrate-the-skill-router-score-threshold) | Pending ⚠️ below floor | 0.25 = 2×0.5÷4 | Fable 5 | Gemini 3 Pro | Needs judgment (labeled prompt set + eval design), modest payoff beyond the shipped triggers; confirm before working |
+| 9 | [Show exact object shapes in tier prompts](#9-show-exact-object-shapes-in-tier-prompts) | Closed (2026-07-18) | — | Sonnet 5 | Gemini 3 Flash | Superseded by #8's provider enforcement; shape examples would only serve the degraded fallback path |
+| 14 | [Sync the docs site changelog automatically](#14-sync-the-docs-site-changelog-automatically) | Merged into #27 (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Two line hook addition; stops docs/change_log.md drifting from the real changelog |
+| 25 | [Preflight the provider in the legacy free-text loop](#25-preflight-the-provider-in-the-legacy-free-text-loop) | Merged into #33 (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Small change reusing item 5's module; the researcher/QA loop still burns iterations on a dead provider |
+| 29 | [Propagate the LLM timeout to the remaining call sites](#29-propagate-the-llm-timeout-to-the-remaining-call-sites) | Merged into #33 (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Small change reusing item 6's plumbing; four other `litellm.completion` sites still hang on the 600s default |
+| 30 | [Transport retry for the legacy loop and standalone call sites](#30-transport-retry-for-the-legacy-loop-and-standalone-call-sites) | Merged into #33 (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Small change reusing item 7's module; the legacy loop still burns iterations on transient provider blips |
 
 ## Details
 
@@ -142,8 +151,12 @@ Add a `claude_code` option to `payload_pipeline.tier_models`, handled before Lit
 ### 21. Calibrate the skill router score threshold
 All 38 skills now declare `triggers` frontmatter, which closed the deterministic routing gap. The semantic fallback is still uncalibrated: build a small labeled prompt set and tune `skill_router.score_threshold` (and possibly `top_k`) against it so semantic recall is measured rather than guessed.
 
+**2026-07-19 scoring:** below the ROI floor (0.25 = 2×0.5÷4) — the shipped `triggers` frontmatter already captured most of the routing value, and the eval-set build is comparatively expensive. Stays open per user decision, but requires explicit confirmation (or re-scoping) before being worked.
+
 ### 22. OpenTelemetry integration
 Integrate OpenTelemetry into the existing `system_logger.py` for advanced metrics and traces.
+
+**2026-07-19 scoring:** below the ROI floor (0.4 = 2×1.0÷5) — sizable effort with no current outage it would have caught. Stays open per user decision, but requires explicit confirmation before being worked; re-score upward if an incident occurs that better observability would have shortened.
 
 ### 23. Homelab MCP server
 Build a homelab MCP server to autonomously monitor, debug, and manage local Docker containers and network infrastructure. Per the global rules, present a pros/cons evaluation of the technology options before committing to an architecture.
@@ -185,6 +198,8 @@ Item 8's live verification showed that once the provider enforces the schema, th
 
 ### 33. Harden the legacy loop and standalone LLM call sites
 Subsumes items 25, 29, and 30 (groomed 2026-07-18), which each retrofitted one shipped payload-pipeline hardening onto the same non-pipeline code paths; working them separately would touch the same files three times. The paths: the legacy researcher/QA loop in `src/core/orchestrator.py` (`run_loop` when `payload_pipeline.enabled` is false) plus the standalone `litellm.completion` sites in `src/core/adversarial_tester.py`, `src/core/web_research.py`, and `src/infrastructure/semantic_search.py`. Scope, all by reuse of existing modules: (a) preflight — run `src/core/provider_preflight.py` on `self.default_model` at the top of the non-payload `run_loop`, deciding whether to promote `payload_pipeline.preflight` to a top-level `preflight` section since it would then guard both loops (ex-item 25); (b) timeout — thread a configured timeout through the legacy loop agents and the three standalone sites, likely one top-level `llm_timeout` setting, deciding whether `payload_pipeline.timeout` defaults to it (ex-item 29); (c) transport retry — wrap the same sites in `src/core/transport_retry.py`'s `call_with_transport_retry`, giving the legacy agents `raise_errors` so blips stop returning `None` (ex-item 30). Item 32 (structured output for the web_research verifier) touches the same file and is a natural companion in the same task. Original findings: 25 during item 5, 29 during item 6, 30 during item 7.
+
+**2026-07-19 scoring:** below the ROI floor (0.42 = 5×0.25÷3) — this is the third application of the same hardening theme (items 5/6/7 shipped it on the pipeline path), onto the legacy loop that only runs when `payload_pipeline.enabled` is false. Stays open per user decision, but requires explicit confirmation before being worked; if confirmed, fold companion #32 into the same task since it touches the same file.
 
 ### 34. Detect stranded worktree branches during item selection
 While closing issues.md bug 1 (2026-07-19), the in-flight state was almost missed: a prior session had done the whole fix in `.claude/worktrees/bug1-remove-obfuscated-hook-installer/` — deletion commit, doc commit, branch pushed to origin — but its task journal was never committed, so it existed only inside the worktree, invisible to `work_next_item` step 1, which lists `documentation/task_journals/` in the main checkout. The stranded work was only noticed because `.claude/worktrees/` showed up untracked in `git status`. Fix: extend the Select step in `.agents/prompts/work_next_item.md` (and `resume_task`) to also check `git worktree list` and unmerged local or remote `worktree-*` branches for in-flight work before picking a new item, and to treat an uncommitted journal inside a worktree as a resume point. Consider also stating that finished worktree branches must be merged and removed before a session ends. Found during the bug 1 closure.

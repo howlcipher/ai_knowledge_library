@@ -4,11 +4,11 @@ This document is the authoritative, ranked backlog for known flaws, bugs, and br
 
 ## Ranked Backlog (best ROI first)
 
-Rank weighs user impact and blast radius against fix effort. When a new bug is found, add a row here and a matching detail section below, then work the table top down.
+Pending bugs carry the same diminishing-returns score defined in `improvements.md` (Score = Value × Decay ÷ Effort, ROI floor 0.5, recomputed at every groom). Bugs rarely decay — a defect's cost does not shrink because other defects were fixed — so Decay is normally 1.0, and bugs still outrank improvement work of similar score. A bug below the floor stays open, flagged ⚠️, and needs explicit user confirmation before being worked. When a new bug is found, add a row here and a matching detail section below, then work the table top down.
 
-| # | Bug | Status | Claude model | Gemini model | ROI rationale |
-| --- | --- | --- | --- | --- | --- |
-| 1 | [Remove the obfuscated dead hook installer](#1-remove-the-obfuscated-dead-hook-installer) | Done (2026-07-19) | Haiku 4.5 | Gemini 3 Flash | Minutes of work; deletes deliberately lint-evading dead code before an agent trusts or reruns it |
+| # | Bug | Status | Score (V×D÷E) | Claude model | Gemini model | ROI rationale |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | [Remove the obfuscated dead hook installer](#1-remove-the-obfuscated-dead-hook-installer) | Done (2026-07-19) | — | Haiku 4.5 | Gemini 3 Flash | Minutes of work; deletes deliberately lint-evading dead code before an agent trusts or reruns it |
 
 ## Details
 
