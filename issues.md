@@ -9,7 +9,7 @@ Pending bugs carry the same diminishing-returns score defined in `improvements.m
 | # | Bug | Status | Score (V×D÷E) | Claude model | Gemini model | ROI rationale |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | [Remove the obfuscated dead hook installer](#1-remove-the-obfuscated-dead-hook-installer) | Done (2026-07-19) | — | Haiku 4.5 | Gemini 3 Flash | Minutes of work; deletes deliberately lint-evading dead code before an agent trusts or reruns it |
-| 2 | [De-obfuscate the pre-push hook filename](#2-de-obfuscate-the-pre-push-hook-filename) | Pending | 5.0 = 5×1.0÷1 | Haiku 4.5 | Gemini 3 Flash | Seconds of work; removes the exact obfuscation pattern that got bug 1 deleted, in a script the installer now runs automatically (improvements item 13) |
+| 2 | [De-obfuscate the pre-push hook filename](#2-de-obfuscate-the-pre-push-hook-filename) | Done (2026-07-19) | — | Haiku 4.5 | Gemini 3 Flash | Seconds of work; removes the exact obfuscation pattern that got bug 1 deleted, in a script the installer now runs automatically (improvements item 13) |
 
 ## Details
 
@@ -19,8 +19,10 @@ Found during the 2026-07-18 backlog groom.
 
 ### 2. De-obfuscate the pre-push hook filename
 Found during improvements item 13 (2026-07-19). `scripts/install_pre_push_hook.py` builds the hook filename `"pre-push"` via a chain of eight `chr()` calls instead of a plain string literal — the identical pattern that got `scripts/install_git_hooks.py` deleted as bug 1 ("deliberate obfuscation to evade the repo's formatting checks"). Unlike bug 1, this script is not dead: it is one of the two maintained hook installers, and improvements item 13 just wired it into `cmd/installer`'s automatic `Install()` flow, so it now runs on every machine that installs this library. Fix: replace the `chr()` chain with the literal string `"pre-push"`. No behavior change; trivial diff.
+**Done 2026-07-19:** Replaced the `chr()` chain in `scripts/install_pre_push_hook.py` with the literal `hook_name = "pre-push"`, matching the sibling `install_pre_commit_hook.py`'s plain-literal style. No behavior change. Also closed a test gap found during this fix: neither hook installer script had a test that actually ran it and checked its output, so added `tests/test_install_pre_push_hook.py`, which runs the script in an isolated temp `.git/hooks` dir and asserts the produced file is literally named `pre-push`, is executable, contains the expected hook body, and that the source contains no `chr(` calls (regression guard against the obfuscation pattern recurring). Delegated to Antigravity CLI / GPT-OSS 120B (Medium) after the Gemini tiers hit the shared account-wide quota; reviewed diff, ran `make test` (149 Python + Go tests, all green) before committing.
 
 ## ✅ Resolved
 
 - **Bug 1 — Remove the obfuscated dead hook installer (fixed 2026-07-19, commit 89b2bb2):** deleted `scripts/install_git_hooks.py`, an unreferenced installer that assembled the hook name `post-commit` from `chr()` calls to evade formatting checks. The maintained installers cover all real hook needs.
+- **Bug 2 — De-obfuscate the pre-push hook filename (fixed 2026-07-19):** replaced the `chr()` chain in `scripts/install_pre_push_hook.py` (built into `cmd/installer`'s automatic install flow by improvements item 13) with the plain literal `"pre-push"`. Added `tests/test_install_pre_push_hook.py` to close the gap where neither hook installer had a test exercising its actual output.
 - All issues tracked before 2026-07-18 were resolved prior to this restructure. Resolved bugs move here with their fix date and commit hash; the fix itself is also recorded in `change_log.md`.
