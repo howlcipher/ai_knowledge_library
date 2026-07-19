@@ -41,6 +41,25 @@ class TestCallWithTransportRetry:
         assert all("connection refused" in e for e in err.attempt_errors)
         assert "3 attempts" in str(err)
 
+    def test_ollama_oom_error_body_survives_verbatim_in_attempt_errors(self):
+        """Improvement #11: an Ollama OOM/crash error's raw JSON body must
+        reach attempt_errors unmodified, the same way litellm actually wraps
+        it (confirmed live: `litellm.APIConnectionError: OllamaException -
+        {"error": "..."}`), so a crash loop is diagnosable from the log."""
+        oom_body = (
+            'OllamaException - {"error":"model requires more system memory '
+            '(32.1 GiB) than is available (29.0 GiB)"}'
+        )
+        fn = MagicMock(side_effect=ConnectionError(oom_body))
+        with pytest.raises(ProviderTransportError) as exc_info:
+            call_with_transport_retry(
+                fn, retries=0, backoff=0.0, model="ollama/qwen3:30b-a3b", sleep=MagicMock()
+            )
+        err = exc_info.value
+        assert len(err.attempt_errors) == 1
+        assert oom_body in err.attempt_errors[0]
+        assert '"error":"model requires more system memory' in err.attempt_errors[0]
+
     def test_zero_retries_means_single_attempt(self):
         sleep = MagicMock()
         fn = MagicMock(side_effect=ConnectionError("down"))
