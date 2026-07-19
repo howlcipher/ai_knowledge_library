@@ -517,3 +517,118 @@ def test_orchestrator_uses_per_tier_timeouts(tmp_path, monkeypatch):
     # Pass order is tier 3 draft, tier 2 review, tier 1 synthesis; zero
     # overrides fall back to the pipeline level timeout.
     assert timeouts_used == [1800.0, 900.0, 900.0]
+
+
+def _pipeline_cfg(tmp_path, **payload_overrides):
+    payload = {
+        "enabled": True,
+        "max_attempts": 3,
+        "preflight": False,
+        "artifact_dir": str(tmp_path / "payloads"),
+    }
+    payload.update(payload_overrides)
+    return {
+        "llm_model": "gemini/gemini-1.5-pro",
+        "active_mcps": [],
+        "mcp_servers": {},
+        "skill_router": {"enabled": False},
+        "payload_pipeline": payload,
+    }
+
+
+def test_orchestrator_passes_schema_response_format(tmp_path, monkeypatch):
+    # structured_outputs defaults on: every tier call carries the payload schema.
+    monkeypatch.setattr(
+        "src.core.orchestrator.load_config", lambda: _pipeline_cfg(tmp_path)
+    )
+
+    from src.core.orchestrator import Orchestrator
+
+    orchestrator = Orchestrator()
+    orchestrator.skill_router = None
+
+    query = "Write a runbook."
+    initial = make_initial(query)
+    pass1 = make_pass1(initial)
+    pass2 = make_pass2(pass1)
+    pass3 = make_pass3(pass2)
+    responses = [make_llm_response(json.dumps(p)) for p in (pass1, pass2, pass3)]
+
+    with (
+        patch("litellm.completion", side_effect=responses) as mock_completion,
+        patch("litellm.completion_cost", return_value=0.0),
+        patch("src.core.orchestrator.log_telemetry"),
+    ):
+        final = orchestrator.run_loop(query)
+
+    assert final["pipeline"]["status"] == "approved"
+    for call in mock_completion.call_args_list:
+        rf = call.kwargs["response_format"]
+        assert rf["type"] == "json_schema"
+        assert rf["json_schema"]["name"] == "agent_task_payload"
+        assert "$schema" not in rf["json_schema"]["schema"]
+        assert "pipeline" in rf["json_schema"]["schema"]["properties"]
+
+
+def test_orchestrator_structured_outputs_disabled(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "src.core.orchestrator.load_config",
+        lambda: _pipeline_cfg(tmp_path, structured_outputs=False),
+    )
+
+    from src.core.orchestrator import Orchestrator
+
+    orchestrator = Orchestrator()
+    orchestrator.skill_router = None
+
+    query = "Write a runbook."
+    initial = make_initial(query)
+    pass1 = make_pass1(initial)
+    pass2 = make_pass2(pass1)
+    pass3 = make_pass3(pass2)
+    responses = [make_llm_response(json.dumps(p)) for p in (pass1, pass2, pass3)]
+
+    with (
+        patch("litellm.completion", side_effect=responses) as mock_completion,
+        patch("litellm.completion_cost", return_value=0.0),
+        patch("src.core.orchestrator.log_telemetry"),
+    ):
+        final = orchestrator.run_loop(query)
+
+    assert final["pipeline"]["status"] == "approved"
+    for call in mock_completion.call_args_list:
+        assert "response_format" not in call.kwargs
+
+
+def test_orchestrator_survives_response_format_build_failure(tmp_path, monkeypatch):
+    # A broken schema file must degrade to prompt-only discipline, not kill the run.
+    monkeypatch.setattr(
+        "src.core.orchestrator.load_config", lambda: _pipeline_cfg(tmp_path)
+    )
+    monkeypatch.setattr(
+        "src.core.structured_output.payload_response_format",
+        MagicMock(side_effect=OSError("schema unreadable")),
+    )
+
+    from src.core.orchestrator import Orchestrator
+
+    orchestrator = Orchestrator()
+    orchestrator.skill_router = None
+
+    query = "Write a runbook."
+    initial = make_initial(query)
+    pass1 = make_pass1(initial)
+    pass2 = make_pass2(pass1)
+    pass3 = make_pass3(pass2)
+    responses = [make_llm_response(json.dumps(p)) for p in (pass1, pass2, pass3)]
+
+    with (
+        patch("litellm.completion", side_effect=responses) as mock_completion,
+        patch("litellm.completion_cost", return_value=0.0),
+        patch("src.core.orchestrator.log_telemetry"),
+    ):
+        final = orchestrator.run_loop(query)
+
+    assert final["pipeline"]["status"] == "approved"
+    for call in mock_completion.call_args_list:
+        assert "response_format" not in call.kwargs

@@ -47,12 +47,14 @@ class Agent:
         model: str,
         tools: list = None,
         timeout: Optional[float] = None,
+        response_format: Optional[dict] = None,
     ):
         self.name = name
         self.system_prompt = system_prompt
         self.model = model
         self.tools = tools
         self.timeout = timeout
+        self.response_format = response_format
 
     def generate_response(
         self, user_prompt: str, context: str = "", raise_errors: bool = False
@@ -84,6 +86,8 @@ class Agent:
                 kwargs["tools"] = self.tools
             if self.timeout:
                 kwargs["timeout"] = self.timeout
+            if self.response_format:
+                kwargs["response_format"] = self.response_format
 
             response = litellm.completion(**kwargs)
         except Exception as e:
@@ -443,10 +447,34 @@ class Orchestrator:
                 return None
             print(f"[Preflight] OK ({', '.join(preflight.checked_models)})")
 
+        # Provider enforced structured outputs: hand the payload schema to the
+        # provider so shape compliance is mechanical. The gate stays
+        # authoritative; the prompt contract stays as defense in depth.
+        response_format = None
+        if self.payload_cfg.get("structured_outputs", True):
+            from src.core.structured_output import payload_response_format
+
+            try:
+                response_format = payload_response_format()
+            except Exception as e:
+                print(
+                    "[Orchestrator] Structured outputs disabled for this run "
+                    f"(failed to build response_format): {e}"
+                )
+
+        def tier_agent(name, prompt, tier):
+            return Agent(
+                name,
+                prompt,
+                model_for(tier),
+                timeout=timeout_for(tier),
+                response_format=response_format,
+            )
+
         tiers = [
-            (1, Agent("Tier3_Executor", TIER3_PROMPT, model_for(3), timeout=timeout_for(3))),
-            (2, Agent("Tier2_Specialist", TIER2_PROMPT, model_for(2), timeout=timeout_for(2))),
-            (3, Agent("Tier1_Orchestrator", TIER1_PROMPT, model_for(1), timeout=timeout_for(1))),
+            (1, tier_agent("Tier3_Executor", TIER3_PROMPT, 3)),
+            (2, tier_agent("Tier2_Specialist", TIER2_PROMPT, 2)),
+            (3, tier_agent("Tier1_Orchestrator", TIER1_PROMPT, 1)),
         ]
 
         transport_retries = self.payload_cfg.get("transport_retries", 2)

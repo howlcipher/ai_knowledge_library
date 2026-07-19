@@ -28,7 +28,10 @@ Copy this file to `YYYY-MM-DD_<slug>.md` before starting a task (see the Working
 ## Progress Log
 
 - 2026-07-18 — Journal opened. Code paths read: `orchestrator.py` (Agent kwargs pattern from item 6, `run_payload_loop` tier construction), `validation_gate.py` (gate unchanged, stays authoritative), schema, protocol doc, ADR 0003.
+- 2026-07-18 — Live probes before coding: Ollama accepts the full schema (including if/then tier conditionals, patterns, uuid/date-time formats) as its `format` param and constrains decoding; litellm 1.83.0 passes `response_format` json_schema through to Ollama. Earlier 180s timeout was CPU-only cold load, not a rejection (`/api/ps` shows `size_vram: 0`).
+- 2026-07-18 — Implemented: `src/core/structured_output.py` (loads schema, strips `$schema`/`$id`, wraps as non-strict json_schema response_format), `Agent.response_format` kwarg (same pattern as timeout), wired into all three tier agents behind `payload_pipeline.structured_outputs` (default true; build failure degrades gracefully to prompt-only). Config in `settings.yaml` + `config_loader.py`. 9 new tests (helper x4, Agent kwarg x2, pipeline wiring x3). Full suite 139 passing.
+- 2026-07-18 — Live e2e (production code path: Agent + TIER3_PROMPT + response_format + real gate) on `qwen2.5vl:7b`: output parsed as bare JSON and PASSED schema validation — zero invented fields, no fences; failed only at the hash stage (models cannot compute SHA-256; pre-existing, gate feedback handles it, out of item 8 scope). 30B offender-model check running in background.
 
 ## Next Step
 
-Implement `src/core/structured_output.py` and the `Agent.response_format` plumbing.
+Collect the qwen3:30b-instruct background result, then finish the loop: backlog Done note, changelog, delete journal, commit, push.

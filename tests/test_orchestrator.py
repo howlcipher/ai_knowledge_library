@@ -74,6 +74,39 @@ def test_agent_without_timeout_omits_kwarg(mock_completion, mock_cost):
     assert "timeout" not in mock_completion.call_args.kwargs
 
 
+@patch("litellm.completion_cost", return_value=0.0)
+@patch("litellm.completion")
+def test_agent_response_format_passed_to_litellm(mock_completion, mock_cost):
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock(message=MagicMock(content="ok"))]
+    mock_response.usage.prompt_tokens = 1
+    mock_response.usage.completion_tokens = 1
+    mock_response.usage.total_tokens = 2
+    mock_completion.return_value = mock_response
+
+    rf = {"type": "json_schema", "json_schema": {"name": "x", "schema": {}}}
+    agent = Agent("TestAgent", "You are a test.", "ollama/qwen3", response_format=rf)
+    with patch("src.core.orchestrator.log_telemetry"):
+        agent.generate_response("Hello")
+    assert mock_completion.call_args.kwargs["response_format"] == rf
+
+
+@patch("litellm.completion_cost", return_value=0.0)
+@patch("litellm.completion")
+def test_agent_without_response_format_omits_kwarg(mock_completion, mock_cost):
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock(message=MagicMock(content="ok"))]
+    mock_response.usage.prompt_tokens = 1
+    mock_response.usage.completion_tokens = 1
+    mock_response.usage.total_tokens = 2
+    mock_completion.return_value = mock_response
+
+    agent = Agent("TestAgent", "You are a test.", "ollama/qwen3")
+    with patch("src.core.orchestrator.log_telemetry"):
+        agent.generate_response("Hello")
+    assert "response_format" not in mock_completion.call_args.kwargs
+
+
 def test_tier_setting_fallbacks():
     overrides = {"tier_1": 900.0, "tier_2": 0.0}
     assert tier_setting(overrides, 1, 600.0) == 900.0
