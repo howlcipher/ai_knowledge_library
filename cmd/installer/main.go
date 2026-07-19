@@ -18,6 +18,9 @@ const (
 	DefaultDirName = "ai_knowledge_library"
 )
 
+// gitHookInstallerScripts lists the scripts that install git hooks.
+var gitHookInstallerScripts = []string{"scripts/install_pre_commit_hook.py", "scripts/install_pre_push_hook.py"}
+
 // Installer encapsulates the setup process.
 type Installer struct {
 	RepoURL     string
@@ -26,6 +29,15 @@ type Installer struct {
 	SetupDocs   bool
 	LinkGlobal  bool
 	Language    string
+}
+
+// hasGitDir checks if a .git directory exists in the current working directory.
+func (i *Installer) hasGitDir() bool {
+	info, err := os.Stat(".git")
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
 }
 
 // NewInstaller creates a new Installer instance with defaults.
@@ -407,6 +419,25 @@ func (i *Installer) Install() {
 		} else {
 			fmt.Println("Global linking complete.")
 		}
+	}
+
+	// Install git hooks if this is a git repository.
+	if i.hasGitDir() {
+		fmt.Println("\n[+] Installing git hooks...")
+		for _, script := range gitHookInstallerScripts {
+			// Try python3 first, fall back to python.
+			err := i.runInteractiveCommand("python3", script)
+			if err != nil {
+				err = i.runInteractiveCommand("python", script)
+			}
+			if err != nil {
+				fmt.Printf("Failed to install git hook %s: %v\n", script, err)
+			} else {
+				fmt.Printf("Installed git hook %s successfully.\n", script)
+			}
+		}
+	} else {
+		fmt.Println("Skipping git hook installation (not a git checkout).")
 	}
 
 	fmt.Println("\n========================================")
