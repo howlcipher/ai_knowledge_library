@@ -113,7 +113,7 @@ The failed payload keeps only the final attempt's errors, so the schema violatio
 The validation gate prints failures but does not log them through `telemetry_logger`, so schema failure rate per model is not yet a tracked metric (recommended in `documentation/multi_agent_payload_protocol.md`).
 
 ### 13. Install the pre-commit hook via bootstrap
-`.git/hooks` is not versioned; each machine needs a one time `python scripts/install_pre_commit_hook.py` (which now includes the skills manifest/index regeneration and the fixed `.env` guard). Wire it into `scripts/bootstrap.py` or the installer so it happens automatically.
+`.git/hooks` is not versioned; each machine needs a one time `python scripts/install_pre_commit_hook.py` (which now includes the skills manifest/index regeneration and the fixed `.env` guard). Wire it into `scripts/bootstrap.py` or the installer so it happens automatically. **2026-07-18 groom:** wire in `install_pre_push_hook.py` too, and route through the maintained installers only — `scripts/install_git_hooks.py` is a separate, unreferenced, obfuscated installer slated for deletion (issues.md bug 1).
 
 ### 14. Sync the docs site changelog automatically
 `docs/change_log.md` is a manual byte-for-byte copy of `change_log.md` for the GitHub Pages site and will drift as soon as someone updates the changelog without remembering the copy. Extend the pre-commit hook in `scripts/install_pre_commit_hook.py` to copy `change_log.md` to `docs/change_log.md` and stage it whenever the changelog is part of a commit (same pattern as the skills manifest regeneration). Consider whether `docs/docs.md` and `docs/index.md`, which duplicate README content, deserve the same treatment.
