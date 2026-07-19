@@ -5,7 +5,8 @@ Work exactly one item end to end, leaving the repository in a state where this c
 ## 1. Select
 
 - Check `documentation/task_journals/` first (ignore `TEMPLATE.md`). If a journal for an in-flight item exists, resume that item instead of starting a new one.
-- Otherwise read the ranked tables in `issues.md` and `improvements.md` and pick the single highest-priority open item across both. Bugs outrank improvement work of similar effort, per the rule in `issues.md`.
+- Otherwise read the ranked tables in `issues.md` and `improvements.md` and pick the single highest-priority open item across both. Bugs outrank improvement work of similar score, per the rule in `issues.md`.
+- **Below-floor gate:** never silently pick an item flagged `⚠️ below floor` (score under the 0.5 ROI floor defined in `improvements.md`). Skip past it to the highest-scoring above-floor item, and tell the user which flagged items were skipped so they can confirm one (work it anyway), re-scope it until it clears the floor, or close it. Work a below-floor item only on the user's explicit confirmation in the current session.
 
 ## 2. Re-evaluate before implementing
 
