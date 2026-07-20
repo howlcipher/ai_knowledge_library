@@ -24,6 +24,10 @@
 
 - **`actionlint`** (Go, MIT) — GitHub Actions workflow linter; catches YAML syntax and semantic errors (bad `needs:`/context references, invalid `uses:` targets) that `pyyaml` can't. Installed 2026-07-19 via `go install github.com/rhysd/actionlint/cmd/actionlint@latest` (binary at `$(go env GOPATH)/bin/actionlint`) for improvements item 28's workflow audit. Run it against any edited `.github/workflows/*.yml` before committing — no need to ask again, it is already on this machine.
 
+## Known environment gaps
+
+- **No local Jekyll/Ruby toolchain** — confirmed 2026-07-19 during improvements item 39 (`which jekyll bundle` and `gem list jekyll` all empty). Changes to `docs_theme/_layouts/*.html` or `docs/_config.yml` cannot be rendered locally; verify Liquid syntax by careful manual review plus the existing `BeautifulSoup`-based `tests/test_frontend.py`/`tests/test_docs_mirror.py`, and rely on the `docs.yml` GitHub Actions Pages build for the real render. Ask before installing Ruby/Jekyll/Bundler if a future task needs an actual local preview.
+
 ## Discovery sources (when the roster has no fit)
 
 - **There's An AI For That** (theresanaiforthat.com) — directory of AI tools/models by task category.
