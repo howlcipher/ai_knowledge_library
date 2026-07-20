@@ -23,7 +23,8 @@
 ## Progress Log
 
 - 2026-07-20 — Re-verified bug live: `atexit`-only shutdown confirmed in `src/core/orchestrator.py:239-244`; no conftest.py exists in the repo; `config/settings.yaml` has a live `mcp_servers.fetch` entry matched by `active_mcps`, confirming real subprocess spawn on every `Orchestrator()` construction in tests. Opened journal, about to delegate.
+- 2026-07-20 — Delegated to Antigravity CLI / Gemini 3.1 Pro (Low): failed immediately with "Individual quota reached... Resets in 3h13m28s". `git status` confirmed zero partial edits. Retried with GPT-OSS 120B (Medium), running in background.
 
 ## Next Step
 
-Write the delegation brief and send it to Antigravity CLI (Gemini 3.1 Pro Low).
+Await GPT-OSS 120B delegation result; verify `git diff` against the brief (tests/conftest.py new, tests/test_orchestrator.py, tests/test_provider_preflight.py only), run `make test-changed` then `make test`.
