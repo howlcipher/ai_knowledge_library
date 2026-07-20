@@ -1,7 +1,7 @@
 import pytest
 import json
 from unittest.mock import patch, MagicMock
-from src.core.orchestrator import Agent, Orchestrator, tier_setting
+from src.core.orchestrator import Agent, Orchestrator, build_tier_agent, tier_setting
 
 class MockMessage:
     def __init__(self, content, tool_calls=None):
@@ -177,3 +177,19 @@ def test_main(monkeypatch):
         monkeypatch.setattr(sys, "argv", ["orchestrator.py", "What is AI?"])
         main()
         mock_run.assert_called_once_with("What is AI?")
+
+
+def test_build_tier_agent_returns_plain_agent_for_litellm_model():
+    agent = build_tier_agent("Tier3", "prompt", "gemini/gemini-1.5-pro", timeout=30)
+    assert isinstance(agent, Agent)
+    assert agent.model == "gemini/gemini-1.5-pro"
+    assert agent.timeout == 30
+
+
+def test_build_tier_agent_returns_claude_code_agent_for_sentinel():
+    from src.core.claude_code_backend import ClaudeCodeAgent
+
+    agent = build_tier_agent("Tier1", "prompt", "claude_code", timeout=60)
+    assert isinstance(agent, ClaudeCodeAgent)
+    assert agent.model == "claude_code"
+    assert agent.timeout == 60

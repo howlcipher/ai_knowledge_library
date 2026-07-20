@@ -18,12 +18,15 @@ Per model the preflight verifies, in order:
 
 import json
 import os
+import shutil
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from typing import List, Optional
 
 import litellm
+
+from src.core.claude_code_backend import CLAUDE_CODE_MODEL
 
 OLLAMA_PREFIXES = ("ollama/", "ollama_chat/")
 DEFAULT_OLLAMA_BASE = "http://localhost:11434"
@@ -73,6 +76,19 @@ def _check_ollama_tag(model: str, timeout: float) -> Optional[str]:
     )
 
 
+def _check_claude_code_cli() -> Optional[str]:
+    """Verifies the `claude` CLI binary is on PATH. No generation ping is
+    sent — invoking headless Claude Code costs real session usage, unlike a
+    one token LiteLLM ping, so preflight only checks reachability."""
+    if shutil.which("claude") is None:
+        return (
+            "The 'claude' CLI was not found on PATH, required for the "
+            "claude_code tier backend. Install Claude Code and ensure "
+            "`claude` is on PATH, or change tier_models to a LiteLLM model."
+        )
+    return None
+
+
 def _check_generation(model: str, timeout: float) -> Optional[str]:
     """One token generation proving the provider accepts the model."""
     try:
@@ -104,7 +120,10 @@ def preflight_models(models: List[str], timeout: float = 120.0) -> PreflightResu
                 result.errors.append(error)
                 result.ok = False
                 continue
-        error = _check_generation(model, timeout=timeout)
+        if model == CLAUDE_CODE_MODEL:
+            error = _check_claude_code_cli()
+        else:
+            error = _check_generation(model, timeout=timeout)
         if error:
             result.errors.append(error)
             result.ok = False

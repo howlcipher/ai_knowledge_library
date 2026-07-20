@@ -18,6 +18,7 @@ from langgraph.graph import END, StateGraph
 from langchain_core.runnables.config import RunnableConfig
 from langsmith import Client
 
+from src.core.claude_code_backend import CLAUDE_CODE_MODEL, ClaudeCodeAgent
 from src.infrastructure.config_loader import default_loader, load_config
 from src.infrastructure.telemetry_logger import log_gate_failure, log_telemetry
 import atexit
@@ -37,6 +38,24 @@ def tier_setting(overrides: dict, tier: int, default):
     """Resolves a per tier override (key ``tier_<n>``), falling back to the
     default when the override is missing, empty, or zero."""
     return (overrides or {}).get(f"tier_{tier}") or default
+
+
+def build_tier_agent(
+    name: str,
+    prompt: str,
+    model: str,
+    timeout: Optional[float] = None,
+    response_format: Optional[dict] = None,
+):
+    """Constructs the agent for one payload-pipeline tier: a ClaudeCodeAgent
+    when the resolved model is the CLAUDE_CODE_MODEL sentinel (shells out to
+    headless Claude Code instead of LiteLLM), otherwise the usual
+    LiteLLM-backed Agent."""
+    if model == CLAUDE_CODE_MODEL:
+        return ClaudeCodeAgent(
+            name, prompt, model, timeout=timeout, response_format=response_format
+        )
+    return Agent(name, prompt, model, timeout=timeout, response_format=response_format)
 
 
 class Agent:
@@ -463,7 +482,7 @@ class Orchestrator:
                 )
 
         def tier_agent(name, prompt, tier):
-            return Agent(
+            return build_tier_agent(
                 name,
                 prompt,
                 model_for(tier),

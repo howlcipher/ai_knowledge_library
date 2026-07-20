@@ -3,6 +3,7 @@ import json
 import urllib.error
 from unittest.mock import patch
 
+from src.core.claude_code_backend import CLAUDE_CODE_MODEL
 from src.core.provider_preflight import (
     PreflightResult,
     ollama_base_url,
@@ -125,3 +126,20 @@ def test_payload_loop_skips_preflight_when_disabled(mock_preflight, mock_generat
     )
     orchestrator.run_payload_loop("Test query")
     mock_preflight.assert_not_called()
+
+
+@patch("src.core.provider_preflight.shutil.which")
+def test_claude_code_model_checks_cli_on_path(mock_which):
+    mock_which.return_value = "/usr/bin/claude"
+    result = preflight_models([CLAUDE_CODE_MODEL])
+    assert result.ok
+    assert result.errors == []
+    mock_which.assert_called_once_with("claude")
+
+
+@patch("src.core.provider_preflight.shutil.which")
+def test_claude_code_model_missing_cli_fails(mock_which):
+    mock_which.return_value = None
+    result = preflight_models([CLAUDE_CODE_MODEL])
+    assert not result.ok
+    assert "claude" in result.errors[0].lower()

@@ -33,6 +33,8 @@ The schema enforces the tier and pass pairing with conditional constraints: pass
 
 Each tier can run a different model via `payload_pipeline.tier_models` in `config/settings.yaml` (`tier_1`, `tier_2`, `tier_3`); an empty value falls back to the top level `llm_model`. Match cost to responsibility: a cheap fast model for Tier 3 drafting, a strong reviewer for Tier 2, the strongest available judge for Tier 1.
 
+A tier's model may also be set to the literal string `claude_code` instead of a LiteLLM model identifier. This routes that tier through `src/core/claude_code_backend.py`'s `ClaudeCodeAgent`, which shells out to headless Claude Code (`claude -p ... --output-format json`) instead of LiteLLM, so the tier is judged by the Claude Pro subscription instead of an API-keyed provider. Preflight checks for `claude_code` verify the `claude` CLI is on PATH rather than sending a generation ping (a real Claude Code invocation costs session usage, unlike a one token LiteLLM ping). This backend does not support LiteLLM-style `response_format` schema enforcement; when structured outputs are enabled, the schema is folded into the prompt as an instruction instead.
+
 ## Field Mutation Matrix
 
 Zero trust boundary rule: every field an agent is not explicitly granted below must be copied through byte for byte. The gate diffs immutable fields between input and output and rejects unauthorized mutations.
