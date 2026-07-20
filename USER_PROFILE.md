@@ -11,7 +11,7 @@
 *   **Target Base Salary:** $105,000+
 
 ## Professional Summary
-Automation and systems engineer with over 9 years of experience spanning infrastructure automation, DevOps, and production support. Specialized in Python and Go development for APIs, backend systems, and automated deployment pipelines. Proven ability to build secure and scalable solutions that streamline operations across development and production environments. Strong foundation in enterprise networking, security controls, and system integration. Outside of work, directs AI coding agents (Claude Code, Gemini CLI) through prompt engineering to architect, build, and test personal automation platforms end to end. Passionate about writing maintainable code and solving complex technical challenges in security focused environments.
+Automation and systems engineer with over 10 years of experience spanning infrastructure automation, DevOps, and production support. Specialized in Python and Go development for APIs, backend systems, and automated deployment pipelines. Proven ability to build secure and scalable solutions that streamline operations across development and production environments. Strong foundation in enterprise networking, security controls, and system integration. Outside of work, directs AI coding agents (Claude Code, Gemini CLI) through prompt engineering to architect, build, and test personal automation platforms end to end. Passionate about writing maintainable code and solving complex technical challenges in security focused environments.
 
 ## Core Skills
 * Programming and Development: Python, Go, C#, .NET Framework, PowerShell, SQL, REST APIs, ETL
