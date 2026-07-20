@@ -41,7 +41,7 @@ The `tools/` directory contains powerful automation scripts that you (or an AI a
 * **`python src/core/orchestrator.py "<query>"`**: Executes the Multi-Agent Orchestrator. This deploys a `Researcher`, a `QA Reviewer`, and a native `Technical_Writer` (Stealth AI) agent to solve complex tasks, run QA, and perfectly humanize the output to bypass external AI detectors. 
 * **Model Context Protocol (MCP) Capabilities**: Your orchestrator is equipped with 20+ massive domain integrations. Simply run the orchestrator, and it will autonomously use AWS, Kubernetes, Yahoo Finance, Shodan, Puppeteer (Browser), Google Drive, Wikipedia, and more to solve your prompts natively.
 * **`python scripts/github_profile_sync.py`**: Automatically syncs your local profile variables against your live GitHub identity.
-* **`python scripts/translate_project.py --lang [CODE]`**: Translates the documentation into any of the 13 supported global languages.
+* **`python scripts/translate_project.py --lang [CODE]`**: Translates the documentation into any of the 17 supported global languages.
 * **`python src/core/adversarial_tester.py`**: Runs a prompt-injection and adversarial logic test against your ruleset to ensure the AI behaves safely.
 
 ---

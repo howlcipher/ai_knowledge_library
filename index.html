@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2">
+    <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
     <!-- CRT Scanline Effect Overlay -->
@@ -29,9 +29,16 @@
 
     <nav class="mecha-nav">
         <div class="logo">AI_LIB<span class="blinking-cursor">_</span></div>
-        <ul class="nav-links">
+        <div class="hamburger-menu" id="hamburger-menu">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+        </div>
+        <ul class="nav-links" id="nav-links">
             <li><a href="#features" data-i18n="nav_features">[FEATURES]</a></li>
-            <li><a href="docs.html" data-i18n="nav_docs">[DOCS]</a></li>
+            <li><a href="api/" data-i18n="nav_docs">[API_DOCS]</a></li>
+            <li><a href="documentation/USER_GUIDE.html">[MANUAL]</a></li>
+            <li><a href="change_log.html">[CHANGELOG]</a></li>
             <li><a href="https://github.com/howlcipher/ai_knowledge_library">[GITHUB]</a></li>
         </ul>
         <div class="controls">
@@ -104,6 +111,6 @@
         <p><span data-i18n="footer_text">> Built for the open-source agentic community. Open sourced on </span><a href="https://github.com/howlcipher/ai_knowledge_library">GitHub</a>.</p>
     </footer>
 
-    <script src="app.js?v=2"></script>
+    <script src="app.js?v=3"></script>
 </body>
 </html>

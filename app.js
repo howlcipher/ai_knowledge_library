@@ -1,6 +1,10 @@
 /**
- * MECHA_OS Frontend Application Controller
- * Handles theme switching, localization (i18n), and accessibility options.
+ * AI_LIB Frontend Application Controller
+ * Shared by the landing page and every Jekyll-rendered doc page.
+ * Handles theme switching, the mobile nav drawer, and (landing page
+ * only) localization and colorblind mode. Every control is optional —
+ * doc pages only render the theme toggle and hamburger menu, while the
+ * landing page also renders the language select and colorblind toggle.
  */
 
 class MechaApp {
@@ -9,15 +13,11 @@ class MechaApp {
         this.themeToggle = document.getElementById('themeToggle');
         this.langSelect = document.getElementById('langSelect');
         this.colorblindToggle = document.getElementById('colorblindToggle');
-        
-        // Ensure core UI elements exist before binding
-        if (!this.themeToggle || !this.langSelect || !this.colorblindToggle) {
-            console.error("Critical UI components missing.");
-            return;
-        }
+        this.hamburger = document.getElementById('hamburger-menu');
+        this.navLinks = document.getElementById('nav-links');
 
         this.i18nData = this.getTranslations();
-        
+
         this.init();
     }
 
@@ -27,16 +27,38 @@ class MechaApp {
     init() {
         this.bindEvents();
         this.detectInitialTheme();
-        this.detectInitialLanguage();
+        if (this.langSelect) {
+            this.detectInitialLanguage();
+        }
     }
 
     /**
-     * Binds event listeners to UI controls.
+     * Binds event listeners to whichever UI controls are present on
+     * the current page.
      */
     bindEvents() {
-        this.themeToggle.addEventListener('click', () => this.toggleTheme());
-        this.colorblindToggle.addEventListener('click', () => this.toggleColorblindMode());
-        this.langSelect.addEventListener('change', (e) => this.translatePage(e.target.value));
+        if (this.themeToggle) {
+            this.themeToggle.addEventListener('click', () => this.toggleTheme());
+        }
+        if (this.colorblindToggle) {
+            this.colorblindToggle.addEventListener('click', () => this.toggleColorblindMode());
+        }
+        if (this.langSelect) {
+            this.langSelect.addEventListener('change', (e) => this.translatePage(e.target.value));
+        }
+        if (this.hamburger && this.navLinks) {
+            this.hamburger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.navLinks.classList.toggle('active');
+                this.hamburger.classList.toggle('open');
+            });
+            document.addEventListener('click', (event) => {
+                if (!this.navLinks.contains(event.target) && this.navLinks.classList.contains('active')) {
+                    this.navLinks.classList.remove('active');
+                    this.hamburger.classList.remove('open');
+                }
+            });
+        }
     }
 
     /**
@@ -46,7 +68,7 @@ class MechaApp {
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
             this.setTheme('light');
         } else {
-            this.setTheme('matrix');
+            this.setTheme('dark');
         }
     }
 
@@ -59,30 +81,29 @@ class MechaApp {
             this.langSelect.value = userLang;
             this.translatePage(userLang);
         } else {
-            // Default to English
             this.translatePage('en');
         }
     }
 
     /**
-     * Sets the application theme (light or dark).
-     * @param {string} theme - The theme to apply.
+     * Sets the application theme.
+     * @param {string} theme - "light", "matrix", or "dark".
      */
     setTheme(theme) {
         if (theme === 'light') {
             this.root.setAttribute('data-theme', 'light');
-            this.themeToggle.textContent = 'DAY';
+            if (this.themeToggle) this.themeToggle.textContent = 'DAY';
         } else if (theme === 'matrix') {
             this.root.setAttribute('data-theme', 'matrix');
-            this.themeToggle.textContent = 'NEURO';
+            if (this.themeToggle) this.themeToggle.textContent = 'NEURO';
         } else {
             this.root.setAttribute('data-theme', 'dark');
-            this.themeToggle.textContent = 'NIGHT';
+            if (this.themeToggle) this.themeToggle.textContent = 'NIGHT';
         }
     }
 
     /**
-     * Toggles between light and dark themes.
+     * Cycles dark -> light -> matrix -> dark.
      */
     toggleTheme() {
         const currentTheme = this.root.getAttribute('data-theme');
@@ -125,6 +146,8 @@ class MechaApp {
 
     /**
      * Returns the localized dictionary mapping for all supported languages.
+     * Landing-page copy only — doc pages are raw markdown/HTML with no
+     * data-i18n spans.
      * @returns {Object} Localization dictionary
      */
     getTranslations() {

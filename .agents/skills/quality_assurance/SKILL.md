@@ -8,6 +8,7 @@ triggers:
   - "validation"
   - "qa"
 tier: 1
+pipeline_pass: 2
 ---
 
 # Quality Assurance Guidelines
