@@ -16,6 +16,7 @@
 - Run the `agy -p` command with a Bash timeout well above the tool's 2-minute default (or run it in the background) — `--print-timeout` only bounds agy's own internal wait, not the calling shell's timeout, and a real edit can take several minutes.
 - List live model names with `agy models`; on a quota error try another tier before giving up, but expect the Gemini tiers (Flash and Pro) to share one account-wide quota — all three once failed together with an identical reset time — while GPT-OSS 120B errors independently.
 - When Antigravity is fully unavailable, fall back to local Ollama for drafting, and apply trivial fully-specified edits directly.
+- GPT-OSS 120B via agy has twice (item 34, and again while writing this very doc for item 18) rendered plain compound-word hyphens as the Unicode non-breaking hyphen (U+2011) instead of ASCII `-` in generated prose. Check delegated markdown/prose for this with `grep -n $'\xe2\x80\x91' <file>` before committing, and fix with a plain string substitution back to `-`.
 
 ## Discovery sources (when the roster has no fit)
 
