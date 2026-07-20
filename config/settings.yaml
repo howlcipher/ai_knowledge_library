@@ -1,4 +1,8 @@
 # Centralized Configuration Loader
+# No Gemini/Anthropic API key is configured on this machine; default to a
+# locally pulled Ollama model so a plain run works with no subscription cost.
+llm_model: "ollama/qwen3:30b-instruct"
+
 database:
   chroma_db_path: ".chroma"
   mode: "sqlite" # 'sqlite' or 'pgvector'
