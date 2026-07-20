@@ -96,8 +96,8 @@ and chat with the repository context.</p>
 </span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a><span class="k">class</span><span class="w"> </span><span class="nc">KnowledgeUI</span><span class="p">:</span>
 </span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Manages the Streamlit UI for the knowledge library.&quot;&quot;&quot;</span>
 </span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a>
-</span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">collection_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ai_library_knowledge&quot;</span><span class="p">):</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the UI with a specific collection name.&quot;&quot;&quot;</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the UI.&quot;&quot;&quot;</span>
 </span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.vector_store_factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorStoreFactory</span>
 </span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a>
 </span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">store</span> <span class="o">=</span> <span class="n">VectorStoreFactory</span><span class="o">.</span><span class="n">get_store</span><span class="p">()</span>
@@ -216,8 +216,8 @@ and chat with the repository context.</p>
             <div class="pdoc-code codehilite"><pre><span></span><span id="KnowledgeUI-21"><a href="#KnowledgeUI-21"><span class="linenos"> 21</span></a><span class="k">class</span><span class="w"> </span><span class="nc">KnowledgeUI</span><span class="p">:</span>
 </span><span id="KnowledgeUI-22"><a href="#KnowledgeUI-22"><span class="linenos"> 22</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Manages the Streamlit UI for the knowledge library.&quot;&quot;&quot;</span>
 </span><span id="KnowledgeUI-23"><a href="#KnowledgeUI-23"><span class="linenos"> 23</span></a>
-</span><span id="KnowledgeUI-24"><a href="#KnowledgeUI-24"><span class="linenos"> 24</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">collection_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ai_library_knowledge&quot;</span><span class="p">):</span>
-</span><span id="KnowledgeUI-25"><a href="#KnowledgeUI-25"><span class="linenos"> 25</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the UI with a specific collection name.&quot;&quot;&quot;</span>
+</span><span id="KnowledgeUI-24"><a href="#KnowledgeUI-24"><span class="linenos"> 24</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="KnowledgeUI-25"><a href="#KnowledgeUI-25"><span class="linenos"> 25</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the UI.&quot;&quot;&quot;</span>
 </span><span id="KnowledgeUI-26"><a href="#KnowledgeUI-26"><span class="linenos"> 26</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.vector_store_factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorStoreFactory</span>
 </span><span id="KnowledgeUI-27"><a href="#KnowledgeUI-27"><span class="linenos"> 27</span></a>
 </span><span id="KnowledgeUI-28"><a href="#KnowledgeUI-28"><span class="linenos"> 28</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">store</span> <span class="o">=</span> <span class="n">VectorStoreFactory</span><span class="o">.</span><span class="n">get_store</span><span class="p">()</span>
@@ -319,21 +319,21 @@ and chat with the repository context.</p>
                                         <input id="KnowledgeUI.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
             
-        <span class="name">KnowledgeUI</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">collection_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;ai_library_knowledge&#39;</span></span>)</span>
+        <span class="name">KnowledgeUI</span><span class="signature pdoc-code condensed">()</span>
 
                 <label class="view-source-button" for="KnowledgeUI.__init__-view-source"><span>View Source</span></label>
 
     </div>
     <a class="headerlink" href="#KnowledgeUI.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="KnowledgeUI.__init__-24"><a href="#KnowledgeUI.__init__-24"><span class="linenos">24</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">collection_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ai_library_knowledge&quot;</span><span class="p">):</span>
-</span><span id="KnowledgeUI.__init__-25"><a href="#KnowledgeUI.__init__-25"><span class="linenos">25</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the UI with a specific collection name.&quot;&quot;&quot;</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="KnowledgeUI.__init__-24"><a href="#KnowledgeUI.__init__-24"><span class="linenos">24</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="KnowledgeUI.__init__-25"><a href="#KnowledgeUI.__init__-25"><span class="linenos">25</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the UI.&quot;&quot;&quot;</span>
 </span><span id="KnowledgeUI.__init__-26"><a href="#KnowledgeUI.__init__-26"><span class="linenos">26</span></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">src.infrastructure.vector_store_factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorStoreFactory</span>
 </span><span id="KnowledgeUI.__init__-27"><a href="#KnowledgeUI.__init__-27"><span class="linenos">27</span></a>
 </span><span id="KnowledgeUI.__init__-28"><a href="#KnowledgeUI.__init__-28"><span class="linenos">28</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">store</span> <span class="o">=</span> <span class="n">VectorStoreFactory</span><span class="o">.</span><span class="n">get_store</span><span class="p">()</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Initialize the UI with a specific collection name.</p>
+            <div class="docstring"><p>Initialize the UI.</p>
 </div>
 
 
