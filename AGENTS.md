@@ -38,12 +38,12 @@ When a conflict is detected:
 
 This file is the single canonical rulebook. The per-agent context files (`GEMINI.md` for Gemini CLI / Antigravity, `CLAUDE.md` for Claude Code) import this file; edit `AGENTS.md` only, never the thin entry-point files, so the rules never drift between agents.
 
-* **Skills:** All agents load domain skills from `.agents/skills/<skill_name>/SKILL.md`. Claude Code additionally discovers them through the `.claude/skills` link.
+* **Skills:** All agents load domain skills from `.agents/skills/<skill_name>/SKILL.md`. Claude Code additionally discovers them (plus the command skills below) through the `.claude/skills/` directory, a set of per-entry symlinks rebuilt by `scripts/generate_skills_manifest.py` — never edit its contents by hand.
 * **Rules:** All agents must honor every file in `.agents/rules/`.
 
 ## Prompt Library
 
-Reusable task prompts live in `.agents/prompts/`; its `README.md` is the index. Each prompt file is canonical, with thin per-agent wrappers (Claude Code slash commands in `.claude/commands/`, Gemini CLI commands in `.gemini/commands/`) that only point at it. Edit the canonical prompt only, never the wrappers, so invocations never drift between agents. Current prompts: `work_next_item` (work the top open item across `issues.md` and `improvements.md` per the Working Protocol), `resume_task` (continue an interrupted task from its journal), `groom_backlogs` (re-evaluate and clean both backlogs without implementing).
+Reusable task prompts live in `.agents/prompts/`; its `README.md` is the index. Each prompt file is canonical, with thin per-agent wrappers that only point at it: Claude Code command skills in `.agents/skill_commands/<name>/SKILL.md` (symlinked into `.claude/skills/` for project use, and globally into `~/.claude/skills/` on any machine that has run `scripts/install_global.sh`/`.ps1`), and Gemini CLI commands in `.gemini/commands/`. Edit the canonical prompt only, never the wrappers, so invocations never drift between agents. Current prompts: `work_next_item` (work the top open item across `issues.md` and `improvements.md` per the Working Protocol), `resume_task` (continue an interrupted task from its journal), `groom_backlogs` (re-evaluate and clean both backlogs without implementing).
 
 ## Skills Manifest
 
