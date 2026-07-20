@@ -196,9 +196,8 @@ class WebScraper:
 class VectorStoreManager:
     """Manages insertion of documents into the configured vector store."""
 
-    def __init__(self, db_mode: str, collection_name: str = "ai_library_knowledge"):
+    def __init__(self, db_mode: str):
         self.db_mode = db_mode
-        self.collection_name = collection_name
         self.batch_size = 100
 
     def insert(self, docs: List[str], metadatas: List[Dict], ids: List[str]):

@@ -20,8 +20,8 @@ except ImportError:
 class KnowledgeUI:
     """Manages the Streamlit UI for the knowledge library."""
 
-    def __init__(self, collection_name: str = "ai_library_knowledge"):
-        """Initialize the UI with a specific collection name."""
+    def __init__(self):
+        """Initialize the UI."""
         from src.infrastructure.vector_store_factory import VectorStoreFactory
 
         self.store = VectorStoreFactory.get_store()
