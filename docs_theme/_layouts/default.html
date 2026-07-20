@@ -4,54 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ page.title | default: site.title | default: "AI_KNOWLEDGE_LIBRARY" }}</title>
-    <link rel="stylesheet" href="{{ '/assets/css/cyberpunk.css' | relative_url }}">
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="{{ '/favicon.svg' | relative_url }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ '/styles.css' | relative_url }}?v=3">
   </head>
   <body>
-    <div class="crt-overlay"></div>
-    <header class="page-header">
-      <div class="header-content">
-        <h1 class="project-name">SYS_CORE<span class="blink">_</span></h1>
-        <div class="hamburger-menu" id="hamburger-menu">
-          <span class="bar"></span>
-          <span class="bar"></span>
-          <span class="bar"></span>
-        </div>
-        <nav class="nav-links" id="nav-links">
-          <a href="{{ '/' | relative_url }}">Home</a>
-          <a href="{{ '/docs.html' | relative_url }}">Index</a>
-          <a href="{{ '/documentation/USER_GUIDE.html' | relative_url }}">Manual</a>
-          <a href="{{ '/change_log.html' | relative_url }}">Logs</a>
-          <a href="{{ '/AGENTS.html' | relative_url }}">Rules</a>
-        </nav>
-      </div>
-    </header>
+    <div class="scanlines"></div>
 
-    <main id="content" class="main-content">
+    <nav class="mecha-nav">
+      <div class="logo">AI_LIB<span class="blinking-cursor">_</span></div>
+      <div class="hamburger-menu" id="hamburger-menu">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </div>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="{{ '/' | relative_url }}">[HOME]</a></li>
+        <li><a href="{{ '/api/' | relative_url }}">[API_DOCS]</a></li>
+        <li><a href="{{ '/documentation/USER_GUIDE.html' | relative_url }}">[MANUAL]</a></li>
+        <li><a href="{{ '/change_log.html' | relative_url }}">[CHANGELOG]</a></li>
+        <li><a href="{{ '/AGENTS.html' | relative_url }}">[RULES]</a></li>
+        <li><a href="https://github.com/howlcipher/ai_knowledge_library">[GITHUB]</a></li>
+      </ul>
+      <div class="controls">
+        <button id="colorblindToggle" class="colorblind-toggle hud-box">COLORBLIND</button>
+        <button id="themeToggle" class="theme-toggle hud-box">NIGHT</button>
+      </div>
+    </nav>
+
+    <main class="content-panel">
       {{ content }}
     </main>
 
-    <footer class="site-footer">
-      <p>SYS_VER 1.0 // ANTIGRAVITY ENGINE // NEURAL NET ACTIVE</p>
+    <footer class="mecha-footer">
+      <p>&gt; Built for the open-source agentic community. Open sourced on <a href="https://github.com/howlcipher/ai_knowledge_library">GitHub</a>.</p>
     </footer>
 
-    <script>
-      const hamburger = document.getElementById('hamburger-menu');
-      const navLinks = document.getElementById('nav-links');
-
-      hamburger.addEventListener('click', function(e) {
-        e.stopPropagation();
-        navLinks.classList.toggle('active');
-        this.classList.toggle('open');
-      });
-
-      // Close menu when clicking outside
-      document.addEventListener('click', function(event) {
-        if (!navLinks.contains(event.target) && navLinks.classList.contains('active')) {
-          navLinks.classList.remove('active');
-          hamburger.classList.remove('open');
-        }
-      });
-    </script>
+    <script src="{{ '/app.js' | relative_url }}?v=3"></script>
   </body>
 </html>

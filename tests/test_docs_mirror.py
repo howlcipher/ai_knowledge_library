@@ -2,6 +2,45 @@ import subprocess
 from pathlib import Path
 
 
+def test_site_nav_has_no_broken_docs_html_link():
+    """
+    Both the landing page and the Jekyll layout used to link to a
+    "/docs.html" nav item that had no corresponding source file anywhere
+    in the repo, producing a live 404 on the deployed Pages site. Guards
+    against reintroducing that dead link; nav items should point at real
+    generated destinations like the pdoc API index instead.
+    """
+    repo_root = Path(__file__).resolve().parents[1]
+    index_html = (repo_root / "docs" / "index.html").read_text(encoding="utf-8")
+    layout_html = (
+        repo_root / "docs_theme" / "_layouts" / "default.html"
+    ).read_text(encoding="utf-8")
+
+    assert 'href="docs.html"' not in index_html
+    assert "'/docs.html'" not in layout_html
+    assert '"/docs.html"' not in layout_html
+
+    assert 'href="api/"' in index_html
+    assert "'/api/' | relative_url" in layout_html
+
+
+def test_landing_page_and_layout_share_one_stylesheet():
+    """
+    The landing page and every other Pages-rendered doc page used to load
+    two unrelated, visually inconsistent stylesheets (docs/styles.css vs.
+    docs_theme/assets/css/cyberpunk.css). They now share a single unified
+    docs/styles.css so the site reads as one coherent design system.
+    """
+    repo_root = Path(__file__).resolve().parents[1]
+    layout_html = (
+        repo_root / "docs_theme" / "_layouts" / "default.html"
+    ).read_text(encoding="utf-8")
+
+    assert "'/styles.css' | relative_url" in layout_html
+    assert "cyberpunk.css" not in layout_html
+    assert not (repo_root / "docs_theme" / "assets").exists()
+
+
 def test_only_hand_authored_frontend_tracked_under_docs():
     """
     docs/ mixes a hand-authored frontend (index.html, app.js, styles.css,

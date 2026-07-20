@@ -68,7 +68,6 @@ docs:
 	pdoc ./src ./scripts -o docs/.build-tmp/api
 	cp -r documentation docs/.build-tmp/documentation
 	cp -r assets docs/.build-tmp/assets
-	cp -r docs_theme/assets/. docs/.build-tmp/assets/
 	cp -r .agents docs/.build-tmp/.agents
 	@echo "Swapping in freshly built docs subtrees..."
 	rm -rf docs/api docs/documentation docs/assets docs/.agents
