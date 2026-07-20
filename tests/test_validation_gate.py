@@ -234,8 +234,15 @@ def test_run_exhaustion_builds_failed_payload(gate):
     assert result.attempts == 3
     failed = result.payload
     assert failed["pipeline"]["status"] == "failed"
+    assert failed["pipeline"]["attempt"] == 3
     assert failed["error"]["code"] == "SCHEMA_VALIDATION_FAILED"
     assert failed["error"]["failure_vector"] == "validation_gate.parse"
+    assert failed["error"]["context"]["max_attempts"] == 3
+    assert len(failed["error"]["context"]["attempt_errors"]) == 3
+    assert all(
+        e.startswith(f"attempt {i + 1} (parse):")
+        for i, e in enumerate(failed["error"]["context"]["attempt_errors"])
+    )
     assert gate.schema_errors(failed) == []
 
 
@@ -440,6 +447,20 @@ def test_build_failed_payload_custom_code_vector_and_context(gate):
     assert default["error"]["context"] == {"max_attempts": 3}
 
 
+def test_build_failed_payload_attempt_override(gate):
+    prev = make_initial()
+    failed = gate.build_failed_payload(
+        prev,
+        ["Provider unavailable"],
+        stage="transport",
+        attempt=0,
+    )
+    assert failed["pipeline"]["attempt"] == 0
+    # Omitting attempt still defaults to max_attempts (gate-exhaustion shape).
+    default = gate.build_failed_payload(prev, ["bad json"], stage="parse")
+    assert default["pipeline"]["attempt"] == 3
+
+
 def test_orchestrator_dead_provider_reports_upstream_unavailable(
     tmp_path, monkeypatch
 ):
@@ -476,6 +497,7 @@ def test_orchestrator_dead_provider_reports_upstream_unavailable(
         final = orchestrator.run_loop("Write a runbook.")
 
     assert final["pipeline"]["status"] == "failed"
+    assert final["pipeline"]["attempt"] == 0
     assert final["error"]["code"] == "UPSTREAM_UNAVAILABLE"
     assert final["error"]["failure_vector"] == "llm_transport.completion"
     assert final["error"]["context"]["model"] == "gemini/gemini-1.5-pro"

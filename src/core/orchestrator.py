@@ -527,6 +527,7 @@ class Orchestrator:
                     payload,
                     [str(e)],
                     stage="transport",
+                    attempt=0,
                     code="UPSTREAM_UNAVAILABLE",
                     failure_vector="llm_transport.completion",
                     context={

@@ -248,6 +248,7 @@ class ValidationGate:
         after every failed attempt, including the final exhausting one.
         """
         feedback = None
+        attempt_errors: List[str] = []
         last = GateResult(False, None, ["no attempts executed"], "none")
         for attempt in range(1, self.max_attempts + 1):
             raw = call_fn(feedback)
@@ -257,6 +258,10 @@ class ValidationGate:
                 last.payload["pipeline"]["attempt"] = attempt
                 return last
             feedback = "VALIDATION ERROR:\n" + "\n".join(last.errors)
+            # Record attempt error history
+            attempt_errors.append(
+                f"attempt {attempt} ({last.stage}): {'; '.join(last.errors)[:2000]}"
+            )
             print(
                 f"[ValidationGate] Pass {expected_pass} attempt {attempt} failed "
                 f"at stage '{last.stage}': {last.errors[0]}"
@@ -264,7 +269,13 @@ class ValidationGate:
             if on_attempt_failure:
                 on_attempt_failure(attempt, last.stage, last.errors)
 
-        failed = self.build_failed_payload(prev, last.errors, last.stage)
+        failed = self.build_failed_payload(
+            prev,
+            last.errors,
+            last.stage,
+            attempt=self.max_attempts,
+            context={"max_attempts": self.max_attempts, "attempt_errors": attempt_errors},
+        )
         return GateResult(False, failed, last.errors, last.stage, self.max_attempts)
 
     def build_failed_payload(
@@ -272,6 +283,7 @@ class ValidationGate:
         prev: Optional[dict],
         errors: List[str],
         stage: str,
+        attempt: Optional[int] = None,
         code: str = "SCHEMA_VALIDATION_FAILED",
         failure_vector: Optional[str] = None,
         context: Optional[dict] = None,
@@ -286,7 +298,7 @@ class ValidationGate:
             return None
         failed = json.loads(json.dumps(prev))
         failed["pipeline"]["status"] = "failed"
-        failed["pipeline"]["attempt"] = self.max_attempts
+        failed["pipeline"]["attempt"] = attempt if attempt is not None else self.max_attempts
         failed["updated_at"] = utc_now()
         failed["error"] = {
             "code": code,
