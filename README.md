@@ -96,6 +96,12 @@ chmod +x scripts/install_global.sh
 ```
 </details>
 
+> **Working across multiple machines?** A plain `git pull` only updates the files inside this checkout — it does **not** touch anything under `~/.claude/` or `~/.gemini/`, since those live in your home directory, outside the repo. After pulling on a machine you haven't installed on yet, rerun the installer (or the fallback script above) there too. This is what gives you:
+> - The global rulebook import in `~/.claude/CLAUDE.md` (so `AGENTS.md` applies to every project on that machine, not just this one).
+> - Custom commands like `/work_next_item`, `/resume_task`, and `/groom_backlogs` available from **any** directory, not just from inside this repo.
+>
+> If you skip this step, the repo still works fully when your terminal's working directory is inside this checkout — Claude Code discovers everything it needs directly from the pulled files. The install step is only for making the library available *outside* this specific folder.
+
 ***
 
 ## 📖 User Guide & Wiki
