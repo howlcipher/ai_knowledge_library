@@ -9,6 +9,7 @@ triggers:
   - "adversary"
   - "attack simulation"
 tier: 2
+pipeline_pass: 2
 ---
 
 # Red Team Cyber Operations

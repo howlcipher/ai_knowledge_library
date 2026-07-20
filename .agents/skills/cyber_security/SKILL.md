@@ -11,6 +11,7 @@ triggers:
   - "zero trust"
   - "encryption"
 tier: 1
+pipeline_pass: 2
 ---
 
 # Cyber Security Directives

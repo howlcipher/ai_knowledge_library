@@ -343,6 +343,74 @@ def test_orchestrator_payload_loop_end_to_end(tmp_path, monkeypatch):
     ]
 
 
+def test_orchestrator_dispatches_skill_by_pipeline_pass(tmp_path, monkeypatch):
+    skills_dir = tmp_path / "skills"
+    skill_dir = skills_dir / "reviewer_skill"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text(
+        "---\n"
+        'name: "reviewer_skill"\n'
+        'description: "Reviews runbooks."\n'
+        "triggers:\n"
+        '  - "runbook"\n'
+        "pipeline_pass: 2\n"
+        "---\n\n"
+        "REVIEWER-ONLY-DIRECTIVE-TEXT\n"
+    )
+
+    cfg = {
+        "llm_model": "gemini/gemini-1.5-pro",
+        "active_mcps": [],
+        "mcp_servers": {},
+        "skill_router": {"enabled": True, "skills_dir": str(skills_dir), "top_k": 3},
+        "payload_pipeline": {
+            "enabled": True,
+            "max_attempts": 3,
+            "preflight": False,
+            "artifact_dir": str(tmp_path / "payloads"),
+        },
+    }
+    monkeypatch.setattr("src.core.orchestrator.load_config", lambda: cfg)
+
+    from src.core.orchestrator import Orchestrator
+    from src.core.skill_router import SkillRouter
+
+    orchestrator = Orchestrator()
+    orchestrator.skill_router = SkillRouter(skills_dir=str(skills_dir), cfg=cfg)
+    orchestrator.skill_router._scorer_failed = True
+
+    query = "Write a runbook."
+    # Must match what run_payload_loop actually computes for domain/routing.skills
+    # (the reviewer_skill trigger fires on "runbook"), not the generic/no-skill
+    # defaults make_initial() uses, or the pass 1 mutation check rejects it.
+    initial = build_initial_payload(
+        query,
+        "reviewer_skill",
+        [{"name": "reviewer_skill", "matched_by": "trigger", "trigger": "runbook"}],
+    )
+    pass1 = make_pass1(initial)
+    pass2 = make_pass2(pass1)
+    pass3 = make_pass3(pass2)
+    responses = [make_llm_response(json.dumps(p)) for p in (pass1, pass2, pass3)]
+
+    with (
+        patch("litellm.completion", side_effect=responses) as mock_completion,
+        patch("litellm.completion_cost", return_value=0.0),
+        patch("src.core.orchestrator.log_telemetry"),
+    ):
+        orchestrator.run_loop(query)
+
+    calls = mock_completion.call_args_list
+    assert len(calls) == 3
+
+    def user_content(call):
+        messages = call.kwargs["messages"]
+        return "\n".join(m["content"] for m in messages if m["role"] == "user")
+
+    assert "REVIEWER-ONLY-DIRECTIVE-TEXT" not in user_content(calls[0])
+    assert "REVIEWER-ONLY-DIRECTIVE-TEXT" in user_content(calls[1])
+
+
 def test_orchestrator_payload_loop_halts_on_invalid_output(tmp_path, monkeypatch):
     cfg = {
         "llm_model": "gemini/gemini-1.5-pro",

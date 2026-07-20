@@ -76,6 +76,7 @@ class Skill:
     path: str
     triggers: List[str] = field(default_factory=list)
     tier: Optional[int] = None
+    pipeline_pass: Optional[int] = None
 
     def load_content(self) -> str:
         """Reads and returns the full SKILL.md body."""
@@ -139,6 +140,11 @@ class SkillRouter:
                     tier = int(tier) if tier is not None else None
                 except (TypeError, ValueError):
                     tier = None
+                pipeline_pass = meta.get("pipeline_pass")
+                try:
+                    pipeline_pass = int(pipeline_pass) if pipeline_pass is not None else None
+                except (TypeError, ValueError):
+                    pipeline_pass = None
                 skills.append(
                     Skill(
                         name=str(meta.get("name", entry)),
@@ -146,6 +152,7 @@ class SkillRouter:
                         path=skill_path,
                         triggers=[str(t).lower() for t in triggers],
                         tier=tier,
+                        pipeline_pass=pipeline_pass,
                     )
                 )
             except Exception as e:
@@ -249,15 +256,27 @@ class SkillRouter:
 
         return selected
 
-    def build_context(self, prompt: str) -> str:
+    def build_context(self, prompt: str, pipeline_pass: Optional[int] = None) -> str:
         """
         Renders the routed skills as a context block for prompt injection,
         capped at max_context_chars. Skills that do not fit within the budget
         are listed by name and description only.
+
+        pipeline_pass: when given, only skills whose own `pipeline_pass` is
+        None (applies to every pass) or equal to this value are included.
         """
         routed = self.route(prompt)
         if not routed:
             return ""
+
+        if pipeline_pass is not None:
+            routed = [
+                (skill, score, reason)
+                for skill, score, reason in routed
+                if skill.pipeline_pass is None or skill.pipeline_pass == pipeline_pass
+            ]
+            if not routed:
+                return ""
 
         names = ", ".join(skill.name for skill, _, _ in routed)
         print(f"[SkillRouter] Routed skills: {names}")

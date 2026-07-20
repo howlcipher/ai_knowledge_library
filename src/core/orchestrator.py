@@ -398,8 +398,9 @@ class Orchestrator:
         gate = ValidationGate(max_attempts=self.payload_cfg.get("max_attempts", 3))
 
         # Dispatch: route skills once; they ride in routing.skills for all passes.
+        # Per-pass skill directive context (respecting each skill's optional
+        # pipeline_pass) is built fresh inside the pass loop below.
         skills = []
-        skill_context = ""
         if self.skill_router:
             try:
                 for skill, score, reason in self.skill_router.route(user_query):
@@ -412,7 +413,6 @@ class Orchestrator:
                         entry["matched_by"] = "semantic"
                         entry["score"] = round(score, 4)
                     skills.append(entry)
-                skill_context = self.skill_router.build_context(user_query)
             except Exception as e:
                 print(f"[Orchestrator] Skill routing failed: {e}")
 
@@ -483,6 +483,14 @@ class Orchestrator:
         payload = initial
         for pass_number, agent in tiers:
             print(f"\n--- Pass {pass_number}: {agent.name} ---")
+
+            # Build skill context specific to this pipeline pass
+            skill_context = ""
+            if self.skill_router:
+                try:
+                    skill_context = self.skill_router.build_context(user_query, pipeline_pass=pass_number)
+                except Exception as e:
+                    print(f"[Orchestrator] Skill context build failed for pass {pass_number}: {e}")
 
             def call_fn(feedback, agent=agent, payload=payload):
                 user_msg = json.dumps(payload)

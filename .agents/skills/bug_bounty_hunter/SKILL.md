@@ -8,6 +8,7 @@ triggers:
   - "proof of concept"
   - "cvss"
 tier: 2
+pipeline_pass: 2
 ---
 
 # Bug Bounty Hunting Methodologies

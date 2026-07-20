@@ -128,3 +128,63 @@ def test_index_scan_includes_dot_agents(tmp_path, monkeypatch):
     sources = {m["source"] for m in builder.metadata_to_insert}
     assert any(".agents" in s for s in sources), sources
     assert any("README.md" in s for s in sources), sources
+
+
+def test_build_context_filters_by_pipeline_pass(tmp_path):
+    base = str(tmp_path / "skills")
+    write_skill(base, "always_on", "Applies to every pass.", triggers=["alwayson"])
+    write_skill(base, "pass_two_only", "Reviewer skill for pass 2 only.", triggers=["passtwoonly"])
+
+    # Manually append a pipeline_pass key to the second skill's frontmatter
+    # since the write_skill helper does not support it.
+    skill_path = os.path.join(base, "pass_two_only", "SKILL.md")
+    with open(skill_path, "r", encoding="utf8") as f:
+        content = f.read()
+    content = content.replace(
+        'description: "Reviewer skill for pass 2 only."',
+        'description: "Reviewer skill for pass 2 only."\npipeline_pass: 2',
+    )
+    with open(skill_path, "w", encoding="utf8") as f:
+        f.write(content)
+
+    r = SkillRouter(skills_dir=base)
+    r._scorer_failed = True
+
+    pass_two_skill = next(s for s in r.skills if s.name == "pass_two_only")
+    assert pass_two_skill.pipeline_pass == 2
+    always_on_skill = next(s for s in r.skills if s.name == "always_on")
+    assert always_on_skill.pipeline_pass is None
+
+    prompt = "alwayson passtwoonly"
+
+    ctx_no_filter = r.build_context(prompt)
+    assert "always_on" in ctx_no_filter
+    assert "pass_two_only" in ctx_no_filter
+
+    ctx_pass_1 = r.build_context(prompt, pipeline_pass=1)
+    assert "always_on" in ctx_pass_1
+    assert "pass_two_only" not in ctx_pass_1
+
+    ctx_pass_2 = r.build_context(prompt, pipeline_pass=2)
+    assert "always_on" in ctx_pass_2
+    assert "pass_two_only" in ctx_pass_2
+
+
+def test_build_context_pipeline_pass_filter_can_empty_result(tmp_path):
+    base = str(tmp_path / "skills")
+    write_skill(base, "pass_two_only", "Reviewer skill.", triggers=["reviewonly"])
+    skill_path = os.path.join(base, "pass_two_only", "SKILL.md")
+    with open(skill_path, "r", encoding="utf8") as f:
+        content = f.read()
+    content = content.replace(
+        'description: "Reviewer skill."',
+        'description: "Reviewer skill."\npipeline_pass: 2',
+    )
+    with open(skill_path, "w", encoding="utf8") as f:
+        f.write(content)
+
+    r = SkillRouter(skills_dir=base)
+    r._scorer_failed = True
+
+    assert r.build_context("reviewonly", pipeline_pass=1) == ""
+    assert "pass_two_only" in r.build_context("reviewonly", pipeline_pass=2)

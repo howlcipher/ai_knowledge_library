@@ -10,6 +10,7 @@ triggers:
   - "detection"
   - "defense"
 tier: 2
+pipeline_pass: 2
 ---
 
 # Blue Team Cyber Operations
