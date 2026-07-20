@@ -116,8 +116,9 @@ The knowledge base is organized into specific domains that the AI agent natively
 | :--- | :--- |
 | `AGENTS.md` | Canonical global rulebook for all agent interactions. |
 | `GEMINI.md` / `CLAUDE.md` | Thin per-agent entry points that import `AGENTS.md` (Gemini CLI / Antigravity and Claude Code respectively). |
-| `.claude/skills` | Link exposing the skills library to Claude Code inside this repo. |
+| `.claude/skills/` | Auto-rebuilt per-entry symlinks exposing both the skills library and the command skills below to Claude Code inside this repo. |
 | [`.agents/skills/`](.agents/skills/README.md) | The **AI Skills Library**. Domain-specific behavioral instructions parsed natively. |
+| `.agents/skill_commands/` | Claude Code command skills (e.g. `/work_next_item`) — thin wrappers over `.agents/prompts/`. |
 | `.agents/rules/` | Global constraints that actively shape system prompts. |
 | `scripts/` | Utilities for syncing and bootstrapping environments globally. |
 | `projects/` | Active personal development projects and boilerplate templates. |

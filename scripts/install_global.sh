@@ -57,6 +57,13 @@ for skill in "$REPO_ROOT/.agents/skills"/*; do
   fi
 done
 
+echo "Linking command skills (/work_next_item, /resume_task, /groom_backlogs) to global Claude Code configuration"
+for skill in "$REPO_ROOT/.agents/skill_commands"/*; do
+  if [ -d "$skill" ]; then
+    ln -sfn "$skill" "$CLAUDE_DIR/skills/$(basename "$skill")"
+  fi
+done
+
 echo "Registering library rulebook in global Claude memory"
 CLAUDE_MEMORY="$CLAUDE_DIR/CLAUDE.md"
 MARKER_START="<!-- ai_knowledge_library:start -->"

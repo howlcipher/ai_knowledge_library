@@ -2,14 +2,19 @@
 """
 generate_skills_manifest.py
 
-Regenerates two artifacts from the frontmatter of every SKILL.md in the
-agents skills directory:
+Regenerates three artifacts from the frontmatter of every SKILL.md in the
+agents skills directory (plus the Claude Code native command skills):
 
 1. The auto generated skills manifest table in AGENTS.md, a cheap routing
    surface for agents without native skill discovery (such as Gemini CLI).
 2. .agents/skills.json, a machine readable index (name, description,
    triggers, path) for any tool that wants the skill list without parsing
    markdown.
+3. .claude/skills/, rebuilt as a real directory of per-entry symlinks (one
+   per domain skill in .agents/skills/, one per Claude-Code-native command
+   skill in .agents/skill_commands/), so Claude Code discovers both from
+   inside this repo, and scripts/install_global.sh/.ps1 can glob individual
+   entries to link them globally on other machines.
 
 Output is deterministic (no timestamps), so reruns without skill changes
 produce no diff. Runs automatically from the pre-commit hook installed by
@@ -90,6 +95,45 @@ def write_skills_index(skills, index_path: str) -> None:
         f.write("\n")
 
 
+def sync_claude_skills_dir(repo_root: str) -> None:
+    """
+    Rebuilds .claude/skills/ as a real directory of per-entry symlinks: one
+    per domain skill in .agents/skills/, one per Claude-Code-native command
+    skill in .agents/skill_commands/. Replaces the older single directory
+    level symlink (.claude/skills -> ../.agents/skills), which could not
+    also expose .agents/skill_commands/ alongside it.
+    """
+    target_dir = os.path.join(repo_root, ".claude", "skills")
+
+    if os.path.islink(target_dir):
+        os.remove(target_dir)
+    if not os.path.isdir(target_dir):
+        os.makedirs(target_dir)
+    else:
+        for entry in os.listdir(target_dir):
+            entry_path = os.path.join(target_dir, entry)
+            if os.path.islink(entry_path):
+                os.remove(entry_path)
+
+    sources = (
+        (os.path.join(repo_root, ".agents", "skills"), os.path.join("..", "..", ".agents", "skills")),
+        (
+            os.path.join(repo_root, ".agents", "skill_commands"),
+            os.path.join("..", "..", ".agents", "skill_commands"),
+        ),
+    )
+    for source_dir, rel_prefix in sources:
+        if not os.path.isdir(source_dir):
+            continue
+        for entry in sorted(os.listdir(source_dir)):
+            if not os.path.isdir(os.path.join(source_dir, entry)):
+                continue
+            link_path = os.path.join(target_dir, entry)
+            if os.path.lexists(link_path):
+                os.remove(link_path)
+            os.symlink(os.path.join(rel_prefix, entry), link_path)
+
+
 def main():
     router = SkillRouter()
     if not router.skills:
@@ -106,6 +150,9 @@ def main():
     index_path = os.path.join(repo_root, ".agents", "skills.json")
     write_skills_index(router.skills, index_path)
     print(f"Wrote skills index to {index_path}")
+
+    sync_claude_skills_dir(repo_root)
+    print(f"Synced Claude Code skill symlinks in {os.path.join(repo_root, '.claude', 'skills')}")
 
 
 if __name__ == "__main__":

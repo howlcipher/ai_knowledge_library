@@ -27,16 +27,17 @@ if (Get-Command pip -ErrorAction SilentlyContinue) {
 }
 
 $SourceSkills = Join-Path -Path $RepoRoot -ChildPath ".agents\skills"
+$SourceSkillCommands = Join-Path -Path $RepoRoot -ChildPath ".agents\skill_commands"
 $SourceRules = Join-Path -Path $RepoRoot -ChildPath ".agents\rules"
 
 function Link-Skills {
-    param([string]$TargetDir)
+    param([string]$SourceDir, [string]$TargetDir)
 
     if (-not (Test-Path -Path $TargetDir)) {
         New-Item -ItemType Directory -Path $TargetDir | Out-Null
     }
-    if (Test-Path -Path $SourceSkills) {
-        Get-ChildItem -Path $SourceSkills -Directory | ForEach-Object {
+    if (Test-Path -Path $SourceDir) {
+        Get-ChildItem -Path $SourceDir -Directory | ForEach-Object {
             $Target = Join-Path -Path $TargetDir -ChildPath $_.Name
             if (Test-Path -Path $Target) {
                 Remove-Item -Path $Target -Recurse -Force
@@ -51,7 +52,7 @@ $AgyDir = Join-Path -Path $env:USERPROFILE -ChildPath ".gemini\antigravity-cli"
 $RulesDir = Join-Path -Path $AgyDir -ChildPath "rules"
 
 Write-Host "Linking skills to global AGY configuration"
-Link-Skills -TargetDir (Join-Path -Path $AgyDir -ChildPath "skills")
+Link-Skills -SourceDir $SourceSkills -TargetDir (Join-Path -Path $AgyDir -ChildPath "skills")
 
 if (-not (Test-Path -Path $RulesDir)) {
     New-Item -ItemType Directory -Path $RulesDir | Out-Null
@@ -72,7 +73,10 @@ if (Test-Path -Path $SourceRules) {
 $ClaudeDir = Join-Path -Path $env:USERPROFILE -ChildPath ".claude"
 
 Write-Host "Linking skills to global Claude Code configuration"
-Link-Skills -TargetDir (Join-Path -Path $ClaudeDir -ChildPath "skills")
+Link-Skills -SourceDir $SourceSkills -TargetDir (Join-Path -Path $ClaudeDir -ChildPath "skills")
+
+Write-Host "Linking command skills (/work_next_item, /resume_task, /groom_backlogs) to global Claude Code configuration"
+Link-Skills -SourceDir $SourceSkillCommands -TargetDir (Join-Path -Path $ClaudeDir -ChildPath "skills")
 
 Write-Host "Registering library rulebook in global Claude memory"
 $ClaudeMemory = Join-Path -Path $ClaudeDir -ChildPath "CLAUDE.md"

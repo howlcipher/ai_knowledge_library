@@ -1,5 +1,6 @@
 ---
-description: Resume an interrupted task from its journal
+name: "resume_task"
+description: "Resume an interrupted task from its journal"
 argument-hint: [journal filename]
 ---
 

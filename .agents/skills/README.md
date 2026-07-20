@@ -1,6 +1,6 @@
 # 🧠 AI Skills Library
 
-This directory contains the core cognitive and methodological domain instructions parsed by Antigravity (AGY), Claude Code, and other AI agents. Each skill's `SKILL.md` uses the shared `name`/`description` frontmatter format, so the same files load natively in both ecosystems (Claude Code discovers them via the `.claude/skills` link or the global installer). 
+This directory contains the core cognitive and methodological domain instructions parsed by Antigravity (AGY), Claude Code, and other AI agents. Each skill's `SKILL.md` uses the shared `name`/`description` frontmatter format, so the same files load natively in both ecosystems (Claude Code discovers them via the `.claude/skills/` symlinks or the global installer). 
 
 When the AI encounters a task related to a specific domain (e.g., writing a web application, analyzing financial data, or debugging networking issues), it will load the corresponding skill from this library to mathematically anchor its methodologies, frameworks, and logic to your exact specifications.
 
