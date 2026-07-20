@@ -2,7 +2,7 @@
   <img src="assets/cyberpunk_hybrid_banner.jpg" alt="SYS_CORE Banner" width="800" />
   <br><br>
   <img src="https://img.shields.io/static/v1?label=SYS_CORE&message=Active&color=00f0ff&style=for_the_badge" alt="AI Library Badge" />
-  <img src="https://img.shields.io/static/v1?label=Neural_Nodes&message=386&color=00ff41&style=for_the_badge" alt="Library Size Badge" />
+  <img src="https://img.shields.io/static/v1?label=Neural_Nodes&message=38&color=00ff41&style=for_the_badge" alt="Neural Nodes Badge" />
   <img src="https://img.shields.io/static/v1?label=Powered_By&message=Antigravity&color=ff003c&style=for_the_badge" alt="Antigravity Badge" />
 </div>
 
