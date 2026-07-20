@@ -19,6 +19,10 @@
 - GPT-OSS 120B via agy has twice (item 34, and again while writing this very doc for item 18) rendered plain compound-word hyphens as the Unicode non-breaking hyphen (U+2011) instead of ASCII `-` in generated prose. Check delegated markdown/prose for this with `grep -n $'\xe2\x80\x91' <file>` before committing, and fix with a plain string substitution back to `-`.
 - **The fake-success failure mode has a partial variant, not just total.** In a `william_elias` (sibling repo) task on 2026-07-19, GPT-OSS 120B via agy was given a three-part brief (wire a function call, define the function, style it) and correctly applied two of the three parts — it wired the call site into `script.js` but silently dropped the function definitions it was told to append, leaving code that calls an undefined function. This is worse than the zero-diff case above because `git status`/`git diff` alone shows real, plausible-looking changes; only reading the diff for *completeness against every part of the brief*, not just its existence, catches this. When a brief has multiple discrete parts, verify each part landed, not just that something landed.
 
+## Free tools already installed
+
+- **`actionlint`** (Go, MIT) — GitHub Actions workflow linter; catches YAML syntax and semantic errors (bad `needs:`/context references, invalid `uses:` targets) that `pyyaml` can't. Installed 2026-07-19 via `go install github.com/rhysd/actionlint/cmd/actionlint@latest` (binary at `$(go env GOPATH)/bin/actionlint`) for improvements item 28's workflow audit. Run it against any edited `.github/workflows/*.yml` before committing — no need to ask again, it is already on this machine.
+
 ## Discovery sources (when the roster has no fit)
 
 - **There's An AI For That** (theresanaiforthat.com) — directory of AI tools/models by task category.
