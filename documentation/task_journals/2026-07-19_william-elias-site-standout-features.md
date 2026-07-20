@@ -16,8 +16,8 @@
 
 ## Plan
 
-- [ ] Feature 1: "View Source" badge next to the resume download link
-- [ ] Feature 2: terminal-style hero intro animation (replaces/augments instant reveal)
+- [x] Feature 1: "View Source" badge next to the resume download link
+- [x] Feature 2: terminal-style hero intro animation (replaces/augments instant reveal)
 - [ ] Feature 3: compact live-systems widget (GitHub API commit/CI status) with offline/rate-limit fallback
 - [ ] Final pass: cross-check all three together for visual/contrast/clutter conflicts, update README if workflow changed, commit and push (confirm with user before push, since this repo deploys live on push to `main`)
 - [ ] Delete this journal in the final commit
@@ -25,7 +25,10 @@
 ## Progress Log
 
 - 2026-07-19 — Journal opened. Site reviewed: dark-mode-default, config-driven (`config.js`), existing a11y features (skip link, colorblind theme, focus states). Confirmed `agy` and local Ollama both available. Starting Feature 1.
+- 2026-07-19 — Gemini tiers all quota-exhausted account-wide (18h46m reset), confirming [[agy-gemini-quota-shared]] still holds. Fell back to GPT-OSS 120B (Medium) via `agy`, independent quota, worked both times.
+- 2026-07-19 — Feature 1 delegated to GPT-OSS 120B: added `personal.sourceRepo` to `config.js` and a matching "View Source" contact-pill in `script.js`. Verified via `git diff` (not the delegate's own summary, per [[agy-delegate-can-fake-success]]) — edits were real and exactly as specified. Committed `4634365`.
+- 2026-07-19 — Feature 2 delegated to GPT-OSS 120B: CSS-only typewriter reveal on the hero tagline (`.tagline.terminal-type`), `terminal-typing`/`terminal-caret` keyframes, mobile-breakpoint fallback. Verified via `git diff` — matched brief exactly. **Caught a bug in my own brief during review, not the delegate's fault**: animating `width: 0 → 100%` resolves against the *containing block*, not the text's shrink-to-fit width, so the cursor would land in empty space past the (shorter) tagline text instead of at its end. Fixed directly by animating `max-width` instead of `width` (relies on `display: inline-block` + `overflow: hidden` capping the rendered width at the text's intrinsic size once max-width exceeds it). Could not visually confirm in a browser — headless Firefox (flatpak) fails in this sandbox (`CanCreateUserNamespace() clone() failure: EPERM`) and no other renderer is installed; verified by CSS layout reasoning only, told the user this explicitly. Committed `ebf8e76`.
 
 ## Next Step
 
-Delegate Feature 1 (View Source badge) via `agy`, then verify diff and report back before starting Feature 2.
+Design and delegate Feature 3 (live-systems widget): scope the exact GitHub API call, placement, and offline/rate-limit fallback before writing the brief.
