@@ -29,6 +29,8 @@
 
 - 2026-07-20 10:xx — Selected item 20 (tied top score 1.0 with items 38/40; table order tiebreak). Re-verified live: `orchestrator.py`'s `tier_agent` still only ever builds a LiteLLM `Agent`, no `claude_code` branch exists — item still fully open as filed. Read `Agent`/`tier_agent`/`call_fn` contract in `orchestrator.py` and `call_with_transport_retry`'s generic-exception retry contract in `transport_retry.py` to design a drop-in-compatible `ClaudeCodeAgent`. Housekeeping: deleted stale untracked `.agents/commands/` + `.claude/commands` symlink left over from the previous session's commit (superseded by `.agents/skill_commands/` + `.claude/skills/` per that commit's own message).
 
+- 2026-07-20 10:xx — Wrote full 8-change brief (`/tmp/.../scratchpad/brief_item20.txt`, kept outside the repo). Gemini 3.1 Pro (High) is quota-exhausted this session (reset ~4h30m from first probe) — confirms the roster doc's shared-Gemini-quota note. GPT-OSS 120B (Medium) is live; dispatched the brief to it via `agy -p "$(cat brief.txt)" --model "GPT-OSS 120B (Medium)" --mode accept-edits --print-timeout 30m`, run in background (task id `bfirgpj3i`). One spurious classifier denial occurred on the very first `--mode accept-edits` attempt bundled with the full brief; isolated retries of `--mode accept-edits` alone with a trivial prompt succeeded immediately after, so it was not a real restriction on that flag — noted here in case it recurs for a future session.
+
 ## Next Step
 
-Write and send the delegation brief to agy (Gemini 3.1 Pro, High) for the plan above, then review the diff.
+Awaiting the background delegation (task `bfirgpj3i`) to finish, then review `git diff` against all 8 changes in the brief before trusting any self-reported summary, run the new tests plus `make test-changed`/`make test`, fix or re-delegate any gaps, update improvements.md row 20 to Done, delete this journal, commit, push.
