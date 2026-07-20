@@ -3,6 +3,15 @@ name: Cross-Platform Install Test
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - "cmd/installer/**"
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
