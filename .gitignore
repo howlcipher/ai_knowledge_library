@@ -41,8 +41,21 @@ dist/
 # Local telemetry state
 .telemetry/
 
-# Auto-generated docs
+# Auto-generated docs site mirror (built fresh by `make docs` / CI, deployed to
+# gh-pages). docs/index.html, docs/app.js, docs/styles.css, docs/favicon.svg,
+# and docs/og-image.jpg are hand-authored frontend source with no generation
+# step (see tests/test_frontend.py) and stay tracked.
 docs/api/
+docs/documentation/
+docs/.agents/
+docs/assets/
+docs/AGENTS.md
+docs/GEMINI.md
+docs/CLAUDE.md
+docs/change_log.md
+docs/index.md
+docs/_layouts/
+docs/_config.yml
 /docs/.build-tmp/
 
 # One-off scratch output at the repo root (logs, patches, archives from debugging sessions)

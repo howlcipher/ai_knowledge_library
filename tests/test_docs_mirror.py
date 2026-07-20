@@ -2,11 +2,16 @@ import subprocess
 from pathlib import Path
 
 
-def test_no_nested_mirror_paths_tracked():
+def test_only_hand_authored_frontend_tracked_under_docs():
     """
-    Ensure that no nested mirror paths (docs/documentation/documentation/,
-    docs/.agents/.agents/, docs/assets/assets/) are tracked in git, as these
-    nested trees were residue of an old Makefile recipe bug and must not return.
+    docs/ mixes a hand-authored frontend (index.html, app.js, styles.css,
+    favicon.svg, og-image.jpg — no generation step, exercised by
+    tests/test_frontend.py) with content mirrored from documentation/,
+    .agents/, assets/, and repo markdown files by `make docs` / CI, which
+    is rebuilt and redeployed to the `gh-pages` branch on every push. Only
+    the hand-authored files may be tracked; everything else is a build
+    artifact and must stay gitignored. Guards against reintroducing the
+    committed-mirror drift removed by improvements item 27.
     """
     repo_root = Path(__file__).resolve().parents[1]
     result = subprocess.run(
@@ -16,11 +21,15 @@ def test_no_nested_mirror_paths_tracked():
         text=True,
     )
     assert result.returncode == 0
-    tracked_paths = result.stdout.strip().splitlines()
-    for path in tracked_paths:
-        assert not path.startswith("docs/documentation/documentation/")
-        assert not path.startswith("docs/.agents/.agents/")
-        assert not path.startswith("docs/assets/assets/")
+    tracked_paths = set(result.stdout.strip().splitlines())
+    hand_authored_frontend = {
+        "docs/index.html",
+        "docs/app.js",
+        "docs/styles.css",
+        "docs/favicon.svg",
+        "docs/og-image.jpg",
+    }
+    assert tracked_paths == hand_authored_frontend
 
 
 def test_docs_target_builds_into_staging_before_swapping_live_dirs():
