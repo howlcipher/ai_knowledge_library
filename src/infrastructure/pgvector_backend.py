@@ -55,9 +55,16 @@ class PgVectorStore(BaseVectorStore):
                     id SERIAL PRIMARY KEY,
                     content TEXT NOT NULL,
                     source TEXT,
-                    embedding vector(384)
+                    embedding vector(384),
+                    chunk_id TEXT,
+                    chunk_index INTEGER
                 )
             """)
+            # Add columns if they do not exist (for existing tables)
+            cur.execute("ALTER TABLE documents ADD COLUMN IF NOT EXISTS chunk_id TEXT")
+            cur.execute("ALTER TABLE documents ADD COLUMN IF NOT EXISTS chunk_index INTEGER")
+            # Unique index on chunk_id
+            cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS documents_chunk_id_idx ON documents (chunk_id)")
             # Create HNSW index for optimal search performance using cosine distance
             cur.execute("""
                 CREATE INDEX IF NOT EXISTS documents_embedding_hnsw_idx 
@@ -78,18 +85,28 @@ class PgVectorStore(BaseVectorStore):
     def upsert(self, docs: list, metadatas: list, ids: list = None) -> None:
         """
         Encodes documents into embeddings and inserts them into the database.
-
+        
         Args:
             docs (list): A list of document strings.
             metadatas (list): A list of metadata dictionaries corresponding to the documents.
             ids (list, optional): A list of document IDs.
         """
+        if not ids:
+            ids = [f"doc_{i}" for i in range(len(docs))]
         embeddings = self.model.encode(docs)
         with self.conn.cursor() as cur:
-            for doc, meta, emb in zip(docs, metadatas, embeddings):
+            for doc_id, doc, meta, emb in zip(ids, docs, metadatas, embeddings):
                 cur.execute(
-                    "INSERT INTO documents (content, source, embedding) VALUES (%s, %s, %s)",
-                    (doc, meta.get("source", ""), emb.tolist()),
+                    """
+                    INSERT INTO documents (chunk_id, content, source, chunk_index, embedding)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (chunk_id) DO UPDATE SET
+                        content = EXCLUDED.content,
+                        source = EXCLUDED.source,
+                        chunk_index = EXCLUDED.chunk_index,
+                        embedding = EXCLUDED.embedding
+                    """,
+                    (doc_id, doc, meta.get("source", ""), meta.get("chunk"), emb.tolist()),
                 )
         self.conn.commit()
 
