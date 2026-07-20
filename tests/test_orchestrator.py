@@ -118,29 +118,29 @@ def test_tier_setting_fallbacks():
     assert tier_setting({"tier_1": ""}, 1, "default-model") == "default-model"
 
 
-def test_human_proxy_no_command():
-    orchestrator = Orchestrator()
+def test_human_proxy_no_command(orchestrator_factory):
+    orchestrator = orchestrator_factory()
     result = orchestrator.human_proxy_intercept(None)
     assert result is True
 
 @patch("builtins.input", return_value="y")
-def test_human_proxy_authorized(mock_input):
-    orchestrator = Orchestrator()
+def test_human_proxy_authorized(mock_input, orchestrator_factory):
+    orchestrator = orchestrator_factory()
     tool_calls = [MockToolCall("execute_bash_command", json.dumps({"command": "echo hello"}))]
     result = orchestrator.human_proxy_intercept(tool_calls)
     assert result is True
 
 @patch("builtins.input", return_value="n")
-def test_human_proxy_rejected(mock_input):
-    orchestrator = Orchestrator()
+def test_human_proxy_rejected(mock_input, orchestrator_factory):
+    orchestrator = orchestrator_factory()
     tool_calls = [MockToolCall("execute_bash_command", json.dumps({"command": "echo hello"}))]
     result = orchestrator.human_proxy_intercept(tool_calls)
     assert result is False
 
 @patch("src.core.orchestrator.Agent.generate_response")
 @patch("src.core.orchestrator.Orchestrator.human_proxy_intercept", return_value=True)
-def test_orchestrator_run_loop_approved_immediately(mock_proxy, mock_generate):
-    orchestrator = Orchestrator()
+def test_orchestrator_run_loop_approved_immediately(mock_proxy, mock_generate, orchestrator_factory):
+    orchestrator = orchestrator_factory()
     
     mock_generate.side_effect = [
         MockMessage("Here is my research draft"), 
@@ -155,8 +155,8 @@ def test_orchestrator_run_loop_approved_immediately(mock_proxy, mock_generate):
 
 @patch("src.core.orchestrator.Agent.generate_response")
 @patch("src.core.orchestrator.Orchestrator.human_proxy_intercept", return_value=True)
-def test_orchestrator_run_loop_rejected_then_approved(mock_proxy, mock_generate):
-    orchestrator = Orchestrator()
+def test_orchestrator_run_loop_rejected_then_approved(mock_proxy, mock_generate, orchestrator_factory):
+    orchestrator = orchestrator_factory()
     
     mock_generate.side_effect = [
         MockMessage("First draft"), MockMessage("REJECTED. Fix it."),
@@ -193,3 +193,26 @@ def test_build_tier_agent_returns_claude_code_agent_for_sentinel():
     assert isinstance(agent, ClaudeCodeAgent)
     assert agent.model == "claude_code"
     assert agent.timeout == 60
+
+def test_orchestrator_factory_provides_shutdown_callable(orchestrator_factory):
+    orchestrator = orchestrator_factory()
+    assert callable(orchestrator.shutdown)
+
+@patch("src.core.mcp_client.SyncMCPClient")
+def test_orchestrator_shutdown_calls_close_on_every_mcp_client(mock_sync_cls):
+    created_clients = []
+
+    def _new_client(*args, **kwargs):
+        client = MagicMock()
+        client.get_tools.return_value = []
+        created_clients.append(client)
+        return client
+
+    mock_sync_cls.side_effect = _new_client
+
+    orchestrator = Orchestrator()
+    assert created_clients, "expected at least one MCP client to be constructed"
+    orchestrator.shutdown()
+
+    for client in created_clients:
+        client.close.assert_called_once()

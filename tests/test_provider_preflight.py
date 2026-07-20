@@ -100,13 +100,11 @@ def test_duplicate_models_checked_once_and_all_errors_collected(
 
 @patch("src.core.orchestrator.Agent.generate_response")
 @patch("src.core.provider_preflight.preflight_models")
-def test_payload_loop_aborts_on_failed_preflight(mock_preflight, mock_generate):
-    from src.core.orchestrator import Orchestrator
-
+def test_payload_loop_aborts_on_failed_preflight(mock_preflight, mock_generate, orchestrator_factory):
     mock_preflight.return_value = PreflightResult(
         ok=False, checked_models=["ollama/qwen3"], errors=["server down"]
     )
-    orchestrator = Orchestrator()
+    orchestrator = orchestrator_factory()
     orchestrator.payload_cfg = dict(orchestrator.payload_cfg, enabled=True)
     result = orchestrator.run_payload_loop("Test query")
     assert result is None
@@ -116,11 +114,9 @@ def test_payload_loop_aborts_on_failed_preflight(mock_preflight, mock_generate):
 
 @patch("src.core.orchestrator.Agent.generate_response")
 @patch("src.core.provider_preflight.preflight_models")
-def test_payload_loop_skips_preflight_when_disabled(mock_preflight, mock_generate):
-    from src.core.orchestrator import Orchestrator
-
+def test_payload_loop_skips_preflight_when_disabled(mock_preflight, mock_generate, orchestrator_factory):
     mock_generate.return_value = None  # first pass fails; only preflight matters
-    orchestrator = Orchestrator()
+    orchestrator = orchestrator_factory()
     orchestrator.payload_cfg = dict(
         orchestrator.payload_cfg, enabled=True, preflight=False, max_attempts=1
     )
