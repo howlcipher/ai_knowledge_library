@@ -14,7 +14,7 @@
 Automation and systems engineer with over 9 years of experience spanning infrastructure automation, DevOps, and production support. Specialized in Python and Go development for APIs, backend systems, and automated deployment pipelines. Proven ability to build secure and scalable solutions that streamline operations across development and production environments. Strong foundation in enterprise networking, security controls, and system integration. Outside of work, directs AI coding agents (Claude Code, Gemini CLI) through prompt engineering to architect, build, and test personal automation platforms end to end. Passionate about writing maintainable code and solving complex technical challenges in security focused environments.
 
 ## Core Skills
-* Programming and Development: Python, Go, PowerShell, SQL, REST APIs, ETL
+* Programming and Development: Python, Go, C#, .NET Framework, PowerShell, SQL, REST APIs, ETL
 * DevOps and Cloud: Azure DevOps, Application Insights, Key Vault, Azure Monitor, CI/CD, Git, Bitbucket, IIS
 * Systems and Infrastructure: Windows Server, automation scripting, log monitoring, job scheduling
 * Networking and Security: Cisco/Meraki, VLANs, Firewalls, Packet Capture, Monitoring Tools
@@ -49,6 +49,8 @@ Automation and systems engineer with over 9 years of experience spanning infrast
 * Managed IIS applications including configuration, troubleshooting, and performance optimization.
 * Led weekly releases and deployments using Git workflows and Bitbucket.
 * Built backend scripts for log parsing, anomaly detection, and data validation to support production operations.
+* Built an internal documentation and issue-discovery platform with Claude Code that polls Jira and SharePoint across the team, flags drift between documentation and production state, and lets new employees ask questions in plain language to speed up onboarding and production troubleshooting.
+* Built a production support portal centralizing team links, runbooks, and documentation into a single searchable hub, reducing time spent hunting for operational resources.
 
 ### HBK Engineering Solutions
 * Role: DevOps Engineer (Python Automation)
