@@ -5,6 +5,7 @@ Module for generating library statistics and updating the README with a badge.
 
 import os
 import re
+import json
 
 
 class LibraryStatisticsGenerator:
@@ -28,29 +29,23 @@ class LibraryStatisticsGenerator:
             self.repo_root = repo_root
 
         self.readme_path = os.path.join(self.repo_root, "README.md")
-        self.badge_pattern = r'<img src="https://img\.shields\.io/static/v1\?label=Library_Size&message=\d+&color=success&style=for_the_badge" alt="Library Size Badge" />'
-        self.first_badge_line = '<img src="https://img.shields.io/static/v1?label=AI&message=Knowledge_Library&color=blueviolet&style=for_the_badge" alt="AI Library Badge" />'
+        self.badge_pattern = r'<img src="https://img\.shields\.io/static/v1\?label=Neural_Nodes&message=\d+&color=00ff41&style=for_the_badge" alt="Neural Nodes Badge" />'
+        self.first_badge_line = '<img src="https://img.shields.io/static/v1?label=SYS_CORE&message=Active&color=00f0ff&style=for_the_badge" alt="AI Library Badge" />'
+        # Path to the skills manifest JSON file
+        self.skills_manifest_path = os.path.join(self.repo_root, ".agents", "skills.json")
 
-    def count_files(self) -> int:
-        """
-        Counts the number of files in the repository, excluding '.git' directories.
+    def count_skills(self) -> int:
+        """Counts the number of skills declared in the skills manifest."""
+        with open(self.skills_manifest_path, "r") as f:
+            manifest = json.load(f)
+        return len(manifest["skills"])
 
-        Returns:
-            int: The total number of files.
+    def update_readme(self, skill_count: int) -> None:
         """
-        file_count = 0
-        for root, _, files in os.walk(self.repo_root):
-            if ".git" in root:
-                continue
-            file_count += len(files)
-        return file_count
-
-    def update_readme(self, file_count: int) -> None:
-        """
-        Updates the README.md file with the new file count badge.
+        Updates the README.md file with the new skill count badge.
 
         Args:
-            file_count (int): The number of files to display in the badge.
+            skill_count (int): The number of skills to display in the badge.
         """
         if not os.path.exists(self.readme_path):
             print(f"README not found at {self.readme_path}")
@@ -59,7 +54,7 @@ class LibraryStatisticsGenerator:
         with open(self.readme_path, "r") as f:
             content = f.read()
 
-        new_badge = f'<img src="https://img.shields.io/static/v1?label=Library_Size&message={file_count}&color=success&style=for_the_badge" alt="Library Size Badge" />'
+        new_badge = f'<img src="https://img.shields.io/static/v1?label=Neural_Nodes&message={skill_count}&color=00ff41&style=for_the_badge" alt="Neural Nodes Badge" />'
 
         if re.search(self.badge_pattern, content):
             content = re.sub(self.badge_pattern, new_badge, content)
@@ -76,10 +71,10 @@ class LibraryStatisticsGenerator:
         """
         Executes the statistics generation and README update process.
         """
-        file_count = self.count_files()
-        self.update_readme(file_count)
+        skill_count = self.count_skills()
+        self.update_readme(skill_count)
         print(
-            f"Library statistics generated: {file_count} files counted. README updated."
+            f"Library statistics generated: {skill_count} skills counted. README updated."
         )
 
 
