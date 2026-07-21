@@ -45,6 +45,14 @@ for rule in "$REPO_ROOT/.agents/rules"/*; do
   fi
 done
 
+echo "Linking command skills to global AGY configuration"
+mkdir -p "$AGY_DIR/commands"
+for cmd in "$REPO_ROOT/.gemini/commands"/*.toml; do
+  if [ -f "$cmd" ]; then
+    ln -sfn "$cmd" "$AGY_DIR/commands/$(basename "$cmd")"
+  fi
+done
+
 # --- Claude Code integration ---
 CLAUDE_DIR="$HOME/.claude"
 
