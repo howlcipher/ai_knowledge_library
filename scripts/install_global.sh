@@ -46,10 +46,9 @@ for rule in "$REPO_ROOT/.agents/rules"/*; do
 done
 
 echo "Linking command skills to global AGY configuration"
-mkdir -p "$AGY_DIR/commands"
-for cmd in "$REPO_ROOT/.gemini/commands"/*.toml; do
-  if [ -f "$cmd" ]; then
-    ln -sfn "$cmd" "$AGY_DIR/commands/$(basename "$cmd")"
+for skill in "$REPO_ROOT/.agents/skill_commands"/*; do
+  if [ -d "$skill" ]; then
+    ln -sfn "$skill" "$AGY_DIR/skills/$(basename "$skill")"
   fi
 done
 
