@@ -31,8 +31,10 @@ coverage.out
 
 # Go binaries and builds (root anchored so cmd/installer sources stay addable)
 /ai_installer
+/ai_installer.exe
 /installer
 dist/
+/gh_*_linux_amd64/
 
 # Python build output and package metadata
 /build/
