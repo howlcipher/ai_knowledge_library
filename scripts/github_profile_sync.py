@@ -27,7 +27,7 @@ class GitHubProfileSyncer:
         )
         self.profile_path = self.config_loader.get("user_profile_path", default_path)
 
-        self.header_key = "User" + chr(45) + "Agent"
+        self.header_key = "User-Agent"
         self.header_value = "KnowledgeLibrary_Sync"
 
     def fetch_github_repos(self):
@@ -65,7 +65,7 @@ class GitHubProfileSyncer:
             url = repo.get("html_url", "")
 
             # Remove punctuation characters properly to comply with formatting rules.
-            dash = chr(45)
+            dash = "-"
             desc = desc.replace(dash, " ")
             output_lines.append(f"* **{name}**: {desc} ({url})")
 

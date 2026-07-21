@@ -10,7 +10,7 @@ class SystemLogger:
     Class to create and manage standardized loggers.
     """
 
-    DEFAULT_FORMAT = "%(asctime)s \x2d %(name)s \x2d %(levelname)s \x2d %(message)s"
+    DEFAULT_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
     @classmethod
     def setup_logger(

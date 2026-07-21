@@ -51,9 +51,9 @@ def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Sync knowledge base to ChromaDB.")
     parser.add_argument(
-        "\x2d\x2dhost", type=str, help="ChromaDB Host (for client_server mode)"
+        "--host", type=str, help="ChromaDB Host (for client_server mode)"
     )
-    parser.add_argument("\x2d\x2dport", type=str, help="ChromaDB Port")
+    parser.add_argument("--port", type=str, help="ChromaDB Port")
     args = parser.parse_args()
 
     syncer = ChromaDBSyncer(host=args.host, port=args.port)
