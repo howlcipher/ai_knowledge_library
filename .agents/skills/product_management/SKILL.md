@@ -25,6 +25,9 @@ Principles and practices for defining product strategy, scoping development effo
 - **User Stories**: Write descriptive user stories following the standard format (*As a... I want to... So that...*), complete with clear, testable acceptance criteria.
 - **Product Requirements Documents (PRDs)**: Author structured, comprehensive PRDs that clarify the problem statement, user personas, functional requirements, non-functional requirements, and success metrics.
 
+### Core Product Thesis Constraints
+- **Data vs. Aesthetics**: The name "Pizza Party Metrics" is a metaphor. The goal is NOT to build pizza-themed features. The goal is to provide hard data comparing productivity, focus hours, and collaboration velocity across Remote vs. Hybrid vs. In-Office setups. Any feature that leans into the "pizza" joke at the expense of data clarity must be deprioritized.
+
 ## Cross-Functional Collaboration
 - **Interdisciplinary Alignment**: Serve as the central communication link between Engineering, Design (UI/UX), and business stakeholders to resolve conflicting priorities and maintain focus on product goals.
 
