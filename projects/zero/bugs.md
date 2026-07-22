@@ -12,7 +12,7 @@ Pending bugs carry the same diminishing-returns score defined in `improvements.m
 | 2 | [Python Orchestrator timeout with heavy models](#2-python-orchestrator-timeout-with-heavy-models) | Done | 3.0 (3×1÷1) | Haiku 3 | Gemini 1.5 Flash | Added explicit UX warnings to console so users don't assume the script has frozen when loading heavy models in Outlines. |
 | 3 | [Variable Shadowing in Go Generation](#3-variable-shadowing-in-go-generation) | Done | 4.0 (4×1÷1) | Sonnet 3.5 | Gemini 1.5 Pro | `let` expressions without inner `{}` brackets risk leaking scopes or redeclaring variables, causing Go compilation to fail on nested conditionals. |
 | 4 | [Outlines EBNF Compilation Memory Limit](#4-outlines-ebnf-compilation-memory-limit) | Done | 2.5 (5×1÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Optimized the CFG to only enforce generic S-expression balanced parentheses, avoiding OOM on massive state machines while deferring semantic validation to the Go transpiler. |
-| 5 | [AST Deep Nesting Stack Limits](#5-ast-deep-nesting-stack-limits) | Pending | 2.0 (4×1÷2) | Sonnet 3.5 | Gemini 1.5 Pro | The recursive `generateStatement` function might hit Go's stack limit if a user provides an abnormally deep or long S-expression file. |
+| 5 | [AST Deep Nesting Stack Limits](#5-ast-deep-nesting-stack-limits) | Done | 2.0 (4×1÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Added an explicit depth parameter and limit of 1000 to `generateStatement` to fail gracefully with a JSON error instead of crashing the Go call stack. |
 
 ## Details
 

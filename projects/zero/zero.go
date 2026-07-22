@@ -224,7 +224,7 @@ func generateCode(node *Node) string {
 				argsList = append(argsList, arg.Value+" string")
 			}
 			argsStr := strings.Join(argsList, ", ")
-			bodyCode := generateStatement(handlerNode.Children[3], "")
+			bodyCode := generateStatement(handlerNode.Children[3], "", 0)
 			funcsCode += fmt.Sprintf("func %s(%s) string {\n%s\n}\n\n", name, argsStr, bodyCode)
 			continue
 		}
@@ -249,7 +249,7 @@ func generateCode(node *Node) string {
 		reqVar := reqNodeList.Children[0].Value
 
 		bodyNode := handlerNode.Children[2].Children[2]
-		bodyCode := generateStatement(bodyNode, reqVar)
+		bodyCode := generateStatement(bodyNode, reqVar, 0)
 		
 		routesCode += fmt.Sprintf(`	http.HandleFunc(%q, func(w http.ResponseWriter, %s *http.Request) {
 %s
@@ -281,7 +281,10 @@ import (
 	return code
 }
 
-func generateStatement(node *Node, reqVar string) string {
+func generateStatement(node *Node, reqVar string, depth int) string {
+	if depth > 1000 {
+		reportError("AST too deep: exceeded maximum nesting limit of 1000", node.Line, node.Column)
+	}
 	if node.Type != "List" || len(node.Children) == 0 {
 		reportError("Expected list for statement", node.Line, node.Column)
 	}
@@ -354,7 +357,7 @@ func generateStatement(node *Node, reqVar string) string {
 		} else {
 			valStr = valNode.Value
 		}
-		bodyCode := generateStatement(node.Children[2], reqVar)
+		bodyCode := generateStatement(node.Children[2], reqVar, depth+1)
 		return fmt.Sprintf("		{\n			%s := %s\n			_ = %s\n%s\n		}", varName, valStr, varName, bodyCode)
 	} else if head == "if" {
 		if len(node.Children) != 4 {
@@ -378,8 +381,8 @@ func generateStatement(node *Node, reqVar string) string {
 			rightStr = fmt.Sprintf("%q", rightStr)
 		}
 
-		thenCode := generateStatement(node.Children[2], reqVar)
-		elseCode := generateStatement(node.Children[3], reqVar)
+		thenCode := generateStatement(node.Children[2], reqVar, depth+1)
+		elseCode := generateStatement(node.Children[3], reqVar, depth+1)
 
 		return fmt.Sprintf(`		if %s == %s {
 %s
