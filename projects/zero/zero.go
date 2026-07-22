@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"unicode"
 )
@@ -739,7 +740,7 @@ func generateStatement(node *Node, reqVar string, depth int) string {
 	return ""
 }
 
-func expandIncludes(node *Node, depth int) {
+func expandIncludes(node *Node, baseDir string, depth int) {
 	if depth > 100 {
 		reportError("Include depth exceeded (circular include?)", node.Line, node.Column)
 	}
@@ -755,8 +756,9 @@ func expandIncludes(node *Node, depth int) {
 				reportError("include expects a string filename", child.Line, child.Column)
 			}
 			filename := filenameNode.Value
+			fullPath := filepath.Join(baseDir, filename)
 
-			content, err := os.ReadFile(filename)
+			content, err := os.ReadFile(fullPath)
 			if err != nil {
 				reportError(fmt.Sprintf("Failed to read included file %q: %v", filename, err), child.Line, child.Column)
 			}
@@ -769,7 +771,7 @@ func expandIncludes(node *Node, depth int) {
 				reportError(fmt.Sprintf("Unexpected tokens after EOF in included file %q", filename), parser.cur.Line, parser.cur.Column)
 			}
 
-			expandIncludes(includedAst, depth+1)
+			expandIncludes(includedAst, filepath.Dir(fullPath), depth+1)
 
 			if includedAst.Type == "List" && len(includedAst.Children) > 0 && includedAst.Children[0].Value == "module" {
 				newChildren = append(newChildren, includedAst.Children[1:]...)
@@ -777,7 +779,7 @@ func expandIncludes(node *Node, depth int) {
 				newChildren = append(newChildren, includedAst)
 			}
 		} else {
-			expandIncludes(child, depth)
+			expandIncludes(child, baseDir, depth)
 			newChildren = append(newChildren, child)
 		}
 	}
@@ -801,7 +803,7 @@ func main() {
 		reportError("Unexpected tokens after EOF", parser.cur.Line, parser.cur.Column)
 	}
 
-	expandIncludes(ast, 0)
+	expandIncludes(ast, filepath.Dir(os.Args[1]), 0)
 
 	goCode := generateCode(ast)
 
