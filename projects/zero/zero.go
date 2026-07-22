@@ -213,6 +213,28 @@ func generateCode(node *Node) string {
 		}
 		
 		head := handlerNode.Children[0].Value
+		if head == "struct" {
+			if len(handlerNode.Children) < 2 {
+				reportError("struct expects (struct Name (field type)...)", handlerNode.Line, handlerNode.Column)
+			}
+			name := handlerNode.Children[1].Value
+			funcsCode += fmt.Sprintf("type %s struct {\n", name)
+			for j := 2; j < len(handlerNode.Children); j++ {
+				fieldNode := handlerNode.Children[j]
+				if fieldNode.Type != "List" || len(fieldNode.Children) != 2 {
+					reportError("struct field expects (name type)", fieldNode.Line, fieldNode.Column)
+				}
+				fieldName := fieldNode.Children[0].Value
+				fieldType := fieldNode.Children[1].Value
+				if len(fieldName) > 0 {
+					fieldName = strings.ToUpper(fieldName[:1]) + fieldName[1:]
+				}
+				funcsCode += fmt.Sprintf("\t%s %s\n", fieldName, fieldType)
+			}
+			funcsCode += "}\n\n"
+			continue
+		}
+		
 		if head == "defun" {
 			if len(handlerNode.Children) != 4 {
 				reportError("defun expects (defun name (args) body)", handlerNode.Line, handlerNode.Column)

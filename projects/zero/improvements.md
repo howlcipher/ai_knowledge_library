@@ -29,11 +29,11 @@ Pending rows are ranked by a diminishing-returns score:
 | 4 | [Add Database Connections (SQL)](#4-add-database-connections-sql) | Done | — | Sonnet 3.5 | Gemini 1.5 Pro | Crucial for dynamic data and actual web service capabilities. |
 | 5 | [Add JSON Request/Response Handling](#5-add-json-requestresponse-handling) | Pending | 0.3125 (5×0.125÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Needed to build standard REST APIs. Decay 0.125 because three Go AST features shipped. |
 | 6 | [Add Function Definitions (defun)](#6-add-function-definitions-defun) | Done | — | Sonnet 3.5 | Gemini 1.5 Pro | Critical for code modularity (DRY principle). |
-| 7 | [Add Structs and Type Definitions](#7-add-structs-and-type-definitions) | Pending | 1.75 (7×0.5÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Necessary for strict Input Validation schemas, adhering to software_development skill guidelines, and mapping SQL/JSON to Go. Decay 0.5. |
-| 8 | [Add Iteration and Data Structures](#8-add-iteration-and-data-structures) | Pending | 1.5 (6×0.5÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Essential for handling arrays of SQL results (list, map, for). Without this, the language is strictly linear. Decay 0.5. |
-| 9 | [Add Environment Variables Access](#9-add-environment-variables-access) | Pending | 1.5 (3×0.5÷1) | Sonnet 3.5 | Gemini 1.5 Pro | Follows 'Secure by Default' guidelines to prevent hardcoding database credentials or secrets in S-expressions. Decay 0.5. |
-| 10 | [Add External Module Imports](#10-add-external-module-imports) | Pending | 0.75 (3×0.5÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Allows importing third-party Go packages, unlocking the entire Go ecosystem. Decay 0.5. |
-| 5 | [Add JSON Request/Response Handling](#5-add-json-requestresponse-handling) | Pending | 0.15625 (5×0.0625÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Needed to build standard REST APIs. Decay 0.0625 because four Go AST features shipped. |
+| 7 | [Add Structs and Type Definitions](#7-add-structs-and-type-definitions) | Done | — | Sonnet 3.5 | Gemini 1.5 Pro | Necessary for strict Input Validation schemas, adhering to software_development skill guidelines, and mapping SQL/JSON to Go. |
+| 8 | [Add Iteration and Data Structures](#8-add-iteration-and-data-structures) | Pending | 0.75 (6×0.25÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Essential for handling arrays of SQL results (list, map, for). Without this, the language is strictly linear. Decay 0.25. |
+| 9 | [Add Environment Variables Access](#9-add-environment-variables-access) | Pending | 0.75 (3×0.25÷1) | Sonnet 3.5 | Gemini 1.5 Pro | Follows 'Secure by Default' guidelines to prevent hardcoding database credentials or secrets in S-expressions. Decay 0.25. |
+| 10 | [Add External Module Imports](#10-add-external-module-imports) | Pending | 0.375 (3×0.25÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Allows importing third-party Go packages, unlocking the entire Go ecosystem. Decay 0.25. |
+| 5 | [Add JSON Request/Response Handling](#5-add-json-requestresponse-handling) | Pending | 0.078125 (5×0.03125÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Needed to build standard REST APIs. Decay 0.03125 because five Go AST features shipped. |
 
 ## Details
 
