@@ -188,6 +188,47 @@ func (p *Parser) parseExpression() *Node {
 	return nil
 }
 
+// AST Utilities
+func copyNode(n *Node) *Node {
+	if n == nil {
+		return nil
+	}
+	clone := &Node{Type: n.Type, Value: n.Value, Line: n.Line, Column: n.Column}
+	for _, child := range n.Children {
+		clone.Children = append(clone.Children, copyNode(child))
+	}
+	return clone
+}
+
+func replaceNext(node *Node, replacement *Node) {
+	if node == nil {
+		return
+	}
+	for i, child := range node.Children {
+		if child.Type == "List" && len(child.Children) == 1 && child.Children[0].Value == "next" {
+			node.Children[i] = replacement
+		} else {
+			replaceNext(child, replacement)
+		}
+	}
+}
+
+func renameVar(node *Node, oldName, newName string) {
+	if node == nil {
+		return
+	}
+	if node.Type == "SYMBOL" {
+		if node.Value == oldName {
+			node.Value = newName
+		} else if strings.HasPrefix(node.Value, oldName+".") {
+			node.Value = newName + node.Value[len(oldName):]
+		}
+	}
+	for _, child := range node.Children {
+		renameVar(child, oldName, newName)
+	}
+}
+
 // Code Generator
 func generateCode(node *Node) string {
 	if node.Type != "List" || len(node.Children) == 0 {
@@ -267,32 +308,79 @@ func generateCode(node *Node) string {
 			continue
 		}
 
-		if head != "route" {
-			reportError("Expected route, defun, struct, or import block", handlerNode.Line, handlerNode.Column)
-		}
-
-		if len(handlerNode.Children) != 3 {
-			reportError("route expects (route path handler)", handlerNode.Line, handlerNode.Column)
-		}
-
-		pathNode := handlerNode.Children[1]
-		if pathNode.Type != "STRING" {
-			reportError("route path must be a string", pathNode.Line, pathNode.Column)
-		}
-
-		reqNodeList := handlerNode.Children[2].Children[1]
-		if reqNodeList.Type != "List" || len(reqNodeList.Children) != 1 {
-			reportError("Expected exactly 1 argument in lambda (req)", reqNodeList.Line, reqNodeList.Column)
-		}
-		reqVar := reqNodeList.Children[0].Value
-
-		bodyNode := handlerNode.Children[2].Children[2]
-		bodyCode := generateStatement(bodyNode, reqVar, 0)
-
-		routesCode += fmt.Sprintf(`	http.HandleFunc(%q, func(w http.ResponseWriter, %s *http.Request) {
+		if head == "route" {
+			if len(handlerNode.Children) != 3 {
+				reportError("route expects (route path handler)", handlerNode.Line, handlerNode.Column)
+			}
+			pathNode := handlerNode.Children[1]
+			if pathNode.Type != "STRING" {
+				reportError("route path must be a string", pathNode.Line, pathNode.Column)
+			}
+			reqNodeList := handlerNode.Children[2].Children[1]
+			if reqNodeList.Type != "List" || len(reqNodeList.Children) != 1 {
+				reportError("Expected exactly 1 argument in lambda (req)", reqNodeList.Line, reqNodeList.Column)
+			}
+			reqVar := reqNodeList.Children[0].Value
+			bodyNode := handlerNode.Children[2].Children[2]
+			bodyCode := generateStatement(bodyNode, reqVar, 0)
+			routesCode += fmt.Sprintf(`	http.HandleFunc(%q, func(w http.ResponseWriter, %s *http.Request) {
 %s
 	})
 `, pathNode.Value, reqVar, bodyCode)
+			continue
+		}
+
+		if head == "middleware" {
+			if len(handlerNode.Children) < 3 {
+				reportError("middleware expects (middleware (lambda (req) body) routes...)", handlerNode.Line, handlerNode.Column)
+			}
+			lambdaNode := handlerNode.Children[1]
+			if lambdaNode.Type != "List" || len(lambdaNode.Children) != 3 || lambdaNode.Children[0].Value != "lambda" {
+				reportError("middleware expects a lambda", lambdaNode.Line, lambdaNode.Column)
+			}
+			reqNodeList := lambdaNode.Children[1]
+			if reqNodeList.Type != "List" || len(reqNodeList.Children) != 1 {
+				reportError("middleware lambda expects exactly 1 argument", reqNodeList.Line, reqNodeList.Column)
+			}
+			mwReqVar := reqNodeList.Children[0].Value
+			mwBodyNode := lambdaNode.Children[2]
+
+			for j := 2; j < len(handlerNode.Children); j++ {
+				routeNode := handlerNode.Children[j]
+				if routeNode.Type != "List" || len(routeNode.Children) == 0 || routeNode.Children[0].Value != "route" {
+					reportError("middleware block can only contain routes", routeNode.Line, routeNode.Column)
+				}
+				if len(routeNode.Children) != 3 {
+					reportError("route expects (route path handler)", routeNode.Line, routeNode.Column)
+				}
+				pathNode := routeNode.Children[1]
+				if pathNode.Type != "STRING" {
+					reportError("route path must be a string", pathNode.Line, pathNode.Column)
+				}
+
+				routeLambdaNode := routeNode.Children[2]
+				routeReqList := routeLambdaNode.Children[1]
+				routeReqVar := routeReqList.Children[0].Value
+				routeBodyNode := routeLambdaNode.Children[2]
+
+				clonedMwBody := copyNode(mwBodyNode)
+				clonedRouteBody := copyNode(routeBodyNode)
+				if routeReqVar != mwReqVar {
+					renameVar(clonedRouteBody, routeReqVar, mwReqVar)
+				}
+
+				replaceNext(clonedMwBody, clonedRouteBody)
+				combinedCode := generateStatement(clonedMwBody, mwReqVar, 0)
+
+				routesCode += fmt.Sprintf(`	http.HandleFunc(%q, func(w http.ResponseWriter, %s *http.Request) {
+%s
+	})
+`, pathNode.Value, mwReqVar, combinedCode)
+			}
+			continue
+		}
+
+		reportError("Expected route, defun, struct, import, or middleware block", handlerNode.Line, handlerNode.Column)
 	}
 
 	code := `package main

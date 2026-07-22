@@ -37,7 +37,7 @@ Pending rows are ranked by a diminishing-returns score:
 | 12 | [Add Error Handling (try/catch)](#12-add-error-handling-trycatch) | Done | — | Sonnet 3.5 | Gemini 1.5 Pro | Crucial for safe execution. Maps to Go's `if err != nil` idiom. |
 | 13 | [Add File Inclusions (include)](#13-add-file-inclusions-include) | Done | 2.33 (7×1.0÷3) | Sonnet 3.5 | Gemini 1.5 Pro | Prevents massive monolithic `.zero` files by allowing modular codebases. |
 | 14 | [Add Basic Math and Logic Operators](#14-add-basic-math-and-logic-operators) | Done | — | Sonnet 3.5 | Gemini 1.5 Pro | Necessary for computing values natively in Zero instead of relying entirely on DB logic. |
-| 15 | [Add Middleware Support](#15-add-middleware-support) | Pending | 0.41 (5×0.25÷3) | Sonnet 3.5 | Gemini 1.5 Pro | Required for adding authentication and request logging across routes. |
+| 15 | [Add Middleware Support](#15-add-middleware-support) | Done | 0.41 (5×0.25÷3) | Sonnet 3.5 | Gemini 1.5 Pro | Required for adding authentication and request logging across routes. |
 
 ## Details
 
