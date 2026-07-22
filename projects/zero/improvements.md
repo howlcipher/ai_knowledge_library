@@ -23,11 +23,11 @@ Pending rows are ranked by a diminishing-returns score:
 
 | # | Improvement | Status | Score (V×D÷E) | Claude model | Gemini model | ROI rationale |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | [Add Routing Support](#1-add-routing-support) | Done | 8.0 (8×1÷1) | Sonnet 3.5 | Gemini 1.5 Pro | Highest value to allow building web apps with multiple endpoints instead of just the root path. |
-| 2 | [Add Conditionals and Variables](#2-add-conditionals-and-variables) | Pending | 4.0 (8×1÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Necessary for basic logic flow in handlers (checking methods, parsing headers). |
-| 3 | [Extend Python Orchestrator Grammar](#3-extend-python-orchestrator-grammar) | Pending | 4.0 (4×1÷1) | Haiku 3 | Gemini 1.5 Flash | Must update the grammar in `orchestrator.py` immediately after adding new Go AST features so the LLM can use them. |
-| 4 | [Add Database Connections (SQL)](#4-add-database-connections-sql) | Pending | 3.0 (6×1÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Crucial for dynamic data and actual web service capabilities. |
-| 5 | [Add JSON Request/Response Handling](#5-add-json-requestresponse-handling) | Pending | 2.5 (5×1÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Needed to build standard REST APIs. |
+| 1 | [Add Routing Support](#1-add-routing-support) | Done | — | Sonnet 3.5 | Gemini 1.5 Pro | Highest value to allow building web apps with multiple endpoints instead of just the root path. |
+| 3 | [Extend Python Orchestrator Grammar](#3-extend-python-orchestrator-grammar) | Pending | 4.0 (4×1.0÷1) | Haiku 3 | Gemini 1.5 Flash | Must update the grammar in `orchestrator.py` immediately after adding new Go AST features so the LLM can use them. |
+| 2 | [Add Conditionals and Variables](#2-add-conditionals-and-variables) | Pending | 2.0 (8×0.5÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Necessary for basic logic flow in handlers (checking methods, parsing headers). Decay 0.5 because one Go AST feature shipped. |
+| 4 | [Add Database Connections (SQL)](#4-add-database-connections-sql) | Pending | 1.5 (6×0.5÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Crucial for dynamic data and actual web service capabilities. Decay 0.5. |
+| 5 | [Add JSON Request/Response Handling](#5-add-json-requestresponse-handling) | Pending | 1.25 (5×0.5÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Needed to build standard REST APIs. Decay 0.5. |
 
 ## Details
 
