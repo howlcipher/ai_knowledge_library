@@ -301,7 +301,7 @@ func generateStatement(node *Node, reqVar string) string {
 			valStr = valNode.Value
 		}
 		bodyCode := generateStatement(node.Children[2], reqVar)
-		return fmt.Sprintf("		%s := %s\n%s", varName, valStr, bodyCode)
+		return fmt.Sprintf("		{\n			%s := %s\n			_ = %s\n%s\n		}", varName, valStr, varName, bodyCode)
 	} else if head == "if" {
 		if len(node.Children) != 4 {
 			reportError("if expects (if cond then else)", node.Line, node.Column)
