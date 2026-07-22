@@ -205,14 +205,28 @@ func generateCode(node *Node) string {
 
 	var funcsCode string
 	var routesCode string
+	var extraImports []string
 
 	for i := 2; i < len(node.Children); i++ {
 		handlerNode := node.Children[i]
 		if handlerNode.Type != "List" || len(handlerNode.Children) == 0 {
-			reportError("Expected route or defun definition", handlerNode.Line, handlerNode.Column)
+			reportError("Expected route, defun, struct, or import definition", handlerNode.Line, handlerNode.Column)
 		}
 
 		head := handlerNode.Children[0].Value
+		
+		if head == "import" {
+			if len(handlerNode.Children) != 2 {
+				reportError("import expects (import \"pkg\")", handlerNode.Line, handlerNode.Column)
+			}
+			pkgNode := handlerNode.Children[1]
+			if pkgNode.Type != "STRING" {
+				reportError("import package must be a string", pkgNode.Line, pkgNode.Column)
+			}
+			extraImports = append(extraImports, fmt.Sprintf("\t%q\n", pkgNode.Value))
+			continue
+		}
+
 		if head == "struct" {
 			if len(handlerNode.Children) < 2 {
 				reportError("struct expects (struct Name (field type)...)", handlerNode.Line, handlerNode.Column)
@@ -252,7 +266,7 @@ func generateCode(node *Node) string {
 		}
 
 		if head != "route" {
-			reportError("Expected route or defun block", handlerNode.Line, handlerNode.Column)
+			reportError("Expected route, defun, struct, or import block", handlerNode.Line, handlerNode.Column)
 		}
 
 		if len(handlerNode.Children) != 3 {
@@ -283,9 +297,15 @@ func generateCode(node *Node) string {
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
-)
+	"os"
+`
+	for _, imp := range extraImports {
+		code += imp
+	}
+	code += `)
 `
 	code += funcsCode
 	code += `func main() {
@@ -321,6 +341,15 @@ func generateStatement(node *Node, reqVar string, depth int) string {
 		} else {
 			return fmt.Sprintf("		return %s", valNode.Value)
 		}
+	} else if head == "res_json" {
+		if len(node.Children) != 3 {
+			reportError("res_json expects (res_json status data)", node.Line, node.Column)
+		}
+		status := node.Children[1].Value
+		dataVar := node.Children[2].Value
+		return fmt.Sprintf(`		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(%s)
+		_ = json.NewEncoder(w).Encode(%s)`, status, dataVar)
 	} else if head == "res" {
 		if len(node.Children) != 4 {
 			reportError("res expects status, contentType, and body", node.Line, node.Column)
@@ -404,6 +433,21 @@ func generateStatement(node *Node, reqVar string, depth int) string {
 					}
 				}
 				valStr = fmt.Sprintf("map[string]string{%s}", strings.Join(pairs, ", "))
+			} else if funcName == "env" {
+				if len(valNode.Children) != 2 {
+					reportError("env expects (env \"KEY\")", valNode.Line, valNode.Column)
+				}
+				keyNode := valNode.Children[1]
+				if keyNode.Type == "STRING" {
+					valStr = fmt.Sprintf("os.Getenv(%q)", keyNode.Value)
+				} else {
+					valStr = fmt.Sprintf("os.Getenv(%s)", keyNode.Value)
+				}
+			} else if funcName == "parse_json" {
+				if len(valNode.Children) != 3 {
+					reportError("parse_json expects (parse_json Type body)", valNode.Line, valNode.Column)
+				}
+				// Handled downstream
 			} else {
 				valStr = valNode.Value
 			}
@@ -411,6 +455,16 @@ func generateStatement(node *Node, reqVar string, depth int) string {
 			valStr = valNode.Value
 		}
 		bodyCode := generateStatement(node.Children[2], reqVar, depth+1)
+		
+		if valNode.Type == "List" && len(valNode.Children) > 0 && valNode.Children[0].Value == "parse_json" {
+			targetType := valNode.Children[1].Value
+			bodyVar := valNode.Children[2].Value
+			if bodyVar == "req.body" {
+				bodyVar = reqVar + ".Body"
+			}
+			return fmt.Sprintf("		{\n			var %s %s\n			_ = json.NewDecoder(%s).Decode(&%s)\n			_ = %s\n%s\n		}", varName, targetType, bodyVar, varName, varName, bodyCode)
+		}
+		
 		return fmt.Sprintf("		{\n			%s := %s\n			_ = %s\n%s\n		}", varName, valStr, varName, bodyCode)
 	} else if head == "if" {
 		if len(node.Children) != 4 {
