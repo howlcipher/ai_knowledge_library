@@ -205,11 +205,13 @@ func generateCode(node *Node) string {
 	code := `package main
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 )
 
 func main() {
+	var _ = sql.Open
 `
 	
 	for i := 2; i < len(node.Children); i++ {
@@ -330,6 +332,25 @@ func generateStatement(node *Node, reqVar string) string {
 		} else {
 %s
 		}`, left, rightStr, thenCode, elseCode)
+	} else if head == "db_connect" {
+		if len(node.Children) != 4 {
+			reportError("db_connect expects (db_connect var driver dsn)", node.Line, node.Column)
+		}
+		varName := node.Children[1].Value
+		driverNode := node.Children[2]
+		dsnNode := node.Children[3]
+		return fmt.Sprintf("		%s, _ := sql.Open(%q, %q)\n		_ = %s", varName, driverNode.Value, dsnNode.Value, varName)
+	} else if head == "sql_query" {
+		if len(node.Children) != 3 {
+			reportError("sql_query expects (sql_query db query)", node.Line, node.Column)
+		}
+		dbVar := node.Children[1].Value
+		queryNode := node.Children[2]
+		queryStr := queryNode.Value
+		if queryNode.Type == "STRING" {
+			queryStr = fmt.Sprintf("%q", queryStr)
+		}
+		return fmt.Sprintf("		%s.Query(%s)", dbVar, queryStr)
 	}
 	reportError(fmt.Sprintf("Unknown statement: %s", head), node.Line, node.Column)
 	return ""

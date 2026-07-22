@@ -26,8 +26,8 @@ Pending rows are ranked by a diminishing-returns score:
 | 1 | [Add Routing Support](#1-add-routing-support) | Done | — | Sonnet 3.5 | Gemini 1.5 Pro | Highest value to allow building web apps with multiple endpoints instead of just the root path. |
 | 3 | [Extend Python Orchestrator Grammar](#3-extend-python-orchestrator-grammar) | Done | — | Haiku 3 | Gemini 1.5 Flash | Must update the grammar in `orchestrator.py` immediately after adding new Go AST features so the LLM can use them. |
 | 2 | [Add Conditionals and Variables](#2-add-conditionals-and-variables) | Done | — | Sonnet 3.5 | Gemini 1.5 Pro | Necessary for basic logic flow in handlers (checking methods, parsing headers). |
-| 4 | [Add Database Connections (SQL)](#4-add-database-connections-sql) | Pending | 0.75 (6×0.25÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Crucial for dynamic data and actual web service capabilities. Decay 0.25 because two Go AST features shipped. |
-| 5 | [Add JSON Request/Response Handling](#5-add-json-requestresponse-handling) | Pending | 0.625 (5×0.25÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Needed to build standard REST APIs. Decay 0.25. |
+| 4 | [Add Database Connections (SQL)](#4-add-database-connections-sql) | Done | — | Sonnet 3.5 | Gemini 1.5 Pro | Crucial for dynamic data and actual web service capabilities. |
+| 5 | [Add JSON Request/Response Handling](#5-add-json-requestresponse-handling) | Pending | 0.3125 (5×0.125÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Needed to build standard REST APIs. Decay 0.125 because three Go AST features shipped. |
 
 ## Details
 
