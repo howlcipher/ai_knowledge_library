@@ -201,7 +201,7 @@ func generateCode(node *Node) string {
 	if portNode.Type != "INT" {
 		reportError("Expected integer for port", portNode.Line, portNode.Column)
 	}
-	
+
 	code := `package main
 
 import (
@@ -213,7 +213,7 @@ import (
 func main() {
 	var _ = sql.Open
 `
-	
+
 	for i := 2; i < len(node.Children); i++ {
 		routeNode := node.Children[i]
 		if routeNode.Type != "List" || len(routeNode.Children) == 0 || routeNode.Children[0].Value != "route" {
@@ -222,12 +222,12 @@ func main() {
 		if len(routeNode.Children) != 3 {
 			reportError("route expects path and handler", routeNode.Line, routeNode.Column)
 		}
-		
+
 		pathNode := routeNode.Children[1]
 		if pathNode.Type != "STRING" {
 			reportError("Expected string for route path", pathNode.Line, pathNode.Column)
 		}
-		
+
 		handlerNode := routeNode.Children[2]
 		if handlerNode.Type != "List" || len(handlerNode.Children) == 0 || handlerNode.Children[0].Value != "lambda" {
 			reportError("Expected (lambda (req) ...) for handler", handlerNode.Line, handlerNode.Column)
@@ -235,7 +235,7 @@ func main() {
 		if len(handlerNode.Children) != 3 {
 			reportError("lambda expects arguments list and body", handlerNode.Line, handlerNode.Column)
 		}
-		
+
 		reqNodeList := handlerNode.Children[1]
 		if reqNodeList.Type != "List" || len(reqNodeList.Children) != 1 {
 			reportError("Expected exactly 1 argument in lambda (req)", reqNodeList.Line, reqNodeList.Column)
@@ -244,7 +244,7 @@ func main() {
 
 		bodyNode := handlerNode.Children[2]
 		bodyCode := generateStatement(bodyNode, reqVar)
-		
+
 		code += fmt.Sprintf(`	http.HandleFunc(%q, func(w http.ResponseWriter, %s *http.Request) {
 %s
 	})
@@ -323,10 +323,10 @@ func generateStatement(node *Node, reqVar string) string {
 		if right.Type == "STRING" {
 			rightStr = fmt.Sprintf("%q", rightStr)
 		}
-		
+
 		thenCode := generateStatement(node.Children[2], reqVar)
 		elseCode := generateStatement(node.Children[3], reqVar)
-		
+
 		return fmt.Sprintf(`		if %s == %s {
 %s
 		} else {
@@ -368,13 +368,13 @@ func main() {
 	lexer := NewLexer(string(content))
 	parser := NewParser(lexer)
 	ast := parser.parseExpression()
-	
+
 	if parser.cur.Type != TokenEOF {
 		reportError("Unexpected tokens after EOF", parser.cur.Line, parser.cur.Column)
 	}
 
 	goCode := generateCode(ast)
-	
+
 	err = os.WriteFile("server.go", []byte(goCode), 0644)
 	if err != nil {
 		reportError(fmt.Sprintf("Failed to write server.go: %v", err), 0, 0)
