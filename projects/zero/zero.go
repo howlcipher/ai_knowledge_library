@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"unicode"
 )
 
@@ -202,6 +203,60 @@ func generateCode(node *Node) string {
 		reportError("Expected integer for port", portNode.Line, portNode.Column)
 	}
 
+	var funcsCode string
+	var routesCode string
+	
+	for i := 2; i < len(node.Children); i++ {
+		handlerNode := node.Children[i]
+		if handlerNode.Type != "List" || len(handlerNode.Children) == 0 {
+			reportError("Expected route or defun definition", handlerNode.Line, handlerNode.Column)
+		}
+		
+		head := handlerNode.Children[0].Value
+		if head == "defun" {
+			if len(handlerNode.Children) != 4 {
+				reportError("defun expects (defun name (args) body)", handlerNode.Line, handlerNode.Column)
+			}
+			name := handlerNode.Children[1].Value
+			argsNode := handlerNode.Children[2]
+			var argsList []string
+			for _, arg := range argsNode.Children {
+				argsList = append(argsList, arg.Value+" string")
+			}
+			argsStr := strings.Join(argsList, ", ")
+			bodyCode := generateStatement(handlerNode.Children[3], "")
+			funcsCode += fmt.Sprintf("func %s(%s) string {\n%s\n}\n\n", name, argsStr, bodyCode)
+			continue
+		}
+		
+		if head != "route" {
+			reportError("Expected route or defun block", handlerNode.Line, handlerNode.Column)
+		}
+
+		if len(handlerNode.Children) != 3 {
+			reportError("route expects (route path handler)", handlerNode.Line, handlerNode.Column)
+		}
+		
+		pathNode := handlerNode.Children[1]
+		if pathNode.Type != "STRING" {
+			reportError("route path must be a string", pathNode.Line, pathNode.Column)
+		}
+
+		reqNodeList := handlerNode.Children[2].Children[1]
+		if reqNodeList.Type != "List" || len(reqNodeList.Children) != 1 {
+			reportError("Expected exactly 1 argument in lambda (req)", reqNodeList.Line, reqNodeList.Column)
+		}
+		reqVar := reqNodeList.Children[0].Value
+
+		bodyNode := handlerNode.Children[2].Children[2]
+		bodyCode := generateStatement(bodyNode, reqVar)
+		
+		routesCode += fmt.Sprintf(`	http.HandleFunc(%q, func(w http.ResponseWriter, %s *http.Request) {
+%s
+	})
+`, pathNode.Value, reqVar, bodyCode)
+	}
+
 	code := `package main
 
 import (
@@ -209,48 +264,12 @@ import (
 	"fmt"
 	"net/http"
 )
-
-func main() {
+`
+	code += funcsCode
+	code += `func main() {
 	var _ = sql.Open
 `
-
-	for i := 2; i < len(node.Children); i++ {
-		routeNode := node.Children[i]
-		if routeNode.Type != "List" || len(routeNode.Children) == 0 || routeNode.Children[0].Value != "route" {
-			reportError("Expected (route path handler)", routeNode.Line, routeNode.Column)
-		}
-		if len(routeNode.Children) != 3 {
-			reportError("route expects path and handler", routeNode.Line, routeNode.Column)
-		}
-
-		pathNode := routeNode.Children[1]
-		if pathNode.Type != "STRING" {
-			reportError("Expected string for route path", pathNode.Line, pathNode.Column)
-		}
-
-		handlerNode := routeNode.Children[2]
-		if handlerNode.Type != "List" || len(handlerNode.Children) == 0 || handlerNode.Children[0].Value != "lambda" {
-			reportError("Expected (lambda (req) ...) for handler", handlerNode.Line, handlerNode.Column)
-		}
-		if len(handlerNode.Children) != 3 {
-			reportError("lambda expects arguments list and body", handlerNode.Line, handlerNode.Column)
-		}
-
-		reqNodeList := handlerNode.Children[1]
-		if reqNodeList.Type != "List" || len(reqNodeList.Children) != 1 {
-			reportError("Expected exactly 1 argument in lambda (req)", reqNodeList.Line, reqNodeList.Column)
-		}
-		reqVar := reqNodeList.Children[0].Value
-
-		bodyNode := handlerNode.Children[2]
-		bodyCode := generateStatement(bodyNode, reqVar)
-
-		code += fmt.Sprintf(`	http.HandleFunc(%q, func(w http.ResponseWriter, %s *http.Request) {
-%s
-	})
-`, pathNode.Value, reqVar, bodyCode)
-	}
-
+	code += routesCode
 	code += fmt.Sprintf(`	
 	fmt.Println("Starting server on port %s...")
 	if err := http.ListenAndServe(":%s", nil); err != nil {
@@ -267,18 +286,42 @@ func generateStatement(node *Node, reqVar string) string {
 		reportError("Expected list for statement", node.Line, node.Column)
 	}
 	head := node.Children[0].Value
-	if head == "res" {
+	if head == "return" {
+		if len(node.Children) != 2 {
+			reportError("return expects (return val)", node.Line, node.Column)
+		}
+		valNode := node.Children[1]
+		if valNode.Type == "STRING" {
+			return fmt.Sprintf("		return %q", valNode.Value)
+		} else {
+			return fmt.Sprintf("		return %s", valNode.Value)
+		}
+	} else if head == "res" {
 		if len(node.Children) != 4 {
 			reportError("res expects status, contentType, and body", node.Line, node.Column)
 		}
 		status := node.Children[1].Value
 		contentType := node.Children[2].Value
 		resBody := node.Children[3].Value
-		if node.Children[3].Type == "SYMBOL" {
-			// Variable reference
+		if node.Children[3].Type == "SYMBOL" || (node.Children[3].Type == "List" && node.Children[3].Children[0].Value == "call") {
+			var bodyStr string
+			if node.Children[3].Type == "List" {
+				funcName := node.Children[3].Children[1].Value
+				var args []string
+				for j := 2; j < len(node.Children[3].Children); j++ {
+					if node.Children[3].Children[j].Type == "STRING" {
+						args = append(args, fmt.Sprintf("%q", node.Children[3].Children[j].Value))
+					} else {
+						args = append(args, node.Children[3].Children[j].Value)
+					}
+				}
+				bodyStr = fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))
+			} else {
+				bodyStr = resBody
+			}
 			return fmt.Sprintf(`		w.Header().Set("Content-Type", %q)
 		w.WriteHeader(%s)
-		fmt.Fprint(w, %s)`, contentType, status, resBody)
+		fmt.Fprint(w, %s)`, contentType, status, bodyStr)
 		} else {
 			return fmt.Sprintf(`		w.Header().Set("Content-Type", %q)
 		w.WriteHeader(%s)
@@ -297,6 +340,17 @@ func generateStatement(node *Node, reqVar string) string {
 		var valStr string
 		if valNode.Type == "STRING" {
 			valStr = fmt.Sprintf("%q", valNode.Value)
+		} else if valNode.Type == "List" && len(valNode.Children) > 0 && valNode.Children[0].Value == "call" {
+			funcName := valNode.Children[1].Value
+			var args []string
+			for j := 2; j < len(valNode.Children); j++ {
+				if valNode.Children[j].Type == "STRING" {
+					args = append(args, fmt.Sprintf("%q", valNode.Children[j].Value))
+				} else {
+					args = append(args, valNode.Children[j].Value)
+				}
+			}
+			valStr = fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))
 		} else {
 			valStr = valNode.Value
 		}
