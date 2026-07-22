@@ -1,0 +1,8 @@
+(module
+	(defun getGreeting (name)
+		(return name)
+	)
+	(route "/greet" (lambda (req)
+		(res 200 "text/plain" (call getGreeting "Hello from included routes!"))
+	))
+)

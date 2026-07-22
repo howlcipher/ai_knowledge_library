@@ -1,0 +1,5 @@
+(http_server 8081
+	(include "routes.zero")
+	(route "/health" (lambda (req)
+		(res 200 "text/plain" "OK")))
+)

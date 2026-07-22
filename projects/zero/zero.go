@@ -616,6 +616,51 @@ func generateStatement(node *Node, reqVar string, depth int) string {
 	return ""
 }
 
+func expandIncludes(node *Node, depth int) {
+	if depth > 100 {
+		reportError("Include depth exceeded (circular include?)", node.Line, node.Column)
+	}
+	if node.Type != "List" {
+		return
+	}
+	var newChildren []*Node
+	for i := 0; i < len(node.Children); i++ {
+		child := node.Children[i]
+		if child.Type == "List" && len(child.Children) == 2 && child.Children[0].Type == "SYMBOL" && child.Children[0].Value == "include" {
+			filenameNode := child.Children[1]
+			if filenameNode.Type != "STRING" {
+				reportError("include expects a string filename", child.Line, child.Column)
+			}
+			filename := filenameNode.Value
+
+			content, err := os.ReadFile(filename)
+			if err != nil {
+				reportError(fmt.Sprintf("Failed to read included file %q: %v", filename, err), child.Line, child.Column)
+			}
+
+			lexer := NewLexer(string(content))
+			parser := NewParser(lexer)
+			includedAst := parser.parseExpression()
+
+			if parser.cur.Type != TokenEOF {
+				reportError(fmt.Sprintf("Unexpected tokens after EOF in included file %q", filename), parser.cur.Line, parser.cur.Column)
+			}
+
+			expandIncludes(includedAst, depth+1)
+
+			if includedAst.Type == "List" && len(includedAst.Children) > 0 && includedAst.Children[0].Value == "module" {
+				newChildren = append(newChildren, includedAst.Children[1:]...)
+			} else {
+				newChildren = append(newChildren, includedAst)
+			}
+		} else {
+			expandIncludes(child, depth)
+			newChildren = append(newChildren, child)
+		}
+	}
+	node.Children = newChildren
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		reportError("Missing file argument", 0, 0)
@@ -632,6 +677,8 @@ func main() {
 	if parser.cur.Type != TokenEOF {
 		reportError("Unexpected tokens after EOF", parser.cur.Line, parser.cur.Column)
 	}
+
+	expandIncludes(ast, 0)
 
 	goCode := generateCode(ast)
 
