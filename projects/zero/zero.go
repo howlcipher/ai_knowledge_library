@@ -214,7 +214,7 @@ func generateCode(node *Node) string {
 		}
 
 		head := handlerNode.Children[0].Value
-		
+
 		if head == "import" {
 			if len(handlerNode.Children) != 2 {
 				reportError("import expects (import \"pkg\")", handlerNode.Line, handlerNode.Column)
@@ -455,7 +455,7 @@ func generateStatement(node *Node, reqVar string, depth int) string {
 			valStr = valNode.Value
 		}
 		bodyCode := generateStatement(node.Children[2], reqVar, depth+1)
-		
+
 		if valNode.Type == "List" && len(valNode.Children) > 0 && valNode.Children[0].Value == "parse_json" {
 			targetType := valNode.Children[1].Value
 			bodyVar := valNode.Children[2].Value
@@ -464,7 +464,7 @@ func generateStatement(node *Node, reqVar string, depth int) string {
 			}
 			return fmt.Sprintf("		{\n			var %s %s\n			_ = json.NewDecoder(%s).Decode(&%s)\n			_ = %s\n%s\n		}", varName, targetType, bodyVar, varName, varName, bodyCode)
 		}
-		
+
 		return fmt.Sprintf("		{\n			%s := %s\n			_ = %s\n%s\n		}", varName, valStr, varName, bodyCode)
 	} else if head == "if" {
 		if len(node.Children) != 4 {
