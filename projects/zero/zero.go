@@ -305,18 +305,40 @@ func generateCode(node *Node) string {
 		}
 
 		if head == "defun" {
-			if len(handlerNode.Children) != 4 {
+			if len(handlerNode.Children) < 4 {
 				reportError("defun expects (defun name (args) body)", handlerNode.Line, handlerNode.Column)
 			}
 			name := handlerNode.Children[1].Value
 			argsNode := handlerNode.Children[2]
+
+			typeHints := make(map[string]string)
+			for j := 3; j < len(handlerNode.Children)-1; j++ {
+				cfgNode := handlerNode.Children[j]
+				if cfgNode.Type == "List" && len(cfgNode.Children) >= 3 && cfgNode.Children[0].Value == "type_hint" {
+					varName := cfgNode.Children[1].Value
+					varType := cfgNode.Children[2].Value
+					typeHints[varName] = varType
+				}
+			}
+
 			var argsList []string
 			for _, arg := range argsNode.Children {
-				argsList = append(argsList, arg.Value+" string")
+				argType := "string"
+				if t, ok := typeHints[arg.Value]; ok {
+					argType = t
+				}
+				argsList = append(argsList, arg.Value+" "+argType)
 			}
 			argsStr := strings.Join(argsList, ", ")
-			bodyCode := generateStatement(handlerNode.Children[3], "", 0)
-			funcsCode += fmt.Sprintf("func %s(%s) string {\n%s\n}\n\n", name, argsStr, bodyCode)
+
+			returnType := "string"
+			if t, ok := typeHints["return"]; ok {
+				returnType = t
+			}
+
+			bodyNode := handlerNode.Children[len(handlerNode.Children)-1]
+			bodyCode := generateStatement(bodyNode, "", 0)
+			funcsCode += fmt.Sprintf("func %s(%s) %s {\n%s\n}\n\n", name, argsStr, returnType, bodyCode)
 			continue
 		}
 
