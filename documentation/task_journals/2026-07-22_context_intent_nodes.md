@@ -24,6 +24,7 @@
 ## Progress Log
 
 - 2026-07-22 15:13 — Task selected.
+- 2026-07-22 15:13 — Launched `agy` delegate in the background to modify zero.go.
 
 ## Next Step
 

@@ -270,6 +270,10 @@ func generateCode(node *Node) string {
 
 		head := handlerNode.Children[0].Value
 
+		if head == "intent" {
+			continue
+		}
+
 		if head == "import" {
 			if len(handlerNode.Children) != 2 {
 				reportError("import expects (import \"pkg\")", handlerNode.Line, handlerNode.Column)
@@ -471,6 +475,9 @@ func generateStatement(node *Node, reqVar string, depth int) string {
 		reportError("Expected list for statement", node.Line, node.Column)
 	}
 	head := node.Children[0].Value
+	if head == "intent" {
+		return ""
+	}
 	if head == "return" {
 		if len(node.Children) != 2 {
 			reportError("return expects (return val)", node.Line, node.Column)

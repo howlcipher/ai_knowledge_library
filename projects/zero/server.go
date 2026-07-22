@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"fmt"
 )
+
 func add(a int, b int) int {
-		{
-			c := (a + b)
-			_ = c
+	{
+		c := (a + b)
+		_ = c
 		return c
-		}
+	}
 }
 
 func main() {
