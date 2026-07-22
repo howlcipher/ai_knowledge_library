@@ -127,7 +127,7 @@ Now that Zero V1 is complete (a full Turing-complete web server and CLI language
 | # | Improvement | Status | Score | AI Rationale |
 | --- | --- | --- | --- | --- |
 | 17 | **Type Hinting for `defun`** | Done (2026-07-22) | 3.5 (7×1.0÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Currently, all `defun` arguments compile to `string`. Adding `(type_hint var "int")` ensures the AI gets immediate compile-time errors from Go. |
-| 19 | **Context/Intent Nodes (`intent`)** | Pending | 2.0 (4×1.0÷2) | Sonnet 3.5 | Gemini 1.5 Pro | `(intent "I am building a login flow")`. The transpiler strips these out, but agents can parse them to instantly understand context. |
+| 19 | **Context/Intent Nodes (`intent`)** | Done (2026-07-22) | 2.0 (4×1.0÷2) | Sonnet 3.5 | Gemini 1.5 Pro | `(intent "I am building a login flow")`. The transpiler strips these out, but agents can parse them to instantly understand context. |
 | 16 | **Native Unit Test Blocks (`test`)** | Pending | 1.5 (6×1.0÷4) | Sonnet 3.5 | Gemini 1.5 Pro | AI iterates faster with TDD. A native `(test "desc" ...)` block at the root that compiles directly to `_test.go` allows seamless testing. |
 | 20 | **Auto-Tracing (`trace`)** | Pending | 1.5 (3×1.0÷2) | Sonnet 3.5 | Gemini 1.5 Pro | AI debugs by spamming `print`. A `(trace var)` macro auto-injects line numbers and variable names into `fmt.Println`. |
 | 18 | **Declarative Schema Migrations** | Pending | 1.0 (5×1.0÷5) | Sonnet 3.5 | Gemini 1.5 Pro | If `(schema "users" (column "id" "int"))` is in `.zero`, the transpiler can auto-generate `CREATE TABLE IF NOT EXISTS`. |
