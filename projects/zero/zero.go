@@ -102,6 +102,20 @@ func (l *Lexer) NextToken() Token {
 			if nextCh == 0 {
 				reportError("Unterminated string", startLine, startCol)
 			}
+			if nextCh == '\\' {
+				escapedCh := l.nextChar()
+				if escapedCh == 0 {
+					reportError("Unterminated string escape", startLine, startCol)
+				}
+				if escapedCh == 'n' {
+					val += "\n"
+				} else if escapedCh == 't' {
+					val += "\t"
+				} else {
+					val += string(escapedCh)
+				}
+				continue
+			}
 			if nextCh == '"' {
 				break
 			}
@@ -237,10 +251,10 @@ func main() {
 		contentType := bodyNode.Children[2].Value
 		resBody := bodyNode.Children[3].Value
 		
-		code += fmt.Sprintf(`	http.HandleFunc("%s", func(w http.ResponseWriter, %s *http.Request) {
-		w.Header().Set("Content-Type", "%s")
+		code += fmt.Sprintf(`	http.HandleFunc(%q, func(w http.ResponseWriter, %s *http.Request) {
+		w.Header().Set("Content-Type", %q)
 		w.WriteHeader(%s)
-		fmt.Fprint(w, "%s")
+		fmt.Fprint(w, %q)
 	})
 `, pathNode.Value, reqVar, contentType, status, resBody)
 	}
