@@ -44,7 +44,7 @@ Pending rows are ranked by a diminishing-returns score:
 ### 1. Add Routing Support
 * **Description:** Update the compiler to accept multiple `(route path handler)` definitions inside a web server block.
 * **Why:** The prototype only builds a single server with a hardcoded route. Real applications need routers.
-* **Impact:** 10/10 (High - blocks all web app development).
+* **Impact:** 2/10 (Minor - helpful but not strictly blocking).
 
 ### 2. Add Conditionals and Variables
 * **Description:** Introduce `let` and `if` blocks to handle internal request logic. For example: `(if (= req.method "POST") ...)`. This will require updating the Lexer to handle operators like `=` and the Code Generator to output Go `if` statements.
@@ -115,3 +115,27 @@ Pending rows are ranked by a diminishing-returns score:
 * **Description:** Introduce a `(middleware auth_func)` block that can wrap a set of `(route ...)` blocks.
 * **Why:** Modern APIs require authentication headers, logging, and CORS handling. Middleware is the standard pattern for this.
 * **Impact:** 5/10 (Medium).
+
+---
+
+## V2: AI-First Language Optimizations
+
+Now that Zero V1 is complete (a full Turing-complete web server and CLI language), the next phase is optimizing it specifically for **Autonomous AI Development**. Since Zero does not need to be human-readable, we can bend the language features to perfectly suit AI agents.
+
+### Proposed Improvements
+
+| # | Improvement | Status | Score | AI Rationale |
+| --- | --- | --- | --- | --- |
+| 16 | **Native Unit Test Blocks (`test`)** | Pending | High | AI iterates faster with TDD. A native `(test "desc" ...)` block at the root that compiles directly to `_test.go` allows the AI to write tests seamlessly without learning Go's testing framework. |
+| 17 | **Type Hinting for `defun`** | Pending | High | Currently, all `defun` arguments compile to `string`. Adding `(type_hint var "int")` or native typed arguments `((id int) (name string))` ensures the AI gets immediate compile-time errors from Go if it hallucinates types. |
+| 18 | **Declarative Schema Migrations** | Pending | Med | AI struggles with out-of-band DB migrations. If `(schema "users" (column "id" "int"))` is in `.zero`, the transpiler can auto-generate `CREATE TABLE IF NOT EXISTS` Go code on server boot. |
+| 19 | **Context/Intent Nodes (`intent`)** | Pending | Med | `(intent "I am building a login flow")`. The transpiler strips these out, but agents can parse them from the AST to instantly understand the context of a file without reading the whole AST. |
+| 20 | **Auto-Tracing (`trace`)** | Pending | Low | AI debugs by spamming `print`. A `(trace var)` macro that auto-injects line numbers, variable names, and file names into `fmt.Println` saves the AI from doing string formatting. |
+
+### Known Bugs / Tech Debt
+
+| Bug | Description | Severity |
+| --- | --- | --- |
+| Include Paths | `(include "file.zero")` uses the current working directory (`os.ReadFile`) rather than resolving paths relative to the file doing the inclusion. | High |
+| defun typing | All `defun` arguments strictly compile to Go `string` types, breaking if we try to pass an `*http.Request` or `int` to a function. | Medium |
+| try_let rigidness | `try_let` is currently hardcoded to only support `parse_json` as the error-returning function. It needs to generalize to any function returning `(value, error)`. | Medium |

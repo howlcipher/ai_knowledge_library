@@ -235,22 +235,33 @@ func generateCode(node *Node) string {
 		reportError("Expected list at root", node.Line, node.Column)
 	}
 	head := node.Children[0]
-	if head.Type != "SYMBOL" || head.Value != "http_server" {
-		reportError("Expected http_server as root symbol", head.Line, head.Column)
+	if head.Type != "SYMBOL" || (head.Value != "http_server" && head.Value != "cli_app") {
+		reportError("Expected http_server or cli_app as root symbol", head.Line, head.Column)
 	}
-	if len(node.Children) < 3 {
-		reportError("http_server expects at least a port and 1 route", head.Line, head.Column)
-	}
-	portNode := node.Children[1]
-	if portNode.Type != "INT" {
-		reportError("Expected integer for port", portNode.Line, portNode.Column)
+
+	isCliApp := head.Value == "cli_app"
+
+	var portNode *Node
+	var startIndex int
+	if isCliApp {
+		startIndex = 1
+	} else {
+		if len(node.Children) < 3 {
+			reportError("http_server expects at least a port and 1 route", head.Line, head.Column)
+		}
+		portNode = node.Children[1]
+		if portNode.Type != "INT" {
+			reportError("Expected integer for port", portNode.Line, portNode.Column)
+		}
+		startIndex = 2
 	}
 
 	var funcsCode string
 	var routesCode string
+	var cliCode string
 	var extraImports []string
 
-	for i := 2; i < len(node.Children); i++ {
+	for i := startIndex; i < len(node.Children); i++ {
 		handlerNode := node.Children[i]
 		if handlerNode.Type != "List" || len(handlerNode.Children) == 0 {
 			reportError("Expected route, defun, struct, or import definition", handlerNode.Line, handlerNode.Column)
@@ -380,6 +391,12 @@ func generateCode(node *Node) string {
 			continue
 		}
 
+		if isCliApp {
+			// For cli_app, unhandled blocks are treated as statements executed in main
+			cliCode += generateStatement(handlerNode, "", 0) + "\n"
+			continue
+		}
+
 		reportError("Expected route, defun, struct, import, or middleware block", handlerNode.Line, handlerNode.Column)
 	}
 
@@ -389,9 +406,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 `
+	if !isCliApp {
+		code += "	\"net/http\"\n"
+	}
+
 	for _, imp := range extraImports {
 		code += imp
 	}
@@ -403,14 +423,19 @@ import (
 	var _ = os.Getenv
 	var _ = json.Marshal
 `
-	code += routesCode
-	code += fmt.Sprintf(`	
+	if isCliApp {
+		code += cliCode
+		code += "}\n"
+	} else {
+		code += routesCode
+		code += fmt.Sprintf(`	
 	fmt.Println("Starting server on port %s...")
 	if err := http.ListenAndServe(":%s", nil); err != nil {
 		fmt.Println("Server error:", err)
 	}
 }
 `, portNode.Value, portNode.Value)
+	}
 
 	return code
 }
@@ -669,6 +694,16 @@ func generateStatement(node *Node, reqVar string, depth int) string {
 		} else {
 %s
 		}`, left, rightStr, thenCode, elseCode)
+	} else if head == "print" {
+		var args []string
+		for j := 1; j < len(node.Children); j++ {
+			if node.Children[j].Type == "STRING" {
+				args = append(args, fmt.Sprintf("%q", node.Children[j].Value))
+			} else {
+				args = append(args, node.Children[j].Value)
+			}
+		}
+		return fmt.Sprintf("		fmt.Println(%s)", strings.Join(args, ", "))
 	} else if head == "db_connect" {
 		if len(node.Children) != 4 {
 			reportError("db_connect expects (db_connect var driver dsn)", node.Line, node.Column)

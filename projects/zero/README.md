@@ -32,6 +32,21 @@ Create a file called `hello.zero`:
 )
 ```
 
+### CLI "Hello World" Example
+
+If you want to build a simple command-line script instead of a web server, you can use the `(cli_app ...)` root block instead:
+
+Create `cli_hello.zero`:
+
+```lisp
+(cli_app
+  (print "Hello, World!")
+  (let (name "Zero")
+    (print "Welcome to" name)
+  )
+)
+```
+
 ## How to Run
 
 1. **Transpile and Run in one step**:

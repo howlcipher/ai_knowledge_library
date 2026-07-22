@@ -1,0 +1,6 @@
+(cli_app
+	(print "Hello, World!")
+	(let (name "Zero")
+		(print "Welcome to" name)
+	)
+)
