@@ -21,15 +21,16 @@ def main():
         print(f"Failed to load model. Error: {e}")
         sys.exit(1)
 
-    # We enforce a strict S-expression format using a Context Free Grammar (Lark)
-    # This allows nested structures like multiple routes.
+    # We enforce a generic S-expression format using a simplified CFG.
+    # This prevents Outlines from running out of memory building massive state machines
+    # for deeply nested language features, while still guaranteeing balanced parentheses.
+    # Semantic validation is deferred to the Go transpiler's error loop.
     grammar = """
-        ?start: "(http_server " port " " routes ")"
-        routes: route (" " route)*
-        route: "(route " string " (lambda (" symbol ") (res " port " " string " " string ")))"
-        port: /[0-9]+/
+        ?start: exp
+        exp: "(" symbol ( " " (exp | string | number) )* ")"
+        number: /[0-9]+/
         string: /"[^"]*"/
-        symbol: /[a-zA-Z]+/
+        symbol: /[a-zA-Z_=\.\-]+/
     """
     
     print("Compiling CFG generator... (this may take several minutes for large local models)")
