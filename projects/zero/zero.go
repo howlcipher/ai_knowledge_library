@@ -1,0 +1,282 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"unicode"
+)
+
+type TokenType string
+
+const (
+	TokenLParen TokenType = "LPAREN"
+	TokenRParen TokenType = "RPAREN"
+	TokenSymbol TokenType = "SYMBOL"
+	TokenInt    TokenType = "INT"
+	TokenString TokenType = "STRING"
+	TokenEOF    TokenType = "EOF"
+)
+
+type Token struct {
+	Type   TokenType
+	Value  string
+	Line   int
+	Column int
+}
+
+type ErrorOutput struct {
+	Reason string `json:"reason"`
+	Line   int    `json:"line"`
+	Column int    `json:"column"`
+}
+
+func reportError(reason string, line, column int) {
+	errOut := ErrorOutput{Reason: reason, Line: line, Column: column}
+	b, _ := json.Marshal(errOut)
+	fmt.Println(string(b))
+	os.Exit(1)
+}
+
+// Lexer
+type Lexer struct {
+	input  string
+	pos    int
+	line   int
+	column int
+}
+
+func NewLexer(input string) *Lexer {
+	return &Lexer{input: input, line: 1, column: 1}
+}
+
+func (l *Lexer) nextChar() rune {
+	if l.pos >= len(l.input) {
+		return 0
+	}
+	ch := rune(l.input[l.pos])
+	l.pos++
+	if ch == '\n' {
+		l.line++
+		l.column = 1
+	} else {
+		l.column++
+	}
+	return ch
+}
+
+func (l *Lexer) peekChar() rune {
+	if l.pos >= len(l.input) {
+		return 0
+	}
+	return rune(l.input[l.pos])
+}
+
+func (l *Lexer) NextToken() Token {
+	for {
+		ch := l.peekChar()
+		if ch == 0 {
+			return Token{Type: TokenEOF, Line: l.line, Column: l.column}
+		}
+		if unicode.IsSpace(ch) {
+			l.nextChar()
+			continue
+		}
+		break
+	}
+
+	startLine := l.line
+	startCol := l.column
+	ch := l.nextChar()
+
+	if ch == '(' {
+		return Token{Type: TokenLParen, Value: "(", Line: startLine, Column: startCol}
+	}
+	if ch == ')' {
+		return Token{Type: TokenRParen, Value: ")", Line: startLine, Column: startCol}
+	}
+	if ch == '"' {
+		val := ""
+		for {
+			nextCh := l.nextChar()
+			if nextCh == 0 {
+				reportError("Unterminated string", startLine, startCol)
+			}
+			if nextCh == '"' {
+				break
+			}
+			val += string(nextCh)
+		}
+		return Token{Type: TokenString, Value: val, Line: startLine, Column: startCol}
+	}
+	if unicode.IsDigit(ch) {
+		val := string(ch)
+		for unicode.IsDigit(l.peekChar()) {
+			val += string(l.nextChar())
+		}
+		return Token{Type: TokenInt, Value: val, Line: startLine, Column: startCol}
+	}
+	if unicode.IsLetter(ch) || ch == '_' || ch == '/' || ch == '-' {
+		val := string(ch)
+		for unicode.IsLetter(l.peekChar()) || unicode.IsDigit(l.peekChar()) || l.peekChar() == '_' || l.peekChar() == '/' || l.peekChar() == '-' {
+			val += string(l.nextChar())
+		}
+		return Token{Type: TokenSymbol, Value: val, Line: startLine, Column: startCol}
+	}
+
+	reportError(fmt.Sprintf("Unexpected character: %c", ch), startLine, startCol)
+	return Token{}
+}
+
+// AST
+type Node struct {
+	Type     string
+	Value    string
+	Children []*Node
+	Line     int
+	Column   int
+}
+
+// Parser
+type Parser struct {
+	lexer *Lexer
+	cur   Token
+}
+
+func NewParser(lexer *Lexer) *Parser {
+	p := &Parser{lexer: lexer}
+	p.cur = p.lexer.NextToken()
+	return p
+}
+
+func (p *Parser) parseExpression() *Node {
+	if p.cur.Type == TokenLParen {
+		node := &Node{Type: "List", Line: p.cur.Line, Column: p.cur.Column}
+		p.cur = p.lexer.NextToken() // consume '('
+		for p.cur.Type != TokenRParen && p.cur.Type != TokenEOF {
+			node.Children = append(node.Children, p.parseExpression())
+		}
+		if p.cur.Type != TokenRParen {
+			reportError("Expected ')'", p.cur.Line, p.cur.Column)
+		}
+		p.cur = p.lexer.NextToken() // consume ')'
+		return node
+	}
+	if p.cur.Type == TokenSymbol || p.cur.Type == TokenInt || p.cur.Type == TokenString {
+		node := &Node{Type: string(p.cur.Type), Value: p.cur.Value, Line: p.cur.Line, Column: p.cur.Column}
+		p.cur = p.lexer.NextToken()
+		return node
+	}
+	reportError(fmt.Sprintf("Unexpected token: %s", p.cur.Value), p.cur.Line, p.cur.Column)
+	return nil
+}
+
+// Code Generator
+func generateCode(node *Node) string {
+	if node.Type != "List" || len(node.Children) == 0 {
+		reportError("Expected list at root", node.Line, node.Column)
+	}
+	head := node.Children[0]
+	if head.Type != "SYMBOL" || head.Value != "http_server" {
+		reportError("Expected http_server as root symbol", head.Line, head.Column)
+	}
+	if len(node.Children) < 3 {
+		reportError("http_server expects at least a port and 1 route", head.Line, head.Column)
+	}
+	portNode := node.Children[1]
+	if portNode.Type != "INT" {
+		reportError("Expected integer for port", portNode.Line, portNode.Column)
+	}
+	
+	code := `package main
+
+import (
+	"fmt"
+	"net/http"
+)
+
+func main() {
+`
+	
+	for i := 2; i < len(node.Children); i++ {
+		routeNode := node.Children[i]
+		if routeNode.Type != "List" || len(routeNode.Children) == 0 || routeNode.Children[0].Value != "route" {
+			reportError("Expected (route path handler)", routeNode.Line, routeNode.Column)
+		}
+		if len(routeNode.Children) != 3 {
+			reportError("route expects path and handler", routeNode.Line, routeNode.Column)
+		}
+		
+		pathNode := routeNode.Children[1]
+		if pathNode.Type != "STRING" {
+			reportError("Expected string for route path", pathNode.Line, pathNode.Column)
+		}
+		
+		handlerNode := routeNode.Children[2]
+		if handlerNode.Type != "List" || len(handlerNode.Children) == 0 || handlerNode.Children[0].Value != "lambda" {
+			reportError("Expected (lambda (req) ...) for handler", handlerNode.Line, handlerNode.Column)
+		}
+		if len(handlerNode.Children) != 3 {
+			reportError("lambda expects arguments list and body", handlerNode.Line, handlerNode.Column)
+		}
+		
+		reqNodeList := handlerNode.Children[1]
+		if reqNodeList.Type != "List" || len(reqNodeList.Children) != 1 {
+			reportError("Expected exactly 1 argument in lambda (req)", reqNodeList.Line, reqNodeList.Column)
+		}
+		reqVar := reqNodeList.Children[0].Value
+
+		bodyNode := handlerNode.Children[2]
+		if bodyNode.Type != "List" || len(bodyNode.Children) == 0 || bodyNode.Children[0].Value != "res" {
+			reportError("Expected (res status contentType body)", bodyNode.Line, bodyNode.Column)
+		}
+		if len(bodyNode.Children) != 4 {
+			reportError("res expects status, contentType, and body", bodyNode.Line, bodyNode.Column)
+		}
+		status := bodyNode.Children[1].Value
+		contentType := bodyNode.Children[2].Value
+		resBody := bodyNode.Children[3].Value
+		
+		code += fmt.Sprintf(`	http.HandleFunc("%s", func(w http.ResponseWriter, %s *http.Request) {
+		w.Header().Set("Content-Type", "%s")
+		w.WriteHeader(%s)
+		fmt.Fprint(w, "%s")
+	})
+`, pathNode.Value, reqVar, contentType, status, resBody)
+	}
+
+	code += fmt.Sprintf(`	
+	fmt.Println("Starting server on port %s...")
+	if err := http.ListenAndServe(":%s", nil); err != nil {
+		fmt.Println("Server error:", err)
+	}
+}
+`, portNode.Value, portNode.Value)
+
+	return code
+}
+
+func main() {
+	if len(os.Args) < 2 {
+		reportError("Missing file argument", 0, 0)
+	}
+	content, err := os.ReadFile(os.Args[1])
+	if err != nil {
+		reportError(fmt.Sprintf("Cannot read file: %v", err), 0, 0)
+	}
+
+	lexer := NewLexer(string(content))
+	parser := NewParser(lexer)
+	ast := parser.parseExpression()
+	
+	if parser.cur.Type != TokenEOF {
+		reportError("Unexpected tokens after EOF", parser.cur.Line, parser.cur.Column)
+	}
+
+	goCode := generateCode(ast)
+	
+	err = os.WriteFile("server.go", []byte(goCode), 0644)
+	if err != nil {
+		reportError(fmt.Sprintf("Failed to write server.go: %v", err), 0, 0)
+	}
+}
