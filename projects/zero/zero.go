@@ -133,9 +133,9 @@ func (l *Lexer) NextToken() Token {
 		}
 		return Token{Type: TokenInt, Value: val, Line: startLine, Column: startCol}
 	}
-	if unicode.IsLetter(ch) || ch == '_' || ch == '/' || ch == '-' || ch == '=' || ch == '.' {
+	if unicode.IsLetter(ch) || ch == '_' || ch == '/' || ch == '-' || ch == '=' || ch == '.' || ch == '+' || ch == '*' || ch == '<' || ch == '>' {
 		val := string(ch)
-		for unicode.IsLetter(l.peekChar()) || unicode.IsDigit(l.peekChar()) || l.peekChar() == '_' || l.peekChar() == '/' || l.peekChar() == '-' || l.peekChar() == '=' || l.peekChar() == '.' {
+		for unicode.IsLetter(l.peekChar()) || unicode.IsDigit(l.peekChar()) || l.peekChar() == '_' || l.peekChar() == '/' || l.peekChar() == '-' || l.peekChar() == '=' || l.peekChar() == '.' || l.peekChar() == '+' || l.peekChar() == '*' || l.peekChar() == '<' || l.peekChar() == '>' {
 			val += string(l.nextChar())
 		}
 		return Token{Type: TokenSymbol, Value: val, Line: startLine, Column: startCol}
@@ -350,7 +350,11 @@ func generateStatement(node *Node, reqVar string, depth int) string {
 			reportError("res_json expects (res_json status data)", node.Line, node.Column)
 		}
 		status := node.Children[1].Value
-		dataVar := node.Children[2].Value
+		dataNode := node.Children[2]
+		dataVar := dataNode.Value
+		if dataNode.Type == "STRING" {
+			dataVar = fmt.Sprintf("%q", dataVar)
+		}
 		return fmt.Sprintf(`		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(%s)
 		_ = json.NewEncoder(w).Encode(%s)`, status, dataVar)
@@ -447,6 +451,26 @@ func generateStatement(node *Node, reqVar string, depth int) string {
 				} else {
 					valStr = fmt.Sprintf("os.Getenv(%s)", keyNode.Value)
 				}
+			} else if funcName == "+" || funcName == "-" || funcName == "*" || funcName == "/" || funcName == "<" || funcName == ">" || funcName == "and" || funcName == "or" || funcName == "==" {
+				if len(valNode.Children) != 3 {
+					reportError(fmt.Sprintf("%s expects 2 arguments", funcName), valNode.Line, valNode.Column)
+				}
+				op := funcName
+				if op == "and" {
+					op = "&&"
+				}
+				if op == "or" {
+					op = "||"
+				}
+				arg1 := valNode.Children[1].Value
+				if valNode.Children[1].Type == "STRING" {
+					arg1 = fmt.Sprintf("%q", arg1)
+				}
+				arg2 := valNode.Children[2].Value
+				if valNode.Children[2].Type == "STRING" {
+					arg2 = fmt.Sprintf("%q", arg2)
+				}
+				valStr = fmt.Sprintf("(%s %s %s)", arg1, op, arg2)
 			} else if funcName == "parse_json" {
 				if len(valNode.Children) != 3 {
 					reportError("parse_json expects (parse_json Type body)", valNode.Line, valNode.Column)
@@ -470,6 +494,63 @@ func generateStatement(node *Node, reqVar string, depth int) string {
 		}
 
 		return fmt.Sprintf("		{\n			%s := %s\n			_ = %s\n%s\n		}", varName, valStr, varName, bodyCode)
+	} else if head == "do" {
+		var stmts string
+		for j := 1; j < len(node.Children); j++ {
+			stmts += generateStatement(node.Children[j], reqVar, depth+1) + "\n"
+		}
+		return fmt.Sprintf("		{\n%s\n		}", stmts)
+	} else if head == "try_let" {
+		if len(node.Children) != 4 {
+			reportError("try_let expects (try_let (var val) (catch err catchBody) successBody)", node.Line, node.Column)
+		}
+		binds := node.Children[1]
+		if binds.Type != "List" || len(binds.Children) != 2 {
+			reportError("try_let binding expects (var val)", binds.Line, binds.Column)
+		}
+		varName := binds.Children[0].Value
+		valNode := binds.Children[1]
+
+		catchNode := node.Children[2]
+		if catchNode.Type != "List" || len(catchNode.Children) != 3 || catchNode.Children[0].Value != "catch" {
+			reportError("try_let catch expects (catch errVar catchBody)", catchNode.Line, catchNode.Column)
+		}
+		errVar := catchNode.Children[1].Value
+		catchBodyCode := generateStatement(catchNode.Children[2], reqVar, depth+1)
+		successBodyCode := generateStatement(node.Children[3], reqVar, depth+1)
+
+		if valNode.Type == "List" && len(valNode.Children) > 0 && valNode.Children[0].Value == "parse_json" {
+			targetType := valNode.Children[1].Value
+			bodyVar := valNode.Children[2].Value
+			if bodyVar == "req.body" {
+				bodyVar = reqVar + ".Body"
+			}
+			return fmt.Sprintf(`		{
+			var %s %s
+			if %s := json.NewDecoder(%s).Decode(&%s); %s != nil {
+%s
+			} else {
+				_ = %s
+%s
+			}
+		}`, varName, targetType, errVar, bodyVar, varName, errVar, catchBodyCode, varName, successBodyCode)
+		}
+		reportError("try_let currently only supports parse_json", valNode.Line, valNode.Column)
+		return ""
+	} else if head == "spawn" {
+		if len(node.Children) != 2 {
+			reportError("spawn expects (spawn (lambda () body))", node.Line, node.Column)
+		}
+		lambdaNode := node.Children[1]
+		if lambdaNode.Type != "List" || len(lambdaNode.Children) != 3 || lambdaNode.Children[0].Value != "lambda" {
+			reportError("spawn expects a lambda", lambdaNode.Line, lambdaNode.Column)
+		}
+		argsNode := lambdaNode.Children[1]
+		if argsNode.Type != "List" || len(argsNode.Children) != 0 {
+			reportError("spawn lambda expects no arguments ()", argsNode.Line, argsNode.Column)
+		}
+		bodyCode := generateStatement(lambdaNode.Children[2], reqVar, depth+1)
+		return fmt.Sprintf("		go func() {\n%s\n		}()", bodyCode)
 	} else if head == "if" {
 		if len(node.Children) != 4 {
 			reportError("if expects (if cond then else)", node.Line, node.Column)

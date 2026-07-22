@@ -1,0 +1,22 @@
+(http_server 8080
+  (struct RequestData (Count int))
+  (route "/test" (lambda (req)
+    (try_let (data (parse_json RequestData req.body))
+      (catch err 
+        (res_json 400 "Invalid JSON format")
+      )
+      (let (count data.Count)
+        (let (is_large (< count 10))
+          (do
+            (spawn (lambda ()
+              (let (result (+ count 1))
+                (do)
+              )
+            ))
+            (res_json 200 data)
+          )
+        )
+      )
+    )
+  ))
+)
