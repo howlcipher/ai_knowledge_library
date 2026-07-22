@@ -126,16 +126,8 @@ Now that Zero V1 is complete (a full Turing-complete web server and CLI language
 
 | # | Improvement | Status | Score | AI Rationale |
 | --- | --- | --- | --- | --- |
-| 16 | **Native Unit Test Blocks (`test`)** | Pending | High | AI iterates faster with TDD. A native `(test "desc" ...)` block at the root that compiles directly to `_test.go` allows the AI to write tests seamlessly without learning Go's testing framework. |
-| 17 | **Type Hinting for `defun`** | Pending | High | Currently, all `defun` arguments compile to `string`. Adding `(type_hint var "int")` or native typed arguments `((id int) (name string))` ensures the AI gets immediate compile-time errors from Go if it hallucinates types. |
-| 18 | **Declarative Schema Migrations** | Pending | Med | AI struggles with out-of-band DB migrations. If `(schema "users" (column "id" "int"))` is in `.zero`, the transpiler can auto-generate `CREATE TABLE IF NOT EXISTS` Go code on server boot. |
-| 19 | **Context/Intent Nodes (`intent`)** | Pending | Med | `(intent "I am building a login flow")`. The transpiler strips these out, but agents can parse them from the AST to instantly understand the context of a file without reading the whole AST. |
-| 20 | **Auto-Tracing (`trace`)** | Pending | Low | AI debugs by spamming `print`. A `(trace var)` macro that auto-injects line numbers, variable names, and file names into `fmt.Println` saves the AI from doing string formatting. |
-
-### Known Bugs / Tech Debt
-
-| Bug | Description | Severity |
-| --- | --- | --- |
-| Include Paths | `(include "file.zero")` uses the current working directory (`os.ReadFile`) rather than resolving paths relative to the file doing the inclusion. | High |
-| defun typing | All `defun` arguments strictly compile to Go `string` types, breaking if we try to pass an `*http.Request` or `int` to a function. | Medium |
-| try_let rigidness | `try_let` is currently hardcoded to only support `parse_json` as the error-returning function. It needs to generalize to any function returning `(value, error)`. | Medium |
+| 17 | **Type Hinting for `defun`** | Pending | 3.5 (7×1.0÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Currently, all `defun` arguments compile to `string`. Adding `(type_hint var "int")` ensures the AI gets immediate compile-time errors from Go. |
+| 19 | **Context/Intent Nodes (`intent`)** | Pending | 2.0 (4×1.0÷2) | Sonnet 3.5 | Gemini 1.5 Pro | `(intent "I am building a login flow")`. The transpiler strips these out, but agents can parse them to instantly understand context. |
+| 16 | **Native Unit Test Blocks (`test`)** | Pending | 1.5 (6×1.0÷4) | Sonnet 3.5 | Gemini 1.5 Pro | AI iterates faster with TDD. A native `(test "desc" ...)` block at the root that compiles directly to `_test.go` allows seamless testing. |
+| 20 | **Auto-Tracing (`trace`)** | Pending | 1.5 (3×1.0÷2) | Sonnet 3.5 | Gemini 1.5 Pro | AI debugs by spamming `print`. A `(trace var)` macro auto-injects line numbers and variable names into `fmt.Println`. |
+| 18 | **Declarative Schema Migrations** | Pending | 1.0 (5×1.0÷5) | Sonnet 3.5 | Gemini 1.5 Pro | If `(schema "users" (column "id" "int"))` is in `.zero`, the transpiler can auto-generate `CREATE TABLE IF NOT EXISTS`. |
