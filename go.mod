@@ -4,7 +4,7 @@ go 1.26.4
 
 require (
 	github.com/charmbracelet/huh v1.0.0
-	github.com/charmbracelet/huh/spinner v0.0.0-20260223110133-9dc45e34a40b
+	github.com/google/uuid v1.6.0
 	github.com/spf13/cobra v1.10.2
 )
 

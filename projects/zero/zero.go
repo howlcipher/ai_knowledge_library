@@ -312,6 +312,8 @@ import (
 	code += funcsCode
 	code += `func main() {
 	var _ = sql.Open
+	var _ = os.Getenv
+	var _ = json.Marshal
 `
 	code += routesCode
 	code += fmt.Sprintf(`	
