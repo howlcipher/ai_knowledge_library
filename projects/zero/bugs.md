@@ -9,7 +9,7 @@ Pending bugs carry the same diminishing-returns score defined in `improvements.m
 | # | Bug | Status | Score (V×D÷E) | Claude model | Gemini model | ROI rationale |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | [Lexer panics on EOF during unterminated string](#1-lexer-panics-on-eof-during-unterminated-string) | Done | 4.0 (4×1÷1) | Haiku 3 | Gemini 1.5 Flash | The lexer reports the error via `reportError`, but an explicit bounds check prevents potential runtime panics during deep parsing. |
-| 2 | [Python Orchestrator timeout with heavy models](#2-python-orchestrator-timeout-with-heavy-models) | Pending | 3.0 (3×1÷1) | Haiku 3 | Gemini 1.5 Flash | Outlines regex generation can be slow on very large local models, potentially causing a timeout during the generation loop. Needs a timeout or streaming implementation. |
+| 2 | [Python Orchestrator timeout with heavy models](#2-python-orchestrator-timeout-with-heavy-models) | Done | 3.0 (3×1÷1) | Haiku 3 | Gemini 1.5 Flash | Added explicit UX warnings to console so users don't assume the script has frozen when loading heavy models in Outlines. |
 
 ## Details
 

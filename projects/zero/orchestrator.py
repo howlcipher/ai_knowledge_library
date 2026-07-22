@@ -32,7 +32,7 @@ def main():
         symbol: /[a-zA-Z]+/
     """
     
-    print("Compiling CFG generator...")
+    print("Compiling CFG generator... (this may take several minutes for large local models)")
     generator = outlines.generate.cfg(model, grammar)
 
     prompt = "Build a web server on port 8080 with a root route returning 'root' and an /api route returning 'api'."
@@ -42,7 +42,7 @@ def main():
     for attempt in range(max_retries):
         print(f"\n--- Attempt {attempt+1} ---")
         print(f"Prompt: {current_prompt}")
-        print("Generating Zero code...")
+        print("Generating Zero code... (waiting for local model response)")
         
         # Generate S-expression
         code = generator(current_prompt)
