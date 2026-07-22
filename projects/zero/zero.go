@@ -205,13 +205,13 @@ func generateCode(node *Node) string {
 
 	var funcsCode string
 	var routesCode string
-	
+
 	for i := 2; i < len(node.Children); i++ {
 		handlerNode := node.Children[i]
 		if handlerNode.Type != "List" || len(handlerNode.Children) == 0 {
 			reportError("Expected route or defun definition", handlerNode.Line, handlerNode.Column)
 		}
-		
+
 		head := handlerNode.Children[0].Value
 		if head == "struct" {
 			if len(handlerNode.Children) < 2 {
@@ -234,7 +234,7 @@ func generateCode(node *Node) string {
 			funcsCode += "}\n\n"
 			continue
 		}
-		
+
 		if head == "defun" {
 			if len(handlerNode.Children) != 4 {
 				reportError("defun expects (defun name (args) body)", handlerNode.Line, handlerNode.Column)
@@ -250,7 +250,7 @@ func generateCode(node *Node) string {
 			funcsCode += fmt.Sprintf("func %s(%s) string {\n%s\n}\n\n", name, argsStr, bodyCode)
 			continue
 		}
-		
+
 		if head != "route" {
 			reportError("Expected route or defun block", handlerNode.Line, handlerNode.Column)
 		}
@@ -258,7 +258,7 @@ func generateCode(node *Node) string {
 		if len(handlerNode.Children) != 3 {
 			reportError("route expects (route path handler)", handlerNode.Line, handlerNode.Column)
 		}
-		
+
 		pathNode := handlerNode.Children[1]
 		if pathNode.Type != "STRING" {
 			reportError("route path must be a string", pathNode.Line, pathNode.Column)
@@ -272,7 +272,7 @@ func generateCode(node *Node) string {
 
 		bodyNode := handlerNode.Children[2].Children[2]
 		bodyCode := generateStatement(bodyNode, reqVar, 0)
-		
+
 		routesCode += fmt.Sprintf(`	http.HandleFunc(%q, func(w http.ResponseWriter, %s *http.Request) {
 %s
 	})
