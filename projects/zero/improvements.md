@@ -28,20 +28,60 @@ Pending rows are ranked by a diminishing-returns score:
 | 2 | [Add Conditionals and Variables](#2-add-conditionals-and-variables) | Done | — | Sonnet 3.5 | Gemini 1.5 Pro | Necessary for basic logic flow in handlers (checking methods, parsing headers). |
 | 4 | [Add Database Connections (SQL)](#4-add-database-connections-sql) | Done | — | Sonnet 3.5 | Gemini 1.5 Pro | Crucial for dynamic data and actual web service capabilities. |
 | 5 | [Add JSON Request/Response Handling](#5-add-json-requestresponse-handling) | Pending | 0.3125 (5×0.125÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Needed to build standard REST APIs. Decay 0.125 because three Go AST features shipped. |
+| 6 | [Add Function Definitions (defun)](#6-add-function-definitions-defun) | Pending | 4.0 (8×1÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Critical for code modularity (DRY principle). Allows defining reusable functions instead of putting everything in handler lambdas. |
+| 7 | [Add Structs and Type Definitions](#7-add-structs-and-type-definitions) | Pending | 3.5 (7×1÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Necessary for strict Input Validation schemas, adhering to software_development skill guidelines, and mapping SQL/JSON to Go. |
+| 8 | [Add Iteration and Data Structures](#8-add-iteration-and-data-structures) | Pending | 3.0 (6×1÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Essential for handling arrays of SQL results (list, map, for). Without this, the language is strictly linear. |
+| 9 | [Add Environment Variables Access](#9-add-environment-variables-access) | Pending | 3.0 (3×1÷1) | Sonnet 3.5 | Gemini 1.5 Pro | Follows 'Secure by Default' guidelines to prevent hardcoding database credentials or secrets in S-expressions. |
+| 10 | [Add External Module Imports](#10-add-external-module-imports) | Pending | 1.5 (3×1÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Allows importing third-party Go packages, unlocking the entire Go ecosystem. |
 
 ## Details
 
 ### 1. Add Routing Support
-The transpiler currently hardcodes a single root `/` route in `http.HandleFunc`. We need to introduce a `(route "/path" (lambda ...))` expression in the AST to support standard web app architectures.
+* **Description:** Update the compiler to accept multiple `(route path handler)` definitions inside a web server block.
+* **Why:** The prototype only builds a single server with a hardcoded route. Real applications need routers.
+* **Impact:** 10/10 (High - blocks all web app development).
 
 ### 2. Add Conditionals and Variables
-Introduce `let` and `if` blocks to handle internal request logic. For example: `(if (= req.method "POST") ...)`. This will require updating the Lexer to handle operators like `=` and the Code Generator to output Go `if` statements.
+* **Description:** Introduce `let` and `if` blocks to handle internal request logic. For example: `(if (= req.method "POST") ...)`. This will require updating the Lexer to handle operators like `=` and the Code Generator to output Go `if` statements.
+* **Why:** Web handlers need to implement dynamic logic based on request types and data.
+* **Impact:** 8/10 (High).
 
 ### 3. Extend Python Orchestrator Grammar
-Currently, `orchestrator.py` uses a strict regex for the proof-of-concept single endpoint. As we implement improvements 1 and 2, this regex needs to be translated into a full Context Free Grammar (CFG) using Outlines to support nested expressions and arbitrary routes.
+* **Description:** Currently, `orchestrator.py` uses a strict regex for the proof-of-concept single endpoint. As we implement improvements 1 and 2, this regex needs to be translated into a full Context Free Grammar (CFG) using Outlines to support nested expressions and arbitrary routes.
+* **Why:** The LLM agent loop breaks if it cannot generate valid syntax for new AST nodes.
+* **Impact:** 4/10 (Medium - blocks orchestrator but not manual transpiler usage).
 
 ### 4. Add Database Connections (SQL)
-Implement SQL database connections via Go's `database/sql` mapping to an S-expression like `(sql_query db "SELECT * FROM users")`.
+* **Description:** Implement SQL database connections via Go's `database/sql` mapping to an S-expression like `(sql_query db "SELECT * FROM users")`.
+* **Why:** Real-world applications require state and persistence.
+* **Impact:** 6/10 (Medium).
 
 ### 5. Add JSON Request/Response Handling
-Implement `(json_parse req.body)` and `(json_response data)` to easily map Go structs to JSON for API endpoints.
+* **Description:** Implement a way to parse JSON bodies into variables and output JSON responses cleanly via `encoding/json`. E.g., `(parse_json req.body)` and `(res_json 200 data)`.
+* **Why:** The modern web runs on JSON; text/plain is insufficient.
+* **Impact:** 5/10 (Medium).
+
+### 6. Add Function Definitions (defun)
+* **Description:** Allow defining standard functions `(defun name (args) body)` outside of routes that can be called anywhere.
+* **Why:** Needed to adhere to modularity and DRY principles.
+* **Impact:** 8/10 (High).
+
+### 7. Add Structs and Type Definitions
+* **Description:** Implement `(struct Name (field type) ...)` to enforce Go's strict typing system for parsing JSON and scanning SQL rows.
+* **Why:** Strictly typed inputs are a core requirement of defensive programming and input validation.
+* **Impact:** 7/10 (High).
+
+### 8. Add Iteration and Data Structures
+* **Description:** Support loops `(for ...)` and basic collections `(list ...)` and `(dict ...)`.
+* **Why:** Essential for mapping over database query results or iterating through JSON arrays.
+* **Impact:** 6/10 (Medium).
+
+### 9. Add Environment Variables Access
+* **Description:** Introduce a `(env "KEY")` node to retrieve environment variables.
+* **Why:** Vital for securely injecting database credentials and API keys without hardcoding them in the S-expressions.
+* **Impact:** 3/10 (Low/Medium - security critical).
+
+### 10. Add External Module Imports
+* **Description:** Allow defining `(import "github.com/pkg")` at the root level to pull in external Go code.
+* **Why:** Makes Zero extensible and leverages the massive open-source Go ecosystem.
+* **Impact:** 3/10 (Low - advanced feature).
