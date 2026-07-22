@@ -130,9 +130,9 @@ func (l *Lexer) NextToken() Token {
 		}
 		return Token{Type: TokenInt, Value: val, Line: startLine, Column: startCol}
 	}
-	if unicode.IsLetter(ch) || ch == '_' || ch == '/' || ch == '-' {
+	if unicode.IsLetter(ch) || ch == '_' || ch == '/' || ch == '-' || ch == '=' || ch == '.' {
 		val := string(ch)
-		for unicode.IsLetter(l.peekChar()) || unicode.IsDigit(l.peekChar()) || l.peekChar() == '_' || l.peekChar() == '/' || l.peekChar() == '-' {
+		for unicode.IsLetter(l.peekChar()) || unicode.IsDigit(l.peekChar()) || l.peekChar() == '_' || l.peekChar() == '/' || l.peekChar() == '-' || l.peekChar() == '=' || l.peekChar() == '.' {
 			val += string(l.nextChar())
 		}
 		return Token{Type: TokenSymbol, Value: val, Line: startLine, Column: startCol}
@@ -241,22 +241,12 @@ func main() {
 		reqVar := reqNodeList.Children[0].Value
 
 		bodyNode := handlerNode.Children[2]
-		if bodyNode.Type != "List" || len(bodyNode.Children) == 0 || bodyNode.Children[0].Value != "res" {
-			reportError("Expected (res status contentType body)", bodyNode.Line, bodyNode.Column)
-		}
-		if len(bodyNode.Children) != 4 {
-			reportError("res expects status, contentType, and body", bodyNode.Line, bodyNode.Column)
-		}
-		status := bodyNode.Children[1].Value
-		contentType := bodyNode.Children[2].Value
-		resBody := bodyNode.Children[3].Value
+		bodyCode := generateStatement(bodyNode, reqVar)
 		
 		code += fmt.Sprintf(`	http.HandleFunc(%q, func(w http.ResponseWriter, %s *http.Request) {
-		w.Header().Set("Content-Type", %q)
-		w.WriteHeader(%s)
-		fmt.Fprint(w, %q)
+%s
 	})
-`, pathNode.Value, reqVar, contentType, status, resBody)
+`, pathNode.Value, reqVar, bodyCode)
 	}
 
 	code += fmt.Sprintf(`	
@@ -268,6 +258,81 @@ func main() {
 `, portNode.Value, portNode.Value)
 
 	return code
+}
+
+func generateStatement(node *Node, reqVar string) string {
+	if node.Type != "List" || len(node.Children) == 0 {
+		reportError("Expected list for statement", node.Line, node.Column)
+	}
+	head := node.Children[0].Value
+	if head == "res" {
+		if len(node.Children) != 4 {
+			reportError("res expects status, contentType, and body", node.Line, node.Column)
+		}
+		status := node.Children[1].Value
+		contentType := node.Children[2].Value
+		resBody := node.Children[3].Value
+		if node.Children[3].Type == "SYMBOL" {
+			// Variable reference
+			return fmt.Sprintf(`		w.Header().Set("Content-Type", %q)
+		w.WriteHeader(%s)
+		fmt.Fprint(w, %s)`, contentType, status, resBody)
+		} else {
+			return fmt.Sprintf(`		w.Header().Set("Content-Type", %q)
+		w.WriteHeader(%s)
+		fmt.Fprint(w, %q)`, contentType, status, resBody)
+		}
+	} else if head == "let" {
+		if len(node.Children) != 3 {
+			reportError("let expects (let (var val) body)", node.Line, node.Column)
+		}
+		binds := node.Children[1]
+		if binds.Type != "List" || len(binds.Children) != 2 {
+			reportError("let binding expects (var val)", binds.Line, binds.Column)
+		}
+		varName := binds.Children[0].Value
+		valNode := binds.Children[1]
+		var valStr string
+		if valNode.Type == "STRING" {
+			valStr = fmt.Sprintf("%q", valNode.Value)
+		} else {
+			valStr = valNode.Value
+		}
+		bodyCode := generateStatement(node.Children[2], reqVar)
+		return fmt.Sprintf("		%s := %s\n%s", varName, valStr, bodyCode)
+	} else if head == "if" {
+		if len(node.Children) != 4 {
+			reportError("if expects (if cond then else)", node.Line, node.Column)
+		}
+		condNode := node.Children[1]
+		if condNode.Type != "List" || len(condNode.Children) != 3 {
+			reportError("cond expects (= a b)", condNode.Line, condNode.Column)
+		}
+		op := condNode.Children[0].Value
+		if op != "=" {
+			reportError("only '=' supported in if cond", condNode.Line, condNode.Column)
+		}
+		left := condNode.Children[1].Value
+		if left == "req.method" {
+			left = reqVar + ".Method"
+		}
+		right := condNode.Children[2]
+		rightStr := right.Value
+		if right.Type == "STRING" {
+			rightStr = fmt.Sprintf("%q", rightStr)
+		}
+		
+		thenCode := generateStatement(node.Children[2], reqVar)
+		elseCode := generateStatement(node.Children[3], reqVar)
+		
+		return fmt.Sprintf(`		if %s == %s {
+%s
+		} else {
+%s
+		}`, left, rightStr, thenCode, elseCode)
+	}
+	reportError(fmt.Sprintf("Unknown statement: %s", head), node.Line, node.Column)
+	return ""
 }
 
 func main() {
