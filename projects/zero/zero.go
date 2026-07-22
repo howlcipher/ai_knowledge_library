@@ -365,17 +365,48 @@ func generateStatement(node *Node, reqVar string, depth int) string {
 		var valStr string
 		if valNode.Type == "STRING" {
 			valStr = fmt.Sprintf("%q", valNode.Value)
-		} else if valNode.Type == "List" && len(valNode.Children) > 0 && valNode.Children[0].Value == "call" {
-			funcName := valNode.Children[1].Value
-			var args []string
-			for j := 2; j < len(valNode.Children); j++ {
-				if valNode.Children[j].Type == "STRING" {
-					args = append(args, fmt.Sprintf("%q", valNode.Children[j].Value))
-				} else {
-					args = append(args, valNode.Children[j].Value)
+		} else if valNode.Type == "List" && len(valNode.Children) > 0 {
+			funcName := valNode.Children[0].Value
+			if funcName == "call" {
+				var args []string
+				for j := 2; j < len(valNode.Children); j++ {
+					if valNode.Children[j].Type == "STRING" {
+						args = append(args, fmt.Sprintf("%q", valNode.Children[j].Value))
+					} else {
+						args = append(args, valNode.Children[j].Value)
+					}
 				}
+				valStr = fmt.Sprintf("%s(%s)", valNode.Children[1].Value, strings.Join(args, ", "))
+			} else if funcName == "list" {
+				var items []string
+				for j := 1; j < len(valNode.Children); j++ {
+					if valNode.Children[j].Type == "STRING" {
+						items = append(items, fmt.Sprintf("%q", valNode.Children[j].Value))
+					} else {
+						items = append(items, valNode.Children[j].Value)
+					}
+				}
+				valStr = fmt.Sprintf("[]string{%s}", strings.Join(items, ", "))
+			} else if funcName == "dict" {
+				var pairs []string
+				for j := 1; j < len(valNode.Children); j++ {
+					pair := valNode.Children[j]
+					if pair.Type == "List" && len(pair.Children) == 2 {
+						k := pair.Children[0].Value
+						if pair.Children[0].Type == "STRING" {
+							k = fmt.Sprintf("%q", k)
+						}
+						v := pair.Children[1].Value
+						if pair.Children[1].Type == "STRING" {
+							v = fmt.Sprintf("%q", v)
+						}
+						pairs = append(pairs, fmt.Sprintf("%s: %s", k, v))
+					}
+				}
+				valStr = fmt.Sprintf("map[string]string{%s}", strings.Join(pairs, ", "))
+			} else {
+				valStr = valNode.Value
 			}
-			valStr = fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))
 		} else {
 			valStr = valNode.Value
 		}
@@ -430,6 +461,17 @@ func generateStatement(node *Node, reqVar string, depth int) string {
 			queryStr = fmt.Sprintf("%q", queryStr)
 		}
 		return fmt.Sprintf("		%s.Query(%s)", dbVar, queryStr)
+	} else if head == "for" {
+		if len(node.Children) != 4 {
+			reportError("for expects (for item list body)", node.Line, node.Column)
+		}
+		itemNode := node.Children[1].Value
+		listNode := node.Children[2].Value
+		bodyCode := generateStatement(node.Children[3], reqVar, depth+1)
+		return fmt.Sprintf(`		for _, %s := range %s {
+			_ = %s
+%s
+		}`, itemNode, listNode, itemNode, bodyCode)
 	}
 	reportError(fmt.Sprintf("Unknown statement: %s", head), node.Line, node.Column)
 	return ""
