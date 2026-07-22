@@ -33,6 +33,11 @@ Pending rows are ranked by a diminishing-returns score:
 | 8 | [Add Iteration and Data Structures](#8-add-iteration-and-data-structures) | Done | — | Sonnet 3.5 | Gemini 1.5 Pro | Essential for handling arrays of SQL results (list, map, for). |
 | 9 | [Add Environment Variables Access](#9-add-environment-variables-access) | Done | — | Sonnet 3.5 | Gemini 1.5 Pro | Follows 'Secure by Default' guidelines to prevent hardcoding database credentials or secrets in S-expressions. Decay 0.125. |
 | 10 | [Add External Module Imports](#10-add-external-module-imports) | Done | — | Sonnet 3.5 | Gemini 1.5 Pro | Allows importing third-party Go packages, unlocking the entire Go ecosystem. Decay 0.125. |
+| 11 | [Add Concurrency (spawn)](#11-add-concurrency-spawn) | Pending | 3.5 (7×1.0÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Allows AI to effortlessly run background jobs without blocking HTTP responses. |
+| 12 | [Add Error Handling (try/catch)](#12-add-error-handling-trycatch) | Pending | 2.66 (8×1.0÷3) | Sonnet 3.5 | Gemini 1.5 Pro | Crucial for safe execution. Maps to Go's `if err != nil` idiom. |
+| 13 | [Add File Inclusions (include)](#13-add-file-inclusions-include) | Pending | 2.33 (7×1.0÷3) | Sonnet 3.5 | Gemini 1.5 Pro | Prevents massive monolithic `.zero` files by allowing modular codebases. |
+| 14 | [Add Basic Math and Logic Operators](#14-add-basic-math-and-logic-operators) | Pending | 2.0 (8×0.5÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Necessary for computing values natively in Zero instead of relying entirely on DB logic. |
+| 15 | [Add Middleware Support](#15-add-middleware-support) | Pending | 0.41 (5×0.25÷3) | Sonnet 3.5 | Gemini 1.5 Pro | Required for adding authentication and request logging across routes. |
 
 ## Details
 
@@ -85,3 +90,28 @@ Pending rows are ranked by a diminishing-returns score:
 * **Description:** Allow defining `(import "github.com/pkg")` at the root level to pull in external Go code.
 * **Why:** Makes Zero extensible and leverages the massive open-source Go ecosystem.
 * **Impact:** 3/10 (Low - advanced feature).
+
+### 11. Add Concurrency (spawn)
+* **Description:** Add a `(spawn (lambda () ...))` node that maps to Go's `go func() {}` to execute non-blocking routines.
+* **Why:** AI agents building web applications often need to trigger background processes (like sending emails or metrics) without delaying the HTTP response.
+* **Impact:** 7/10 (High).
+
+### 12. Add Error Handling (try/catch)
+* **Description:** Implement `(try (expression) (catch err ...))` to wrap Go expressions that return `(value, error)`. 
+* **Why:** Go relies heavily on `if err != nil`. We need a clean, Lisp-like way to handle these errors safely in Zero without panicking.
+* **Impact:** 8/10 (High - critical for production safety).
+
+### 13. Add File Inclusions (include)
+* **Description:** Implement `(include "routes.zero")` to dynamically merge multiple Zero files during the transpilation step.
+* **Why:** A full-fledged language needs modularity. Right now, everything must live in one massive S-expression.
+* **Impact:** 7/10 (High).
+
+### 14. Add Basic Math and Logic Operators
+* **Description:** Support native mathematical and logical operators like `(+ 1 2)`, `(- a b)`, `(and x y)`.
+* **Why:** Computing logic natively (like paginating data or computing totals) is currently impossible without external SQL/Go functions.
+* **Impact:** 8/10 (High).
+
+### 15. Add Middleware Support
+* **Description:** Introduce a `(middleware auth_func)` block that can wrap a set of `(route ...)` blocks.
+* **Why:** Modern APIs require authentication headers, logging, and CORS handling. Middleware is the standard pattern for this.
+* **Impact:** 5/10 (Medium).
