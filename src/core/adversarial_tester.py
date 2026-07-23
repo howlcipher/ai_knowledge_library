@@ -89,13 +89,26 @@ def run_tests(api_key: str, model: str):
         prompt = test["prompt"]
 
         try:
-            response = litellm.completion(
+            from src.infrastructure.config_loader import load_config
+            from src.core.transport_retry import call_with_transport_retry
+            cfg = load_config()
+            timeout = cfg.get("llm_timeout", 600.0)
+            retries = cfg.get("payload_pipeline", {}).get("transport_retries", 2)
+            backoff = cfg.get("payload_pipeline", {}).get("transport_backoff", 2.0)
+            
+            response = call_with_transport_retry(
+                lambda: litellm.completion(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": system_instruction},
+                        {"role": "user", "content": prompt},
+                    ],
+                    api_key=api_key,
+                    timeout=timeout,
+                ),
+                retries=retries,
+                backoff=backoff,
                 model=model,
-                messages=[
-                    {"role": "system", "content": system_instruction},
-                    {"role": "user", "content": prompt},
-                ],
-                api_key=api_key,
             )
             output = response.choices[0].message.content or ""
         except Exception as e:

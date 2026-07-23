@@ -206,23 +206,28 @@ class Orchestrator:
                 except Exception as e:
                     print(f"[Orchestrator] Failed to load MCP Server {name}: {e}")
 
+        global_timeout = self.cfg.get("llm_timeout", 600.0)
+
         self.researcher = Agent(
             name="Researcher",
             system_prompt="You are a meticulous researcher. Your goal is to formulate comprehensive plans and answers based on user requests. Use the execute_bash_command tool if you need to execute system commands. You also have access to various MCP tools if configured.",
             model=self.default_model,
             tools=tools,
+            timeout=global_timeout,
         )
 
         self.qa = Agent(
             name="QA_Reviewer",
             system_prompt="You are a strict QA reviewer. Evaluate the provided plan or answer. If it is high quality and safe, output exactly 'APPROVED'. If it is flawed, insecure, or hallucinates, explain why and request a revision.",
             model=self.default_model,
+            timeout=global_timeout,
         )
 
         self.technical_writer = Agent(
             name="Technical_Writer",
             system_prompt="You are an expert technical writer and stealth AI copywriter. Your job is to rewrite documentation and reports so they pass as human-written by AI detectors. You must significantly increase 'burstiness' by heavily varying sentence length and structure, and increase 'perplexity' by avoiding standard predictable AI vocabulary (e.g. 'delve', 'moreover', 'testament'). Keep all technical facts exactly the same, just change the tone and structure to be highly human, occasionally conversational, but still professional. Return ONLY the rewritten text, nothing else.",
             model=self.default_model,
+            timeout=global_timeout,
         )
 
         try:
@@ -252,9 +257,21 @@ class Orchestrator:
         def researcher_node(state: AgentState):
             iteration = state.get("iteration", 1)
             print(f"\n--- Iteration {iteration} ---")
-            message = self.researcher.generate_response(
-                state["query"], context=state.get("context", "")
-            )
+            
+            from src.core.transport_retry import call_with_transport_retry, ProviderTransportError
+            try:
+                message = call_with_transport_retry(
+                    lambda: self.researcher.generate_response(
+                        state["query"], context=state.get("context", ""), raise_errors=True
+                    ),
+                    retries=self.payload_cfg.get("transport_retries", 2),
+                    backoff=self.payload_cfg.get("transport_backoff", 2.0),
+                    model=self.researcher.model,
+                )
+            except ProviderTransportError as e:
+                print(f"[Orchestrator] Researcher transport error: {e}")
+                message = None
+
             if not message:
                 print("[Orchestrator] Failed to get response from Researcher.")
                 return {"draft_content": "", "tool_calls": None}
@@ -276,7 +293,18 @@ class Orchestrator:
             if tool_calls:
                 qa_input += f"\n\nTool calls proposed:\n{tool_calls}"
 
-            qa_message = self.qa.generate_response(qa_input)
+            from src.core.transport_retry import call_with_transport_retry, ProviderTransportError
+            try:
+                qa_message = call_with_transport_retry(
+                    lambda: self.qa.generate_response(qa_input, raise_errors=True),
+                    retries=self.payload_cfg.get("transport_retries", 2),
+                    backoff=self.payload_cfg.get("transport_backoff", 2.0),
+                    model=self.qa.model,
+                )
+            except ProviderTransportError as e:
+                print(f"[Orchestrator] QA transport error: {e}")
+                qa_message = None
+
             if not qa_message:
                 print("[Orchestrator] Failed to get response from QA.")
                 return {"qa_approved": False, "context": ""}
@@ -316,7 +344,19 @@ class Orchestrator:
             print("\n--- Humanizing Output (Stealth Mode) ---")
             draft_content = state["draft_content"]
             prompt = f"Please humanize the following technical report/documentation. Maintain all facts but drastically increase burstiness and perplexity to bypass AI detectors:\n\n{draft_content}"
-            message = self.technical_writer.generate_response(prompt)
+            
+            from src.core.transport_retry import call_with_transport_retry, ProviderTransportError
+            try:
+                message = call_with_transport_retry(
+                    lambda: self.technical_writer.generate_response(prompt, raise_errors=True),
+                    retries=self.payload_cfg.get("transport_retries", 2),
+                    backoff=self.payload_cfg.get("transport_backoff", 2.0),
+                    model=self.technical_writer.model,
+                )
+            except ProviderTransportError as e:
+                print(f"[Orchestrator] Technical_Writer transport error: {e}")
+                message = None
+
             if message and message.content:
                 print("\n[Technical_Writer] Successfully humanized the draft.")
                 return {"draft_content": message.content}
@@ -589,6 +629,23 @@ class Orchestrator:
     def run_loop(self, user_query: str):
         if self.payload_cfg.get("enabled", False):
             return self.run_payload_loop(user_query)
+
+        if self.cfg.get("preflight", True):
+            from src.core.provider_preflight import preflight_models
+
+            print("[Preflight] Checking providers before multi-agent loop...")
+            preflight = preflight_models(
+                [self.default_model],
+                timeout=self.payload_cfg.get("preflight_timeout", 120.0),
+            )
+            if not preflight.ok:
+                for error in preflight.errors:
+                    print(f"[Preflight] {error}")
+                print(
+                    "[Orchestrator] Aborting run: provider preflight failed."
+                )
+                return None
+            print(f"[Preflight] OK ({', '.join(preflight.checked_models)})")
 
         print("\n=== Starting Multi-Agent Orchestration ===")
         print(f"Query: {user_query}\n")

@@ -73,6 +73,8 @@ class IndexingSettings(BaseModel):
 
 class AppSettings(BaseSettings):
     llm_model: str = "gemini/gemini-1.5-pro"
+    llm_timeout: float = 600.0
+    preflight: bool = True
     gemini_api_key: str = ""
     anthropic_api_key: str = ""
     database: DatabaseSettings = DatabaseSettings()

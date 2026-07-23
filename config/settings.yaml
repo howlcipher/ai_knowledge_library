@@ -3,6 +3,10 @@
 # locally pulled Ollama model so a plain run works with no subscription cost.
 llm_model: "ollama/qwen3:30b-instruct"
 
+# Global LLM settings for the legacy orchestrator and standalone scripts
+llm_timeout: 600.0
+preflight: true
+
 database:
   chroma_db_path: ".chroma"
   mode: "sqlite" # 'sqlite' or 'pgvector'

@@ -41,10 +41,21 @@ class SemanticSearcher:
             return [query]
 
         try:
-            response = litellm.completion(
+            from src.core.transport_retry import call_with_transport_retry
+            timeout = self.cfg.get("llm_timeout", 600.0)
+            retries = self.cfg.get("payload_pipeline", {}).get("transport_retries", 2)
+            backoff = self.cfg.get("payload_pipeline", {}).get("transport_backoff", 2.0)
+
+            response = call_with_transport_retry(
+                lambda: litellm.completion(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    api_key=api_key,
+                    timeout=timeout,
+                ),
+                retries=retries,
+                backoff=backoff,
                 model=model,
-                messages=[{"role": "user", "content": prompt}],
-                api_key=api_key,
             )
             content = response.choices[0].message.content.strip()
             queries = [q.strip() for q in content.split("\n") if q.strip()]

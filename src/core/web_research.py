@@ -100,12 +100,25 @@ class ContentVerifier:
             from src.core.structured_output import verification_response_format
 
             start_time = time.time()
-            response = litellm.completion(
+            from src.infrastructure.config_loader import load_config
+            from src.core.transport_retry import call_with_transport_retry
+            cfg = load_config()
+            timeout = cfg.get("llm_timeout", 600.0)
+            retries = cfg.get("payload_pipeline", {}).get("transport_retries", 2)
+            backoff = cfg.get("payload_pipeline", {}).get("transport_backoff", 2.0)
+
+            response = call_with_transport_retry(
+                lambda: litellm.completion(
+                    model=self.model,
+                    messages=[{"role": "user", "content": prompt}],
+                    fallbacks=fallbacks,
+                    api_key=self.api_key,
+                    response_format=verification_response_format(),
+                    timeout=timeout,
+                ),
+                retries=retries,
+                backoff=backoff,
                 model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                fallbacks=fallbacks,
-                api_key=self.api_key,
-                response_format=verification_response_format(),
             )
             latency = time.time() - start_time
             content = response.choices[0].message.content.strip()
