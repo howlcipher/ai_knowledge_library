@@ -369,6 +369,20 @@
       "path": ".agents/skills/product_management/SKILL.md"
     },
     {
+      "name": "python",
+      "description": "PEP 8 style enforcement and flake8 linting standards for Python code.",
+      "triggers": [
+        "python",
+        "flake8",
+        "pep8",
+        "pep 8",
+        "lint",
+        "linting"
+      ],
+      "tier": 1,
+      "path": ".agents/skills/python/SKILL.md"
+    },
+    {
       "name": "quality_assurance",
       "description": "Triggers during testing, validation, and QA processes.",
       "triggers": [
