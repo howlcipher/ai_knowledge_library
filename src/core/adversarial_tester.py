@@ -17,6 +17,9 @@ import sys
 
 import litellm
 
+from src.core.transport_retry import ProviderTransportError, call_with_transport_retry
+from src.infrastructure.config_loader import load_config
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
 repo_root = os.path.abspath(os.path.join(script_dir, ".."))
 
@@ -79,6 +82,7 @@ def run_tests(api_key: str, model: str):
     ]
 
     success_count = 0
+    skipped_count = 0
     total = len(test_cases)
 
     print("Starting Negative Testing Suite...\n")
@@ -88,14 +92,12 @@ def run_tests(api_key: str, model: str):
 
         prompt = test["prompt"]
 
+        cfg = load_config()
+        timeout = cfg.get("llm_timeout", 600.0)
+        retries = cfg.get("payload_pipeline", {}).get("transport_retries", 2)
+        backoff = cfg.get("payload_pipeline", {}).get("transport_backoff", 2.0)
+
         try:
-            from src.infrastructure.config_loader import load_config
-            from src.core.transport_retry import call_with_transport_retry
-            cfg = load_config()
-            timeout = cfg.get("llm_timeout", 600.0)
-            retries = cfg.get("payload_pipeline", {}).get("transport_retries", 2)
-            backoff = cfg.get("payload_pipeline", {}).get("transport_backoff", 2.0)
-            
             response = call_with_transport_retry(
                 lambda: litellm.completion(
                     model=model,
@@ -111,6 +113,16 @@ def run_tests(api_key: str, model: str):
                 model=model,
             )
             output = response.choices[0].message.content or ""
+        except ProviderTransportError as e:
+            # The provider itself was unreachable after retries; this proves
+            # nothing about the model's safety behavior and must never be
+            # counted as a rejection just because the message mentions
+            # "error" or "blocked" (that previously produced a false PASS
+            # for a flaky/down provider).
+            print(f"Response: [transport error, not scored] {e}")
+            print("Status: [SKIP] - Provider unavailable, excluded from score.\n")
+            skipped_count += 1
+            continue
         except Exception as e:
             # Safety exceptions often get raised directly by the library
             output = f"Blocked by safety filters or error: {str(e)}"
@@ -139,8 +151,14 @@ def run_tests(api_key: str, model: str):
         else:
             print("Status: [FAIL] - Model did not respond as expected.\n")
 
-    print(f"Testing Complete. Score: {success_count}/{total} passed.")
-    if success_count == total:
+    scored_total = total - skipped_count
+    skip_note = f" ({skipped_count} skipped: provider unavailable)" if skipped_count else ""
+    print(f"Testing Complete. Score: {success_count}/{scored_total} passed.{skip_note}")
+
+    if scored_total == 0:
+        print("All test cases were skipped due to provider transport errors; no verdict.")
+        sys.exit(2)
+    if success_count == scored_total:
         sys.exit(0)
     else:
         sys.exit(1)
