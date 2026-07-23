@@ -25,44 +25,13 @@ from src.infrastructure.config_loader import default_loader, load_config
 
 FRONTMATTER_PATTERN = re.compile(r"\A---\s*\n(.*?)\n---\s*\n?", re.DOTALL)
 
-FALLBACK_STOPWORDS = {
-    "the",
-    "and",
-    "for",
-    "with",
-    "this",
-    "that",
-    "from",
-    "into",
-    "when",
-    "what",
-    "how",
-    "can",
-    "you",
-    "please",
-    "help",
-    "using",
-    "during",
-    "all",
-    "are",
-    "was",
-    "were",
-    "have",
-    "has",
-    "will",
-    "would",
-    "should",
-    "could",
-    "about",
-    "them",
-    "then",
-    "than",
-    "your",
-    "our",
-    "not",
-    "but",
-    "any",
-}
+FALLBACK_STOPWORDS = (
+    "about", "all", "and", "any", "are", "but", "can", "could", "during", "for",
+    "from", "has", "have", "help", "how", "into", "not", "our", "please", "should",
+    "than", "that", "the", "them", "then", "this", "using", "was", "were", "what",
+    "when", "will", "with", "would", "you", "your",
+)
+_FALLBACK_STOPWORDS_SET = frozenset(FALLBACK_STOPWORDS)
 
 FALLBACK_MIN_OVERLAP = 2
 
@@ -196,7 +165,7 @@ class SkillRouter:
     @staticmethod
     def _tokenize(text: str) -> set:
         tokens = re.findall(r"[a-z0-9_]{3,}", text.lower())
-        return {t for t in tokens if t not in FALLBACK_STOPWORDS}
+        return {t for t in tokens if t not in _FALLBACK_STOPWORDS_SET}
 
     def _semantic_scores(self, prompt: str, skills: List[Skill]) -> List[float]:
         """
