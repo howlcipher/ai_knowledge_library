@@ -128,7 +128,7 @@ Now that Zero V1 is complete (a full Turing-complete web server and CLI language
 | --- | --- | --- | --- | --- |
 | 17 | **Type Hinting for `defun`** | Done (2026-07-22) | 3.5 (7×1.0÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Currently, all `defun` arguments compile to `string`. Adding `(type_hint var "int")` ensures the AI gets immediate compile-time errors from Go. |
 | 19 | **Context/Intent Nodes (`intent`)** | Done (2026-07-22) | 2.0 (4×1.0÷2) | Sonnet 3.5 | Gemini 1.5 Pro | `(intent "I am building a login flow")`. The transpiler strips these out, but agents can parse them to instantly understand context. |
-| 21 | **Native HTTP Client (`fetch`)** | Pending | 4.0 (8×1.0÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Essential for an AI language to interact with external APIs (like LLM providers or GitHub) without writing raw Go `net/http` code. |
+| 21 | **Native HTTP Client (`fetch`)** | Done (2026-07-23) | 4.0 (8×1.0÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Essential for an AI language to interact with external APIs (like LLM providers or GitHub) without writing raw Go `net/http` code. |
 | 22 | **Subprocess Execution (`exec`)** | Pending | 3.5 (7×1.0÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Crucial for automation tasks (e.g. `(exec "git status")`). Follows automation skills for script consolidation. |
 | 23 | **File I/O Operations (`read_file`)** | Pending | 3.0 (6×1.0÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Needed to replace Bash/Python for file manipulation. `(write_file "log.txt" data)` and `(read_file "config.json")`. |
 | 24 | **CLI Argument Parsing (`cli_args`)** | Pending | 2.5 (5×1.0÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Required for workflow consolidation (per `automation` skill). Allows Zero scripts to take parameters effortlessly. |

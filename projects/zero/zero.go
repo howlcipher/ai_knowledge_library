@@ -433,12 +433,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 `
-	if !isCliApp {
-		code += "	\"net/http\"\n"
-	}
-
 	for _, imp := range extraImports {
 		code += imp
 	}
@@ -449,6 +447,8 @@ import (
 	var _ = sql.Open
 	var _ = os.Getenv
 	var _ = json.Marshal
+	var _ = io.ReadAll
+	var _ = http.DefaultClient
 `
 	if isCliApp {
 		code += cliCode
@@ -470,6 +470,12 @@ import (
 func generateStatement(node *Node, reqVar string, depth int) string {
 	if depth > 1000 {
 		reportError("AST too deep: exceeded maximum nesting limit of 1000", node.Line, node.Column)
+	}
+	if node.Type == "STRING" {
+		return fmt.Sprintf("%q", node.Value)
+	}
+	if node.Type == "SYMBOL" || node.Type == "INT" {
+		return node.Value
 	}
 	if node.Type != "List" || len(node.Children) == 0 {
 		reportError("Expected list for statement", node.Line, node.Column)
@@ -773,6 +779,21 @@ func generateStatement(node *Node, reqVar string, depth int) string {
 			_ = %s
 %s
 		}`, itemNode, listNode, itemNode, bodyCode)
+	} else if head == "fetch" {
+		if len(node.Children) != 3 {
+			reportError("fetch expects (fetch url method)", node.Line, node.Column)
+		}
+		urlStr := generateStatement(node.Children[1], reqVar, depth+1)
+		methodStr := generateStatement(node.Children[2], reqVar, depth+1)
+
+		return fmt.Sprintf(`func() ([]byte, error) {
+			req, err := http.NewRequest(%s, %s, nil)
+			if err != nil { return nil, err }
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil { return nil, err }
+			defer resp.Body.Close()
+			return io.ReadAll(resp.Body)
+		}()`, methodStr, urlStr)
 	}
 	reportError(fmt.Sprintf("Unknown statement: %s", head), node.Line, node.Column)
 	return ""
