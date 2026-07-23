@@ -14,7 +14,7 @@ tier: 3
 
 # Zero Transpiler
 
-Zero is a Lisp-like, AI-first language that transpiles to Go, developed at `/run/media/system/tallgeese/dev/zero/` (its own repository — see the project's roadmap for a planned move to a standalone repo). It exists so LLMs can emit simple, structurally-guaranteed S-expressions instead of hallucinating Go syntax directly; the transpiler (`zero.go`) catches semantic errors and returns a localized JSON error for self-correction loops.
+Zero is a Lisp-like, AI-first language that transpiles to Go, developed locally at `/run/media/system/tallgeese/dev/zero/` and published at https://github.com/howlcipher/zero. It exists so LLMs can emit simple, structurally-guaranteed S-expressions instead of hallucinating Go syntax directly; the transpiler (`zero.go`) catches semantic errors and returns a localized JSON error for self-correction loops.
 
 This skill is the canonical Zero language reference for any agent writing `.zero` code or working on the transpiler itself. Prefer this file over recalling the grammar from memory — the language is small and versioned, and bugs.md/improvements.md in the zero repo are the live source of truth for what currently works.
 
