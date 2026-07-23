@@ -513,6 +513,21 @@
       ],
       "tier": 2,
       "path": ".agents/skills/visual_design/SKILL.md"
+    },
+    {
+      "name": "zero_transpiler",
+      "description": "Syntax rules, AST node reference, known transpiler bugs, and build workflow for Zero, the Lisp-like AI-first language that transpiles to Go.",
+      "triggers": [
+        "zero",
+        ".zero",
+        "zero.go",
+        "zero language",
+        "zero transpiler",
+        "s-expression",
+        "lisp-like"
+      ],
+      "tier": 3,
+      "path": ".agents/skills/zero_transpiler/SKILL.md"
     }
   ]
 }
