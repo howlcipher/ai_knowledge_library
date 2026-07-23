@@ -15,7 +15,7 @@ Pending bugs carry the same diminishing-returns score defined in `improvements.m
 | 5 | [AST Deep Nesting Stack Limits](#5-ast-deep-nesting-stack-limits) | Done | 2.0 (4×1÷2) | Sonnet 3.5 | Gemini 1.5 Pro | Added an explicit depth parameter and limit of 1000 to `generateStatement` to fail gracefully with a JSON error instead of crashing the Go call stack. |
 | 6 | [Include Paths Relative to File](#6-include-paths-relative-to-file) | Done (2026-07-22) | 6.0 (6×1÷1) | Sonnet 3.5 | Gemini 1.5 Pro | `(include "file.zero")` uses current working directory rather than resolving paths relative to the file doing the inclusion. |
 | 7 | [defun Typing Rigidness](#7-defun-typing-rigidness) | Done (2026-07-22) | 1.75 (7×1÷4) | Sonnet 3.5 | Gemini 1.5 Pro | All `defun` arguments strictly compile to Go `string` types, breaking if we try to pass an `*http.Request` or `int` to a function. |
-| 8 | [try_let Error Interception Rigidness](#8-try_let-error-interception-rigidness) | Pending | 1.66 (5×1÷3) | Sonnet 3.5 | Gemini 1.5 Pro | `try_let` is currently hardcoded to only support `parse_json` as the error-returning function. Needs generalization. |
+| 8 | [try_let Error Interception Rigidness](#8-try_let-error-interception-rigidness) | Done (2026-07-23) | 1.66 (5×1÷3) | Sonnet 3.5 | Gemini 1.5 Pro | `try_let` is currently hardcoded to only support `parse_json` as the error-returning function. Needs generalization. |
 ## Details
 
 ### 1. Lexer panics on EOF during unterminated string
