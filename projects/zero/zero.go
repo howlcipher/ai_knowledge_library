@@ -678,8 +678,17 @@ func generateStatement(node *Node, reqVar string, depth int) string {
 			}
 		}`, varName, targetType, errVar, bodyVar, varName, errVar, catchBodyCode, varName, successBodyCode)
 		}
-		reportError("try_let currently only supports parse_json", valNode.Line, valNode.Column)
-		return ""
+
+		valStr := generateStatement(valNode, reqVar, depth+1)
+		return fmt.Sprintf(`		{
+			%s, %s := %s
+			if %s != nil {
+%s
+			} else {
+				_ = %s
+%s
+			}
+		}`, varName, errVar, valStr, errVar, catchBodyCode, varName, successBodyCode)
 	} else if head == "spawn" {
 		if len(node.Children) != 2 {
 			reportError("spawn expects (spawn (lambda () body))", node.Line, node.Column)
