@@ -24,16 +24,17 @@ This skill is the canonical Zero language reference for any agent writing `.zero
 2. **No raw Go**: only emit primitives with an explicit AST mapping in `zero.go`.
 3. **Symbols vs strings**: bare identifiers (`req`, `my_var`) are symbols; string literals need double quotes (`"Hello"`).
 4. **Exactly one root node per file**: `(http_server port routes...)` for web apps, or `(cli_app statements...)` for CLI scripts.
+5. **Comments**: `;` starts a line comment, consumed to end-of-line (bug #23, fixed 2026-07-23) — e.g. `;; explains the next form`. No block-comment syntax exists.
 
 ## AST Node Reference
 
 ### Roots & Structure
 - `(http_server port blocks...)`, `(cli_app blocks...)`
 - `(route "path" (lambda (req) body))`
-- `(defun name (args...) body)` — args accept `(type_hint var "Type")`
+- `(defun name (args...) body)` — args accept `(type_hint var "Type")`. **No supported void/side-effect-only form** (bug #24, pending): every `defun` defaults to Go return type `string` and requires a `return`; a pure side-effect function fails `go build` with `missing return`, and `(type_hint return "void")` does *not* work as an escape hatch (`undefined: void`). Give every `defun` a real return value today (e.g. return an empty string) until this is fixed.
 - `(struct Name (field Type)...)`
 - `(import "package")`
-- `(include "file.zero")` — resolves relative to the including file's own directory (bug #6, fixed); does not follow renamed/moved targets (see bug #15 below).
+- `(include "file.zero")` — resolves relative to the including file's own directory (bug #6, fixed).
 
 ### Control Flow & Variables
 - `(let (var val) body)` — chain by nesting another `let` inside `body`.
@@ -43,7 +44,7 @@ This skill is the canonical Zero language reference for any agent writing `.zero
 - `(match var (val body)... (default body))`
 - `(for item list body)`, `(while (op a b) body)`
 - `(do stmts...)`
-- `(call func args...)`
+- `(call func args...)` — **compound-expression arguments are silently dropped, not passed** (bug #20, pending): `(call f (call g 1))` emits `f()` with the nested `(call g 1)` argument gone entirely, no error. Only bare symbols/literals/strings survive as `call` arguments today; bind any compound-expression argument to a `let` variable first and pass the variable instead.
 - `(spawn (lambda () body))` — goroutine.
 
 ### Web & HTTP
@@ -86,8 +87,11 @@ Check `bugs.md` in the zero repo for current status before relying on any of the
 - **`//line` directive can corrupt a compound expression nested inside another compound expression (bug #19, pending)**: several codegen paths (binary operators `+ - * / < > and or ==`, `assert_semantic`, `cli_args` index) embed a recursive `generateStatement` result *inside* a larger expression string; if the nested node's head is one of the heads that get a `//line` prefix (notably `call`), that comment splices mid-expression and corrupts the output — e.g. `(+ (call f) 1)` transpiles with no error but fails `go build`. Symptom: transpile succeeds, `go build` fails with a garbled statement near a `//line` comment. Workaround: bind any `call` (or other wrapped-head expression) used as an operand to a `let` variable first, then reference the variable.
 - **No string→number primitive (bug #17, pending)**: there is no `to_int`/`to_float`/`parse_number` node. The only coercion path is `fuzzy_cast`, which round-trips through an LLM (needs Ollama) — wildly disproportionate for turning `"42"` into `42`. Don't reach for arithmetic on data read from `read_file`/`cli_args`/`str_split` without flagging this gap to the user.
 - **`read_file` returns `[]byte`, not `string`** (related finding under bug #17): passing it straight to `str_split`/string ops fails to compile. The only known working escape hatch is `(call string content)` — `call`'s codegen emits `funcName(args)` for any symbol, including Go builtins, so this is an undocumented accident, not a supported feature. Prefer flagging the gap over relying on it.
-- **`(import "pkg")` can duplicate/go unused (bug #14, pending)**: combining a custom `import` that collides with the transpiler's default import list, or combining `import` with `test` blocks that don't reference it inside the test body, can produce a Go compile error in `server.go`/`server_test.go`. Keep custom imports minimal and referenced from both normal code and any `test` blocks in the same file.
-- **`include` path targets can go stale (bug #15, pending)**: relative-to-including-file resolution (bug #6) doesn't help if the *target* file was moved; the include path itself must be updated by hand.
+- **`(import "pkg")` duplication/unused fixed (bug #14, fixed 2026-07-23)**: custom imports colliding with the default import list are now deduped, and `server_test.go` only includes imports actually referenced inside `test` bodies.
+- **`include` target paths fixed (bug #15, fixed 2026-07-23)**: `tests/test_include.zero` was pointed at a stale, moved target after improvement #42's file reorg — no longer broken, and no longer a fixture to treat as known-bad.
+- **`call` silently drops compound-expression arguments (bug #20, pending)**: see the `call` entry in AST Node Reference above — same root defect class as bug #13 (already fixed for `return`'s value position), just not yet fixed for `call`'s argument list.
+- **No way to write a void `defun` (bug #24, pending)**: see the `defun` entry in AST Node Reference above.
+- **`tests/test.zero` needs network access to build (bug #22, pending)**: it does `(import "github.com/google/uuid")`, but `go.mod`/`go.sum` don't vendor it — `go build` fails offline with "no required module provides package". Don't use this as a template for a new `import` example; use a stdlib package instead (e.g. `"strings"`) if you need one that builds with no network access.
 
 ## Build & Run Workflow
 
@@ -114,8 +118,8 @@ Feed this back verbatim into the next generation attempt for self-correction —
 ## Testing
 
 - Prefer native `(test "..." body)` blocks over external Go test scaffolding — they compile straight into `_test.go` via the transpiler.
-- After any change to `zero.go` itself, run the full fixture suite: `for f in tests/*.zero; do go run zero.go "$f"; done`, then `go build server.go` to confirm generated code actually compiles (transpile success does not guarantee `go build` success — see bugs #18 and #19, both silent-corruption cases).
-- `tests/test_include.zero` is currently a known-broken fixture (bug #15) — don't treat its failure as a new regression.
+- After any change to `zero.go` itself, run the full fixture suite: `for f in tests/*.zero; do ./zero "$f"; go build -o /tmp/servercheck . ; rm -f server.go server_test.go; done` (never bare `go build .` in the repo root — see Build & Run Workflow) to confirm generated code actually compiles (transpile success does not guarantee `go build` success — see bugs #18, #19, and #20, all silent-corruption/silent-drop cases).
+- `tests/test.zero` is a known-broken fixture offline (bug #22, unvendored `uuid` module) — don't treat its build failure as a new regression.
 
 ## Related Skills
 - Defer to [[software_development]] for general clean-code and modularity standards that apply to any `defun` body or project layout decisions outside the language's own grammar.
