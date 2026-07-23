@@ -7,6 +7,13 @@ llm_model: "ollama/qwen3:30b-instruct"
 llm_timeout: 600.0
 preflight: true
 
+# Bounds how long the orchestrator waits for each configured MCP server's
+# stdio handshake (config/settings.yaml active_mcps) before giving up on it.
+# Without this, a missing binary (e.g. `uvx` not installed) or a hung server
+# process blocks Orchestrator construction, and everything downstream of it
+# (including the test suite), indefinitely.
+mcp_connect_timeout: 30.0
+
 database:
   chroma_db_path: ".chroma"
   mode: "sqlite" # 'sqlite' or 'pgvector'

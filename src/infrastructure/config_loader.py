@@ -75,6 +75,7 @@ class AppSettings(BaseSettings):
     llm_model: str = "gemini/gemini-1.5-pro"
     llm_timeout: float = 600.0
     preflight: bool = True
+    mcp_connect_timeout: float = 30.0
     gemini_api_key: str = ""
     anthropic_api_key: str = ""
     database: DatabaseSettings = DatabaseSettings()

@@ -188,7 +188,7 @@ class Orchestrator:
                         args=config.get("args", []),
                         env=config.get("env")
                     )
-                    client.connect()
+                    client.connect(timeout=self.cfg.get("mcp_connect_timeout", 30.0))
                     self.mcp_clients[name] = client
                     
                     # Fetch tools and append to litellm tools

@@ -2,6 +2,7 @@ import pytest
 import json
 from unittest.mock import patch, MagicMock
 from src.core.orchestrator import Agent, Orchestrator, build_tier_agent, tier_setting
+from src.core.provider_preflight import PreflightResult
 
 class MockMessage:
     def __init__(self, content, tool_calls=None):
@@ -137,35 +138,42 @@ def test_human_proxy_rejected(mock_input, orchestrator_factory):
     result = orchestrator.human_proxy_intercept(tool_calls)
     assert result is False
 
+@patch("src.core.provider_preflight.preflight_models")
 @patch("src.core.orchestrator.Agent.generate_response")
 @patch("src.core.orchestrator.Orchestrator.human_proxy_intercept", return_value=True)
-def test_orchestrator_run_loop_approved_immediately(mock_proxy, mock_generate, orchestrator_factory):
+def test_orchestrator_run_loop_approved_immediately(mock_proxy, mock_generate, mock_preflight, orchestrator_factory):
+    # run_loop preflights the provider before the multi-agent loop (item 33);
+    # stub it out so this test exercises the approve/reject flow, not a real
+    # network check against whatever provider config/settings.yaml points at.
+    mock_preflight.return_value = PreflightResult(ok=True, checked_models=["stub"])
     orchestrator = orchestrator_factory()
-    
+
     mock_generate.side_effect = [
-        MockMessage("Here is my research draft"), 
+        MockMessage("Here is my research draft"),
         MockMessage("APPROVED"),
         MockMessage("Humanized draft")
     ]
-    
+
     orchestrator.run_loop("Test query")
-    
+
     assert mock_generate.call_count == 3
     mock_proxy.assert_called_once()
 
+@patch("src.core.provider_preflight.preflight_models")
 @patch("src.core.orchestrator.Agent.generate_response")
 @patch("src.core.orchestrator.Orchestrator.human_proxy_intercept", return_value=True)
-def test_orchestrator_run_loop_rejected_then_approved(mock_proxy, mock_generate, orchestrator_factory):
+def test_orchestrator_run_loop_rejected_then_approved(mock_proxy, mock_generate, mock_preflight, orchestrator_factory):
+    mock_preflight.return_value = PreflightResult(ok=True, checked_models=["stub"])
     orchestrator = orchestrator_factory()
-    
+
     mock_generate.side_effect = [
         MockMessage("First draft"), MockMessage("REJECTED. Fix it."),
         MockMessage("Second draft"), MockMessage("APPROVED"),
         MockMessage("Humanized second draft")
     ]
-    
+
     orchestrator.run_loop("Test query")
-    
+
     assert mock_generate.call_count == 5
     mock_proxy.assert_called_once()
 
@@ -216,3 +224,8 @@ def test_orchestrator_shutdown_calls_close_on_every_mcp_client(mock_sync_cls):
 
     for client in created_clients:
         client.close.assert_called_once()
+        # connect() must be bounded: a hanging/missing MCP server should
+        # not be able to block Orchestrator construction forever.
+        client.connect.assert_called_once_with(
+            timeout=orchestrator.cfg.get("mcp_connect_timeout", 30.0)
+        )
