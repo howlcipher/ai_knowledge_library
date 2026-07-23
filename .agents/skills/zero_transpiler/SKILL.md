@@ -39,7 +39,7 @@ This skill is the canonical Zero language reference for any agent writing `.zero
 - `(let (var val) body)` — chain by nesting another `let` inside `body`.
 - `(try_let (var val) (catch err catchBody) successBody)` — generalized to any function returning `(value, error)` (bug #8, fixed).
 - `(set var val)`
-- `(if (op a b) then else)` — ops: `=`, `!=`, `<`, `>`, `<=`, `>=`. **Else is currently mandatory** (see Known Bugs).
+- `(if (op a b) then [else])` — ops: `=`, `!=`, `<`, `>`, `<=`, `>=`; else branch is optional (bug #16, fixed) — `(if cond then)` omits the Go `else` clause entirely. **Condition must be a flat `(op a b)` — `and`/`or` and compound operands (`(> (+ 2 3) 4)`) are not supported yet** (see Known Bugs, bug #18).
 - `(match var (val body)... (default body))`
 - `(for item list body)`, `(while (op a b) body)`
 - `(do stmts...)`
@@ -80,8 +80,10 @@ This skill is the canonical Zero language reference for any agent writing `.zero
 
 Check `bugs.md` in the zero repo for current status before relying on any of these; do not assume a bug is fixed just because it's listed here as "Pending" at some point in the past — re-grep `bugs.md` if the fix date matters.
 
-- **`if` requires an else branch (bug #16, pending)**: `(if cond then)` fails to parse — the transpiler hard-requires 4 children. Always write both branches, even if the else is a no-op `(do)`.
-- **`return` drops compound expressions (bug #13, pending)**: `(return (+ a b))` or `(return (call f x))` silently emits a bare `return` with no value (only `Node.Value` — populated for leaf tokens — is used). **Workaround**: bind the expression to a `let` variable first, then `(return that_var)`.
+- **`if` else branch is optional (bug #16, fixed 2026-07-23)**: `(if cond then)` now parses and omits the Go `else` clause entirely; both 3-child and 4-child forms work.
+- **`if` condition rejects `and`/`or` and silently mis-compiles compound operands (bug #18, pending)**: the condition parser only accepts a flat `(op literal literal)` — `(if (and (> a 1) (< a 10)) ...)` errors with `unsupported operator in if cond: and`, and a compound operand like `(if (> (+ 2 3) 4) ...)` produces **no error at all** but emits corrupted Go (`if  > 4 {`, empty operand). Don't nest arithmetic or `and`/`or` directly inside an `if` condition — bind to a `let` variable first and compare the variable.
+- **`return` now handles compound expressions (bug #13, fixed 2026-07-23)**: `(return (+ a b))` and `(return (call f x))` both work correctly (recurses via `generateStatementRaw`). No more need to bind to a `let` variable first purely to work around this.
+- **`//line` directive can corrupt a compound expression nested inside another compound expression (bug #19, pending)**: several codegen paths (binary operators `+ - * / < > and or ==`, `assert_semantic`, `cli_args` index) embed a recursive `generateStatement` result *inside* a larger expression string; if the nested node's head is one of the heads that get a `//line` prefix (notably `call`), that comment splices mid-expression and corrupts the output — e.g. `(+ (call f) 1)` transpiles with no error but fails `go build`. Symptom: transpile succeeds, `go build` fails with a garbled statement near a `//line` comment. Workaround: bind any `call` (or other wrapped-head expression) used as an operand to a `let` variable first, then reference the variable.
 - **No string→number primitive (bug #17, pending)**: there is no `to_int`/`to_float`/`parse_number` node. The only coercion path is `fuzzy_cast`, which round-trips through an LLM (needs Ollama) — wildly disproportionate for turning `"42"` into `42`. Don't reach for arithmetic on data read from `read_file`/`cli_args`/`str_split` without flagging this gap to the user.
 - **`read_file` returns `[]byte`, not `string`** (related finding under bug #17): passing it straight to `str_split`/string ops fails to compile. The only known working escape hatch is `(call string content)` — `call`'s codegen emits `funcName(args)` for any symbol, including Go builtins, so this is an undocumented accident, not a supported feature. Prefer flagging the gap over relying on it.
 - **`(import "pkg")` can duplicate/go unused (bug #14, pending)**: combining a custom `import` that collides with the transpiler's default import list, or combining `import` with `test` blocks that don't reference it inside the test body, can produce a Go compile error in `server.go`/`server_test.go`. Keep custom imports minimal and referenced from both normal code and any `test` blocks in the same file.
@@ -112,7 +114,7 @@ Feed this back verbatim into the next generation attempt for self-correction —
 ## Testing
 
 - Prefer native `(test "..." body)` blocks over external Go test scaffolding — they compile straight into `_test.go` via the transpiler.
-- After any change to `zero.go` itself, run the full fixture suite: `for f in tests/*.zero; do go run zero.go "$f"; done`, then `go build server.go` to confirm generated code actually compiles (transpile success does not guarantee `go build` success — see bug #13).
+- After any change to `zero.go` itself, run the full fixture suite: `for f in tests/*.zero; do go run zero.go "$f"; done`, then `go build server.go` to confirm generated code actually compiles (transpile success does not guarantee `go build` success — see bugs #18 and #19, both silent-corruption cases).
 - `tests/test_include.zero` is currently a known-broken fixture (bug #15) — don't treat its failure as a new regression.
 
 ## Related Skills
