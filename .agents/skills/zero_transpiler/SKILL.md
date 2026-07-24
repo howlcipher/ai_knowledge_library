@@ -42,7 +42,7 @@ This skill is the canonical Zero language reference for any agent writing `.zero
 - `(set var val)`
 - `(if cond then [else])` — else branch is optional (bug #16, fixed) — `(if cond then)` omits the Go `else` clause entirely. `cond` can be a compound/logical expression (`and`/`or`, nested arithmetic on either side) as of bug #18 (fixed 2026-07-24) — `(if (and (> a 1) (< a 10)) ...)` and `(if (> (+ 2 3) 4) ...)` both work correctly now.
 - `(match var (val body)... (default body))`
-- `(for item list body)`, `(while cond body)` — `while`'s condition supports the same compound/`and`/`or` forms as `if` (same bug #18 fix). No `map_get`/`list_get` read primitive exists yet for `dict`/`list` — see improvement #60.
+- `(for item list body)`, `(while cond body)` — `while`'s condition supports the same compound/`and`/`or` forms as `if` (same bug #18 fix).
 - `(do stmts...)`
 - `(call func args...)` — compound-expression arguments (nested `call`, arithmetic) now pass through correctly (bug #20, fixed).
 - `(spawn (lambda () body))` — goroutine.
@@ -64,8 +64,8 @@ This skill is the canonical Zero language reference for any agent writing `.zero
 - `(to_int s)`, `(to_float s)` (bug #17, fixed) — deterministic string→number, no LLM round-trip needed; only reach for `fuzzy_cast` for genuinely messy/unstructured input.
 
 ### Data Structures & Strings
-- `(list items...)`, `(dict ("k" "v")...)`
-- `(append list item)`, `(map_set dict key val)`, `(map_delete dict key)` — **write-only**: no `map_get`/`list_get`/index primitive exists to read a value back out by key or index (improvement #60, pending, filed 2026-07-24). Only whole-collection printing or `for`-iteration can observe contents today.
+- `(list items...)`, `(dict ("k" "v")...)` — work in any expression position now (a `return` value, a `print`/`call` argument, nested inside another `list`/`dict`, not just a `let` binding's direct value; bug #26, fixed 2026-07-24). Compound-expression **elements/values** (e.g. `(list (call one) "b")`, `(dict ("k" (call one)))`) construct correctly in the Go backend too (bug #27, fixed 2026-07-24). One gap remains: a `dict` **key** that is itself a compound expression (e.g. `(dict ((call k) "v"))`) still silently drops to empty, producing invalid Go (`map[string]string{: "v"}`) — bug #28, open, below the ROI floor. Stick to literal string/symbol keys until #28 ships.
+- `(append list item)`, `(map_set dict key val)`, `(map_delete dict key)`, `(map_get dict key)`, `(list_get list idx)` (improvement #60, fixed 2026-07-24) — `map_get` returns `""` on a missing key (Go zero-value semantics); `list_get` is bounds-checked and returns `""` on an out-of-range index rather than panicking, mirroring `cli_args`' existing safer convention.
 - `(str_split s sep)`, `(str_join list sep)`, `(regex_match pattern s)`
 
 ### Math & Logic
@@ -80,18 +80,19 @@ This skill is the canonical Zero language reference for any agent writing `.zero
 
 ## Known Bugs — must-follow workarounds
 
-As of 2026-07-24, **every bug in `bugs.md` is Done** — there are no open bugs in the Zero transpiler. Check `bugs.md` in the zero repo for current status before relying on this statement in a future session; do not assume it still holds without re-checking, since new bugs get filed as they're found. Notable fixes worth knowing about (all confirmed fixed, not just table-status "Done" — several had stale detail-section notes contradicting their own table status until the 2026-07-24 groom pass corrected them):
+As of 2026-07-24 (a later pass, after bugs #27 and #28), `bugs.md` has one open bug: #28, `dict` literal keys silently dropping compound expressions to empty (see the Data Structures section above) — filed below the ROI floor, so it's open but not scheduled. Every other bug is Done. Check `bugs.md` in the zero repo for current status before relying on this statement in a future session; do not assume it still holds without re-checking, since new bugs get filed as they're found. Notable fixes worth knowing about (all confirmed fixed, not just table-status "Done" — several had stale detail-section notes contradicting their own table status until the 2026-07-24 groom pass corrected them):
 
+- **`list`/`dict` literals work in any expression position (bug #26, fixed 2026-07-24)**: no longer restricted to a `let` binding's direct value — a `return` value, `print`/`call` argument, or nesting inside another `list`/`dict` all work now.
+- **Go backend's `list`/`dict` elements/values handle compound expressions (bug #27, fixed 2026-07-24)**: `(list (call one) "b")` and `(dict ("k" (call one)))` no longer silently drop the compound element/value to an empty string. Dict *keys* still have this gap — see bug #28 above.
 - **`if`/`while` conditions support `and`/`or` and compound operands (bug #18, fixed 2026-07-24)**: `(if (and (> a 1) (< a 10)) ...)` and `(if (> (+ 2 3) 4) ...)` both work correctly, for both `if` and `while`. Landed as a side effect of improvement #53's IR refactor.
 - **`return`/`call` handle compound expressions correctly (bugs #13, #19, #20, all fixed)**: `(return (+ a b))`, `(return (call f x))`, and `(call f (call g 1))`-style nested arguments all work — no more need to bind to a `let` variable first purely to work around silent drops or `//line`-corrupted output.
 - **String↔number/bytes conversion primitives exist (bug #17, fixed)**: `(to_int s)`, `(to_float s)`, `(to_string b)`, `(bytes_to_string b)` — deterministic, no LLM round-trip needed. Only reach for `fuzzy_cast` for genuinely messy/unstructured input.
 - **Void `defun` supported (bug #24, fixed)**: `(type_hint return "void")` works for pure side-effect functions.
 - **`(import "pkg")` duplication/unused fixed (bug #14)**: custom imports colliding with the default import list are deduped, and `server_test.go` only includes imports actually referenced inside `test` bodies.
 - **`if` else branch is optional (bug #16, fixed)**: `(if cond then)` omits the Go `else` clause entirely; both 3-child and 4-child forms work.
+- **Collections support random-access reads (improvement #60, fixed 2026-07-24)**: `(map_get dict key)` and `(list_get list idx)` read a value back out by key/index — no more whole-collection-printing-only workaround. `map_get` returns `""` on a missing key; `list_get` is bounds-checked and returns `""` out of range rather than panicking.
 
 **Known, non-bug environment gotcha:** `tests/test_schema.zero` uses `github.com/mattn/go-sqlite3`, correctly declared in `go.mod` — but `go.sum` is deliberately `.gitignore`d, so a fresh clone needs a local `go mod tidy` (confirmed working with network access) before that fixture's generated code will `go build`. Not a transpiler defect.
-
-**Known capability gap (not a bug, an unimplemented primitive):** `dict`/`list` are write-only — `map_set`/`map_delete`/`append` exist but there's no `map_get`/`list_get`/index syntax to read a value back out by key or index (no `[` token in the lexer at all). Tracked as improvement #60. Don't rely on reading a specific collection element; whole-collection printing or `for`-iteration are the only ways to observe contents today.
 
 ## Build & Run Workflow
 
