@@ -27,6 +27,8 @@ Pending rows are ranked by a diminishing-returns score, recomputed at every groo
 
 Scores apply to Pending rows only; Done, Closed, and Merged rows show `—`.
 
+**Last groomed 2026-07-27:** zero Pending improvements. All ranked rows are Done, Closed, or Merged, so there was nothing to re-score, re-rank, flag below the ROI floor, or select for `work_next_item`.
+
 | # | Improvement | Status | Score (V×D÷E) | Claude model | Gemini model | ROI rationale |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | [Rebuild the vector index](#1-rebuild-the-vector-index) | Done (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Minutes of work; unblocks semantic search over the newly refined skills |
