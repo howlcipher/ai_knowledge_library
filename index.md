@@ -24,6 +24,8 @@
 
 > This repository serves as the central neural matrix for autonomous terminal AI agents. It maps directly into the local host environment to enforce hardcoded architectural constraints, eliminate logic hallucinations, and inject deep personalized profile contexts directly into the AI's execution pipeline.
 
+> **Backlog status, 2026-07-27:** [`improvements.md`](improvements.md) has no Pending rows, while [`issues.md`](issues.md) has one newly discovered Python 3.14 dependency compatibility warning queued for the next work cycle. The latest maintenance pass found no stale task journals.
+
 ***
 
 ## 🧠 Core Architecture
