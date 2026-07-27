@@ -122,3 +122,21 @@ func TestRemoveCodexGlobalLinks(t *testing.T) {
 		t.Fatalf("unexpected remaining guidance: %q", remaining)
 	}
 }
+
+func TestManagedPathWithinRoot(t *testing.T) {
+	root := t.TempDir()
+	inside := filepath.Join(root, "AGENTS.md")
+	outside := filepath.Join(root, "..", "outside.md")
+
+	validated, err := managedPathWithinRoot(inside, root)
+	if err != nil {
+		t.Fatalf("expected path inside root to pass: %v", err)
+	}
+	if validated != inside {
+		t.Fatalf("expected %q, got %q", inside, validated)
+	}
+
+	if _, err := managedPathWithinRoot(outside, root); err == nil {
+		t.Fatal("expected path traversal outside the managed root to fail")
+	}
+}

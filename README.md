@@ -102,6 +102,8 @@ chmod +x scripts/install_global.sh
 > - Reusable workflows like `work_next_item`, `resume_task`, and `groom_backlogs` available from **any** directory, not just from inside this repo.
 >
 > If you skip this step, the repo still works fully when your terminal's working directory is inside this checkout. The install step is only for making the library available *outside* this specific folder.
+>
+> Global uninstall validates every managed guidance path against its agent configuration root before reading or rewriting it, and removes only skill links owned by this library.
 
 ***
 

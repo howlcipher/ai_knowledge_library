@@ -152,8 +152,39 @@ func (i *Installer) SyncRepo() {
 	}
 }
 
-func removeManagedBlock(path string) error {
-	data, err := os.ReadFile(path) // #nosec G304 -- caller supplies a fixed user configuration path
+func managedPathWithinRoot(path, root string) (string, error) {
+	cleanRoot, err := filepath.Abs(root)
+	if err != nil {
+		return "", fmt.Errorf("resolve managed root: %w", err)
+	}
+	if resolvedRoot, resolveErr := filepath.EvalSymlinks(cleanRoot); resolveErr == nil {
+		cleanRoot = resolvedRoot
+	}
+
+	cleanPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", fmt.Errorf("resolve managed path: %w", err)
+	}
+	if resolvedPath, resolveErr := filepath.EvalSymlinks(cleanPath); resolveErr == nil {
+		cleanPath = resolvedPath
+	}
+
+	relativePath, err := filepath.Rel(cleanRoot, cleanPath)
+	if err != nil {
+		return "", fmt.Errorf("compare managed path to root: %w", err)
+	}
+	if relativePath == ".." || strings.HasPrefix(relativePath, ".."+string(os.PathSeparator)) {
+		return "", fmt.Errorf("managed path is outside configuration root")
+	}
+	return cleanPath, nil
+}
+
+func removeManagedBlock(path, root string) error {
+	validatedPath, err := managedPathWithinRoot(path, root)
+	if err != nil {
+		return err
+	}
+	data, err := os.ReadFile(validatedPath) // #nosec G304,G703 -- path is validated within the agent configuration root
 	if os.IsNotExist(err) {
 		return nil
 	}
@@ -165,7 +196,7 @@ func removeManagedBlock(path string) error {
 	if string(cleaned) == string(data) {
 		return nil
 	}
-	return os.WriteFile(path, cleaned, 0600) // #nosec G703 -- caller supplies a fixed user configuration path
+	return os.WriteFile(validatedPath, cleaned, 0600) // #nosec G304,G703 -- path is validated within the agent configuration root
 }
 
 func removeCodexGlobalLinks(home, codexHome, repoRoot string) error {
@@ -197,7 +228,7 @@ func removeCodexGlobalLinks(home, codexHome, repoRoot string) error {
 			}
 		}
 	}
-	return removeManagedBlock(filepath.Join(codexHome, "AGENTS.md"))
+	return removeManagedBlock(filepath.Join(codexHome, "AGENTS.md"), codexHome)
 }
 
 // Uninstall safely removes the symlinks for the library skills and rules.
@@ -257,7 +288,7 @@ func (i *Installer) Uninstall() {
 
 	// Remove the managed library blocks from global agent guidance.
 	claudeMemory := filepath.Join(claudeDir, "CLAUDE.md")
-	if err := removeManagedBlock(claudeMemory); err == nil {
+	if err := removeManagedBlock(claudeMemory, claudeDir); err == nil {
 		fmt.Println("Removed library block from:", claudeMemory)
 	}
 	if err := removeCodexGlobalLinks(home, codexDir, "."); err != nil {
