@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Links the local skills and rules to the global Gemini (AGY) and Claude Code directories on Windows.
+Links the local skills and rules to the global Gemini (AGY), Claude Code, and Codex directories on Windows.
 #>
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -43,6 +43,32 @@ function Link-Skills {
                 Remove-Item -Path $Target -Recurse -Force
             }
             New-Item -ItemType Junction -Path $Target -Value $_.FullName | Out-Null
+        }
+    }
+}
+
+function Link-CodexSkills {
+    param([string]$SourceDir, [string]$TargetDir)
+
+    if (-not (Test-Path -Path $TargetDir)) {
+        New-Item -ItemType Directory -Path $TargetDir | Out-Null
+    }
+    if (Test-Path -Path $SourceDir) {
+        Get-ChildItem -Path $SourceDir -Directory | ForEach-Object {
+            $Target = Join-Path -Path $TargetDir -ChildPath $_.Name
+            $CanLink = $true
+            if (Test-Path -Path $Target) {
+                $Existing = Get-Item -Path $Target -Force
+                if (-not ($Existing.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                    Write-Host "Warning: preserving existing Codex skill directory $Target" -ForegroundColor Yellow
+                    $CanLink = $false
+                } else {
+                    Remove-Item -Path $Target -Force
+                }
+            }
+            if ($CanLink) {
+                New-Item -ItemType Junction -Path $Target -Value $_.FullName | Out-Null
+            }
         }
     }
 }
@@ -98,4 +124,49 @@ if (Test-Path -Path $ClaudeMemory) {
     Set-Content -Path $ClaudeMemory -Value $Block
 }
 
-Write-Host "Integration complete. Your AI Knowledge Library is now globally accessible to Gemini and Claude."
+# --- Codex integration ---
+if ($env:CODEX_HOME) {
+    $CodexDir = $env:CODEX_HOME
+} else {
+    $CodexDir = Join-Path -Path $env:USERPROFILE -ChildPath ".codex"
+}
+$CodexSkillsDir = Join-Path -Path $env:USERPROFILE -ChildPath ".agents\skills"
+
+Write-Host "Linking skills to global Codex configuration"
+Link-CodexSkills -SourceDir $SourceSkills -TargetDir $CodexSkillsDir
+
+Write-Host "Linking command workflows to global Codex configuration"
+Link-CodexSkills -SourceDir $SourceSkillCommands -TargetDir $CodexSkillsDir
+
+if (-not (Test-Path -Path $CodexDir)) {
+    New-Item -ItemType Directory -Path $CodexDir | Out-Null
+}
+
+Write-Host "Registering library rulebook in global Codex guidance"
+$CodexAgents = Join-Path -Path $CodexDir -ChildPath "AGENTS.md"
+$CanonicalRules = Get-Content -Path (Join-Path -Path $RepoRoot -ChildPath "AGENTS.md") -Raw
+$CodexBlock = "$MarkerStart`n$CanonicalRules"
+if (-not $CanonicalRules.EndsWith("`n")) {
+    $CodexBlock += "`n"
+}
+$CodexBlock += $MarkerEnd
+
+if (Test-Path -Path $CodexAgents) {
+    $Content = Get-Content -Path $CodexAgents -Raw
+    if ($Content -match [regex]::Escape($MarkerStart)) {
+        $Pattern = [regex]::Escape($MarkerStart) + "[\s\S]*?" + [regex]::Escape($MarkerEnd)
+        $Content = [regex]::Replace($Content, $Pattern, $CodexBlock)
+        Set-Content -Path $CodexAgents -Value $Content
+    } else {
+        Add-Content -Path $CodexAgents -Value "`n$CodexBlock"
+    }
+} else {
+    Set-Content -Path $CodexAgents -Value $CodexBlock
+}
+
+$CodexOverride = Join-Path -Path $CodexDir -ChildPath "AGENTS.override.md"
+if ((Test-Path -Path $CodexOverride) -and ((Get-Item -Path $CodexOverride).Length -gt 0)) {
+    Write-Host "Warning: $CodexOverride takes precedence over the installed Codex guidance." -ForegroundColor Yellow
+}
+
+Write-Host "Integration complete. Your AI Knowledge Library is now globally accessible to Gemini, Claude, and Codex."

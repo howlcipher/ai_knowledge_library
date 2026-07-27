@@ -13,6 +13,7 @@ Reusable task prompts for any agent working in this repository. Each `.md` file 
 ## Invocation
 
 - **Claude Code:** command skills from `.agents/skill_commands/<name>/SKILL.md`, e.g. `/work_next_item`. Each wrapper inlines the canonical prompt with an `@` file reference. These are symlinked into `.claude/skills/` (project scope, auto-rebuilt by `scripts/generate_skills_manifest.py`) and, on any machine that has run `scripts/install_global.sh`/`.ps1`, into `~/.claude/skills/` too (global scope, works from any directory).
+- **Codex:** skills from `.agents/skill_commands/<name>/SKILL.md`, e.g. `$work_next_item`. Codex discovers them in the repository and the global installer links them into `~/.agents/skills/` for use from any directory. Each wrapper resolves its canonical prompt relative to its own `SKILL.md`.
 - **Gemini CLI:** custom commands from `.gemini/commands/`, e.g. `/work_next_item`. Each wrapper instructs the model to read and follow the canonical file.
 - **Any other agent:** paste "Read `.agents/prompts/<name>.md` and follow it exactly."
 

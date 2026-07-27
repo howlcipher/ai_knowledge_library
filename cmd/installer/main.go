@@ -152,6 +152,54 @@ func (i *Installer) SyncRepo() {
 	}
 }
 
+func removeManagedBlock(path string) error {
+	data, err := os.ReadFile(path) // #nosec G304 -- caller supplies a fixed user configuration path
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	blockRe := regexp.MustCompile(`(?s)\n?<!-- ai_knowledge_library:start -->.*?<!-- ai_knowledge_library:end -->\n?`)
+	cleaned := blockRe.ReplaceAll(data, []byte("\n"))
+	if string(cleaned) == string(data) {
+		return nil
+	}
+	return os.WriteFile(path, cleaned, 0600) // #nosec G703 -- caller supplies a fixed user configuration path
+}
+
+func removeCodexGlobalLinks(home, codexHome, repoRoot string) error {
+	userSkillsDir := filepath.Join(home, ".agents", "skills")
+	sourceDirs := []string{
+		filepath.Join(repoRoot, ".agents", "skills"),
+		filepath.Join(repoRoot, ".agents", "skill_commands"),
+	}
+	for _, sourceDir := range sourceDirs {
+		entries, err := os.ReadDir(sourceDir)
+		if os.IsNotExist(err) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		for _, entry := range entries {
+			if entry.IsDir() {
+				sourcePath := filepath.Join(sourceDir, entry.Name())
+				targetPath := filepath.Join(userSkillsDir, entry.Name())
+				resolvedSource, sourceErr := filepath.EvalSymlinks(sourcePath)
+				resolvedTarget, targetErr := filepath.EvalSymlinks(targetPath)
+				if sourceErr != nil || targetErr != nil || resolvedSource != resolvedTarget {
+					continue
+				}
+				if err := os.RemoveAll(targetPath); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return removeManagedBlock(filepath.Join(codexHome, "AGENTS.md"))
+}
+
 // Uninstall safely removes the symlinks for the library skills and rules.
 func (i *Installer) Uninstall() {
 	var confirm bool
@@ -159,7 +207,7 @@ func (i *Installer) Uninstall() {
 		huh.NewGroup(
 			huh.NewConfirm().
 				Title("Are you sure you want to uninstall?").
-				Description("This will remove the global Gemini (AGY) and Claude Code links to skills and rules.").
+				Description("This will remove the global Gemini (AGY), Claude Code, and Codex links to skills and rules.").
 				Value(&confirm),
 		),
 	)
@@ -173,26 +221,32 @@ func (i *Installer) Uninstall() {
 	home, _ := os.UserHomeDir()
 	agyDir := filepath.Join(home, ".gemini", "antigravity-cli")
 	claudeDir := filepath.Join(home, ".claude")
+	codexDir := os.Getenv("CODEX_HOME")
+	if codexDir == "" {
+		codexDir = filepath.Join(home, ".codex")
+	}
 
 	agySkillsDir := filepath.Join(agyDir, "skills")
 	claudeSkillsDir := filepath.Join(claudeDir, "skills")
 	rulesDir := filepath.Join(agyDir, "rules")
 
-	sourceSkills := ".agents/skills"
+	sourceSkillDirs := []string{".agents/skills", ".agents/skill_commands"}
 	sourceRules := ".agents/rules"
 
-	entries, _ := os.ReadDir(sourceSkills)
-	for _, entry := range entries {
-		if entry.IsDir() {
-			for _, skillsDir := range []string{agySkillsDir, claudeSkillsDir} {
-				target := filepath.Join(skillsDir, entry.Name())
-				_ = os.RemoveAll(target)
-				fmt.Println("Removed skill link:", target)
+	for _, sourceSkills := range sourceSkillDirs {
+		entries, _ := os.ReadDir(sourceSkills)
+		for _, entry := range entries {
+			if entry.IsDir() {
+				for _, skillsDir := range []string{agySkillsDir, claudeSkillsDir} {
+					target := filepath.Join(skillsDir, entry.Name())
+					_ = os.RemoveAll(target)
+					fmt.Println("Removed skill link:", target)
+				}
 			}
 		}
 	}
 
-	entries, _ = os.ReadDir(sourceRules)
+	entries, _ := os.ReadDir(sourceRules)
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			target := filepath.Join(rulesDir, entry.Name())
@@ -201,15 +255,15 @@ func (i *Installer) Uninstall() {
 		}
 	}
 
-	// Remove the managed library block from the global Claude memory file.
+	// Remove the managed library blocks from global agent guidance.
 	claudeMemory := filepath.Join(claudeDir, "CLAUDE.md")
-	if data, err := os.ReadFile(claudeMemory); err == nil { // #nosec G304 -- fixed path under the user's home directory
-		blockRe := regexp.MustCompile(`(?s)\n?<!-- ai_knowledge_library:start -->.*?<!-- ai_knowledge_library:end -->\n?`)
-		cleaned := blockRe.ReplaceAll(data, []byte("\n"))
-		if string(cleaned) != string(data) {
-			_ = os.WriteFile(claudeMemory, cleaned, 0600) // #nosec G703 -- fixed path under the user's home directory
-			fmt.Println("Removed library block from:", claudeMemory)
-		}
+	if err := removeManagedBlock(claudeMemory); err == nil {
+		fmt.Println("Removed library block from:", claudeMemory)
+	}
+	if err := removeCodexGlobalLinks(home, codexDir, "."); err != nil {
+		fmt.Println("Failed to remove Codex global links:", err)
+	} else {
+		fmt.Println("Removed Codex skill links and library guidance")
 	}
 
 	fmt.Println("Uninstall complete. The repository files remain on your disk; delete the directory manually if desired.")
@@ -539,7 +593,7 @@ func main() {
 
 	var uninstallCmd = &cobra.Command{
 		Use:   "uninstall",
-		Short: "Uninstall global Gemini (AGY) and Claude Code links",
+		Short: "Uninstall global Gemini (AGY), Claude Code, and Codex links",
 		Run: func(cmd *cobra.Command, args []string) {
 			installer.Uninstall()
 		},

@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -60,5 +61,64 @@ func TestGitHookInstallerScripts(t *testing.T) {
 		if gitHookInstallerScripts[i] != v {
 			t.Fatalf("script %d expected %s, got %s", i, v, gitHookInstallerScripts[i])
 		}
+	}
+}
+
+func TestRemoveCodexGlobalLinks(t *testing.T) {
+	home := t.TempDir()
+	repoRoot := t.TempDir()
+	codexHome := filepath.Join(home, "custom_codex")
+
+	sources := map[string]string{
+		"software_development": filepath.Join(repoRoot, ".agents", "skills", "software_development"),
+		"work_next_item":       filepath.Join(repoRoot, ".agents", "skill_commands", "work_next_item"),
+	}
+	for _, source := range sources {
+		if err := os.MkdirAll(source, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	userSkills := filepath.Join(home, ".agents", "skills")
+	if err := os.MkdirAll(userSkills, 0755); err != nil {
+		t.Fatal(err)
+	}
+	for name, source := range sources {
+		if err := os.Symlink(source, filepath.Join(userSkills, name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	unrelated := filepath.Join(userSkills, "unrelated")
+	if err := os.MkdirAll(unrelated, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.MkdirAll(codexHome, 0755); err != nil {
+		t.Fatal(err)
+	}
+	agentsPath := filepath.Join(codexHome, "AGENTS.md")
+	agentsContent := "personal\n<!-- ai_knowledge_library:start -->\nmanaged\n<!-- ai_knowledge_library:end -->\n"
+	if err := os.WriteFile(agentsPath, []byte(agentsContent), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := removeCodexGlobalLinks(home, codexHome, repoRoot); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, name := range []string{"software_development", "work_next_item"} {
+		if _, err := os.Stat(filepath.Join(userSkills, name)); !os.IsNotExist(err) {
+			t.Fatalf("expected %s to be removed", name)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(userSkills, "unrelated")); err != nil {
+		t.Fatalf("unrelated skill was removed: %v", err)
+	}
+	remaining, err := os.ReadFile(agentsPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(remaining) != "personal\n" {
+		t.Fatalf("unexpected remaining guidance: %q", remaining)
 	}
 }

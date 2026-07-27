@@ -33,8 +33,8 @@
 **System Definition:** A centralized, filesystem-based knowledge library and execution environment engineered for autonomous AI operatives embedded within the terminal.
 
 **The Engineering Protocol:** AI constructs frequently hallucinate or generate generic boilerplate when operating outside of a defined parameter space. By tethering this structured databank to the local environment, the AI is mathematically coerced into operating synchronously with a senior systems engineer. 
-* **Zero-Hallucination Matrix:** The AI is strictly bound by local markdown rules (`AGENTS.md`, auto-loaded by both Gemini via `GEMINI.md` and Claude Code via `CLAUDE.md`), explicit code standards, and project constraints before generating solutions.
-* **Multi-Agent Native:** The same skills, rules, and profile context load identically into **Gemini CLI / Antigravity** and **Claude Code**. One library, every terminal agent.
+* **Zero-Hallucination Matrix:** The AI is strictly bound by local markdown rules (`AGENTS.md`, loaded natively by Codex and imported by Gemini via `GEMINI.md` and Claude Code via `CLAUDE.md`), explicit code standards, and project constraints before generating solutions.
+* **Multi-Agent Native:** The same skills, rules, and profile context load into **Codex**, **Gemini CLI / Antigravity**, and **Claude Code**. One library, every terminal agent.
 * **Automated CI/CD Guardrails:** Built-in verification pipelines (SAST, Linting, Testing) ensure the AI cannot compromise the master branch.
 * **Domain-Specific Cognitive Skills:** Pre-loaded domain nodes (e.g., UI/UX, Data Science, Threat Hunting) allow the agent to adapt logic dynamically rather than executing blindly.
 
@@ -96,11 +96,12 @@ chmod +x scripts/install_global.sh
 ```
 </details>
 
-> **Working across multiple machines?** A plain `git pull` only updates the files inside this checkout — it does **not** touch anything under `~/.claude/` or `~/.gemini/`, since those live in your home directory, outside the repo. After pulling on a machine you haven't installed on yet, rerun the installer (or the fallback script above) there too. This is what gives you:
+> **Working across multiple machines?** A plain `git pull` only updates the files inside this checkout — it does **not** touch the global agent configuration under your home directory. After pulling on a machine you haven't installed on yet, rerun the installer (or the fallback script above) there too. This is what gives you:
 > - The global rulebook import in `~/.claude/CLAUDE.md` (so `AGENTS.md` applies to every project on that machine, not just this one).
-> - Custom commands like `/work_next_item`, `/resume_task`, and `/groom_backlogs` available from **any** directory, not just from inside this repo.
+> - Codex guidance in `${CODEX_HOME:-~/.codex}/AGENTS.md` and Codex user skills in `~/.agents/skills/`.
+> - Reusable workflows like `work_next_item`, `resume_task`, and `groom_backlogs` available from **any** directory, not just from inside this repo.
 >
-> If you skip this step, the repo still works fully when your terminal's working directory is inside this checkout — Claude Code discovers everything it needs directly from the pulled files. The install step is only for making the library available *outside* this specific folder.
+> If you skip this step, the repo still works fully when your terminal's working directory is inside this checkout. The install step is only for making the library available *outside* this specific folder.
 
 ***
 
@@ -121,10 +122,10 @@ The knowledge base is organized into specific domains that the AI agent natively
 | Directory or File | Primary Function |
 | :--- | :--- |
 | `AGENTS.md` | Canonical global rulebook for all agent interactions. |
-| `GEMINI.md` / `CLAUDE.md` | Thin per-agent entry points that import `AGENTS.md` (Gemini CLI / Antigravity and Claude Code respectively). |
+| `GEMINI.md` / `CLAUDE.md` | Thin per-agent entry points that import `AGENTS.md` for Gemini CLI / Antigravity and Claude Code. Codex reads `AGENTS.md` natively. |
 | `.claude/skills/` | Auto-rebuilt per-entry symlinks exposing both the skills library and the command skills below to Claude Code inside this repo. |
 | [`.agents/skills/`](.agents/skills/README.md) | The **AI Skills Library**. Domain-specific behavioral instructions parsed natively. |
-| `.agents/skill_commands/` | Claude Code command skills (e.g. `/work_next_item`) — thin wrappers over `.agents/prompts/`. |
+| `.agents/skill_commands/` | Claude Code and Codex command skills (e.g. `/work_next_item` or `$work_next_item`) — thin wrappers over `.agents/prompts/`. |
 | `.agents/rules/` | Global constraints that actively shape system prompts. |
 | `scripts/` | Utilities for syncing and bootstrapping environments globally. |
 | `projects/` | Active personal development projects and boilerplate templates. |

@@ -1,6 +1,6 @@
 # Global Engineering Context
 
-You are operating within my local development environment. You must strictly adhere to the rules outlined in this document and the attached skills directory. These rules apply to every AI agent working in this repository (Claude Code, Gemini CLI, Antigravity, or any other assistant).
+You are operating within my local development environment. You must strictly adhere to the rules outlined in this document and the attached skills directory. These rules apply to every AI agent working in this repository (Claude Code, Codex, Gemini CLI, Antigravity, or any other assistant).
 
 ## Core Directives
 1. **Formatting Rules:** You may use standard hyphens and dashes where grammatically correct (e.g., compound words like "cross-platform") or syntactically required (e.g., standard Markdown bullet points). Avoid using them as excessive decorative punctuation.
@@ -38,12 +38,12 @@ When a conflict is detected:
 
 This file is the single canonical rulebook. The per-agent context files (`GEMINI.md` for Gemini CLI / Antigravity, `CLAUDE.md` for Claude Code) import this file; edit `AGENTS.md` only, never the thin entry-point files, so the rules never drift between agents.
 
-* **Skills:** All agents load domain skills from `.agents/skills/<skill_name>/SKILL.md`. Claude Code additionally discovers them (plus the command skills below) through the `.claude/skills/` directory, a set of per-entry symlinks rebuilt by `scripts/generate_skills_manifest.py` — never edit its contents by hand.
+* **Skills:** All agents load domain skills from `.agents/skills/<skill_name>/SKILL.md`. Codex discovers that directory natively in the repository and uses per-entry links in `~/.agents/skills/` after global installation. Claude Code additionally discovers the skills and command skills below through `.claude/skills/`, a set of per-entry symlinks rebuilt by `scripts/generate_skills_manifest.py` — never edit its contents by hand.
 * **Rules:** All agents must honor every file in `.agents/rules/`.
 
 ## Prompt Library
 
-Reusable task prompts live in `.agents/prompts/`; its `README.md` is the index. Each prompt file is canonical, with thin per-agent wrappers that only point at it: Claude Code command skills in `.agents/skill_commands/<name>/SKILL.md` (symlinked into `.claude/skills/` for project use, and globally into `~/.claude/skills/` on any machine that has run `scripts/install_global.sh`/`.ps1`), and Gemini CLI commands in `.gemini/commands/`. Edit the canonical prompt only, never the wrappers, so invocations never drift between agents. Current prompts: `work_next_item` (work the top open item across `issues.md` and `improvements.md` per the Working Protocol), `resume_task` (continue an interrupted task from its journal), `groom_backlogs` (re-evaluate and clean both backlogs without implementing).
+Reusable task prompts live in `.agents/prompts/`; its `README.md` is the index. Each prompt file is canonical, with thin per-agent wrappers that only point at it: command skills in `.agents/skill_commands/<name>/SKILL.md` (available to Claude Code through `.claude/skills/`, to Codex through native repository discovery, and globally to both after running `scripts/install_global.sh`/`.ps1`), and Gemini CLI commands in `.gemini/commands/`. Edit the canonical prompt only, never the wrappers, so invocations never drift between agents. Current prompts: `work_next_item` (work the top open item across `issues.md` and `improvements.md` per the Working Protocol), `resume_task` (continue an interrupted task from its journal), `groom_backlogs` (re-evaluate and clean both backlogs without implementing).
 
 ## Skills Manifest
 

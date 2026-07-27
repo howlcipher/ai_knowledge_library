@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # This script links the local skills and rules to the global config
-# directories for both Gemini (AGY) and Claude Code, so the library
+# directories for Gemini (AGY), Claude Code, and Codex, so the library
 # is available in every project you work on regardless of agent.
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -93,4 +93,67 @@ else
   } >> "$CLAUDE_MEMORY"
 fi
 
-echo "Integration complete. Your AI Knowledge Library is now globally accessible to Gemini and Claude."
+# --- Codex integration ---
+# Codex loads user skills from ~/.agents/skills and global guidance from
+# $CODEX_HOME/AGENTS.md. CODEX_HOME defaults to ~/.codex.
+CODEX_DIR="${CODEX_HOME:-$HOME/.codex}"
+CODEX_SKILLS_DIR="$HOME/.agents/skills"
+CODEX_AGENTS="$CODEX_DIR/AGENTS.md"
+
+mkdir -p "$CODEX_DIR"
+mkdir -p "$CODEX_SKILLS_DIR"
+
+echo "Linking skills to global Codex configuration"
+for skill in "$REPO_ROOT/.agents/skills"/*; do
+  if [ -d "$skill" ]; then
+    target="$CODEX_SKILLS_DIR/$(basename "$skill")"
+    if [ -e "$target" ] && [ ! -L "$target" ]; then
+      echo "Warning: preserving existing Codex skill directory $target"
+    else
+      ln -sfn "$skill" "$target"
+    fi
+  fi
+done
+
+echo "Linking command workflows to global Codex configuration"
+for skill in "$REPO_ROOT/.agents/skill_commands"/*; do
+  if [ -d "$skill" ]; then
+    target="$CODEX_SKILLS_DIR/$(basename "$skill")"
+    if [ -e "$target" ] && [ ! -L "$target" ]; then
+      echo "Warning: preserving existing Codex skill directory $target"
+    else
+      ln -sfn "$skill" "$target"
+    fi
+  fi
+done
+
+echo "Registering library rulebook in global Codex guidance"
+if [ -f "$CODEX_AGENTS" ] && grep -qF "$MARKER_START" "$CODEX_AGENTS"; then
+  TMP_FILE=$(mktemp)
+  awk -v start="$MARKER_START" -v end="$MARKER_END" -v rules="$REPO_ROOT/AGENTS.md" '
+    $0 == start {
+      print
+      while ((getline line < rules) > 0) {
+        print line
+      }
+      close(rules)
+      skip=1
+      next
+    }
+    $0 == end {skip=0}
+    !skip {print}
+  ' "$CODEX_AGENTS" > "$TMP_FILE" && mv "$TMP_FILE" "$CODEX_AGENTS"
+else
+  {
+    echo ""
+    echo "$MARKER_START"
+    cat "$REPO_ROOT/AGENTS.md"
+    echo "$MARKER_END"
+  } >> "$CODEX_AGENTS"
+fi
+
+if [ -s "$CODEX_DIR/AGENTS.override.md" ]; then
+  echo "Warning: $CODEX_DIR/AGENTS.override.md takes precedence over the installed Codex guidance."
+fi
+
+echo "Integration complete. Your AI Knowledge Library is now globally accessible to Gemini, Claude, and Codex."
