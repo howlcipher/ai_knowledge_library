@@ -56,6 +56,12 @@ This skill is the canonical Zero language reference for any agent writing `.zero
 - `(llm_generate "prompt" ["model"])` → `(string, error)`
 - `(fuzzy_cast Type var ["model"])` → `(Type, error)` — coerces messy text to a struct via an LLM round-trip.
 - `(assert_semantic var "condition")` → bool, qualitative/natural-language constraint check.
+- `(semantic_match val (intent "..." body)...)` — routes execution based on semantic intent.
+- `(neural_circuit "prompt")` — executes logic defined by natural language instructions seamlessly.
+- `(ephemeral_circuit "prompt" body)` — provisions a narrowly specialized micro-model dynamically for a single task.
+- `(achieve "goal" body)` — teleological execution; dynamically searches for a solution rather than relying on imperative steps.
+- `(lazy_synthesize name (args...) "docstring")` — JIT function generation; synthesizes the implementation at runtime upon first invocation.
+- `(optimize_block metric body)` — auto-mutating runtime; monitors execution and automatically employs an LLM to rewrite and hot-swap its underlying Go implementation at runtime.
 
 ### Automation & I/O
 - `(read_file "path")` → `([]byte, error)` — use `(to_string b)`/`(bytes_to_string b)` (bug #17, fixed) to convert to a real Go string rather than the undocumented `(call string b)` escape hatch.
@@ -64,7 +70,7 @@ This skill is the canonical Zero language reference for any agent writing `.zero
 - `(to_int s)`, `(to_float s)` (bug #17, fixed) — deterministic string→number, no LLM round-trip needed; only reach for `fuzzy_cast` for genuinely messy/unstructured input.
 
 ### Data Structures & Strings
-- `(list items...)`, `(dict ("k" "v")...)` — work in any expression position now (a `return` value, a `print`/`call` argument, nested inside another `list`/`dict`, not just a `let` binding's direct value; bug #26, fixed 2026-07-24). Compound-expression **elements/values** (e.g. `(list (call one) "b")`, `(dict ("k" (call one)))`) construct correctly in the Go backend too (bug #27, fixed 2026-07-24). One gap remains: a `dict` **key** that is itself a compound expression (e.g. `(dict ((call k) "v"))`) still silently drops to empty, producing invalid Go (`map[string]string{: "v"}`) — bug #28, open, below the ROI floor. Stick to literal string/symbol keys until #28 ships.
+- `(list items...)`, `(dict ("k" "v")...)` — work in any expression position now (a `return` value, a `print`/`call` argument, nested inside another `list`/`dict`, not just a `let` binding's direct value; bug #26, fixed 2026-07-24). Compound-expression **elements/values** and **keys** construct correctly in the Go backend too (bugs #27 and #28, fixed).
 - `(append list item)`, `(map_set dict key val)`, `(map_delete dict key)`, `(map_get dict key)`, `(list_get list idx)` (improvement #60, fixed 2026-07-24) — `map_get` returns `""` on a missing key (Go zero-value semantics); `list_get` is bounds-checked and returns `""` on an out-of-range index rather than panicking, mirroring `cli_args`' existing safer convention.
 - `(str_split s sep)`, `(str_join list sep)`, `(regex_match pattern s)`
 
@@ -80,10 +86,10 @@ This skill is the canonical Zero language reference for any agent writing `.zero
 
 ## Known Bugs — must-follow workarounds
 
-As of 2026-07-24 (a later pass, after bugs #27 and #28), `bugs.md` has one open bug: #28, `dict` literal keys silently dropping compound expressions to empty (see the Data Structures section above) — filed below the ROI floor, so it's open but not scheduled. Every other bug is Done. Check `bugs.md` in the zero repo for current status before relying on this statement in a future session; do not assume it still holds without re-checking, since new bugs get filed as they're found. Notable fixes worth knowing about (all confirmed fixed, not just table-status "Done" — several had stale detail-section notes contradicting their own table status until the 2026-07-24 groom pass corrected them):
+As of 2026-07-30, all known bugs (including #28, #29, #30, and #31) are fully resolved. Check `bugs.md` in the zero repo for current status before relying on this statement in a future session; do not assume it still holds without re-checking, since new bugs get filed as they're found. Notable fixes worth knowing about:
 
 - **`list`/`dict` literals work in any expression position (bug #26, fixed 2026-07-24)**: no longer restricted to a `let` binding's direct value — a `return` value, `print`/`call` argument, or nesting inside another `list`/`dict` all work now.
-- **Go backend's `list`/`dict` elements/values handle compound expressions (bug #27, fixed 2026-07-24)**: `(list (call one) "b")` and `(dict ("k" (call one)))` no longer silently drop the compound element/value to an empty string. Dict *keys* still have this gap — see bug #28 above.
+- **Go backend's `list`/`dict` elements/values and keys handle compound expressions (bugs #27 and #28, fixed)**: `(list (call one) "b")` and `(dict ((call k) (call v)))` no longer silently drop the compound element/value/key to an empty string.
 - **`if`/`while` conditions support `and`/`or` and compound operands (bug #18, fixed 2026-07-24)**: `(if (and (> a 1) (< a 10)) ...)` and `(if (> (+ 2 3) 4) ...)` both work correctly, for both `if` and `while`. Landed as a side effect of improvement #53's IR refactor.
 - **`return`/`call` handle compound expressions correctly (bugs #13, #19, #20, all fixed)**: `(return (+ a b))`, `(return (call f x))`, and `(call f (call g 1))`-style nested arguments all work — no more need to bind to a `let` variable first purely to work around silent drops or `//line`-corrupted output.
 - **String↔number/bytes conversion primitives exist (bug #17, fixed)**: `(to_int s)`, `(to_float s)`, `(to_string b)`, `(bytes_to_string b)` — deterministic, no LLM round-trip needed. Only reach for `fuzzy_cast` for genuinely messy/unstructured input.
@@ -107,13 +113,17 @@ go run zero.go yourfile.zero
 go build -o app server.go
 ./app
 
-# Or interpret a cli_app script directly (improvement #49 Phase 1, added 2026-07-24):
+# Or interpret a cli_app script directly using Direct AST Execution (Phase 1):
 # no server.go ever written, no go build/go run invoked. Only a bounded subset
 # of the language is covered (control flow, functions, math/string/collection
 # ops) — see docs/direct_execution_design.md in the zero repo for exact
 # coverage; http_server/web_app roots and try_let-dependent primitives
 # (read_file, db_connect, etc.) aren't supported under -run yet.
 go run zero.go -run yourfile.zero
+
+# Or use Direct Binary Bytecode Generation and Execution (added 2026-07-29):
+go run zero.go -compile-bc yourfile.zero -o app.zbc
+go run zero.go -run-bc app.zbc
 ```
 
 On a semantic error, the transpiler prints a single JSON line to stdout and exits 1:
