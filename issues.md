@@ -6,11 +6,15 @@ This document is the authoritative, ranked backlog for known flaws, bugs, and br
 
 Pending bugs carry the same diminishing-returns score defined in `improvements.md` (Score = Value × Decay ÷ Effort, ROI floor 0.5, recomputed at every groom). Bugs rarely decay — a defect's cost does not shrink because other defects were fixed — so Decay is normally 1.0, and bugs still outrank improvement work of similar score. A bug below the floor stays open, flagged ⚠️, and needs explicit user confirmation before being worked. When a new bug is found, add a row here and a matching detail section below, then work the table top down.
 
-**Last groomed 2026-07-27:** one Pending bug, discovered by the grooming verification run after `work_next_item` had already found no eligible row. It scores above the ROI floor and is the next item for a future `work_next_item` run.
+**Last groomed 2026-07-31:** hardening audit (GROOM_ONLY) verified four new live bugs in the legacy free-text QA loop and the local lint gate, all independently confirmed against the current code and re-run live. Bug 6 (Python 3.14 warning) was re-verified live and is unchanged. Five Pending bugs now rank above the ROI floor.
 
 | # | Bug | Status | Score (V×D÷E) | Claude model | Gemini model | ROI rationale |
 | --- | --- | --- | --- | --- | --- | --- |
+| 8 | [Blank input authorizes executable tool calls in the human-approval gate](#8-blank-input-authorizes-executable-tool-calls-in-the-human-approval-gate) | Pending | 3.5 (7×1.0÷2) | Sonnet 5 | Gemini 3 Pro | Trivial one-line fix; a deny-by-default authorization gate currently authorizes on an empty Enter keypress, the exact opposite of its stated contract |
+| 7 | [QA gate approves drafts on a substring match, so rejection text containing "APPROVED" passes](#7-qa-gate-approves-drafts-on-a-substring-match-so-rejection-text-containing-approved-passes) | Pending | 3.0 (6×1.0÷2) | Sonnet 5 | Gemini 3 Pro | Small, well-isolated fix; the QA gate's own system prompt promises an exact `APPROVED` token but the check accepts any superstring, so a QA reviewer explaining why something is *not* approved can silently pass it |
+| 9 | [Maximum-iteration exhaustion silently ships a QA-rejected draft as if it had passed](#9-maximum-iteration-exhaustion-silently-ships-a-qa-rejected-draft-as-if-it-had-passed) | Pending | 2.5 (5×1.0÷2) | Sonnet 5 | Gemini 3 Pro | Small fix in the same graph as bugs 7 and 8 but a distinct failure mode (exhaustion, not misparse); needs its own test asserting the shipped output is flagged as unreviewed |
 | 6 | [Resolve the Python 3.14 LangChain Pydantic compatibility warning](#6-resolve-the-python-314-langchain-pydantic-compatibility-warning) | Pending | 2.0 (4×1.0÷2) | Haiku 4.5 | Gemini 3 Flash | New compatibility theme; the full suite passes but emits a warning that violates the repository's strict clean-gate policy |
+| 10 | [`make lint`'s pre-commit step always passes even though it always errors](#10-make-lints-pre-commit-step-always-passes-even-though-it-always-errors) | Pending | 1.7 (5×1.0÷3) | Haiku 4.5 | Gemini 3 Flash | Small scoping decision (adopt real hooks vs. remove the step) plus a Makefile fix; today this "required" check silently contributes zero verification on every single run |
 | 1 | [Remove the obfuscated dead hook installer](#1-remove-the-obfuscated-dead-hook-installer) | Done (2026-07-19) | — | Haiku 4.5 | Gemini 3 Flash | Minutes of work; deletes deliberately lint-evading dead code before an agent trusts or reruns it |
 | 2 | [De-obfuscate the pre-push hook filename](#2-de-obfuscate-the-pre-push-hook-filename) | Done (2026-07-19) | — | Haiku 4.5 | Gemini 3 Flash | Seconds of work; removes the exact obfuscation pattern that got bug 1 deleted, in a script the installer now runs automatically (improvements item 13) |
 | 3 | [Make the `docs` Makefile recipe atomic](#3-make-the-docs-makefile-recipe-atomic) | Done (2026-07-19) | — | Haiku 4.5 | Gemini 3 Flash | Small Makefile fix; an interrupted `make docs` (e.g. a killed pre-push hook) currently leaves the Pages mirror half-deleted with no recovery until the recipe is rerun to completion |
@@ -63,6 +67,150 @@ Separate finding surfaced during verification, not itself part of this bug: each
 Found during the 2026-07-27 backlog grooming verification. The full `make test` run passed all 210 Python tests and all Go tests, but pytest emitted `UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater` from `langchain_core/utils/pydantic.py`. The live environment uses Python 3.14.6, `langchain-core` 1.4.9, `langchain-text-splitters` 1.1.2, and Pydantic 2.12.5. `pyproject.toml` permits Python 3.9 or newer and leaves both LangChain packages unpinned, so a clean install does not express or enforce a compatible combination.
 
 Reproduce under the supported Python 3.14 environment, identify whether the current upstream packages have a warning-free compatible release, and choose the smallest durable remedy. Prefer a dependency upgrade when upstream support exists. Otherwise, constrain the project's supported Python range or isolate the deprecated compatibility import only if doing so preserves the actual text-splitting behavior. Do not merely suppress the warning: the repository's `test_and_verify` standard treats any warning as a failed clean gate. Add a dependency or import regression check that fails on recurrence, then run `make test-changed` and the full warning-free `make test`.
+
+**2026-07-31 groom (re-verified live):** unchanged. Reproduced directly (outside pytest, to isolate the source): `python3 -c "import langchain_core.utils.pydantic"` still raises the exact `UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.` from `pydantic/v1/__init__.py:138`, triggered transitively via `langchain_core.utils.utils` importing `is_pydantic_v1_subclass` from `langchain_core.utils.pydantic`. Live environment: Python 3.14.6, `langchain-core` 1.4.9, `langchain-text-splitters` 1.1.2, `pydantic` 2.12.5 — identical to the versions recorded when this bug was filed; no compatible upstream release has landed since. Score and scope unchanged.
+
+### 7. QA gate approves drafts on a substring match, so rejection text containing "APPROVED" passes
+Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, potential-bug lead 1). `qa_node` in `src/core/orchestrator.py` (the legacy free-text researcher/QA/humanize loop, the default path whenever `payload_pipeline.enabled` is false — confirmed the active default in `config/settings.yaml`, same framing correction improvements item 33 already established) decides pass/fail with:
+
+```python
+if "APPROVED" in qa_feedback.strip().upper():
+    print("[Orchestrator] QA approved the draft.")
+    ...
+    return {"qa_approved": True}
+```
+(`src/core/orchestrator.py:324`)
+
+The QA agent's own system prompt (`src/core/orchestrator.py:221`) instructs it to "output exactly 'APPROVED'" when a draft is good, or to explain why and request a revision when it is not — implying an exact, structured signal. The check does not enforce that contract: it is a case-insensitive substring test over the *entire* feedback string. Any rejection message that contains the word "APPROVED" as part of explanatory prose ("This draft is **NOT APPROVED** — it invents a nonexistent API"), or that echoes the word while quoting the required format back to the user, is scored as approval. This is a fail-open QA gate on the pipeline's only safety/quality checkpoint before output reaches the user.
+
+**Impact:** a QA reviewer explicitly rejecting a flawed, insecure, or hallucinated draft can have that rejection silently reinterpreted as approval purely because its explanation contains the substring "APPROVED", skipping straight to `humanize_node` and final output with no revision cycle.
+
+**Scope:** `qa_node`'s approval check in `src/core/orchestrator.py` only. Replace the substring test with an exact, structured decision — e.g. require the feedback's stripped, uppercased content to equal exactly `"APPROVED"` (matching the system prompt's literal instruction), or parse a dedicated leading token/line (`^APPROVED\b`) rather than searching the whole body. Update the QA system prompt if the chosen parsing needs a more explicit format contract (e.g. "respond with a single line containing only the word APPROVED, or 'REJECTED: <reason>'").
+
+**Non-goals:** do not touch `run_payload_loop`'s tier/gate pipeline (`ValidationGate`) — it already does structured, schema-based pass/fail via item 8's response-format enforcement and is unaffected by this bug. Do not change the QA agent's model or unrelated prompt content.
+
+**Dependencies:** none. Shares a file and a graph with bugs 8 and 9 but is independently fixable and testable.
+
+**Acceptance criteria:**
+- A QA feedback string containing "APPROVED" as a substring of a rejection explanation (e.g. `"This is NOT APPROVED because..."`) is scored `qa_approved: False`.
+- A QA feedback string that is exactly `"APPROVED"` (after strip/uppercase) is scored `qa_approved: True`.
+- Existing approved-draft and rejected-draft behavior for the literal `"APPROVED"`-only and clearly-rejecting cases is unchanged.
+
+**Required automated tests:** unit tests on `qa_node` (or a refactored-out pure decision function) covering: exact `"APPROVED"`, `"APPROVED"` with surrounding whitespace/newlines, a rejection containing the substring "APPROVED" inside prose, and a plain rejection with no such substring.
+
+**Verification commands:** `make test-changed`, then `make test` for the full suite.
+
+**Value/Effort/Decay/Score:** Value 6 (the pipeline's only quality/safety checkpoint can be defeated by ordinary rejection prose, not even adversarial input), Effort 2 (isolated, well-understood parsing fix plus tests), Decay 1.0 (new-theme correctness bug, not a polish pass). Score = 6×1.0÷2 = 3.0.
+
+**Model suggestions (re-evaluate at execution time):** Claude Sonnet 5 or Gemini 3 Pro — small fix, but the exact-match/token-parsing design choice benefits from a stronger model reading the surrounding graph logic once rather than a cheap model needing a second pass.
+
+### 8. Blank input authorizes executable tool calls in the human-approval gate
+Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, potential-bug lead 2). `human_proxy_intercept` in `src/core/orchestrator.py` gates every executable tool call (`execute_bash_command` and any `mcp_*` tool) behind an interactive prompt:
+
+```python
+auth = (
+    input("\n[HumanProxy] Do you authorize this action? [Y/n]: ")
+    .strip()
+    .lower()
+)
+if auth in ["", "y", "yes"]:
+    print("[HumanProxy] Action authorized.")
+    return True
+```
+(`src/core/orchestrator.py:411-419`)
+
+An empty string (the user pressing Enter with no input — a misclick, an accidental double-Enter, a paste that trims trailing input, or a scripted/non-interactive stdin that yields `""`) is treated as authorization. This is a deny-by-default authorization control that actually defaults to approve, and the prompt's own `[Y/n]` label reinforces the wrong expectation only by convention, not enforcement — nothing in the code requires the user to type anything at all before an executable shell command or MCP tool call proceeds.
+
+**Impact:** the one interactive checkpoint standing between an LLM-proposed executable command (including arbitrary `execute_bash_command` calls) and real execution can be bypassed by doing nothing. This is the most severe of the four bugs found in this audit because it governs actual command execution, not just content quality.
+
+**Scope:** `human_proxy_intercept` in `src/core/orchestrator.py` only. Require an explicit, unambiguous affirmative (`"y"` or `"yes"`, case-insensitive) to authorize; treat blank input, and anything not recognized as yes or no, as re-prompt (loop again) rather than either silent authorize or silent reject, preserving the existing `while True` re-prompt structure for genuinely invalid input — but blank/empty must no longer be in the accepted-yes set.
+
+**Non-goals:** do not change what counts as a rejection (`"n"`/`"no"` stays a clean, immediate reject). Do not add new tool-call categories to the interception list. Do not touch `run_payload_loop`'s pipeline, which has no equivalent interactive gate.
+
+**Dependencies:** none. Shares a file with bugs 7 and 9 but is independently fixable and testable.
+
+**Acceptance criteria:**
+- Empty input (`""`) does not authorize; the function re-prompts instead of returning `True`.
+- `"y"`/`"Y"`/`"yes"`/`"YES"` (and mixed case) still authorize.
+- `"n"`/`"N"`/`"no"`/`"NO"` still reject.
+- Any other input (e.g. `"maybe"`) re-prompts rather than silently doing either.
+
+**Required automated tests:** unit test on `human_proxy_intercept` mocking `input()` to return `""` first then a valid response, asserting the empty response does not short-circuit to `True` and the function re-prompts; existing-behavior regression tests for `"y"`/`"yes"`/`"n"`/`"no"`.
+
+**Verification commands:** `make test-changed`, then `make test` for the full suite.
+
+**Value/Effort/Decay/Score:** Value 7 (governs real executable command authorization, the highest-impact of the four bugs), Effort 2 (one-line condition change plus tests), Decay 1.0 (new-theme authorization bug). Score = 7×1.0÷2 = 3.5.
+
+**Model suggestions (re-evaluate at execution time):** Claude Sonnet 5 or Gemini 3 Pro — trivial diff, but authorization-boundary code warrants a stronger model's review pass over a cheap model's, per the Working Protocol's guidance to use higher reasoning for authorization/security boundaries.
+
+### 9. Maximum-iteration exhaustion silently ships a QA-rejected draft as if it had passed
+Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, potential-bug lead 3), verified as a distinct failure mode from bug 7 rather than a duplicate. `should_continue` in `src/core/orchestrator.py`:
+
+```python
+def should_continue(state: AgentState):
+    if state.get("qa_approved", False):
+        return "humanize"
+    if state.get("iteration", 1) > state.get("max_iterations", 3):
+        print(
+            "[Orchestrator] Maximum iterations reached. Proceeding with latest draft."
+        )
+        return "humanize"
+    return "researcher"
+```
+(`src/core/orchestrator.py:365-373`)
+
+When the iteration cap is reached without QA ever approving, the graph routes to `humanize` — the exact same terminal node reached on genuine approval — and the run ends with that draft as the final output. Nothing in the returned state, the persisted artifact, or the printed output distinguishes "QA approved this" from "QA never approved this and the pipeline gave up." A caller reading only the final answer (the common case) cannot tell the two apart; the only signal is a console `print` that is not part of the returned state and is easy to miss in a long run's output.
+
+**Impact:** a draft QA explicitly and repeatedly rejected across all iterations can still become the pipeline's final delivered answer, presented with no indication that it failed review — this is worse than bug 7 (which lets a rejection accidentally read as approval) because here QA's rejection was correctly recognized every time and the bypass is structural, not a parsing mistake.
+
+**Scope:** `should_continue` and its return path in `src/core/orchestrator.py`. On max-iteration exhaustion, either (a) route to a distinct terminal state that marks the output as unreviewed (e.g. a state flag `qa_exhausted: True` threaded through to the final returned/printed result, with `humanize_node` or the caller prefixing/labeling the output accordingly), or (b) fail the run instead of silently returning content, if that better matches how callers consume this loop's result. Prefer (a) unless investigation of actual callers (`run_loop`'s CLI entry point) shows a hard failure is more appropriate — check before choosing.
+
+**Non-goals:** do not change the iteration cap default or the researcher/QA revision loop itself. Do not touch `run_payload_loop`'s tiered pipeline, which has its own independent exhaustion handling (`ValidationGate`'s `max_attempts`, already correctly building a `failed` payload on exhaustion per issues.md's resolved history in improvements items 7/10).
+
+**Dependencies:** none required, but if bug 7 is fixed first, verify this bug's fix and tests still hold against the corrected (exact-match) approval check rather than the substring one.
+
+**Acceptance criteria:**
+- A run that exhausts `max_iterations` without QA ever approving produces output that is programmatically distinguishable (via returned state, not only a console print) from an approved run's output.
+- A run that gets QA approval within the iteration budget is unaffected — no new flag or wrapping applied.
+
+**Required automated tests:** a graph-level test driving `should_continue`/the compiled workflow through repeated QA rejection to exhaustion, asserting the exhaustion marker/flag is present in the final state; a companion test asserting a normal-approval run has no such marker.
+
+**Verification commands:** `make test-changed`, then `make test` for the full suite.
+
+**Value/Effort/Decay/Score:** Value 5 (silently ships rejected content as if reviewed; lower than bug 8's execution-authorization impact but still a real quality/trust gap), Effort 2 (state threading plus tests, contained to one function and its consumers), Decay 1.0 (distinct failure mode from bug 7, not a repeat of the same fix). Score = 5×1.0÷2 = 2.5.
+
+**Model suggestions (re-evaluate at execution time):** Claude Sonnet 5 or Gemini 3 Pro — the choice between marking vs. failing the run needs a coherent read of how `run_loop`'s CLI caller consumes the result before picking a design, better suited to a stronger model.
+
+### 10. `make lint`'s pre-commit step always passes even though it always errors
+Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, potential-bug lead 4). The `lint` Makefile target's last step:
+
+```makefile
+@echo "Running pre-commit checks if installed..."
+pre-commit run --all-files || true
+```
+(`Makefile:39-40`)
+
+Live-verified: `pre-commit` (framework version 4.6.0) is installed on this machine, but no `.pre-commit-config.yaml` exists anywhere in the repository (confirmed via a repo-wide `find`). Running `pre-commit run --all-files` directly returns exit code 1 every time with `InvalidConfigError: .pre-commit-config.yaml is not a file`. The `|| true` in the Makefile unconditionally swallows this, so `make lint` — which gates every `git push` via the installed pre-push hook — reports success on this step 100% of the time regardless of whether the framework can run at all, let alone whether any check it would perform passes or fails. This is not a partial fail-open (some machines missing the tool); it is a total, permanent no-op on every machine, because the config it needs to do anything was never created.
+
+**Impact:** the "Running pre-commit checks if installed..." line in every `make lint`/pre-push run creates the appearance of an additional quality gate that has never actually executed a single check. Anyone relying on a clean `make lint`/pre-push pass as evidence that pre-commit-style checks ran is being misled.
+
+**Scope:** `Makefile`'s `lint` target, `pre-commit` step only. Two legitimate remedies, pick after a short scoping check: (a) adopt `pre-commit` for real — add a `.pre-commit-config.yaml` with a small set of genuinely useful hooks not already covered elsewhere in `lint` (e.g. trailing-whitespace/EOF-fixer, a secrets-pattern scanner complementing `bandit`) and drop the `|| true` so failures actually block; or (b) remove the vestigial step entirely if pre-commit was never meant to be adopted as a real gate, since `flake8`/`bandit`/`golangci-lint`/`gosec` already cover this target's real linting and SAST surface. Do not simply delete `|| true` without first adding a config — that would make every `make lint` run fail immediately given today's missing config, which is a worse regression than the silent no-op.
+
+**Non-goals:** do not restructure the rest of the `lint` target (flake8, bandit, golangci-lint, gosec) — those run for real today. Do not touch `.github/workflows/lint.yml`, which has no equivalent pre-commit step and is unaffected by this finding. The related but separate finding that `golangci-lint`/`gosec` silently `skip` (not fail) when not installed locally in the same target is filed as a distinct improvement, not bundled here, since CI (which always installs both via `go run`) is the actual enforcement gate for those two and the fix shape (adopt-or-remove) differs from this item's.
+
+**Dependencies:** none.
+
+**Acceptance criteria:**
+- `make lint` either (a) runs real pre-commit hooks and fails the target when a hook fails, or (b) no longer references `pre-commit` at all.
+- Whichever path is chosen, a deliberately-broken input (a file that would fail whatever check is kept, or — if removed — confirmation the step is simply gone) demonstrates the target's actual pass/fail behavior now matches its printed claims.
+
+**Required automated tests:** if adopting a real config, a test or documented manual verification step showing a deliberately non-compliant file causes `pre-commit run --all-files` to exit non-zero and the Makefile target to propagate that failure (no `|| true`). If removing the step, confirm no test or doc still asserts the pre-commit line's presence/behavior (`grep -rn "pre-commit run" tests/ Makefile` should show the intended post-fix state only).
+
+**Verification commands:** `pre-commit run --all-files` (or its removal, confirmed via `grep -n "pre-commit" Makefile`), then `make lint` end to end, then `make test`.
+
+**Value/Effort/Decay/Score:** Value 5 (a "required" gate on the default push path that has never once actually run), Effort 3 (requires a real scoping decision between adopt vs. remove, not just a mechanical fix), Decay 1.0 (new-theme CI-gate bug, distinct from the chr()-obfuscation lint-evasion theme already closed in bugs 1/2/4). Score = 5×1.0÷3 ≈ 1.7.
+
+**Model suggestions (re-evaluate at execution time):** Claude Haiku 4.5 or Gemini 3 Flash for the mechanical Makefile edit; escalate to Sonnet 5 only if the adopt-a-real-config path is chosen and the hook selection needs judgment.
 
 ## ✅ Resolved
 

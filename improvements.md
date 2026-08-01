@@ -27,7 +27,7 @@ Pending rows are ranked by a diminishing-returns score, recomputed at every groo
 
 Scores apply to Pending rows only; Done, Closed, and Merged rows show `—`.
 
-**Last groomed 2026-07-27:** zero Pending improvements. All ranked rows are Done, Closed, or Merged, so there was nothing to re-score, re-rank, flag below the ROI floor, or select for `work_next_item`.
+**Last groomed 2026-07-31:** hardening audit (GROOM_ONLY) added ten new Pending improvements covering privacy, dependency reproducibility, operating-mode clarity, diagnostics, evaluations, and documentation accuracy, each independently verified against the current repository state. Nine rank above the ROI floor; one (narrowing the blanket `*.json` ignore) is a fourth instance of the already-shipped tracked-artifact-hygiene theme (items 2, 3, 35) and scores below the floor, flagged `⚠️` and requiring explicit user confirmation before being worked.
 
 | # | Improvement | Status | Score (V×D÷E) | Claude model | Gemini model | ROI rationale |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -72,6 +72,16 @@ Scores apply to Pending rows only; Done, Closed, and Merged rows show `—`.
 | 25 | [Preflight the provider in the legacy free-text loop](#25-preflight-the-provider-in-the-legacy-free-text-loop) | Merged into #33 (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Small change reusing item 5's module; the researcher/QA loop still burns iterations on a dead provider |
 | 29 | [Propagate the LLM timeout to the remaining call sites](#29-propagate-the-llm-timeout-to-the-remaining-call-sites) | Merged into #33 (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Small change reusing item 6's plumbing; four other `litellm.completion` sites still hang on the 600s default |
 | 30 | [Transport retry for the legacy loop and standalone call sites](#30-transport-retry-for-the-legacy-loop-and-standalone-call-sites) | Merged into #33 (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Small change reusing item 7's module; the legacy loop still burns iterations on transient provider blips |
+| 46 | [Move personal profile data out of the tracked public core](#46-move-personal-profile-data-out-of-the-tracked-public-core) | Pending | 2.0 (6×1.0÷3) | Sonnet 5 | Gemini 3 Pro | Small migration (example file plus gitignore plus doc pointer); a real, named, tracked personal profile currently ships in the distributable core |
+| 42 | [Replace the "Stealth Mode" AI-detector-evasion humanizer with a neutral clarity editor](#42-replace-the-stealth-mode-ai-detector-evasion-humanizer-with-a-neutral-clarity-editor) | Pending | 2.0 (6×1.0÷3) | Sonnet 5 | Gemini 3 Pro | Prompt-and-config-only change; removes the one place this codebase currently does exactly what the repository's own rules forbid adding |
+| 50 | [Rewrite absolute README guarantees as measurable behavior](#50-rewrite-absolute-readme-guarantees-as-measurable-behavior) | Pending | 2.0 (4×1.0÷2) | Haiku 4.5 | Gemini 3 Flash | Small doc edit; two README claims ("100% Local Privacy", "Zero-Hallucination Matrix") are unqualified absolutes and one is directly contradicted by live code |
+| 44 | [Pin and group the unpinned, ungrouped Python dependency list](#44-pin-and-group-the-unpinned-ungrouped-python-dependency-list) | Pending | 1.7 (5×1.0÷3) | Haiku 4.5 | Gemini 3 Flash | Small `pyproject.toml` restructure; every one of 25+ runtime dependencies is currently unpinned with no optional grouping |
+| 43 | [Add behavioral validation for rules, prompts, and agent command wrappers](#43-add-behavioral-validation-for-rules-prompts-and-agent-command-wrappers) | Pending | 1.3 (4×1.0÷3) | Sonnet 5 | Gemini 3 Pro | Small test-suite addition mirroring the existing skills-manifest validation pattern, extended to the three markdown surfaces it doesn't cover |
+| 51 | [Document provider, MCP, telemetry, and network-egress data flows](#51-document-provider-mcp-telemetry-and-network-egress-data-flows) | Pending | 1.3 (4×1.0÷3) | Haiku 4.5 | Gemini 3 Flash | New reference doc; no existing document currently answers "what leaves this machine and when" |
+| 45 | [Add explicit `local-only` and `connected` operating modes](#45-add-explicit-local-only-and-connected-operating-modes) | Pending | 1.25 (5×1.0÷4) | Sonnet 5 | Gemini 3 Pro | Medium effort touching config, provider selection, and the orchestrator; makes the "100% Local Privacy" claim (item 50) actually mechanically enforceable |
+| 48 | [Add a `doctor` CLI diagnostic command](#48-add-a-doctor-cli-diagnostic-command) | Pending | 1.25 (5×1.0÷4) | Sonnet 5 | Gemini 3 Pro | Medium effort new command; consolidates several already-known-fragile checks (Ollama reachability, git hooks, pre-commit config per issues.md bug 10) into one diagnostic |
+| 49 | [Add deterministic regression evals for the QA approval gate and the human-authorization gate](#49-add-deterministic-regression-evals-for-the-qa-approval-gate-and-the-human-authorization-gate) | Pending | 1.2 (6×1.0÷5) | Sonnet 5 | Gemini 3 Pro | Higher effort black-box eval harness; directly guards the exact two gates issues.md bugs 7, 8, and 9 just broke |
+| 47 | [Narrow the blanket `*.json` gitignore rule](#47-narrow-the-blanket-json-gitignore-rule) | ⚠️ below floor | 0.19 (3×0.125÷2) | Haiku 4.5 | Gemini 3 Flash | Fourth instance of the tracked/ignored-artifact-hygiene theme (items 2, 3, 35 already shipped); heavy decay (0.125) drops it below the floor — needs explicit user confirmation, re-scoping, or closing |
 
 ## Details
 
@@ -357,6 +367,258 @@ Found live during the 2026-07-20 groom immediately following item 38's own fix l
 **2026-07-23 groom (re-verified live):** unchanged. Score and scope unchanged.
 
 **Done 2026-07-23:** Expanded concurrent session safeguards. `work_next_item.md` and `resume_task.md` now enforce a concurrent-session check against *any* item selection by comparing `readlink /proc/<pid>/cwd` and running `git fetch` before confirming.
+
+### 42. Replace the "Stealth Mode" AI-detector-evasion humanizer with a neutral clarity editor
+Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, potential-improvement lead 1). `humanize_node` in `src/core/orchestrator.py` (the legacy free-text loop's terminal node, reached on both genuine QA approval and — per issues.md bug 9 — max-iteration exhaustion) sends every final draft through this prompt:
+
+```python
+print("\n--- Humanizing Output (Stealth Mode) ---")
+...
+prompt = f"Please humanize the following technical report/documentation. Maintain all facts but drastically increase burstiness and perplexity to bypass AI detectors:\n\n{draft_content}"
+```
+(`src/core/orchestrator.py:343-346`)
+
+This explicitly instructs the technical-writer agent to alter its output specifically to defeat AI-content detectors. The repository's own grooming controller instructions (this document's governing prompt) state "Do not add new detector-evasion features," implying existing ones are unwanted, not merely tolerated — this is the one place in the codebase that already does exactly that.
+
+**Impact:** every default-path run (recall: `payload_pipeline.enabled: false` is the default, so this is the common case, not an edge case — same framing correction item 33 already established) produces output deliberately engineered to evade AI-content detection, with no user-facing indication or opt-out. This is a policy/reputational risk independent of whether it works technically, and it sits awkwardly next to the codebase's own stated anti-detector-evasion stance.
+
+**Scope:** `humanize_node`'s prompt and its console label in `src/core/orchestrator.py`. Replace the burstiness/perplexity/detector-evasion framing with a neutral clarity-and-readability editing pass: preserve all facts, improve structure/flow/readability, without any instruction referencing AI detectors or evasion. Make the pass itself an explicit, named config toggle (e.g. `humanize.enabled`, default on since some post-processing is presumably still wanted) so it's an intentional, documented step rather than an unlabeled one.
+
+**Non-goals:** do not remove the humanize/editing step entirely — the item is to make its purpose legitimate, not to delete post-processing. Do not touch `run_payload_loop`'s tiered pipeline, which has no equivalent node. Do not change `humanize_node`'s failure-fallback behavior (returning the original draft on a failed call).
+
+**Dependencies:** none. Independent of issues.md bugs 7–9, though it touches the same function neighborhood in the same file — sequence to avoid merge friction with whichever ships first, but neither blocks the other.
+
+**Acceptance criteria:**
+- No prompt, log message, or comment anywhere in the codebase references bypassing, evading, or defeating AI/content detectors.
+- The editing pass still runs, is configurable, and preserves factual content (spot-checked by an existing or new test comparing key facts pre/post edit).
+- `grep -rn "detector\|perplexity\|burstiness" src/` returns nothing in a detector-evasion context.
+
+**Required automated tests:** a unit test on `humanize_node`'s prompt construction asserting the rendered prompt contains no detector-evasion language; a config test asserting the toggle can disable the pass (returning the draft unedited).
+
+**Verification commands:** `make test-changed`, then `make test`.
+
+**Value/Effort/Decay/Score:** Value 6 (removes a real policy-risk feature the repo's own rules disavow, on the default execution path), Effort 3 (prompt rewrite, config toggle, tests, doc update), Decay 1.0 (new-theme, first pass). Score = 6×1.0÷3 = 2.0.
+
+**Model suggestions (re-evaluate at execution time):** Claude Sonnet 5 or Gemini 3 Pro — the prompt rewrite is simple, but the config-toggle design and the judgment call about what "neutral clarity editing" should actually instruct benefit from a stronger model.
+
+### 43. Add behavioral validation for rules, prompts, and agent command wrappers
+Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, potential-improvement lead 2). `.agents/skills/**/SKILL.md` already has strong test coverage (`tests/test_skills_index.py`, `tests/test_skill_router.py`, `tests/test_generate_skills_manifest.py`) validating frontmatter and manifest consistency. Three adjacent markdown-driven surfaces this repository depends on have no equivalent: `.agents/rules/*.md` (the frontmatter-bearing rule files every agent must honor per `AGENTS.md`), `.agents/prompts/*.md` (the canonical `work_next_item`/`resume_task`/`groom_backlogs` prompts, whose thin wrappers in `.agents/skill_commands/`, `.claude/skills/`, and `.gemini/commands/` must stay pointed at them per `AGENTS.md`'s explicit "edit the canonical prompt only" instruction), and the wrapper files themselves (confirmed via `grep -rln "rules/" tests/*.py` returning nothing, and no test file matching `*prompt*`/`*wrapper*` in `tests/`).
+
+**Impact:** a malformed rule file (bad frontmatter, missing `name`/`description`), a wrapper that drifts out of sync with its canonical prompt (the exact failure `AGENTS.md` warns against), or a broken cross-reference between them can land silently — nothing in CI or `make test` would catch it, unlike the equivalent skill-manifest drift, which is already guarded.
+
+**Scope:** new test module (e.g. `tests/test_rules_and_prompts.py`) validating: every `.agents/rules/*.md` file has parseable frontmatter with `name` and `description`; every wrapper referenced by `AGENTS.md`'s Agent Entry Points / Prompt Library sections (`.agents/skill_commands/<name>/SKILL.md`, `.claude/skills/<name>` symlinks, `.gemini/commands/*`) resolves to and stays textually consistent with (not necessarily byte-identical — "points at" per the canonical-prompt design) its canonical `.agents/prompts/*.md` source.
+
+**Non-goals:** do not add new rules, prompts, or wrappers. Do not touch the existing skills-manifest validation, which already covers `.agents/skills/**`. Do not enforce prose style within rule/prompt bodies — only structural/reference integrity.
+
+**Dependencies:** none.
+
+**Acceptance criteria:**
+- A deliberately broken rule file (missing frontmatter) fails the new test suite.
+- A deliberately desynced wrapper (pointing at a prompt file that no longer exists, or whose content diverges from the "thin pointer" contract) fails the new test suite.
+- The full current, correct state of `.agents/rules/`, `.agents/prompts/`, and their wrappers passes with zero changes needed.
+
+**Required automated tests:** the new test module itself, run against the current repository state as the baseline pass.
+
+**Verification commands:** `make test-changed`, then `make test`.
+
+**Value/Effort/Decay/Score:** Value 4 (closes a real, currently-silent drift risk, but lower stakes than the QA/authorization bugs found in the same audit), Effort 3 (new test module, moderate discovery work to enumerate every wrapper location correctly). Decay 1.0 (extends an existing pattern to new surfaces, not a repeat of prior work on the same surface). Score = 4×1.0÷3 ≈ 1.3.
+
+**Model suggestions (re-evaluate at execution time):** Claude Sonnet 5 or Gemini 3 Pro — enumerating every wrapper location correctly (skill_commands, `.claude/skills` symlinks, `.gemini/commands`) requires careful cross-referencing against `AGENTS.md`'s own description, better suited to a stronger model on the first pass.
+
+### 44. Pin and group the unpinned, ungrouped Python dependency list
+Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, potential-improvement lead 3). `pyproject.toml`'s `[project.dependencies]` lists 25 packages (`chromadb`, `sentence-transformers`, `fastapi`, `litellm`, `langgraph`, `langchain-core`, `langsmith`, `mcp`, etc.) with zero version constraints — no `>=`, no `~=`, no upper bound — and one accidental duplicate (`redis` appears twice, lines matching `"redis"` both in the base list). There is also no lock file (`requirements.txt`/`poetry.lock`/`uv.lock`) anywhere in the repo. A clean install today can resolve to any version of any of these 25 packages released at install time, with no reproducibility guarantee and no separation between what a minimal local-only install needs versus what optional integrations (Google Docs, Postgres/pgvector, Redis/Celery) require.
+
+**Impact:** two sessions installing from the same `pyproject.toml` on different days can get materially different dependency graphs, and a future breaking release of any of the 25 packages (the exact class of problem issues.md bug 6 already hit with `langchain-core`/Pydantic on Python 3.14) has no pin to catch it before it reaches a clean install.
+
+**Scope:** `pyproject.toml` only. Add version constraints (minimum a lower bound matching the versions currently verified working in this environment — `langchain-core>=1.4`, `pydantic>=2.12`, etc. — captured live via `pip show` — do not guess versions, read them from the working environment at execution time) to every dependency; remove the duplicate `redis` entry; split `[project.optional-dependencies]` into meaningful groups (e.g. `core` for the always-needed minimum, `google` for the Google Docs/Drive integration, `postgres` for `psycopg2-binary`/`pgvector`, `queue` for `celery`/`redis`, keeping `dev` as-is) so a local-only install doesn't pull every optional integration's dependencies.
+
+**Non-goals:** do not add a full lock file (`uv.lock`/`poetry.lock`) in this item — that's a larger tooling adoption decision (which package manager) better scoped separately if wanted. Do not change any actual import code — this is a manifest-only change, verified by confirming every existing import still resolves against the newly-pinned versions.
+
+**Dependencies:** coordinates with item 45 (local-only/connected modes), which would naturally consume the same optional-group split — sequence either order, but if 45 ships first, this item should align its group names with whatever 45 defines rather than inventing a second taxonomy.
+
+**Acceptance criteria:**
+- Every entry in `[project.dependencies]` has an explicit version constraint.
+- The duplicate `redis` entry is removed.
+- `[project.optional-dependencies]` has at least `core`, one integration-specific group per major optional integration, and the existing `dev` group.
+- `pip install -e .` (core only) and `pip install -e ".[dev]"` both succeed in a clean virtualenv.
+
+**Required automated tests:** no new runtime test surface (manifest-only change); verification is a clean-install smoke check, not a pytest addition. If a CI job doesn't already do a clean-install smoke test, consider adding one as part of this item's scope — check `.github/workflows/*.yml` first to avoid duplicating existing coverage.
+
+**Verification commands:** `python3 -m venv /tmp/clean-venv && /tmp/clean-venv/bin/pip install -e .` (core), then repeat with `.[dev]`, then `make test`.
+
+**Value/Effort/Decay/Score:** Value 5 (real reproducibility gap across 25 unpinned packages, one already-demonstrated breakage class per bug 6), Effort 3 (mechanical but requires checking real working versions for every package, plus the grouping design). Decay 1.0 (new-theme, first pass on dependency reproducibility). Score = 5×1.0÷3 ≈ 1.7.
+
+**Model suggestions (re-evaluate at execution time):** Claude Haiku 4.5 or Gemini 3 Flash — mechanical manifest editing once the real installed versions are read from the environment; no architectural judgment needed beyond the optional-group split.
+
+### 45. Add explicit `local-only` and `connected` operating modes
+Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, potential-improvement lead 4), and directly motivated by a live contradiction found in the same audit: `README.md` claims "**100% Local Privacy:** The core orchestrator and vector databases ... operate entirely locally," yet `qa_node` in `src/core/orchestrator.py` unconditionally instantiates a LangSmith `Client()` on every QA pass (`src/core/orchestrator.py:318-322`) — a third-party cloud telemetry service — guarded only by a bare `except Exception: pass` that swallows failures rather than a config flag that prevents the attempt. Confirmed live: `grep -rn "local_only\|local-only\|connected_mode\|LOCAL_ONLY" config/ src/` returns nothing anywhere in the codebase — there is no config surface that mechanically enforces or even declares a local-only guarantee; the README's claim currently rests entirely on no external integration happening to be configured with credentials, not on any code path refusing to attempt one.
+
+**Impact:** the README's headline privacy claim is not actually enforced by any mechanism — it is incidentally true only when no optional integration (LangSmith, Google Docs, a hosted LLM provider) has credentials present. A user who provides a `LANGCHAIN_API_KEY` for legitimate debugging, or who is testing an optional integration, has no way to signal "but keep everything else local" — every integration point is implicitly all-or-nothing based on whatever environment variables happen to be set.
+
+**Scope:** a new top-level config setting (e.g. `operating_mode: local_only | connected`, default `local_only` to match the README's current claim) read once at startup; every optional network-touching integration point (LangSmith `Client()` instantiation in `qa_node`, any hosted LiteLLM provider selection, Google Docs/Drive calls) checks the mode before attempting a connection rather than relying on credential absence as an implicit gate. `local_only` mode should make these integrations hard-disabled (skip the attempt entirely, not just swallow its failure) rather than soft-disabled.
+
+**Non-goals:** do not redesign the provider/model selection system itself (`documentation/model_tool_roster.md`'s existing roster). Do not remove any integration — only gate whether it's attempted. Local Ollama calls are unaffected either way (already local).
+
+**Dependencies:** coordinates with item 44 (dependency grouping) — the optional-dependency groups that item defines are a natural mapping to which integrations `connected` mode enables. Also directly resolves the specific LangSmith instantiation this item's own investigation found, which item 50 (README rewrite) should reference once this ships (or describe honestly as unenforced if this item hasn't shipped yet).
+
+**Acceptance criteria:**
+- With `operating_mode: local_only` (the default), no LangSmith client instantiation, hosted-provider call, or other network-egress attempt happens anywhere in the codebase — verified by running a QA pass with mocked network access entirely blocked and confirming no connection attempt is made (not just that a failure is swallowed).
+- With `operating_mode: connected`, existing optional-integration behavior is unchanged.
+- The setting is documented in `config/settings.yaml`'s comments and in `documentation/model_tool_roster.md`.
+
+**Required automated tests:** a test asserting `qa_node` does not instantiate `Client()` at all when `local_only` is set (not just that its failure is caught); a test asserting `connected` mode preserves current behavior; a config-loader test for the new setting's default and validation.
+
+**Verification commands:** `make test-changed`, then `make test`.
+
+**Value/Effort/Decay/Score:** Value 5 (makes a currently-unenforced privacy claim actually mechanically true), Effort 4 (touches config loader, multiple call sites across at least `orchestrator.py`, provider selection, and possibly `google_docs`-related scripts — genuinely cross-module). Decay 1.0 (new-capability item opening a new curve, not polish). Score = 5×1.0÷4 = 1.25.
+
+**Model suggestions (re-evaluate at execution time):** Claude Sonnet 5 or Gemini 3 Pro — cross-module wiring across config, provider selection, and multiple integration call sites; the Working Protocol calls for higher reasoning on privacy-boundary work like this.
+
+### 46. Move personal profile data out of the tracked public core
+Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, potential-improvement lead 5). `USER_PROFILE.md` is tracked in git at the repository root (`git ls-files | grep -i USER_PROFILE` confirms it) and contains real personal data beyond what `.agents/rules/no_pii.md` permits ("The only exceptions permitted are professional names and email addresses"): a full name, a LinkedIn profile URL, a specific target base salary figure, and a detailed professional history — committed to what `AGENTS.md`'s repository header identifies as `github.com/howlcipher/ai_knowledge_library`. The email address is already correctly redacted in-file ("See pii.yaml"), showing the pattern for handling sensitive fields exists but was not applied to the rest of the document.
+
+**Impact:** every clone of this repository — including any public fork, mirror, or the GitHub-hosted copy itself if the remote is or becomes public — carries a real individual's name, LinkedIn profile, salary target, and career history as tracked source, not as an ignored local file. This is the exact class of exposure `no_pii.md` and `AGENTS.md`'s Career and Personal Profile routing note assume is being guarded against, but the guard was never applied to this specific file.
+
+**Scope:** introduce `USER_PROFILE.example.md` (a sanitized template with placeholder values, structurally identical to the real file, tracked in git) as the distributable core's version; add `USER_PROFILE.md` to `.gitignore`; migrate the current real content to the now-untracked local file (`git mv` won't work once gitignored — use `git rm --cached USER_PROFILE.md` after copying its content out, verifying the working file survives); update every reference to `USER_PROFILE.md` (`AGENTS.md`'s Domain Routing section, `career_assistant`/SKILL.md references, the job-hunting pipeline script) to note the local-overlay pattern. Preserve the file's actual content — it must survive as a real local file the user still has, just no longer tracked.
+
+**Non-goals:** do not delete or alter the real profile content itself — only its tracked status changes. Do not touch `pii.yaml` (referenced but not found in this audit's file listing — verify its existence and tracked status as part of this item's investigation step, since if it exists and is tracked it may have the identical problem). Do not change the `career_assistant` skill's grounding rules.
+
+**Dependencies:** none, but investigate `pii.yaml`'s existence/tracked status first since `USER_PROFILE.md` references it as the redaction destination for the email — if it doesn't exist yet, this item should create it as part of the same local-overlay design rather than leaving a dangling reference.
+
+**Acceptance criteria:**
+- `git ls-files | grep -i USER_PROFILE` returns only `USER_PROFILE.example.md`, not the real file.
+- The real `USER_PROFILE.md` still exists locally on disk with its current content, gitignored.
+- A fresh clone of the repository contains no real personal data anywhere in a tracked file.
+- `AGENTS.md` and any script/skill referencing `USER_PROFILE.md` documents the local-overlay pattern (copy `USER_PROFILE.example.md` to `USER_PROFILE.md` and fill it in).
+
+**Required automated tests:** a test asserting `USER_PROFILE.md` is present in `.gitignore` and `USER_PROFILE.example.md` is tracked; a test scanning tracked files for the real name/LinkedIn/salary strings currently in the file, asserting none appear (a targeted regression guard, not a general PII scanner, to avoid false positives on unrelated content).
+
+**Verification commands:** `git ls-files | grep -i user_profile`, `git check-ignore -v USER_PROFILE.md`, `make test-changed`, `make test`.
+
+**Value/Effort/Decay/Score:** Value 6 (real, currently-tracked personal data exceeding the repo's own PII rule, in the public distributable core), Effort 3 (file split, gitignore rule, reference updates, migration — mechanical but must be done carefully to not lose the real local data). Decay 1.0 (new-theme privacy-boundary fix). Score = 6×1.0÷3 = 2.0.
+
+**Model suggestions (re-evaluate at execution time):** Claude Sonnet 5 or Gemini 3 Pro — privacy-boundary work per the Working Protocol's model-selection guidance; also the untrack-without-data-loss sequencing (copy before `rm --cached`) benefits from careful execution.
+
+### 47. Narrow the blanket `*.json` gitignore rule
+Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, potential-improvement lead 6), re-surfacing a decision improvements item 3 explicitly deferred ("the blanket `*.json` ignore rule silently hides `logs/payloads/**` pipeline run evidence from git; decide deliberately whether that should stay ignored"). Live-verified: `.gitignore` line 9 is a bare `*.json` with only two negations (`config/schemas/*.schema.json`, `.agents/skills.json`). The repo root today has six untracked, gitignored JSON scratch/output files sitting invisibly outside version control: `check-runs.json`, `runs.json`, `jobs.json`, `test_jobs.json`, `issues.json` (plus `credentials.json`/`token.json`, which are correctly and deliberately ignored real credential files, not part of this finding). This is the same "one-off scratch files travel invisibly" pattern items 2, 3, and 35 already found and fixed for non-JSON extensions — just never applied to `.json` itself, because the blanket rule already hides the evidence of the problem from `git status`.
+
+**Impact:** low — this is hygiene, not correctness or security (nothing is silently lost; these files were never meant to be tracked). The practical cost is invisibility: `git status` shows a clean tree even when several stray root-level JSON files exist, so nobody notices them accumulating, and any deliberately-desired tracked JSON file dropped at the repo root by mistake would also be silently swallowed with no warning.
+
+**Scope:** narrow `.gitignore`'s `*.json` rule to the specific known scratch patterns/paths actually needing it (`credentials.json`, `token.json`, `client_secret.json` are already listed explicitly above the blanket rule per the existing file) rather than every JSON file repository-wide; decide deliberately, as item 3 deferred, whether `logs/payloads/**` (pipeline run evidence) should gain an explicit ignore rule of its own (keeping it ignored, per item 3's prior reasoning that durable conclusions already live in the backlogs) or a negation making it visible; clean up or relocate the current stray root JSON scratch files per the same evidence-vs-scratch triage item 3 used.
+
+**Non-goals:** do not touch the `credentials.json`/`token.json`/`client_secret.json` explicit ignores — those are correct and deliberate. Do not change `config/schemas/*.schema.json` or `.agents/skills.json` tracking.
+
+**Dependencies:** shares its root cause and prior deferred decision with items 2, 3, and 35 (all Done) — this is their natural fourth instance, which is exactly why its Decay is heavily discounted below.
+
+**Acceptance criteria:**
+- `.gitignore` no longer has a bare `*.json` blanket rule; JSON files not matching a specific, justified pattern are trackable and visible in `git status` by default.
+- The current stray root JSON files are triaged (deleted if scratch, relocated if evidence) per item 3's precedent.
+- `logs/payloads/**`'s visibility is a deliberate, documented decision, not an accidental side effect of the blanket rule.
+
+**Required automated tests:** a test asserting `git check-ignore` behavior for the specific intended-ignored patterns (credentials-style files) while a probe JSON file at the repo root is *not* ignored.
+
+**Verification commands:** `git check-ignore -v credentials.json`, `git status` after removing the blanket rule to confirm no unexpected large tracked-file surprise, `make test`.
+
+**Value/Effort/Decay/Score:** Value 3 (cosmetic hygiene, no functional or security impact — same low-value class as its predecessors). Effort 2. Decay 0.125 (fourth instance of the items 2/3/35 tracked-artifact-hygiene theme: 1.0 → 0.5 → 0.25 → 0.125). Score = 3×0.125÷2 ≈ 0.19 — **below the 0.5 ROI floor.**
+
+**⚠️ Below floor — requires explicit user confirmation, re-scoping, or closing before being worked**, per the Working Protocol's ROI floor rule. Recommendation: close unless a concrete recurrence (a deliberately-tracked JSON file getting silently swallowed) is observed, at which point that concrete example gives the item a sharper, higher-value scope than this speculative filing.
+
+**Model suggestions (re-evaluate at execution time):** Claude Haiku 4.5 or Gemini 3 Flash if confirmed — small, mechanical gitignore edit.
+
+### 48. Add a `doctor` CLI diagnostic command
+Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, potential-improvement lead 7). Confirmed live: no `doctor` command exists anywhere (`grep -rln "doctor" cmd/ scripts/ Makefile` returns nothing). Several environment-health checks are currently either manual, scattered, or entirely undiscovered until they silently misbehave: Ollama server/tag reachability (already implemented as `provider_preflight.py`, but only runs mid-pipeline, not as a standalone check), git hook installation status (`install_pre_commit_hook.py`/`install_pre_push_hook.py`, no way to verify both are actually installed without reading `.git/hooks/` by hand), and — directly surfaced by this same audit — the fact that `pre-commit run --all-files` errors immediately on this machine because no `.pre-commit-config.yaml` exists (issues.md bug 10), which nobody would discover without either reading the Makefile closely or hitting this audit.
+
+**Impact:** environment misconfiguration (dead Ollama server, missing git hooks, a non-functional pre-commit setup, an unpinned dependency resolving to an incompatible version per items 44/bug 6) is currently discovered reactively — mid-pipeline-run, mid-push, or via an audit like this one — rather than through one command a user or a fresh session can run proactively at the start of a task.
+
+**Scope:** a new `doctor` subcommand (natural home: `cmd/installer`, alongside the existing `Install()` flow, or a new `scripts/doctor.py` if a Python-side check is more natural given most of what it inspects is Python-side config) that checks and reports, without modifying anything: Python/Go toolchain versions against `pyproject.toml`'s `requires-python` and `go.mod`; Ollama reachability and configured tier-model tag availability (reusing `provider_preflight.py`'s existing logic where possible); git hook installation status for both `pre-commit` and `pre-push`; whether a `.pre-commit-config.yaml` exists if the repository's `make lint` step still depends on one (coordinate with however issues.md bug 10 is resolved — if that item removes the pre-commit step entirely, this check should too); Antigravity (`agy`) and local Ollama live availability per `documentation/model_tool_roster.md`'s discovery pattern.
+
+**Non-goals:** do not have `doctor` auto-fix anything in this item — report-only first; auto-remediation (e.g. auto-running the hook installers) can be a follow-on if wanted. Do not duplicate `provider_preflight.py`'s pipeline-time role — `doctor` is a standalone, user-invoked command, not part of the payload loop.
+
+**Dependencies:** should reflect whatever issues.md bug 10 (pre-commit fail-open) decides — sequence bug 10 first if both are being worked close together, so `doctor`'s pre-commit check matches the final design rather than needing a follow-up edit.
+
+**Acceptance criteria:**
+- Running the new command on a healthy environment reports all checks passing.
+- Running it against a deliberately broken environment (e.g. `.git/hooks/pre-push` removed, or Ollama stopped) reports that specific failure with an actionable message, not a generic error.
+- The command modifies nothing — verified by a `git status`/file-mtime check before and after a run.
+
+**Required automated tests:** unit tests per check (mocking the underlying reachability/file-existence calls) asserting both the pass and fail message paths; an integration-style test running the full command against a controlled fixture environment.
+
+**Verification commands:** the new command itself, run against both a healthy and a deliberately-degraded local state; `make test-changed`; `make test`.
+
+**Value/Effort/Decay/Score:** Value 5 (consolidates several already-demonstrated-fragile checks into one proactive diagnostic), Effort 4 (new command, multiple check implementations, tests — genuinely medium-sized). Decay 1.0 (new-capability item). Score = 5×1.0÷4 = 1.25.
+
+**Model suggestions (re-evaluate at execution time):** Claude Sonnet 5 or Gemini 3 Pro — deciding the right home (Go installer vs. Python script) and reusing `provider_preflight.py` correctly without duplicating logic benefits from a stronger model's first pass.
+
+### 49. Add deterministic regression evals for the QA approval gate and the human-authorization gate
+Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, potential-improvement lead 8, deliberately narrowed in scope from the audit's broader suggestion). Confirmed live: no `evals`/`eval` directory or equivalent exists anywhere in the repository (`find . -maxdepth 2 -iname "*eval*"` returns nothing). This same audit found three live bugs (issues.md bugs 7, 8, 9) in exactly the two gates this item proposes covering — the QA approval decision and the human command-authorization decision — each caught only by manual code reading, not by any existing automated check operating at the black-box behavioral level (unit tests on the surrounding functions exist and will be added alongside each bug fix, but a dedicated eval suite treating these two gates as security-relevant decision boundaries, exercised against a table of adversarial and edge-case inputs, does not yet exist as a distinct, intentionally-adversarial artifact).
+
+**Impact:** the exact class of bug this audit found (a fail-open decision boundary) has no standing regression protection beyond whatever unit tests happen to be added alongside each individual fix. A future change to `qa_node` or `human_proxy_intercept` could reintroduce a similar fail-open pattern (a different substring, a different blank-input handling mistake) without any test suite designed to specifically probe that class of failure.
+
+**Scope:** a new `tests/evals/` (or `evaluations/`) directory with a table-driven eval harness covering two decision boundaries: (a) the QA approval gate — a table of QA feedback strings (exact `APPROVED`, rejections containing `APPROVED` as a substring, empty string, adversarial strings designed to look like approval, genuine multi-sentence rejections) with the expected `qa_approved` boolean for each; (b) the human-authorization gate — a table of `input()` responses (blank, `y`, `yes`, `n`, `no`, mixed case, garbage, injection-style strings) with the expected authorize/reject/reprompt outcome for each. Deliberately scoped narrower than the audit's original broader suggestion (routing, retrieval, grounding, prompt-injection evals) — those are real gaps too but are separate, larger efforts each deserving their own item once this one establishes the harness pattern; do not fold them in here.
+
+**Non-goals:** do not build eval coverage for skill routing, retrieval/grounding, or general prompt-injection handling in this item — explicitly out of scope, left for future items once this one's harness pattern is proven. Do not replace the per-bug unit tests issues.md bugs 7/8/9 will add — this is a complementary, intentionally-adversarial table, not a substitute for standard unit coverage.
+
+**Dependencies:** should ship after (or alongside, in the same session if convenient) issues.md bugs 7, 8, and 9, since the eval table's "expected outcome" column needs the corrected behavior to assert against, not the current buggy behavior.
+
+**Acceptance criteria:**
+- The eval harness runs as part of `make test` (or a clearly documented separate `make eval` target if the team prefers evals kept distinct from unit tests — decide and document either way).
+- Every row in both tables passes against the corrected (post-bug-fix) gate behavior.
+- Re-running the harness against the pre-fix code (e.g. via `git stash` of the fix, for a one-time manual sanity check during implementation) demonstrably fails the rows that motivated bugs 7, 8, and 9 — proving the harness would have caught them.
+
+**Required automated tests:** the harness itself is the test surface; no additional meta-tests needed beyond confirming it's wired into the test run.
+
+**Verification commands:** the new eval command/target directly, then `make test`.
+
+**Value/Effort/Decay/Score:** Value 6 (directly guards the exact two gates this audit found broken, with adversarial-style coverage broader than ordinary unit tests), Effort 5 (designing a good table-driven harness pattern for the first time, even though scope is narrowed to two gates, is more design work than a typical item). Decay 1.0 (new-capability item opening the eval-harness pattern). Score = 6×1.0÷5 = 1.2.
+
+**Model suggestions (re-evaluate at execution time):** Claude Sonnet 5 or Gemini 3 Pro — designing adversarial test tables for security-relevant decision boundaries is exactly the kind of judgment-heavy work the Working Protocol reserves for higher-reasoning models.
+
+### 50. Rewrite absolute README guarantees as measurable behavior
+Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, potential-improvement lead 9). `README.md` contains at least two unqualified absolute claims: "**Zero-Hallucination Matrix:** The AI is strictly bound by local markdown rules..." and "**100% Local Privacy:** The core orchestrator and vector databases ... operate entirely locally... never exfiltrated to a third-party training set." The second claim is directly contradicted by live code found in the same audit: `qa_node` in `src/core/orchestrator.py` unconditionally attempts to instantiate a LangSmith `Client()` — a third-party cloud service — on every QA pass (see item 45's finding), guarded only by a bare exception swallow, not by any mechanism that makes "100% local" actually true today. "Zero-Hallucination Matrix" is also an absolute a rules-following LLM system cannot actually guarantee — being "strictly bound by" rules reduces but does not eliminate hallucination risk.
+
+**Impact:** a user reading the README forms an expectation ("nothing ever leaves this machine," "hallucinations are impossible") that the current implementation does not actually deliver — this is exactly the classification rule's borderline case between a documentation improvement and a bug: since neither claim is a specific, currently-enforced authorization/security guarantee being actively relied upon for an access-control decision (rather, they're marketing-style headline claims), this is filed as an improvement, not a bug — but the LangSmith contradiction found alongside item 45 means the "100% Local" wording specifically should not ship unchanged.
+
+**Scope:** `README.md`'s feature-list section only. Rewrite "100% Local Privacy" to describe actual current behavior and defaults precisely (e.g. "runs entirely on local models and local vector stores by default; optional integrations like LangSmith or hosted LLM providers are opt-in via configuration" — precise wording should follow whatever item 45 ships, or describe the current unenforced state honestly if 45 hasn't shipped yet). Rewrite "Zero-Hallucination Matrix" to describe the actual mechanism and its real limits (e.g. "responses are grounded against local rule and skill files enforced at the prompt level, reducing but not eliminating hallucination risk").
+
+**Non-goals:** do not do a full README audit/rewrite in this item — scope is limited to these two specific absolute claims. Do not change any code behavior — this is a documentation-only item unless item 45 ships first, in which case this item's wording should simply describe 45's real enforcement rather than needing new code itself.
+
+**Dependencies:** soft dependency on item 45 — if 45 ships first, this item's "100% Local Privacy" rewrite can honestly describe real enforcement; if this item ships first, it should describe the current best-effort/unenforced state honestly rather than waiting indefinitely on 45.
+
+**Acceptance criteria:**
+- Neither claim uses unqualified absolute language ("100%", "Zero-", "never", "always") without a precise, currently-true qualifier.
+- The rewritten claims accurately describe current behavior, verified by re-reading the relevant code paths at the time of the edit (not assumed from this filing, which may be stale by execution time).
+
+**Required automated tests:** none required (documentation-only), but consider a lightweight test asserting the README doesn't reintroduce specific banned absolute phrases if that pattern is judged worth guarding (optional, not required for acceptance).
+
+**Verification commands:** manual review of the edited README section against the current, live-verified behavior of `qa_node` and any other referenced mechanism.
+
+**Value/Effort/Decay/Score:** Value 4 (fixes a real, live-contradicted claim plus one unfalsifiable one; moderate user-trust impact), Effort 2 (small, targeted doc edit). Decay 1.0 (distinct claims from item 40's already-shipped badge-accuracy fix — different theme, a number-accuracy badge vs. prose guarantee language — so full decay, not a repeat pass). Score = 4×1.0÷2 = 2.0.
+
+**Model suggestions (re-evaluate at execution time):** Claude Haiku 4.5 or Gemini 3 Flash — small, well-bounded prose edit once the accurate current behavior is confirmed.
+
+### 51. Document provider, MCP, telemetry, and network-egress data flows
+Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, potential-improvement lead 10). Confirmed live: no document in `documentation/` addresses telemetry, network egress, or data-flow topics (`find documentation -iname "*telemetry*" -o -iname "*network*" -o -iname "*data_flow*" -o -iname "*privacy*"` returns nothing). Yet the codebase has several real network-touching surfaces a user or auditor currently has to read source code to discover: LiteLLM calls to whichever hosted provider a configured `tier_model`/`default_model` resolves to (OpenAI, Anthropic, Gemini, or local Ollama, depending on config); MCP server subprocesses (`active_mcps` in `config/settings.yaml`, e.g. `memory`, `fetch` — the `fetch` server in particular can make arbitrary outbound HTTP requests on the model's behalf); the LangSmith `Client()` instantiation found in items 45/50; local SQLite telemetry (`telemetry_logger.py`'s `api_telemetry`/`gate_failures` tables, confirmed local-only but undocumented as such); and Google Docs/Drive OAuth flows (`scripts/setup_google_docs_auth.py`).
+
+**Impact:** a user (or the AI agent itself, per this repository's own Epistemic Skepticism and Grounding Protocol rules, which call for verifying claims rather than guessing) currently has no single reference answering "what leaves this machine, when, and under what configuration" — they would need to read `orchestrator.py`, `settings.yaml`, `telemetry_logger.py`, and the Google Docs scripts independently to reconstruct the answer, which is exactly what this audit had to do to write items 45 and 50.
+
+**Scope:** new `documentation/data_flows.md` (or similarly named) reference doc enumerating each network-touching surface found above: what it is, what data it sends, when it's triggered, what configuration controls it (pointing at item 45's `operating_mode` setting if that ships, or noting today's credential-presence-based implicit gating if it hasn't), and whether it's on by default. Cross-link from `README.md`'s privacy claims (coordinating with item 50) and from `AGENTS.md`'s Domain Routing.
+
+**Non-goals:** do not change any code behavior — pure documentation. Do not attempt to document every third-party package's own internal network behavior (e.g. `sentence-transformers`' model-download-on-first-use) exhaustively — focus on this repository's own deliberate integration points, noting well-known indirect ones (like first-run model downloads) briefly rather than exhaustively.
+
+**Dependencies:** soft dependency on items 45/50 for cross-linking, but independently writable by directly reading the current code — do not block on either shipping first if this item is picked up on its own.
+
+**Acceptance criteria:**
+- The new doc lists every network-touching integration point identified above (LiteLLM hosted providers, MCP servers, LangSmith, Google Docs/Drive OAuth) with what data flows and under what trigger/config.
+- `README.md`'s privacy-related claims (item 50) link to this doc rather than restating details inline.
+- A fresh re-read of `orchestrator.py`/`settings.yaml`/`telemetry_logger.py` at review time confirms the doc's claims match current code (self-verification step before marking done).
+
+**Required automated tests:** none required (documentation-only); optionally, a lightweight test asserting the doc file exists and is linked from `README.md`, if the team wants drift protection.
+
+**Verification commands:** manual cross-check of the new doc's claims against the current source of each described integration point.
+
+**Value/Effort/Decay/Score:** Value 4 (closes a real "what leaves this machine" documentation gap, directly useful for both users and future audits like this one), Effort 3 (moderate research-and-write effort enumerating every real integration point accurately). Decay 1.0 (new-theme documentation, no prior pass on this specific topic). Score = 4×1.0÷3 ≈ 1.3.
+
+**Model suggestions (re-evaluate at execution time):** Claude Haiku 4.5 or Gemini 3 Flash — mostly enumeration and accurate description once the integration points are identified (already done by this audit); escalate only if the writing surfaces an ambiguous data-flow case needing code-reading judgment.
 
 ## ✅ Completed
 
