@@ -32,6 +32,7 @@ class AgentState(TypedDict):
     tool_calls: Optional[List[Any]]
     iteration: int
     qa_approved: bool
+    qa_exhausted: bool
     max_iterations: int
 
 
@@ -363,6 +364,11 @@ class Orchestrator:
                 return {"draft_content": message.content}
             return {"draft_content": draft_content}
 
+        def exhausted_node(state: AgentState):
+            print("\n[Orchestrator] Marking draft as unreviewed due to QA exhaustion.")
+            draft_content = "[UNREVIEWED DRAFT - QA REJECTED]\n" + state.get("draft_content", "")
+            return {"draft_content": draft_content, "qa_exhausted": True}
+
         def should_continue(state: AgentState):
             if state.get("qa_approved", False):
                 return "humanize"
@@ -370,18 +376,20 @@ class Orchestrator:
                 print(
                     "[Orchestrator] Maximum iterations reached. Proceeding with latest draft."
                 )
-                return "humanize"
+                return "exhausted"
             return "researcher"
 
         workflow.add_node("researcher", researcher_node)
         workflow.add_node("qa", qa_node)
         workflow.add_node("humanize", humanize_node)
+        workflow.add_node("exhausted", exhausted_node)
 
         workflow.set_entry_point("researcher")
         workflow.add_edge("researcher", "qa")
         workflow.add_edge("humanize", END)
+        workflow.add_edge("exhausted", END)
         workflow.add_conditional_edges(
-            "qa", should_continue, {"researcher": "researcher", "humanize": "humanize"}
+            "qa", should_continue, {"researcher": "researcher", "humanize": "humanize", "exhausted": "exhausted"}
         )
 
         memory = MemorySaver()
@@ -680,6 +688,7 @@ class Orchestrator:
             "tool_calls": None,
             "iteration": 1,
             "qa_approved": False,
+            "qa_exhausted": False,
             "max_iterations": 3,
         }
 
@@ -739,6 +748,8 @@ class Orchestrator:
                             print(f"Error executing MCP tool: {e}", file=sys.stderr)
         else:
             print("\n[Orchestrator] Task aborted due to human rejection.")
+            
+        return final_state
 
 
 def main():

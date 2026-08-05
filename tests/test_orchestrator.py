@@ -204,6 +204,45 @@ def test_orchestrator_run_loop_rejected_with_approved_substring(mock_proxy, mock
     assert mock_generate.call_count == 5
     mock_proxy.assert_called_once()
 
+@patch("src.core.provider_preflight.preflight_models")
+@patch("src.core.orchestrator.Agent.generate_response")
+@patch("src.core.orchestrator.Orchestrator.human_proxy_intercept", return_value=True)
+def test_orchestrator_run_loop_exhausts_max_iterations(mock_proxy, mock_generate, mock_preflight, orchestrator_factory):
+    mock_preflight.return_value = PreflightResult(ok=True, checked_models=["stub"])
+    orchestrator = orchestrator_factory()
+
+    mock_generate.side_effect = [
+        MockMessage("First draft"), MockMessage("REJECTED"),
+        MockMessage("Second draft"), MockMessage("REJECTED"),
+        MockMessage("Third draft"), MockMessage("REJECTED"),
+    ]
+
+    result = orchestrator.run_loop("Test query")
+    
+    assert result is not None
+    assert result.get("qa_exhausted") is True
+    assert "[UNREVIEWED DRAFT - QA REJECTED]" in result.get("draft_content", "")
+    assert mock_generate.call_count == 6
+
+@patch("src.core.provider_preflight.preflight_models")
+@patch("src.core.orchestrator.Agent.generate_response")
+@patch("src.core.orchestrator.Orchestrator.human_proxy_intercept", return_value=True)
+def test_orchestrator_run_loop_approved_no_exhaustion_marker(mock_proxy, mock_generate, mock_preflight, orchestrator_factory):
+    mock_preflight.return_value = PreflightResult(ok=True, checked_models=["stub"])
+    orchestrator = orchestrator_factory()
+
+    mock_generate.side_effect = [
+        MockMessage("First draft"), MockMessage("APPROVED"),
+        MockMessage("Humanized draft")
+    ]
+
+    result = orchestrator.run_loop("Test query")
+
+    assert result is not None
+    assert result.get("qa_exhausted") is False
+    assert "[UNREVIEWED DRAFT - QA REJECTED]" not in result.get("draft_content", "")
+    assert mock_generate.call_count == 3
+
 def test_main(monkeypatch):
     import sys
     from src.core.orchestrator import main

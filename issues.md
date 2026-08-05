@@ -12,7 +12,7 @@ Pending bugs carry the same diminishing-returns score defined in `improvements.m
 | --- | --- | --- | --- | --- | --- | --- |
 | 8 | [Blank input authorizes executable tool calls in the human-approval gate](#8-blank-input-authorizes-executable-tool-calls-in-the-human-approval-gate) | Done (2026-08-05) | — | Sonnet 5 | Gemini 3 Pro | Trivial one-line fix; a deny-by-default authorization gate currently authorizes on an empty Enter keypress, the exact opposite of its stated contract |
 | 7 | [QA gate approves drafts on a substring match, so rejection text containing "APPROVED" passes](#7-qa-gate-approves-drafts-on-a-substring-match-so-rejection-text-containing-approved-passes) | Done (2026-08-05) | — | Sonnet 5 | Gemini 3 Pro | Small, well-isolated fix; the QA gate's own system prompt promises an exact `APPROVED` token but the check accepts any superstring, so a QA reviewer explaining why something is *not* approved can silently pass it |
-| 9 | [Maximum-iteration exhaustion silently ships a QA-rejected draft as if it had passed](#9-maximum-iteration-exhaustion-silently-ships-a-qa-rejected-draft-as-if-it-had-passed) | Pending | 2.5 (5×1.0÷2) | Sonnet 5 | Gemini 3 Pro | Small fix in the same graph as bugs 7 and 8 but a distinct failure mode (exhaustion, not misparse); needs its own test asserting the shipped output is flagged as unreviewed |
+| 9 | [Maximum-iteration exhaustion silently ships a QA-rejected draft as if it had passed](#9-maximum-iteration-exhaustion-silently-ships-a-qa-rejected-draft-as-if-it-had-passed) | Done (2026-08-05) | — | Sonnet 5 | Gemini 3 Pro | Small fix in the same graph as bugs 7 and 8 but a distinct failure mode (exhaustion, not misparse); needs its own test asserting the shipped output is flagged as unreviewed |
 | 6 | [Resolve the Python 3.14 LangChain Pydantic compatibility warning](#6-resolve-the-python-314-langchain-pydantic-compatibility-warning) | Done (2026-08-04) | — | Haiku 4.5 | Gemini 3 Flash | New compatibility theme; the full suite passes but emits a warning that violates the repository's strict clean-gate policy |
 | 10 | [`make lint`'s pre-commit step always passes even though it always errors](#10-make-lints-pre-commit-step-always-passes-even-though-it-always-errors) | Pending | 1.7 (5×1.0÷3) | Haiku 4.5 | Gemini 3 Flash | Small scoping decision (adopt real hooks vs. remove the step) plus a Makefile fix; today this "required" check silently contributes zero verification on every single run |
 | 1 | [Remove the obfuscated dead hook installer](#1-remove-the-obfuscated-dead-hook-installer) | Done (2026-07-19) | — | Haiku 4.5 | Gemini 3 Flash | Minutes of work; deletes deliberately lint-evading dead code before an agent trusts or reruns it |
@@ -187,6 +187,8 @@ When the iteration cap is reached without QA ever approving, the graph routes to
 
 **Model suggestions (re-evaluate at execution time):** Claude Sonnet 5 or Gemini 3 Pro — the choice between marking vs. failing the run needs a coherent read of how `run_loop`'s CLI caller consumes the result before picking a design, better suited to a stronger model.
 
+**Done 2026-08-05:** Added `qa_exhausted` to `AgentState`. Updated `should_continue` to route to a new `exhausted_node` upon maximum iterations. The `exhausted_node` marks the draft with a `[UNREVIEWED DRAFT - QA REJECTED]` prefix and sets `qa_exhausted` to `True`. Modified `run_loop` to explicitly return `final_state` for testing. Added tests verifying the flag behavior on exhaustion vs approval.
+
 ### 10. `make lint`'s pre-commit step always passes even though it always errors
 Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, potential-bug lead 4). The `lint` Makefile target's last step:
 
@@ -220,6 +222,7 @@ Live-verified: `pre-commit` (framework version 4.6.0) is installed on this machi
 
 ## ✅ Resolved
 
+- **Bug 9 — Maximum-iteration exhaustion silently ships a QA-rejected draft as if it had passed (fixed 2026-08-05):** Added `qa_exhausted` to `AgentState`, routed exhaustion to an `exhausted_node` to mark outputs as `[UNREVIEWED DRAFT - QA REJECTED]`, returned state from `run_loop`, and added exhaustion tests.
 - **Bug 7 — QA gate approves drafts on a substring match, so rejection text containing "APPROVED" passes (fixed 2026-08-05):** Modified `qa_node` in `src/core/orchestrator.py` to use an exact string match for `"APPROVED"` instead of a substring check, preventing QA rejections containing the word from being parsed as approvals. Added explicit regression test.
 - **Bug 8 — Blank input authorizes executable tool calls in the human-approval gate (fixed 2026-08-05):** Modified `human_proxy_intercept` to require an explicit `"y"` or `"yes"` instead of accepting a blank input, and added a unit test validating that blank input correctly re-prompts.
 - **Bug 6 — Resolve the Python 3.14 LangChain Pydantic compatibility warning (fixed 2026-08-04):** Upgraded `langchain-core` to 1.5.3 (which did not fix it) and isolated the warning at import time via `src/infrastructure/langchain_compat.py` to prevent the warning from breaching the strict clean-gate policy without breaking text-splitting behavior.
