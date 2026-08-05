@@ -242,6 +242,7 @@ class TextChunker:
         This provides much better semantic preservation and overlap than naive word counting.
         """
         try:
+            import src.infrastructure.langchain_compat  # noqa: F401
             from langchain_text_splitters import RecursiveCharacterTextSplitter
 
             splitter = RecursiveCharacterTextSplitter(
