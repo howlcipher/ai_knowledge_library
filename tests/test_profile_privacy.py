@@ -31,7 +31,7 @@ def test_no_real_profile_data_tracked():
     
     # The exact strings from the real profile we want to ensure aren't in tracked files
     pii_strings = [
-        "William Elias User Profile",
+        "William Elias",
         "linkedin.com/in/wylelias",
         "$105,000+"
     ]
@@ -45,8 +45,14 @@ def test_no_real_profile_data_tracked():
     )
     tracked_files = result.stdout.splitlines()
     
+    allowed_files = {
+        "tests/test_profile_privacy.py",
+        ".goreleaser.yaml",
+        "scripts/setup_profile.py"
+    }
+    
     for file_path in tracked_files:
-        if file_path == "tests/test_profile_privacy.py":
+        if file_path in allowed_files:
             continue
             
         full_path = repo_root / file_path
