@@ -12,6 +12,7 @@ import os
 import sys
 from typing import Any, List, Optional, TypedDict
 
+import src.infrastructure.langchain_compat  # noqa: F401
 import litellm
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
@@ -414,7 +415,7 @@ class Orchestrator:
                 .strip()
                 .lower()
             )
-            if auth in ["", "y", "yes"]:
+            if auth in ["y", "yes"]:
                 print("[HumanProxy] Action authorized.")
                 return True
             elif auth in ["n", "no"]:

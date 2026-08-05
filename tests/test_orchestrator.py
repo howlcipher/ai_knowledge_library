@@ -138,6 +138,14 @@ def test_human_proxy_rejected(mock_input, orchestrator_factory):
     result = orchestrator.human_proxy_intercept(tool_calls)
     assert result is False
 
+@patch("builtins.input", side_effect=["", "maybe", "y"])
+def test_human_proxy_invalid_then_authorized(mock_input, orchestrator_factory):
+    orchestrator = orchestrator_factory()
+    tool_calls = [MockToolCall("execute_bash_command", json.dumps({"command": "echo hello"}))]
+    result = orchestrator.human_proxy_intercept(tool_calls)
+    assert result is True
+    assert mock_input.call_count == 3
+
 @patch("src.core.provider_preflight.preflight_models")
 @patch("src.core.orchestrator.Agent.generate_response")
 @patch("src.core.orchestrator.Orchestrator.human_proxy_intercept", return_value=True)

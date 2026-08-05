@@ -10,7 +10,7 @@ Pending bugs carry the same diminishing-returns score defined in `improvements.m
 
 | # | Bug | Status | Score (V×D÷E) | Claude model | Gemini model | ROI rationale |
 | --- | --- | --- | --- | --- | --- | --- |
-| 8 | [Blank input authorizes executable tool calls in the human-approval gate](#8-blank-input-authorizes-executable-tool-calls-in-the-human-approval-gate) | Pending | 3.5 (7×1.0÷2) | Sonnet 5 | Gemini 3 Pro | Trivial one-line fix; a deny-by-default authorization gate currently authorizes on an empty Enter keypress, the exact opposite of its stated contract |
+| 8 | [Blank input authorizes executable tool calls in the human-approval gate](#8-blank-input-authorizes-executable-tool-calls-in-the-human-approval-gate) | Done (2026-08-05) | — | Sonnet 5 | Gemini 3 Pro | Trivial one-line fix; a deny-by-default authorization gate currently authorizes on an empty Enter keypress, the exact opposite of its stated contract |
 | 7 | [QA gate approves drafts on a substring match, so rejection text containing "APPROVED" passes](#7-qa-gate-approves-drafts-on-a-substring-match-so-rejection-text-containing-approved-passes) | Pending | 3.0 (6×1.0÷2) | Sonnet 5 | Gemini 3 Pro | Small, well-isolated fix; the QA gate's own system prompt promises an exact `APPROVED` token but the check accepts any superstring, so a QA reviewer explaining why something is *not* approved can silently pass it |
 | 9 | [Maximum-iteration exhaustion silently ships a QA-rejected draft as if it had passed](#9-maximum-iteration-exhaustion-silently-ships-a-qa-rejected-draft-as-if-it-had-passed) | Pending | 2.5 (5×1.0÷2) | Sonnet 5 | Gemini 3 Pro | Small fix in the same graph as bugs 7 and 8 but a distinct failure mode (exhaustion, not misparse); needs its own test asserting the shipped output is flagged as unreviewed |
 | 6 | [Resolve the Python 3.14 LangChain Pydantic compatibility warning](#6-resolve-the-python-314-langchain-pydantic-compatibility-warning) | Done (2026-08-04) | — | Haiku 4.5 | Gemini 3 Flash | New compatibility theme; the full suite passes but emits a warning that violates the repository's strict clean-gate policy |
@@ -145,6 +145,8 @@ An empty string (the user pressing Enter with no input — a misclick, an accide
 
 **Model suggestions (re-evaluate at execution time):** Claude Sonnet 5 or Gemini 3 Pro — trivial diff, but authorization-boundary code warrants a stronger model's review pass over a cheap model's, per the Working Protocol's guidance to use higher reasoning for authorization/security boundaries.
 
+**Done 2026-08-05:** Modified `human_proxy_intercept` in `src/core/orchestrator.py` to require an explicit `"y"` or `"yes"` instead of accepting a blank input. Added `test_human_proxy_invalid_then_authorized` to validate that blank input correctly re-prompts the user instead of short-circuiting to authorize. Full test suite passing.
+
 ### 9. Maximum-iteration exhaustion silently ships a QA-rejected draft as if it had passed
 Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, potential-bug lead 3), verified as a distinct failure mode from bug 7 rather than a duplicate. `should_continue` in `src/core/orchestrator.py`:
 
@@ -216,6 +218,7 @@ Live-verified: `pre-commit` (framework version 4.6.0) is installed on this machi
 
 ## ✅ Resolved
 
+- **Bug 8 — Blank input authorizes executable tool calls in the human-approval gate (fixed 2026-08-05):** Modified `human_proxy_intercept` to require an explicit `"y"` or `"yes"` instead of accepting a blank input, and added a unit test validating that blank input correctly re-prompts.
 - **Bug 6 — Resolve the Python 3.14 LangChain Pydantic compatibility warning (fixed 2026-08-04):** Upgraded `langchain-core` to 1.5.3 (which did not fix it) and isolated the warning at import time via `src/infrastructure/langchain_compat.py` to prevent the warning from breaching the strict clean-gate policy without breaking text-splitting behavior.
 - **Bug 4 — De-obfuscate the recurring chr()/hex-escape hyphen pattern across five more scripts (fixed 2026-07-21, commit 4f2f68f):** deleted dead scripts `setup_cron.py`, `generate_knowledge_graph.py`, and `generate_agent_summary.py`. De-obfuscated `sync_context.py`, `github_profile_sync.py`, and `system_logger.py` to use plain string literals. Added regression test `test_deobfuscation_guard.py`.
 - **Bug 1 — Remove the obfuscated dead hook installer (fixed 2026-07-19, commit 89b2bb2):** deleted `scripts/install_git_hooks.py`, an unreferenced installer that assembled the hook name `post-commit` from `chr()` calls to evade formatting checks. The maintained installers cover all real hook needs.
