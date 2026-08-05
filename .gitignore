@@ -64,3 +64,7 @@ docs/_config.yml
 /*.log
 /*.diff
 /*.zip
+
+# Ignore personal user profile and PII
+USER_PROFILE.md
+pii.yaml

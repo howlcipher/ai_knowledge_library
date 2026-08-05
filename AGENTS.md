@@ -32,7 +32,7 @@ When a conflict is detected:
 * **Scripts and Utilities:** Check `tools/` for automated scripts, RCA programs, and helper utilities.
 * **Server and Environment:** Check `infrastructure/` for configurations regarding local servers, Docker setups, and networking.
 * **Processes and Standards:** Check `documentation/` for coding standards, workflows, and generic guides.
-* **Career and Personal Profile:** Check `USER_PROFILE.md` for background, career history, and skills whenever assisting with job applications, resumes, cover letters, or personal branding.
+* **Career and Personal Profile:** Check the local, untracked `USER_PROFILE.md` (copied from `USER_PROFILE.example.md` and filled in) for background, career history, and skills whenever assisting with job applications, resumes, cover letters, or personal branding.
 
 ## Agent Entry Points
 

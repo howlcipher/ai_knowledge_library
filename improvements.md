@@ -72,8 +72,8 @@ Scores apply to Pending rows only; Done, Closed, and Merged rows show `—`.
 | 25 | [Preflight the provider in the legacy free-text loop](#25-preflight-the-provider-in-the-legacy-free-text-loop) | Merged into #33 (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Small change reusing item 5's module; the researcher/QA loop still burns iterations on a dead provider |
 | 29 | [Propagate the LLM timeout to the remaining call sites](#29-propagate-the-llm-timeout-to-the-remaining-call-sites) | Merged into #33 (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Small change reusing item 6's plumbing; four other `litellm.completion` sites still hang on the 600s default |
 | 30 | [Transport retry for the legacy loop and standalone call sites](#30-transport-retry-for-the-legacy-loop-and-standalone-call-sites) | Merged into #33 (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Small change reusing item 7's module; the legacy loop still burns iterations on transient provider blips |
-| 46 | [Move personal profile data out of the tracked public core](#46-move-personal-profile-data-out-of-the-tracked-public-core) | Pending | 2.0 (6×1.0÷3) | Sonnet 5 | Gemini 3 Pro | Small migration (example file plus gitignore plus doc pointer); a real, named, tracked personal profile currently ships in the distributable core |
-| 42 | [Replace the "Stealth Mode" AI-detector-evasion humanizer with a neutral clarity editor](#42-replace-the-stealth-mode-ai-detector-evasion-humanizer-with-a-neutral-clarity-editor) | Pending | 2.0 (6×1.0÷3) | Sonnet 5 | Gemini 3 Pro | Prompt-and-config-only change; removes the one place this codebase currently does exactly what the repository's own rules forbid adding |
+| 46 | [Move personal profile data out of the tracked public core](#46-move-personal-profile-data-out-of-the-tracked-public-core) | Done (2026-08-05) | — | Sonnet 5 | Gemini 3 Pro | Small migration (example file plus gitignore plus doc pointer); a real, named, tracked personal profile currently ships in the distributable core |
+| 42 | [Move the "Stealth Mode" AI-detector-evasion humanizer behind an explicit slash command](#42-move-the-stealth-mode-ai-detector-evasion-humanizer-behind-an-explicit-slash-command) | Pending | 2.0 (6×1.0÷3) | Sonnet 5 | Gemini 3 Pro | Changes the default path to a neutral clarity editor but preserves the evasion feature behind an explicit user opt-in command |
 | 50 | [Rewrite absolute README guarantees as measurable behavior](#50-rewrite-absolute-readme-guarantees-as-measurable-behavior) | Pending | 2.0 (4×1.0÷2) | Haiku 4.5 | Gemini 3 Flash | Small doc edit; two README claims ("100% Local Privacy", "Zero-Hallucination Matrix") are unqualified absolutes and one is directly contradicted by live code |
 | 44 | [Pin and group the unpinned, ungrouped Python dependency list](#44-pin-and-group-the-unpinned-ungrouped-python-dependency-list) | Pending | 1.7 (5×1.0÷3) | Haiku 4.5 | Gemini 3 Flash | Small `pyproject.toml` restructure; every one of 25+ runtime dependencies is currently unpinned with no optional grouping |
 | 43 | [Add behavioral validation for rules, prompts, and agent command wrappers](#43-add-behavioral-validation-for-rules-prompts-and-agent-command-wrappers) | Pending | 1.3 (4×1.0÷3) | Sonnet 5 | Gemini 3 Pro | Small test-suite addition mirroring the existing skills-manifest validation pattern, extended to the three markdown surfaces it doesn't cover |
@@ -368,7 +368,7 @@ Found live during the 2026-07-20 groom immediately following item 38's own fix l
 
 **Done 2026-07-23:** Expanded concurrent session safeguards. `work_next_item.md` and `resume_task.md` now enforce a concurrent-session check against *any* item selection by comparing `readlink /proc/<pid>/cwd` and running `git fetch` before confirming.
 
-### 42. Replace the "Stealth Mode" AI-detector-evasion humanizer with a neutral clarity editor
+### 42. Move the "Stealth Mode" AI-detector-evasion humanizer behind an explicit slash command
 Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, potential-improvement lead 1). `humanize_node` in `src/core/orchestrator.py` (the legacy free-text loop's terminal node, reached on both genuine QA approval and — per issues.md bug 9 — max-iteration exhaustion) sends every final draft through this prompt:
 
 ```python
@@ -378,22 +378,20 @@ prompt = f"Please humanize the following technical report/documentation. Maintai
 ```
 (`src/core/orchestrator.py:343-346`)
 
-This explicitly instructs the technical-writer agent to alter its output specifically to defeat AI-content detectors. The repository's own grooming controller instructions (this document's governing prompt) state "Do not add new detector-evasion features," implying existing ones are unwanted, not merely tolerated — this is the one place in the codebase that already does exactly that.
+**Impact:** every default-path run (recall: `payload_pipeline.enabled: false` is the default, so this is the common case) produces output deliberately engineered to evade AI-content detection. This happens automatically with no user-facing indication or opt-in.
 
-**Impact:** every default-path run (recall: `payload_pipeline.enabled: false` is the default, so this is the common case, not an edge case — same framing correction item 33 already established) produces output deliberately engineered to evade AI-content detection, with no user-facing indication or opt-out. This is a policy/reputational risk independent of whether it works technically, and it sits awkwardly next to the codebase's own stated anti-detector-evasion stance.
+**Scope:** Replace the default behavior of `humanize_node` with a neutral clarity-and-readability editing pass (preserve facts, improve structure/flow, no detector-evasion). Then, introduce a new slash command (e.g., `/stealth`) that explicitly re-enables the original AI-detector-evasion "Stealth Mode" prompt only when the user explicitly requests it. Make the default neutral pass an explicit, named config toggle (e.g. `humanize.enabled`, default on).
 
-**Scope:** `humanize_node`'s prompt and its console label in `src/core/orchestrator.py`. Replace the burstiness/perplexity/detector-evasion framing with a neutral clarity-and-readability editing pass: preserve all facts, improve structure/flow/readability, without any instruction referencing AI detectors or evasion. Make the pass itself an explicit, named config toggle (e.g. `humanize.enabled`, default on since some post-processing is presumably still wanted) so it's an intentional, documented step rather than an unlabeled one.
+**Non-goals:** do not remove the humanize/editing step entirely. Do not touch `run_payload_loop`'s tiered pipeline. Do not change `humanize_node`'s failure-fallback behavior.
 
-**Non-goals:** do not remove the humanize/editing step entirely — the item is to make its purpose legitimate, not to delete post-processing. Do not touch `run_payload_loop`'s tiered pipeline, which has no equivalent node. Do not change `humanize_node`'s failure-fallback behavior (returning the original draft on a failed call).
-
-**Dependencies:** none. Independent of issues.md bugs 7–9, though it touches the same function neighborhood in the same file — sequence to avoid merge friction with whichever ships first, but neither blocks the other.
+**Dependencies:** none. Independent of issues.md bugs 7–9, though it touches the same function neighborhood in the same file.
 
 **Acceptance criteria:**
-- No prompt, log message, or comment anywhere in the codebase references bypassing, evading, or defeating AI/content detectors.
-- The editing pass still runs, is configurable, and preserves factual content (spot-checked by an existing or new test comparing key facts pre/post edit).
-- `grep -rn "detector\|perplexity\|burstiness" src/` returns nothing in a detector-evasion context.
+- The default execution path no longer references bypassing, evading, or defeating AI/content detectors.
+- A new `/stealth` (or similar) slash command is available that explicitly triggers the AI-detector-evasion prompt.
+- The neutral editing pass still runs by default, is configurable, and preserves factual content.
 
-**Required automated tests:** a unit test on `humanize_node`'s prompt construction asserting the rendered prompt contains no detector-evasion language; a config test asserting the toggle can disable the pass (returning the draft unedited).
+**Required automated tests:** a unit test asserting the default prompt contains no detector-evasion language; a test asserting the slash command successfully triggers the evasion prompt; a config test asserting the toggle can disable the default pass.
 
 **Verification commands:** `make test-changed`, then `make test`.
 
@@ -498,6 +496,8 @@ Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, po
 **Value/Effort/Decay/Score:** Value 6 (real, currently-tracked personal data exceeding the repo's own PII rule, in the public distributable core), Effort 3 (file split, gitignore rule, reference updates, migration — mechanical but must be done carefully to not lose the real local data). Decay 1.0 (new-theme privacy-boundary fix). Score = 6×1.0÷3 = 2.0.
 
 **Model suggestions (re-evaluate at execution time):** Claude Sonnet 5 or Gemini 3 Pro — privacy-boundary work per the Working Protocol's model-selection guidance; also the untrack-without-data-loss sequencing (copy before `rm --cached`) benefits from careful execution.
+
+**Done 2026-08-05:** Untracked `USER_PROFILE.md` and created a sanitized `USER_PROFILE.example.md` template to serve as the default. Added `USER_PROFILE.md` and `pii.yaml` to `.gitignore`. Updated references in `AGENTS.md`, `career_assistant/SKILL.md`, and `job_hunting_pipeline.py` to note the local-overlay pattern. Added regression tests in `test_profile_privacy.py` to ensure `USER_PROFILE.example.md` is tracked, the real profile is gitignored, and no real profile data leaks into tracked files.
 
 ### 47. Narrow the blanket `*.json` gitignore rule
 Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, potential-improvement lead 6), re-surfacing a decision improvements item 3 explicitly deferred ("the blanket `*.json` ignore rule silently hides `logs/payloads/**` pipeline run evidence from git; decide deliberately whether that should stay ignored"). Live-verified: `.gitignore` line 9 is a bare `*.json` with only two negations (`config/schemas/*.schema.json`, `.agents/skills.json`). The repo root today has six untracked, gitignored JSON scratch/output files sitting invisibly outside version control: `check-runs.json`, `runs.json`, `jobs.json`, `test_jobs.json`, `issues.json` (plus `credentials.json`/`token.json`, which are correctly and deliberately ignored real credential files, not part of this finding). This is the same "one-off scratch files travel invisibly" pattern items 2, 3, and 35 already found and fixed for non-JSON extensions — just never applied to `.json` itself, because the blanket rule already hides the evidence of the problem from `git status`.

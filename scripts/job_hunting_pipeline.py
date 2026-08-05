@@ -3,6 +3,8 @@ import json
 import litellm
 import pathlib
 
+# USER_PROFILE.md is a local, untracked overlay.
+# If it does not exist, copy USER_PROFILE.example.md and fill it in.
 PROFILE_PATH = pathlib.Path("/run/media/system/tallgeese/dev/ai_knowledge_library/USER_PROFILE.md")
 OUTPUT_DIR = pathlib.Path("/run/media/system/tallgeese/dev/ai_knowledge_library/output/applications/")
 
