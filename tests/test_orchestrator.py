@@ -185,6 +185,25 @@ def test_orchestrator_run_loop_rejected_then_approved(mock_proxy, mock_generate,
     assert mock_generate.call_count == 5
     mock_proxy.assert_called_once()
 
+@patch("src.core.provider_preflight.preflight_models")
+@patch("src.core.orchestrator.Agent.generate_response")
+@patch("src.core.orchestrator.Orchestrator.human_proxy_intercept", return_value=True)
+def test_orchestrator_run_loop_rejected_with_approved_substring(mock_proxy, mock_generate, mock_preflight, orchestrator_factory):
+    mock_preflight.return_value = PreflightResult(ok=True, checked_models=["stub"])
+    orchestrator = orchestrator_factory()
+
+    mock_generate.side_effect = [
+        MockMessage("First draft"), MockMessage("This is NOT APPROVED because it lacks detail."),
+        MockMessage("Second draft"), MockMessage("APPROVED"),
+        MockMessage("Humanized second draft")
+    ]
+
+    orchestrator.run_loop("Test query")
+
+    # If the bug was present, mock_generate would only be called 3 times (it would pass on the first "APPROVED" substring)
+    assert mock_generate.call_count == 5
+    mock_proxy.assert_called_once()
+
 def test_main(monkeypatch):
     import sys
     from src.core.orchestrator import main

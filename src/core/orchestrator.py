@@ -322,7 +322,7 @@ class Orchestrator:
             except Exception:
                 pass  # Ignore if LangSmith is not configured
 
-            if "APPROVED" in qa_feedback.strip().upper():
+            if qa_feedback.strip().upper() == "APPROVED":
                 print("[Orchestrator] QA approved the draft.")
                 if ls_client and run_id:
                     ls_client.create_feedback(run_id, key="qa_approval", score=1.0)
