@@ -86,3 +86,151 @@ future_feature = "some_value"
 		t.Fatalf("unexpected error parsing unknown fields: %v", err)
 	}
 }
+
+func TestParseManifest_ContextPaths(t *testing.T) {
+	tests := []struct {
+		name        string
+		toml        string
+		expectErr   bool
+		errContains string
+	}{
+		{
+			name: "absolute unix path in include",
+			toml: `
+schema_version = 1
+name = "test"
+
+[context]
+include = ["/etc/passwd"]
+`,
+			expectErr:   true,
+			errContains: "context.include path '/etc/passwd' must be relative to the repository root",
+		},
+		{
+			name: "windows drive letter path in include",
+			toml: `
+schema_version = 1
+name = "test"
+
+[context]
+include = ["C:\\secrets\\**"]
+`,
+			expectErr:   true,
+			errContains: "context.include path 'C:\\secrets\\**' must be relative to the repository root",
+		},
+		{
+			name: "path traversal via .. in exclude",
+			toml: `
+schema_version = 1
+name = "test"
+
+[context]
+exclude = ["../../outside/**"]
+`,
+			expectErr:   true,
+			errContains: "context.exclude path '../../outside/**' escapes repository root",
+		},
+		{
+			name: "home directory shorthand in include",
+			toml: `
+schema_version = 1
+name = "test"
+
+[context]
+include = ["~/secrets/**"]
+`,
+			expectErr:   true,
+			errContains: "context.include path '~/secrets/**' must be relative to the repository root",
+		},
+		{
+			name: "valid relative globs pass",
+			toml: `
+schema_version = 1
+name = "test"
+
+[context]
+include = ["README.md", "docs/**/*.md", "pkg/**/*.go"]
+exclude = [".env", "*.db", "applications/**", "logs/**"]
+`,
+			expectErr: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := parseManifest(strings.NewReader(tc.toml))
+			if tc.expectErr {
+				if err == nil {
+					t.Fatalf("expected error, got nil")
+				}
+				if !strings.Contains(err.Error(), tc.errContains) {
+					t.Fatalf("expected error to contain %q, got %v", tc.errContains, err)
+				}
+			} else if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestParseManifest_Commands(t *testing.T) {
+	tests := []struct {
+		name        string
+		toml        string
+		expectErr   bool
+		errContains string
+	}{
+		{
+			name: "command with disallowed metacharacter",
+			toml: `
+schema_version = 1
+name = "test"
+
+[commands]
+test = ["sh", "-c", "go test ./... && rm -rf /"]
+`,
+			expectErr:   true,
+			errContains: "disallowed shell metacharacter '&&'",
+		},
+		{
+			name: "empty command array",
+			toml: `
+schema_version = 1
+name = "test"
+
+[commands]
+test = []
+`,
+			expectErr:   true,
+			errContains: "command 'test' has an empty argument array",
+		},
+		{
+			name: "normal valid command array passes",
+			toml: `
+schema_version = 1
+name = "test"
+
+[commands]
+test = ["go", "test", "./..."]
+build = ["go", "build", "-o", "bin/service", "./cmd/service"]
+`,
+			expectErr: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := parseManifest(strings.NewReader(tc.toml))
+			if tc.expectErr {
+				if err == nil {
+					t.Fatalf("expected error, got nil")
+				}
+				if !strings.Contains(err.Error(), tc.errContains) {
+					t.Fatalf("expected error to contain %q, got %v", tc.errContains, err)
+				}
+			} else if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}
