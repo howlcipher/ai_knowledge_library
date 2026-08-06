@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ai.project_manifest/v1",
+  "title": "AI Project Manifest Schema",
+  "description": "Portable configuration for an AI-enabled repository.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Must be 1 for this version of the schema."
+    },
+    "name": {
+      "type": "string",
+      "description": "The name of the project."
+    },
+    "project_type": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Keywords classifying the project type (e.g., 'go', 'automation')."
+    },
+    "skills": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Global skills relevant to this project."
+    },
+    "context": {
+      "type": "object",
+      "properties": {
+        "include": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Glob patterns of files to include in context."
+        },
+        "exclude": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Glob patterns of files to explicitly exclude from context."
+        }
+      },
+      "additionalProperties": false
+    },
+    "commands": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "A command defined as an array of arguments."
+      },
+      "description": "Project-specific commands."
+    },
+    "security": {
+      "type": "object",
+      "properties": {
+        "capabilities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Granted capabilities, matching the capability schema."
+        }
+      },
+      "additionalProperties": false
+    },
+    "routing": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Ordered preferences of providers for a specific task type."
+      },
+      "description": "Provider preferences grouped by task type."
+    }
+  },
+  "required": ["schema_version", "name"],
+  "additionalProperties": true
+}

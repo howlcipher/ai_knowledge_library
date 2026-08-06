@@ -1,0 +1,19 @@
+schema_version = 1
+name = "typescript-dashboard"
+project_type = ["typescript", "web", "frontend"]
+skills = ["frontend_engineering", "ui_ux"]
+
+[context]
+include = ["src/**/*.ts", "src/**/*.tsx", "package.json"]
+exclude = ["node_modules/**", "dist/**"]
+
+[commands]
+test = ["npm", "run", "test"]
+build = ["npm", "run", "build"]
+lint = ["npm", "run", "lint"]
+
+[security]
+capabilities = ["filesystem:repository", "browser:project"]
+
+[routing]
+implementation = ["claude", "gemini"]
