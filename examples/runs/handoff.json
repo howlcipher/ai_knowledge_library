@@ -1,0 +1,31 @@
+{
+  "schema": "ai.handoff/v1",
+  "run_id": "run_2026_02_14_0002",
+  "original_task": "Migrate the provider health checks to the shared failure taxonomy",
+  "project_root": "/home/operator/projects/career-agent-core",
+  "starting_commit": "9f2b1c4",
+  "context_reviewed": [
+    "documentation/AI_FRAMEWORK_BLUEPRINT.md",
+    "src/core/provider_preflight.py"
+  ],
+  "work_completed": "Classified existing preflight checks against the failure taxonomy and drafted the new health() return type.",
+  "files_modified": ["src/core/provider_preflight.py"],
+  "commands_run": [
+    {
+      "command": "pytest tests/test_provider_preflight.py",
+      "result": "3 passed"
+    }
+  ],
+  "failure_or_interruption_reason": "Usage limit reached on the active provider before the adapter migration could be completed.",
+  "remaining_work": [
+    "Migrate transport_retry.py to return a FailureClass instead of a raw exception",
+    "Wire the new health() return type into claude_code_backend.py"
+  ],
+  "security_constraints": [
+    "process:project_commands only; no network:allowlist capability was granted for this run"
+  ],
+  "recommended_next": {
+    "provider": "claude",
+    "workflow": "resume_task"
+  }
+}

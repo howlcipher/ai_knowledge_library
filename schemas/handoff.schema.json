@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ai.handoff/v1",
+  "title": "AI Run Handoff",
+  "description": "Structured summary of an interrupted or provider-switched run, rendered into a run's handoff.md.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "ai.handoff/v1",
+      "description": "Identifies the schema and version this document conforms to."
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the run this handoff belongs to."
+    },
+    "original_task": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The original task instruction the run was executing."
+    },
+    "project_root": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The resolved path to the project this run operated on."
+    },
+    "starting_commit": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The Git commit the run started from."
+    },
+    "context_reviewed": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Context sources already reviewed before the handoff."
+    },
+    "work_completed": {
+      "type": "string",
+      "description": "Summary of work completed before the handoff."
+    },
+    "files_modified": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Repository-relative paths modified during the run."
+    },
+    "commands_run": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The command that was run, as executed."
+          },
+          "result": {
+            "type": "string",
+            "description": "Outcome of the command."
+          }
+        },
+        "required": ["command", "result"],
+        "additionalProperties": false
+      },
+      "description": "Commands run during the interrupted attempt and their outcomes."
+    },
+    "failure_or_interruption_reason": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Why the run was interrupted or handed off."
+    },
+    "remaining_work": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Work items still outstanding."
+    },
+    "security_constraints": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Denied operations or capability constraints the next provider must respect."
+    },
+    "recommended_next": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "description": "Recommended provider to resume the run, or empty if none."
+        },
+        "workflow": {
+          "type": "string",
+          "description": "Recommended workflow to resume the run, or empty if none."
+        }
+      },
+      "required": ["provider", "workflow"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema",
+    "run_id",
+    "original_task",
+    "project_root",
+    "starting_commit",
+    "context_reviewed",
+    "work_completed",
+    "files_modified",
+    "commands_run",
+    "failure_or_interruption_reason",
+    "remaining_work",
+    "security_constraints",
+    "recommended_next"
+  ],
+  "additionalProperties": false
+}

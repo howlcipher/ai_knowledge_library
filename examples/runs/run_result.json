@@ -1,0 +1,11 @@
+{
+  "schema": "ai.run_result/v1",
+  "run_id": "run_2026_02_14_0001",
+  "status": "succeeded",
+  "provider": "codex",
+  "attempts": 1,
+  "summary": "Implemented retry handling with exponential backoff and added table-driven tests.",
+  "metadata": {
+    "duration_seconds": 184
+  }
+}

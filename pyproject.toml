@@ -47,7 +47,8 @@ dev = [
     "flake8",
     "black",
     "bandit",
-    "pdoc"
+    "pdoc",
+    "jsonschema"
 ]
 
 [tool.pytest.ini_options]

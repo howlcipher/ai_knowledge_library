@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ai.task_request/v1",
+  "title": "AI Task Request",
+  "description": "A request to execute a task through the framework's workflow and provider runtime.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "ai.task_request/v1",
+      "description": "Identifies the schema and version this document conforms to."
+    },
+    "task": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The task instruction in natural language."
+    },
+    "mode": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The named execution mode (e.g. 'edit', 'review', 'research', 'plan'). Modes gate which capabilities may be allowed."
+    },
+    "project_root": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The resolved, absolute path to the project root this task runs against."
+    },
+    "task_type": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The task classification produced by the workflow's classify stage (e.g. 'implementation', 'review', 'research')."
+    },
+    "required_capabilities": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Capabilities this task needs, matching the capability schema. The default is deny unless granted by policy, mode, or approval."
+    },
+    "preferred_providers": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Ordered provider name preferences for this task. Preferences, not direct executable definitions."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Free-form, workflow-specific metadata.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "schema",
+    "task",
+    "mode",
+    "project_root",
+    "task_type",
+    "required_capabilities",
+    "preferred_providers"
+  ],
+  "additionalProperties": false
+}

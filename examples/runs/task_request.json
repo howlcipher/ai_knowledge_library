@@ -1,0 +1,12 @@
+{
+  "schema": "ai.task_request/v1",
+  "task": "Implement retry handling and add tests",
+  "mode": "edit",
+  "project_root": "/home/operator/projects/career-agent-core",
+  "task_type": "implementation",
+  "required_capabilities": ["filesystem:repository", "process:project_commands"],
+  "preferred_providers": ["codex", "claude"],
+  "metadata": {
+    "requested_by": "work_next_item"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "schema": "ai.run_event/v1",
+  "run_id": "run_2026_02_14_0001",
+  "attempt_id": "attempt_1",
+  "timestamp": "2026-02-14T18:32:05Z",
+  "source": "provider:codex",
+  "type": "tool_call",
+  "payload": {
+    "tool": "shell",
+    "command": ["go", "test", "./..."]
+  }
+}

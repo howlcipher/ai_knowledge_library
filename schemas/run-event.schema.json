@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ai.run_event/v1",
+  "title": "AI Run Event",
+  "description": "A single normalized event emitted by a provider or workflow stage during a run, appended to a run's events.jsonl.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "ai.run_event/v1",
+      "description": "Identifies the schema and version this document conforms to."
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the run this event belongs to."
+    },
+    "attempt_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the attempt within the run this event belongs to."
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$",
+      "description": "When the event occurred, as an RFC 3339 timestamp (e.g. '2026-01-01T00:00:00Z')."
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Origin of the event, e.g. 'provider:codex' or 'workflow:review'."
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "message",
+        "tool_call",
+        "tool_result",
+        "warning",
+        "error",
+        "status",
+        "metric"
+      ],
+      "description": "The normalized event category."
+    },
+    "payload": {
+      "type": "object",
+      "description": "Event-type-specific data.",
+      "additionalProperties": true
+    }
+  },
+  "required": ["schema", "run_id", "attempt_id", "timestamp", "source", "type", "payload"],
+  "additionalProperties": false
+}

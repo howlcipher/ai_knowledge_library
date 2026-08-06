@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ai.failure_class/v1",
+  "title": "AI Framework Failure Taxonomy",
+  "description": "Shared classification of provider and workflow failures. Only availability and infrastructure classes trigger automatic fallback by default; a normal task failure must not be mislabeled as a provider outage.",
+  "type": "string",
+  "enum": [
+    "usage_limit",
+    "authentication",
+    "model_unavailable",
+    "permission_or_approval",
+    "network_transient",
+    "provider_transient",
+    "cancelled",
+    "timeout",
+    "task_failure",
+    "invalid_output",
+    "security_denied",
+    "workspace_unsafe",
+    "unknown"
+  ]
+}

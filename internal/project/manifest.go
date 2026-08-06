@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/howlcipher/ai_knowledge_library/internal/capability"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -34,7 +35,7 @@ type SecurityBlock struct {
 
 // LoadManifest reads and parses a project manifest from the given path.
 func LoadManifest(path string) (*Manifest, error) {
-	file, err := os.Open(path)
+	file, err := os.Open(path) // #nosec G304 -- caller-supplied path to a local manifest file, not untrusted network input
 	if err != nil {
 		return nil, fmt.Errorf("failed to open manifest: %w", err)
 	}
@@ -69,19 +70,10 @@ func validateManifest(m *Manifest) error {
 		return fmt.Errorf("manifest is missing required field 'name'")
 	}
 
-	// Validate capabilities
-	validCaps := map[string]bool{
-		"filesystem:none": true, "filesystem:repository": true, "filesystem:explicit_paths": true, "filesystem:user_approved": true,
-		"network:none": true, "network:public": true, "network:allowlist": true, "network:user_approved": true,
-		"process:none": true, "process:test_only": true, "process:project_commands": true, "process:user_approved": true,
-		"browser:none": true, "browser:read_only": true, "browser:project": true, "browser:user_approved": true,
-		"git:read": true, "git:edit": true, "git:commit": true, "git:push": true,
-		"database:none": true, "database:project": true, "database:user_approved": true,
-		"secrets:none": true, "secrets:named_reference": true,
-	}
-
+	// Validate capabilities against the shared enum in internal/capability,
+	// which mirrors schemas/capability.schema.json.
 	for _, cap := range m.Security.Capabilities {
-		if !validCaps[cap] {
+		if !capability.IsKnown(cap) {
 			return fmt.Errorf("unknown capability: %s", cap)
 		}
 	}
