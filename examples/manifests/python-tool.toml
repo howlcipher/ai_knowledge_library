@@ -1,0 +1,20 @@
+schema_version = 1
+name = "python-data-tool"
+project_type = ["python", "data", "tool"]
+skills = ["data_analyst", "python"]
+
+[context]
+include = ["src/**/*.py", "requirements.txt"]
+exclude = ["data/**", ".pytest_cache/**"]
+
+[commands]
+test = ["pytest", "tests/"]
+lint = ["flake8", "src/"]
+typecheck = ["mypy", "src/"]
+
+[security]
+capabilities = ["filesystem:repository", "process:project_commands", "network:allowlist"]
+
+[routing]
+implementation = ["claude", "codex"]
+review = ["claude", "gemini"]

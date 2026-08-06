@@ -1,0 +1,18 @@
+schema_version = 1
+name = "go-microservice"
+project_type = ["go", "service", "backend"]
+skills = ["software_development", "network_engineering"]
+
+[context]
+include = ["cmd/**/*.go", "internal/**/*.go", "pkg/**/*.go", "go.mod"]
+exclude = ["vendor/**", "bin/**"]
+
+[commands]
+test = ["go", "test", "./..."]
+build = ["go", "build", "-o", "bin/service", "./cmd/service"]
+
+[security]
+capabilities = ["filesystem:repository", "network:public", "process:project_commands"]
+
+[routing]
+implementation = ["codex", "claude"]

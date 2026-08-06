@@ -1,0 +1,14 @@
+schema_version = 1
+name = "generic-ai-repo"
+project_type = ["automation", "scripting"]
+skills = ["automation"]
+
+[context]
+include = ["**/*.md", "**/*.sh"]
+exclude = [".git/**", "logs/**"]
+
+[security]
+capabilities = ["filesystem:repository"]
+
+[routing]
+implementation = ["gemini", "claude"]
