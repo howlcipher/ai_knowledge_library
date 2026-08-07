@@ -6,6 +6,8 @@ llm_model: "ollama/qwen3:30b-instruct"
 # Global LLM settings for the legacy orchestrator and standalone scripts
 llm_timeout: 600.0
 preflight: true
+humanize:
+  enabled: true
 
 # Bounds how long the orchestrator waits for each configured MCP server's
 # stdio handshake (config/settings.yaml active_mcps) before giving up on it.

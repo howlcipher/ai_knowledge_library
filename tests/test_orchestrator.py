@@ -243,6 +243,69 @@ def test_orchestrator_run_loop_approved_no_exhaustion_marker(mock_proxy, mock_ge
     assert "[UNREVIEWED DRAFT - QA REJECTED]" not in result.get("draft_content", "")
     assert mock_generate.call_count == 3
 
+@patch("src.core.provider_preflight.preflight_models")
+@patch("src.core.orchestrator.Agent.generate_response")
+@patch("src.core.orchestrator.Orchestrator.human_proxy_intercept", return_value=True)
+def test_orchestrator_run_loop_humanize_neutral_by_default(mock_proxy, mock_generate, mock_preflight, orchestrator_factory):
+    mock_preflight.return_value = PreflightResult(ok=True, checked_models=["stub"])
+    orchestrator = orchestrator_factory()
+
+    mock_generate.side_effect = [
+        MockMessage("First draft"), MockMessage("APPROVED"),
+        MockMessage("Humanized draft")
+    ]
+
+    result = orchestrator.run_loop("Test query")
+
+    assert result is not None
+    assert mock_generate.call_count == 3
+    # Check that the 3rd generate_response call (humanize) has the neutral prompt
+    humanize_call_args = mock_generate.call_args_list[2][0]
+    prompt = humanize_call_args[0]
+    assert "clarity and readability" in prompt
+    assert "burstiness and perplexity" not in prompt
+
+@patch("src.core.provider_preflight.preflight_models")
+@patch("src.core.orchestrator.Agent.generate_response")
+@patch("src.core.orchestrator.Orchestrator.human_proxy_intercept", return_value=True)
+def test_orchestrator_run_loop_humanize_stealth_with_command(mock_proxy, mock_generate, mock_preflight, orchestrator_factory):
+    mock_preflight.return_value = PreflightResult(ok=True, checked_models=["stub"])
+    orchestrator = orchestrator_factory()
+
+    mock_generate.side_effect = [
+        MockMessage("First draft"), MockMessage("APPROVED"),
+        MockMessage("Humanized draft")
+    ]
+
+    # Use the /stealth command
+    result = orchestrator.run_loop("/stealth Test query")
+
+    assert result is not None
+    assert mock_generate.call_count == 3
+    # Check that the 3rd generate_response call (humanize) has the stealth prompt
+    humanize_call_args = mock_generate.call_args_list[2][0]
+    prompt = humanize_call_args[0]
+    assert "burstiness and perplexity to bypass AI detectors" in prompt
+
+@patch("src.core.provider_preflight.preflight_models")
+@patch("src.core.orchestrator.Agent.generate_response")
+@patch("src.core.orchestrator.Orchestrator.human_proxy_intercept", return_value=True)
+def test_orchestrator_run_loop_humanize_disabled_via_config(mock_proxy, mock_generate, mock_preflight, orchestrator_factory):
+    mock_preflight.return_value = PreflightResult(ok=True, checked_models=["stub"])
+    orchestrator = orchestrator_factory()
+    orchestrator.cfg["humanize"] = {"enabled": False}
+
+    mock_generate.side_effect = [
+        MockMessage("First draft"), MockMessage("APPROVED"),
+    ]
+
+    result = orchestrator.run_loop("Test query")
+
+    assert result is not None
+    # Check that generate_response was only called twice (no humanize call)
+    assert mock_generate.call_count == 2
+    assert result.get("draft_content") == "First draft"
+
 def test_main(monkeypatch):
     import sys
     from src.core.orchestrator import main

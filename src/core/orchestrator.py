@@ -34,6 +34,7 @@ class AgentState(TypedDict):
     qa_approved: bool
     qa_exhausted: bool
     max_iterations: int
+    stealth_mode: bool
 
 
 def tier_setting(overrides: dict, tier: int, default):
@@ -343,9 +344,19 @@ class Orchestrator:
             }
 
         def humanize_node(state: AgentState):
-            print("\n--- Humanizing Output (Stealth Mode) ---")
             draft_content = state["draft_content"]
-            prompt = f"Please humanize the following technical report/documentation. Maintain all facts but drastically increase burstiness and perplexity to bypass AI detectors:\n\n{draft_content}"
+            
+            is_stealth = state.get("stealth_mode", False)
+            humanize_cfg = self.cfg.get("humanize", {})
+            
+            if is_stealth:
+                print("\n--- Humanizing Output (Stealth Mode) ---")
+                prompt = f"Please humanize the following technical report/documentation. Maintain all facts but drastically increase burstiness and perplexity to bypass AI detectors:\n\n{draft_content}"
+            elif humanize_cfg.get("enabled", True):
+                print("\n--- Humanizing Output (Neutral Editing) ---")
+                prompt = f"Please humanize the following technical report/documentation. Maintain all facts, improve structure and flow, and ensure clarity and readability:\n\n{draft_content}"
+            else:
+                return {"draft_content": draft_content}
             
             from src.core.transport_retry import call_with_transport_retry, ProviderTransportError
             try:
@@ -656,6 +667,12 @@ class Orchestrator:
                 return None
             print(f"[Preflight] OK ({', '.join(preflight.checked_models)})")
 
+        is_stealth = False
+        if user_query.strip().startswith("/stealth"):
+            is_stealth = True
+            user_query = user_query.replace("/stealth", "", 1).strip()
+            print("[Orchestrator] Stealth mode activated via /stealth command.")
+
         print("\n=== Starting Multi-Agent Orchestration ===")
         print(f"Query: {user_query}\n")
 
@@ -690,6 +707,7 @@ class Orchestrator:
             "qa_approved": False,
             "qa_exhausted": False,
             "max_iterations": 3,
+            "stealth_mode": is_stealth,
         }
 
         final_state = self.graph.invoke(initial_state, config=config)
