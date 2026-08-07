@@ -24,6 +24,6 @@ jobs:
       - name: Update Badges
         run: python scripts/library_statistics.py
       - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "chore: update library statistics badge [skip ci]"
