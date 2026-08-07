@@ -17,7 +17,7 @@ This skill defines the operational framework and procedures for assisting users 
 ## Core Directives
 
 ### 1. Profile Grounding
-- Before generating any personal or professional content, you must read the `USER_PROFILE.md` file located in the workspace root directory.
+- Before generating any personal or professional content, you must read the local, untracked `USER_PROFILE.md` file (copied from `USER_PROFILE.example.md` and filled in) located in the workspace root directory.
 - Ground all generated claims, achievements, and technical expertise strictly in the verified profile data.
 
 ### 2. Tone and Professional Identity

@@ -35,7 +35,7 @@
 **System Definition:** A centralized, filesystem-based knowledge library and execution environment engineered for autonomous AI operatives embedded within the terminal.
 
 **The Engineering Protocol:** AI constructs frequently hallucinate or generate generic boilerplate when operating outside of a defined parameter space. By tethering this structured databank to the local environment, the AI is mathematically coerced into operating synchronously with a senior systems engineer. 
-* **Zero-Hallucination Matrix:** The AI is strictly bound by local markdown rules (`AGENTS.md`, loaded natively by Codex and imported by Gemini via `GEMINI.md` and Claude Code via `CLAUDE.md`), explicit code standards, and project constraints before generating solutions.
+* **Grounded Cognitive Matrix:** The AI's responses are grounded against local markdown rules (`AGENTS.md`, loaded natively by Codex and imported by Gemini via `GEMINI.md` and Claude Code via `CLAUDE.md`), explicit code standards, and project constraints at the prompt level. This structural tethering significantly reduces, but does not eliminate, hallucination risk.
 * **Multi-Agent Native:** The same skills, rules, and profile context load into **Codex**, **Gemini CLI / Antigravity**, and **Claude Code**. One library, every terminal agent.
 * **Automated CI/CD Guardrails:** Built-in verification pipelines (SAST, Linting, Testing) ensure the AI cannot compromise the master branch.
 * **Domain-Specific Cognitive Skills:** Pre-loaded domain nodes (e.g., UI/UX, Data Science, Threat Hunting) allow the agent to adapt logic dynamically rather than executing blindly.
@@ -52,7 +52,7 @@
 When granting an AI construct access to local filesystem arrays and shell commands, security is the primary directive. This library architecture is hardened to protect the local environment from prompt injection, memory poisoning, and unauthorized automated execution:
 * **Anti-Poisoning & Grounding Protocol:** The AI is mathematically grounded in local rule files (`AGENTS.md`) and forced to apply an epistemic humility decision tree. If live network data conflicts with stale local data, or if an action violates the [`anti_manipulation.md`](.agents/rules/anti_manipulation.md) constraints, the core orchestrator will sever the connection automatically.
 * **Human-in-the-Loop Override:** Absolutely no executable commands (like `bash` scripts or external API mutations) are initialized without explicit human consent. The operator reviews all proposed actions natively.
-* **100% Local Privacy:** The core orchestrator and vector databases (ChromaDB / PGVector) operate entirely locally. Local filesystems, cryptographic secrets, and personalized `USER_PROFILE.md` structures are never exfiltrated to a third-party training set.
+* **Local Privacy by Default:** The core orchestrator and vector databases (ChromaDB / PGVector) operate entirely locally. However, privacy is currently enforced by configuration rather than a hard sandbox: external integrations like LangSmith (if environment variables are present) or hosted LLM providers (if selected in settings) will transmit data. When operated strictly with local models and without cloud integrations, your local filesystems, cryptographic secrets, and personalized `USER_PROFILE.md` structures remain local.
 
 ***
 
