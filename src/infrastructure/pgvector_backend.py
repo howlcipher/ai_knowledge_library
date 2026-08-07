@@ -5,16 +5,9 @@ Module for interacting with a PostgreSQL database using the pgvector extension.
 
 import sys
 
-try:
-    import psycopg2
-    from pgvector.psycopg2 import register_vector
-    from sentence_transformers import SentenceTransformer
-except ImportError:
-    print(
-        "Dependencies missing. Please install psycopg2-binary, pgvector, and sentence-transformers."
-    )
-    sys.exit(1)
-
+import psycopg2
+from pgvector.psycopg2 import register_vector
+from sentence_transformers import SentenceTransformer
 
 from src.infrastructure.config_loader import load_config
 from src.infrastructure.vector_store_base import BaseVectorStore
