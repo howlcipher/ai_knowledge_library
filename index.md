@@ -38,7 +38,7 @@
 * **Grounded Cognitive Matrix:** The AI's responses are grounded against local markdown rules (`AGENTS.md`, loaded natively by Codex and imported by Gemini via `GEMINI.md` and Claude Code via `CLAUDE.md`), explicit code standards, and project constraints at the prompt level. This structural tethering significantly reduces, but does not eliminate, hallucination risk.
 * **Multi-Agent Native:** The same skills, rules, and profile context load into **Codex**, **Gemini CLI / Antigravity**, and **Claude Code**. One library, every terminal agent.
 * **Automated CI/CD Guardrails:** Built-in verification pipelines (SAST, Linting, Testing) ensure the AI cannot compromise the master branch.
-* **Domain-Specific Cognitive Skills:** Pre-loaded domain nodes (e.g., UI/UX, Data Science, Threat Hunting) allow the agent to adapt logic dynamically rather than executing blindly.
+* **Domain-Specific Cognitive Skills:** Pre-loaded domain nodes, including a canonical HowlFrame language and toolchain reference, allow the agent to adapt logic dynamically rather than executing blindly.
 
 ### 🔌 The Model Context Protocol (MCP) Advantage
 **Why is MCP important?** Historically, AI models have been trapped in a sandbox, limited only to their outdated training data and what you type in the chat box. Writing custom integrations for every external service (like Jira, AWS, or Wikipedia) required hundreds of lines of brittle code. 

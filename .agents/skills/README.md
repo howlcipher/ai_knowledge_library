@@ -12,6 +12,7 @@ When the AI encounters a task related to a specific domain (e.g., writing a web 
 * **`architectural_guardrails`**: Defines system architecture constraints to prevent sprawling or unsustainable designs.
 * **`defensive_debugging`**: Methodologies for hunting bugs with a zero-trust, log-first approach.
 * **`software_development`**: General code quality, language-agnostic standards, and TDD constraints.
+* **`howlframe-transpiler`**: Canonical HowlFrame language, compiler, HFIR, bytecode, backend, and verification guidance.
 * **`frontend_engineering`**: Strict paradigms for React/Vue, state management, and modern CSS frameworks.
 * **`database_management`**: SQL/NoSQL schema design, normalization, and indexing standards.
 
@@ -60,13 +61,13 @@ When the AI encounters a task related to a specific domain (e.g., writing a web 
 You can create an infinite number of specialized skills for your AI agent to learn. The AI reads these files dynamically, meaning any newly created skill is immediately actionable.
 
 To create a new skill:
-1. **Create a Directory:** Make a new folder inside `.agents/skills/` using a descriptive, lowercase name (e.g., `quantum_computing`).
+1. **Create a Directory:** Make a new folder inside `.agents/skills/` using a descriptive, lowercase, hyphen-case name (e.g., `quantum-computing`).
 2. **Create a `SKILL.md` File:** Inside that new folder, create a file explicitly named `SKILL.md`.
 3. **Write the Instructions:** Follow this format:
 
 ```markdown
 ---
-name: your_skill_name
+name: your-skill-name
 description: A 1-2 sentence description of what this skill does and when the AI should trigger it.
 ---
 

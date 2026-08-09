@@ -292,6 +292,13 @@
       "path": ".agents/skills/hallucination_guardrails/SKILL.md"
     },
     {
+      "name": "howlframe-transpiler",
+      "description": "Canonical HowlFrame language and transpiler guidance covering the compiler, .howl source, HFIR, bytecode, VM, backends, examples, fixtures, builds, tests, and verification. Use to write a HowlFrame program or change any of those toolchain components.",
+      "triggers": [],
+      "tier": null,
+      "path": ".agents/skills/howlframe-transpiler/SKILL.md"
+    },
+    {
       "name": "l4d2_optimization",
       "description": "Performance optimization and resource management for L4D2 servers and clients.",
       "triggers": [
@@ -513,21 +520,6 @@
       ],
       "tier": 2,
       "path": ".agents/skills/visual_design/SKILL.md"
-    },
-    {
-      "name": "zero_transpiler",
-      "description": "Syntax rules, AST node reference, known transpiler bugs, and build workflow for Zero, the Lisp-like AI-first language that transpiles to Go.",
-      "triggers": [
-        "zero",
-        ".zero",
-        "zero.go",
-        "zero language",
-        "zero transpiler",
-        "s-expression",
-        "lisp-like"
-      ],
-      "tier": 3,
-      "path": ".agents/skills/zero_transpiler/SKILL.md"
     }
   ]
 }
