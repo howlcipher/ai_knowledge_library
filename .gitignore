@@ -18,6 +18,11 @@ client_secret.json
 # Generated skills index is tracked
 !.agents/skills.json
 
+# Devin project config is tracked; local overrides are not
+!.devin/config.json
+.devin/config.local.json
+.devin/mcp_config.local.json
+
 # Ignore synced personal Google Docs
 personal_docs/
 

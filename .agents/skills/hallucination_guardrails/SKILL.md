@@ -7,7 +7,7 @@ triggers:
   - "fabrication"
   - "verify sources"
   - "uncertainty"
-tier: 0
+tier: 1
 ---
 
 # Reality Validation Rules

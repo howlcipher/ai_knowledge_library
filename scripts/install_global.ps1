@@ -169,4 +169,40 @@ if ((Test-Path -Path $CodexOverride) -and ((Get-Item -Path $CodexOverride).Lengt
     Write-Host "Warning: $CodexOverride takes precedence over the installed Codex guidance." -ForegroundColor Yellow
 }
 
-Write-Host "Integration complete. Your AI Knowledge Library is now globally accessible to Gemini, Claude, and Codex."
+# --- Devin CLI integration ---
+$DevinDir = Join-Path -Path $env:APPDATA -ChildPath "devin"
+$DevinAgents = Join-Path -Path $DevinDir -ChildPath "AGENTS.md"
+$DevinBlock = "$MarkerStart`n$ImportLine`n$MarkerEnd"
+
+if (-not (Test-Path -Path $DevinDir)) {
+    New-Item -ItemType Directory -Path $DevinDir | Out-Null
+}
+
+Write-Host "Linking skills to global Devin CLI configuration"
+Link-Skills -SourceDir $SourceSkills -TargetDir (Join-Path -Path $DevinDir -ChildPath "skills")
+
+Write-Host "Linking command skills (/work_next_item, /resume_task, /groom_backlogs) to global Devin CLI configuration"
+Link-Skills -SourceDir $SourceSkillCommands -TargetDir (Join-Path -Path $DevinDir -ChildPath "skills")
+
+Write-Host "Registering library rulebook in global Devin CLI configuration"
+$CanonicalRules = Get-Content -Path (Join-Path -Path $RepoRoot -ChildPath "AGENTS.md") -Raw
+$DevinBlock = "$MarkerStart`n$CanonicalRules"
+if (-not $CanonicalRules.EndsWith("`n")) {
+    $DevinBlock += "`n"
+}
+$DevinBlock += $MarkerEnd
+
+if (Test-Path -Path $DevinAgents) {
+    $Content = Get-Content -Path $DevinAgents -Raw
+    if ($Content -match [regex]::Escape($MarkerStart)) {
+        $Pattern = [regex]::Escape($MarkerStart) + "[\s\S]*?" + [regex]::Escape($MarkerEnd)
+        $Content = [regex]::Replace($Content, $Pattern, $DevinBlock)
+        Set-Content -Path $DevinAgents -Value $Content
+    } else {
+        Add-Content -Path $DevinAgents -Value "`n$DevinBlock"
+    }
+} else {
+    Set-Content -Path $DevinAgents -Value $DevinBlock
+}
+
+Write-Host "Integration complete. Your AI Knowledge Library is now globally accessible to Gemini, Claude, Codex, and Devin."

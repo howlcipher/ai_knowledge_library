@@ -1,6 +1,7 @@
 ---
 name: howlframe-transpiler
 description: Canonical HowlFrame language and transpiler guidance covering the compiler, .howl source, HFIR, bytecode, VM, backends, examples, fixtures, builds, tests, and verification. Use to write a HowlFrame program or change any of those toolchain components.
+tier: 0
 ---
 
 # HowlFrame Language and Toolchain

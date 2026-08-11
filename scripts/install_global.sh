@@ -156,4 +156,50 @@ if [ -s "$CODEX_DIR/AGENTS.override.md" ]; then
   echo "Warning: $CODEX_DIR/AGENTS.override.md takes precedence over the installed Codex guidance."
 fi
 
-echo "Integration complete. Your AI Knowledge Library is now globally accessible to Gemini, Claude, and Codex."
+# --- Devin CLI integration ---
+DEVIN_DIR="$HOME/.config/devin"
+
+mkdir -p "$DEVIN_DIR/skills"
+
+echo "Linking skills to global Devin CLI configuration"
+for skill in "$REPO_ROOT/.agents/skills"/*; do
+  if [ -d "$skill" ]; then
+    ln -sfn "$skill" "$DEVIN_DIR/skills/$(basename "$skill")"
+  fi
+done
+
+echo "Linking command skills (/work_next_item, /resume_task, /groom_backlogs) to global Devin CLI configuration"
+for skill in "$REPO_ROOT/.agents/skill_commands"/*; do
+  if [ -d "$skill" ]; then
+    ln -sfn "$skill" "$DEVIN_DIR/skills/$(basename "$skill")"
+  fi
+done
+
+echo "Registering library rulebook in global Devin CLI configuration"
+DEVIN_AGENTS="$DEVIN_DIR/AGENTS.md"
+
+if [ -f "$DEVIN_AGENTS" ] && grep -qF "$MARKER_START" "$DEVIN_AGENTS"; then
+  TMP_FILE=$(mktemp)
+  awk -v start="$MARKER_START" -v end="$MARKER_END" -v rules="$REPO_ROOT/AGENTS.md" '
+    $0 == start {
+      print
+      while ((getline line < rules) > 0) {
+        print line
+      }
+      close(rules)
+      skip=1
+      next
+    }
+    $0 == end {skip=0}
+    !skip {print}
+  ' "$DEVIN_AGENTS" > "$TMP_FILE" && mv "$TMP_FILE" "$DEVIN_AGENTS"
+else
+  {
+    echo ""
+    echo "$MARKER_START"
+    cat "$REPO_ROOT/AGENTS.md"
+    echo "$MARKER_END"
+  } >> "$DEVIN_AGENTS"
+fi
+
+echo "Integration complete. Your AI Knowledge Library is now globally accessible to Gemini, Claude, Codex, and Devin."
