@@ -8,6 +8,8 @@ Pending bugs carry the same diminishing-returns score defined in `improvements.m
 
 **Last groomed 2026-07-31:** hardening audit (GROOM_ONLY) verified four new live bugs in the legacy free-text QA loop and the local lint gate, all independently confirmed against the current code and re-run live. Bug 6 (Python 3.14 warning) was re-verified live and is unchanged. Five Pending bugs now rank above the ROI floor.
 
+**Last groomed 2026-08-11:** all ten known bugs are now Done — no Pending rows remain to re-score. No new live bugs surfaced during this pass.
+
 | # | Bug | Status | Score (V×D÷E) | Claude model | Gemini model | ROI rationale |
 | --- | --- | --- | --- | --- | --- | --- |
 | 8 | [Blank input authorizes executable tool calls in the human-approval gate](#8-blank-input-authorizes-executable-tool-calls-in-the-human-approval-gate) | Done (2026-08-05) | — | Sonnet 5 | Gemini 3 Pro | Trivial one-line fix; a deny-by-default authorization gate currently authorizes on an empty Enter keypress, the exact opposite of its stated contract |
