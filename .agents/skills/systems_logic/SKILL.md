@@ -9,7 +9,7 @@ triggers:
   - "tier"
   - "orchestration"
   - "precedence"
-tier: 0
+tier: 1
 ---
 
 # Systems Logic and Dependency Management

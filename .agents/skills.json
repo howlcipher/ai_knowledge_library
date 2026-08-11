@@ -288,14 +288,14 @@
         "verify sources",
         "uncertainty"
       ],
-      "tier": 0,
+      "tier": 1,
       "path": ".agents/skills/hallucination_guardrails/SKILL.md"
     },
     {
       "name": "howlframe-transpiler",
       "description": "Canonical HowlFrame language and transpiler guidance covering the compiler, .howl source, HFIR, bytecode, VM, backends, examples, fixtures, builds, tests, and verification. Use to write a HowlFrame program or change any of those toolchain components.",
       "triggers": [],
-      "tier": null,
+      "tier": 0,
       "path": ".agents/skills/howlframe-transpiler/SKILL.md"
     },
     {
@@ -467,7 +467,7 @@
         "orchestration",
         "precedence"
       ],
-      "tier": 0,
+      "tier": 1,
       "path": ".agents/skills/systems_logic/SKILL.md"
     },
     {
