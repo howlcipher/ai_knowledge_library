@@ -1,66 +1,85 @@
-# 📖 AI Knowledge Library - User Wiki & Guide
+# 📖 HowlPlane - User Guide & Reference
 
-Welcome to the official User Guide for the AI Knowledge Library! This document outlines exactly what you can do with the library once you have it installed on your system.
-
----
-
-## 1. 🎛️ The Main Control Panel (`ai_installer`)
-
-The core of this library is managed entirely through the standalone `ai_installer` executable you downloaded during installation. It acts as your primary interactive menu.
-
-Simply run `./ai_installer` in your terminal to bring up the menu. You can perform the following actions:
-
-* **Install / Setup Environment:** Runs the initial setup, downloads dependencies, and safely links the global agent rules to your system.
-* **Customize Profile:** Launches an interactive wizard that lets you generate or modify a `USER_PROFILE.md` file so the AI perfectly understands your preferences, name, and coding habits.
-* **Launch RAG Interface:** Boot up either the fast **Terminal UI (TUI)** or the rich **Web UI** to chat securely with your codebase using Retrieval-Augmented Generation (RAG).
-* **Sync / Update Repository:** Safely pull the latest rules and tools from GitHub without blowing away your local configurations.
-* **Uninstall Global Links:** Cleanly detaches the AI skills from your global system environment.
+Welcome to the official User Guide for HowlPlane! This document outlines how to operate HowlPlane across your development repositories.
 
 ---
 
-## 2. 🤖 Chatting with your Codebase (RAG Interfaces)
+## 1. 🚀 Everyday Workflow: The Global Launcher (`ai`)
 
-You do not have to navigate the library through the command line to ask questions. You can chat with it! By selecting **"Launch RAG Interface (TUI/Web)"** from the `ai_installer` menu, you get two choices:
+The primary way to interact with HowlPlane across any codebase on your machine is through the `ai` command:
+
+```bash
+# Stand inside any repository and execute an objective:
+cd /path/to/project
+ai work "fix the highest-value open bug"
+
+# Inspect active project status, verification suites, and task runs:
+ai status
+
+# Deterministically route a task and generate reviewer assignments without mutations:
+ai route "patch authentication vulnerability"
+
+# Run system and toolchain preflight diagnostics:
+ai doctor
+
+# Execute deterministic verification on the current project:
+ai verify
+```
+
+---
+
+## 2. 🎛️ The Setup & Management Tool (`ai_installer`)
+
+HowlPlane provides a standalone, cross-platform binary installer featuring an interactive Terminal User Interface (TUI):
+
+```bash
+./ai_installer
+```
+
+Available actions:
+* **Install / Setup Environment:** Runs initial setup, builds dependencies, and links global agent rules and skills to Gemini CLI / Antigravity, Claude Code, Codex, and Devin CLI.
+* **Customize Profile:** Launches an interactive wizard to generate or update `USER_PROFILE.md` for profile grounding.
+* **Launch RAG Interface:** Boot up either the terminal UI or web UI to query the local knowledge layer.
+* **Sync / Update Repository:** Pull the latest rules, skills, and prompts from GitHub.
+* **Uninstall Global Links:** Cleanly detaches global links from your system environment.
+
+---
+
+## 3. 🤖 Querying the Knowledge & Skills Layer (RAG Interfaces)
+
+You can explore and query the HowlPlane knowledge base interactively:
 
 ### 🖥️ Terminal UI (TUI)
-* **What it is:** A blazing-fast, terminal-native chat interface built with Python `textual`.
-* **Why use it:** It has full, unsandboxed access to your local filesystem.
-* **Feature - Multi-LLM Switching:** From the TUI sidebar, you can hot-swap your AI provider on the fly. Don't like Gemini's answer? Switch to Claude Sonnet 5, Claude Opus 4.8, GPT-4o, Grok 2, or Perplexity Sonar instantly.
+* Fast, terminal-native chat interface built with Python `textual`.
+* Allows hot-swapping configured LLM providers for interactive queries.
 
 ### 🌐 Web UI (Streamlit)
-* **What it is:** A rich, graphical browser interface built with Python `streamlit`.
-* **Why use it:** It runs in a secure browser sandbox, which is perfect for visually reviewing returned code snippets, markdown formatting, or diagrams.
+* Graphical browser interface built with Python `streamlit`.
+* Useful for visually reviewing retrieved documentation snippets and telemetry.
 
 ---
 
-## 3. 🛠️ Using the Embedded Developer Tools
+## 4. 🛠️ Embedded Developer & Diagnostics Tools
 
-The `tools/` directory contains powerful automation scripts that you (or an AI agent) can execute directly:
+HowlPlane includes verification, diagnostic, and automation utilities:
 
-* **`python src/infrastructure/build_vector_index.py`**: Scans your entire knowledge base and builds a localized ChromaDB vector database so semantic RAG search works offline.
-* **`python src/core/orchestrator.py "<query>"`**: Executes the Multi-Agent Orchestrator. This deploys a `Researcher`, a `QA Reviewer`, and a native `Technical_Writer` (Stealth AI) agent to solve complex tasks, run QA, and perfectly humanize the output to bypass external AI detectors. 
-* **Model Context Protocol (MCP) Capabilities**: Your orchestrator is equipped with 20+ massive domain integrations. Simply run the orchestrator, and it will autonomously use AWS, Kubernetes, Yahoo Finance, Shodan, Puppeteer (Browser), Google Drive, Wikipedia, and more to solve your prompts natively.
-* **`python scripts/github_profile_sync.py`**: Automatically syncs your local profile variables against your live GitHub identity.
-* **`python scripts/translate_project.py --lang [CODE]`**: Translates the documentation into any of the 17 supported global languages.
-* **`python src/core/adversarial_tester.py`**: Runs a prompt-injection and adversarial logic test against your ruleset to ensure the AI behaves safely.
+* **`ai doctor` (or `python src/infrastructure/doctor.py`)**: Runs complete health diagnostics on Python, Go, Git, evidence ledger integrity, and operating mode egress enforcement.
+* **`python src/infrastructure/build_vector_index.py`**: Scans the knowledge layer and builds a localized ChromaDB vector index for offline semantic retrieval.
+* **`python src/core/adversarial_tester.py`**: Runs prompt-injection and adversarial negative tests against the ruleset.
+* **`scripts/generate_skills_manifest.py`**: Auto-generates the skills manifest table in `AGENTS.md` and rebuilds agent symlinks.
 
 ---
 
-## 4. ✅ Local CI/CD (The Regression Guard)
+## 5. ✅ Deterministic Verification & CI/CD Guardrails
 
-If you intend to contribute or modify the library's rules yourself, you have access to a powerful local regression suite. 
+When contributing to HowlPlane, run local verification suites:
 
-Whenever you attempt to `git push` changes, a local hook intercepts the push and automatically runs:
 ```bash
 make test lint build docs
 ```
-This ensures that all Python tests, Go formatting rules, and API documentation generators pass perfectly before your broken code ever reaches GitHub Actions!
 
-If you want to run this manually to check your work, just type:
-```bash
-make
-```
+This verifies all Python tests, Go packages, linting rules, and documentation generators.
 
 ---
 
-*Need help fixing a broken environment? Check out the [Troubleshooting Guide](troubleshooting.md).*
+*Need help troubleshooting? Check out the [Troubleshooting Guide](troubleshooting.md).*

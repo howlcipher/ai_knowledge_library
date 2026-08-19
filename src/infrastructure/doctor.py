@@ -2,7 +2,7 @@
 """
 doctor.py
 
-System environment, dependency, and toolchain health diagnostics for ai_knowledge_library.
+System environment, dependency, and toolchain health diagnostics for HowlPlane.
 Checks:
 - Python interpreter & active virtualenv
 - Essential Python package dependencies (pytest, yaml, jsonschema)
@@ -259,7 +259,7 @@ def run_diagnostics(repo_root: Optional[Path] = None) -> List[DiagnosticCheck]:
 
 def main() -> int:
     print("=" * 60)
-    print("AI Knowledge Library - System & Toolchain Diagnostics")
+    print("HowlPlane - System & Toolchain Diagnostics")
     print("=" * 60)
     checks = run_diagnostics()
     has_error = False

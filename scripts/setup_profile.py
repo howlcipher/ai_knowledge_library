@@ -3,7 +3,7 @@
 Profile Setup Script
 
 This script assists in setting up or modifying a user profile markdown file
-used across the AI Knowledge Library.
+used across HowlPlane.
 """
 
 import os

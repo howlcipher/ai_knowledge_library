@@ -2,7 +2,7 @@
 """
 mcp_server.py
 
-Exposes the AI Knowledge Library and Semantic Search backend as a Model Context Protocol (MCP) server.
+Exposes the HowlPlane Knowledge and Semantic Search backend as a Model Context Protocol (MCP) server.
 This allows any MCP-compatible agent to securely search the library, with all data routed
 through the ContextSanitizer.
 """
@@ -12,12 +12,12 @@ from src.infrastructure.semantic_search import SemanticSearcher
 from src.core.context_sanitizer import format_safe_prompt
 
 # Initialize the MCP Server
-mcp = FastMCP("AI_Knowledge_Library")
+mcp = FastMCP("HowlPlane")
 
 @mcp.tool()
 def search_knowledge_library(query: str, n_results: int = 5) -> str:
     """
-    Search the AI knowledge library for context related to a query.
+    Search the HowlPlane knowledge base for context related to a query.
     All retrieved data is strictly sanitized to prevent prompt injections.
     
     Args:

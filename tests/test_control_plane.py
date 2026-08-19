@@ -70,7 +70,7 @@ from src.control_plane.cli import main as cli_main
 def test_task_spec_creation_and_validation():
     spec = TaskSpec(
         task_id="TASK-001",
-        repository="ai_knowledge_library",
+        repository="howlplane",
         objective="Build control plane",
         acceptance_criteria=["Tests pass", "Evidence recorded"],
         risk_level="medium",
@@ -908,7 +908,7 @@ def test_tombstone_human_boundary_lifecycle_fail_closed():
     # Prove that an agent cannot bypass debt acceptance without human approval
     task = TaskSpec(
         task_id="TASK-TOMBSTONE-LIFECYCLE",
-        repository="ai_knowledge_library",
+        repository="howlplane",
         objective="Propose tombstone for shared fixture",
         risk_level="medium",
     )
@@ -950,7 +950,7 @@ def test_tombstone_human_boundary_lifecycle_fail_closed():
     # Step 3: Human authorizes the debt (simulated approval on a separate approved task) -> transitions to verifying, tombstone applied, verif passes
     approved_task = TaskSpec(
         task_id="TASK-TOMBSTONE-APPROVED",
-        repository="ai_knowledge_library",
+        repository="howlplane",
         objective="Approved legacy tombstone",
         risk_level="medium",
     )

@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	DefaultRepoURL = "https://github.com/howlcipher/ai_knowledge_library"
-	DefaultDirName = "ai_knowledge_library"
+	DefaultRepoURL = "https://github.com/howlcipher/howlplane"
+	DefaultDirName = "howlplane"
 )
 
 // gitHookInstallerScripts lists the scripts that install git hooks.
@@ -191,7 +191,7 @@ func removeManagedBlock(path, root string) error {
 	if err != nil {
 		return err
 	}
-	blockRe := regexp.MustCompile(`(?s)\n?<!-- ai_knowledge_library:start -->.*?<!-- ai_knowledge_library:end -->\n?`)
+	blockRe := regexp.MustCompile(`(?s)\n?<!-- (?:ai_knowledge_library|howlplane):start -->.*?<!-- (?:ai_knowledge_library|howlplane):end -->\n?`)
 	cleaned := blockRe.ReplaceAll(data, []byte("\n"))
 	if string(cleaned) == string(data) {
 		return nil
@@ -586,7 +586,7 @@ func main() {
 
 	var rootCmd = &cobra.Command{
 		Use:   "ai_installer",
-		Short: "AI Knowledge Library Installer",
+		Short: "HowlPlane Installer",
 		Run: func(cmd *cobra.Command, args []string) {
 			if !installer.IsRepoRoot() {
 				if err := installer.CloneRepo(); err != nil {

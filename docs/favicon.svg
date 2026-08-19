@@ -1,6 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" fill="#050505" rx="12" />
-  <polygon points="32,12 52,48 12,48" fill="none" stroke="#ff003c" stroke-width="4" stroke-linejoin="round" />
-  <circle cx="32" cy="38" r="6" fill="#00f0ff" />
-  <rect x="28" y="24" width="8" height="4" fill="#ff9900" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" fill="#000000" />
+  <rect x="2" y="2" width="60" height="60" fill="#070a14" stroke="#4a5aa8" stroke-width="2" />
+  <!-- HowlPlane Command Plane / Frame Icon -->
+  <polygon points="14,18 50,32 14,46 22,32" fill="#6e4aa3" stroke="#ffffff" stroke-width="2" stroke-linejoin="miter" />
+  <line x1="22" y1="32" x2="48" y2="32" stroke="#ffffff" stroke-width="2" />
+  <!-- Live Status Dot -->
+  <circle cx="50" cy="14" r="4" fill="#39ff14" />
 </svg>

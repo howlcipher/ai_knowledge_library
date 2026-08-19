@@ -65,39 +65,60 @@ def test_find_git_repo_root_not_found(tmp_path):
 # 2. Control Plane Discovery Tests
 # ============================================================================
 
-def test_find_control_plane_root_override(tmp_path):
-    fake_cp = tmp_path / "fake_cp"
-    fake_cp.mkdir()
-    (fake_cp / "AGENTS.md").write_text("# Agents\n", encoding="utf-8")
-    (fake_cp / "src" / "control_plane").mkdir(parents=True)
+def _make_fake_cp(path: Path, heading: str = "# Agents\n") -> Path:
+    path.mkdir(parents=True, exist_ok=True)
+    (path / "AGENTS.md").write_text(heading, encoding="utf-8")
+    (path / "src" / "control_plane").mkdir(parents=True, exist_ok=True)
+    return path
 
+
+def test_find_control_plane_root_override(tmp_path):
+    fake_cp = _make_fake_cp(tmp_path / "fake_cp")
     res = find_control_plane_root(override_path=str(fake_cp))
     assert res == fake_cp.resolve()
 
 
-def test_find_control_plane_root_env(tmp_path, monkeypatch):
-    fake_cp = tmp_path / "env_cp"
-    fake_cp.mkdir()
-    (fake_cp / "AGENTS.md").write_text("# Agents\n", encoding="utf-8")
-    (fake_cp / "src" / "control_plane").mkdir(parents=True)
-
-    monkeypatch.setenv("AI_KNOWLEDGE_LIBRARY", str(fake_cp))
+@pytest.mark.parametrize("env_name", ["HOWLPLANE_HOME", "HOWLPLANE_DIR"])
+def test_find_control_plane_root_env_vars(env_name, tmp_path, monkeypatch):
+    for var in ("HOWLPLANE_HOME", "HOWLPLANE_DIR", "AI_KNOWLEDGE_LIBRARY"):
+        monkeypatch.delenv(var, raising=False)
+    fake_cp = _make_fake_cp(tmp_path / f"{env_name.lower()}_cp")
+    monkeypatch.setenv(env_name, str(fake_cp))
     res = find_control_plane_root()
     assert res == fake_cp.resolve()
 
 
-def test_find_control_plane_root_config_file(tmp_path, monkeypatch):
-    monkeypatch.delenv("AI_KNOWLEDGE_LIBRARY", raising=False)
+def test_find_control_plane_root_legacy_ai_knowledge_library_env(tmp_path, monkeypatch, capsys):
+    for var in ("HOWLPLANE_HOME", "HOWLPLANE_DIR"):
+        monkeypatch.delenv(var, raising=False)
+    fake_cp = _make_fake_cp(tmp_path / "legacy_env_cp")
+    monkeypatch.setenv("AI_KNOWLEDGE_LIBRARY", str(fake_cp))
+    res = find_control_plane_root()
+    assert res == fake_cp.resolve()
+    err = capsys.readouterr().err
+    assert "WARNING: AI_KNOWLEDGE_LIBRARY environment variable is deprecated" in err
+
+
+def test_find_control_plane_root_precedence_howlplane_home_over_legacy(tmp_path, monkeypatch):
+    fake_primary = _make_fake_cp(tmp_path / "primary_cp", heading="# Primary\n")
+    fake_legacy = _make_fake_cp(tmp_path / "legacy_cp", heading="# Legacy\n")
+
+    monkeypatch.setenv("HOWLPLANE_HOME", str(fake_primary))
+    monkeypatch.setenv("AI_KNOWLEDGE_LIBRARY", str(fake_legacy))
+
+    res = find_control_plane_root()
+    assert res == fake_primary.resolve()
+
+
+@pytest.mark.parametrize("config_subdir", ["howlplane", "ai-control-plane"])
+def test_find_control_plane_root_config_files(config_subdir, tmp_path, monkeypatch):
+    for var in ("HOWLPLANE_HOME", "HOWLPLANE_DIR", "AI_KNOWLEDGE_LIBRARY"):
+        monkeypatch.delenv(var, raising=False)
     fake_home = tmp_path / "home"
-    fake_home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: fake_home)
 
-    fake_cp = tmp_path / "configured_cp"
-    fake_cp.mkdir()
-    (fake_cp / "AGENTS.md").write_text("# Agents\n", encoding="utf-8")
-    (fake_cp / "src" / "control_plane").mkdir(parents=True)
-
-    cfg_dir = fake_home / ".config" / "ai-control-plane"
+    fake_cp = _make_fake_cp(tmp_path / f"configured_{config_subdir}")
+    cfg_dir = fake_home / ".config" / config_subdir
     cfg_dir.mkdir(parents=True)
     (cfg_dir / "config.toml").write_text(f'[control_plane]\npath = "{fake_cp}"\n', encoding="utf-8")
 
@@ -106,6 +127,8 @@ def test_find_control_plane_root_config_file(tmp_path, monkeypatch):
 
 
 def test_find_control_plane_root_invalid_raises(tmp_path, monkeypatch):
+    monkeypatch.delenv("HOWLPLANE_HOME", raising=False)
+    monkeypatch.delenv("HOWLPLANE_DIR", raising=False)
     monkeypatch.delenv("AI_KNOWLEDGE_LIBRARY", raising=False)
     with pytest.raises(ControlPlaneNotFoundError):
         find_control_plane_root(override_path=str(tmp_path / "non_existent"))

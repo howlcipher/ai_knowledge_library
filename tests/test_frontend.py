@@ -2,7 +2,7 @@ import os
 from bs4 import BeautifulSoup
 
 
-def test_frontend_has_mecha_elements():
+def test_frontend_has_systems_console_elements():
     index_path = os.path.join(os.path.dirname(__file__), "..", "docs", "index.html")
     assert os.path.exists(index_path), "Frontend index.html is missing"
 
@@ -11,31 +11,25 @@ def test_frontend_has_mecha_elements():
 
     soup = BeautifulSoup(html_content, "html.parser")
 
-    # Check for mecha style classes
-    assert soup.find(class_="scanlines") is not None
-    assert soup.find(class_="mecha-nav") is not None
-    assert soup.find(class_="mecha-panel") is not None
-
-    # Check for internationalization support
-    i18n_elements = soup.find_all(attrs={"data-i18n": True})
-    assert len(i18n_elements) > 0, "No i18n data attributes found"
+    # Check for systems console classes and structure
+    assert soup.find(class_="section-nav") is not None
+    assert soup.find(class_="signal-grid") is not None
+    assert soup.find(class_="status-dot") is not None
 
     # Check for theme toggle
-    assert soup.find(id="themeToggle") is not None
+    assert soup.find(id="theme-toggle") is not None
 
-    # Check for download links
-    download_links = soup.find(class_="download-links")
-    assert download_links is not None
-    links = download_links.find_all("a")
-    assert len(links) >= 3, "Missing OS download links"
+    # Check for primary sections
+    assert soup.find(id="overview") is not None
+    assert soup.find(id="workflow") is not None
+    assert soup.find(id="capabilities") is not None
+    assert soup.find(id="howlframe") is not None
 
 
-def test_frontend_has_translations():
+def test_frontend_script():
     app_js_path = os.path.join(os.path.dirname(__file__), "..", "docs", "app.js")
     with open(app_js_path, "r", encoding="utf-8") as f:
         js_content = f.read()
 
-    # Super simple text check for the JS dictionary
-    assert "ja:" in js_content
-    assert "es:" in js_content
-    assert "de:" in js_content
+    assert "theme-toggle" in js_content
+    assert "light-mode" in js_content

@@ -53,7 +53,7 @@ def test_case_1_ceiling_increase_must_fail_or_require_human():
     assert res.verdict == PolicyChangeType.HARD_REJECT
 
     # Verify HumanBoundaryGate catches it and recommends HARD REJECT
-    task = TaskSpec(task_id="TASK-C1", repository="ai_knowledge_library", objective="Introduce clone and bump ceiling")
+    task = TaskSpec(task_id="TASK-C1", repository="howlplane", objective="Introduce clone and bump ceiling")
     gate_res = HumanBoundaryGate.evaluate(task, planned_actions=["bump ceiling"], hygiene_policy=res)
     assert gate_res.requires_human_approval is True
     assert "hygiene_policy_violation" in gate_res.triggered_boundaries
@@ -84,7 +84,7 @@ def test_case_2_ceiling_decrease_autonomously_permissible_after_proof():
     assert res.verdict == PolicyChangeType.TIGHTENING
 
     # Verify HumanBoundaryGate allows autonomous completion without human friction
-    task = TaskSpec(task_id="TASK-C2", repository="ai_knowledge_library", objective="Refactor clone and lower ceiling")
+    task = TaskSpec(task_id="TASK-C2", repository="howlplane", objective="Refactor clone and lower ceiling")
     plan = VerificationPlan(task_id="TASK-C2")
     plan.add_step(
         step_id="step-01",
@@ -129,7 +129,7 @@ def test_case_3_stale_tombstone_deletion_autonomously_permissible_after_proof():
     assert res.requires_human_approval is False
     assert res.verdict == PolicyChangeType.TIGHTENING
 
-    task = TaskSpec(task_id="TASK-C3", repository="ai_knowledge_library", objective="Remove stale tombstone")
+    task = TaskSpec(task_id="TASK-C3", repository="howlplane", objective="Remove stale tombstone")
     gate_res = HumanBoundaryGate.evaluate(task, planned_actions=["delete stale tombstone"], hygiene_policy=res)
     assert gate_res.requires_human_approval is False
 
@@ -158,7 +158,7 @@ def test_case_4_new_tombstone_requires_human_approval():
     assert res.requires_human_approval is True
     assert res.verdict == PolicyChangeType.DEBT_ACCEPTANCE
 
-    task = TaskSpec(task_id="TASK-C4", repository="ai_knowledge_library", objective="Add new tombstone")
+    task = TaskSpec(task_id="TASK-C4", repository="howlplane", objective="Add new tombstone")
     gate_res = HumanBoundaryGate.evaluate(task, planned_actions=["add tombstone"], hygiene_policy=res)
     assert gate_res.requires_human_approval is True
     assert "slop_debt_acceptance" in gate_res.triggered_boundaries
@@ -196,7 +196,7 @@ def test_case_5_tombstone_fingerprint_modification_requires_human_approval():
     assert res.requires_human_approval is True
     assert res.verdict == PolicyChangeType.DEBT_ACCEPTANCE
 
-    task = TaskSpec(task_id="TASK-C5", repository="ai_knowledge_library", objective="Repoint tombstone fingerprint")
+    task = TaskSpec(task_id="TASK-C5", repository="howlplane", objective="Repoint tombstone fingerprint")
     gate_res = HumanBoundaryGate.evaluate(task, planned_actions=["edit tombstone"], hygiene_policy=res)
     assert gate_res.requires_human_approval is True
     assert "slop_debt_acceptance" in gate_res.triggered_boundaries
@@ -387,7 +387,7 @@ def test_attack_a_duplicate_code_plus_ceiling_increase_blocked():
     res = HygienePolicyClassifier.evaluate_changes(changes)
     assert res.is_hard_rejected is True
 
-    task = TaskSpec(task_id="ATTACK-A", repository="ai_knowledge_library", objective="Sneak duplicate via ceiling bump")
+    task = TaskSpec(task_id="ATTACK-A", repository="howlplane", objective="Sneak duplicate via ceiling bump")
     gate_res = HumanBoundaryGate.evaluate(task, planned_actions=[], hygiene_policy=res)
     assert gate_res.requires_human_approval is True
     assert "hygiene_policy_violation" in gate_res.triggered_boundaries
@@ -403,7 +403,7 @@ def test_attack_b_duplicate_code_plus_new_ignore_rule_blocked():
     assert res.requires_human_approval is True
     assert res.verdict == PolicyChangeType.WEAKENING
 
-    task = TaskSpec(task_id="ATTACK-B", repository="ai_knowledge_library", objective="Hide duplicate via ignore pattern")
+    task = TaskSpec(task_id="ATTACK-B", repository="howlplane", objective="Hide duplicate via ignore pattern")
     gate_res = HumanBoundaryGate.evaluate(task, planned_actions=[], hygiene_policy=res)
     assert gate_res.requires_human_approval is True
     assert "hygiene_policy_weakening" in gate_res.triggered_boundaries

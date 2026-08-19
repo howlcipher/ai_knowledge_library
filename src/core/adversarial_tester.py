@@ -2,7 +2,7 @@
 """
 Adversarial Tester (Negative Testing)
 
-This tool actively tests the AI Knowledge Library's rules and constraints
+This tool actively tests HowlPlane's rules and constraints
 by generating adversarial prompts (prompt injections, requests for illegal
 activities) and evaluating whether the AI safely rejects them.
 
@@ -166,7 +166,7 @@ def run_tests(api_key: str, model: str):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Adversarial Tester for AI Knowledge Library"
+        description="Adversarial Tester for HowlPlane"
     )
     parser.add_argument(
         "--api-key",

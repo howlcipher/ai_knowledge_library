@@ -4,8 +4,8 @@ import os
 from scripts.library_statistics import LibraryStatisticsGenerator
 
 FIRST_BADGE = (
-    '<img src="https://img.shields.io/static/v1?label=SYS_CORE&message=Active'
-    '&color=00f0ff&style=for_the_badge" alt="AI Library Badge" />'
+    '<img src="https://img.shields.io/static/v1?label=HowlPlane&message=Active'
+    '&color=4a5aa8&style=for_the_badge" alt="HowlPlane Badge" />'
 )
 
 
@@ -30,8 +30,8 @@ def test_count_skills_reads_skill_manifest_length(tmp_path):
 
 def test_update_readme_substitutes_existing_badge_message(tmp_path):
     existing_badge = (
-        '<img src="https://img.shields.io/static/v1?label=Neural_Nodes&message=999'
-        '&color=00ff41&style=for_the_badge" alt="Neural Nodes Badge" />'
+        '<img src="https://img.shields.io/static/v1?label=Skills&message=999'
+        '&color=39ff14&style=for_the_badge" alt="Skills Badge" />'
     )
     repo_root = _make_repo(
         tmp_path, skills=["a", "b"], readme_body=f"{FIRST_BADGE}\n{existing_badge}\n"
@@ -43,8 +43,8 @@ def test_update_readme_substitutes_existing_badge_message(tmp_path):
     content = open(generator.readme_path).read()
     assert "message=999" not in content
     assert (
-        '<img src="https://img.shields.io/static/v1?label=Neural_Nodes&message=2'
-        '&color=00ff41&style=for_the_badge" alt="Neural Nodes Badge" />' in content
+        '<img src="https://img.shields.io/static/v1?label=Skills&message=2'
+        '&color=39ff14&style=for_the_badge" alt="Skills Badge" />' in content
     )
 
 
@@ -56,8 +56,8 @@ def test_update_readme_inserts_badge_when_missing(tmp_path):
 
     content = open(generator.readme_path).read()
     assert (
-        '<img src="https://img.shields.io/static/v1?label=Neural_Nodes&message=1'
-        '&color=00ff41&style=for_the_badge" alt="Neural Nodes Badge" />' in content
+        '<img src="https://img.shields.io/static/v1?label=Skills&message=1'
+        '&color=39ff14&style=for_the_badge" alt="Skills Badge" />' in content
     )
 
 
@@ -69,4 +69,4 @@ def test_update_readme_is_idempotent_on_repeated_runs(tmp_path):
     generator.update_readme(1)
 
     content = open(generator.readme_path).read()
-    assert content.count("label=Neural_Nodes") == 1
+    assert content.count("label=Skills") == 1

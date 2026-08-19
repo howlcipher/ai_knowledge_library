@@ -3,7 +3,7 @@ replicaCount:
   celery: 2
 
 image:
-  repository: ghcr.io/howlcipher/ai_knowledge_library
+  repository: ghcr.io/howlcipher/howlplane
   pullPolicy: IfNotPresent
   tag: "latest"
 

@@ -205,4 +205,4 @@ if (Test-Path -Path $DevinAgents) {
     Set-Content -Path $DevinAgents -Value $DevinBlock
 }
 
-Write-Host "Integration complete. Your AI Knowledge Library is now globally accessible to Gemini, Claude, Codex, and Devin."
+Write-Host "Integration complete. HowlPlane is now globally accessible to Gemini, Claude, Codex, and Devin."

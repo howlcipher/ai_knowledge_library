@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/howlcipher/ai_knowledge_library/internal/capability"
+	"github.com/howlcipher/howlplane/internal/capability"
 	"github.com/pelletier/go-toml/v2"
 )
 

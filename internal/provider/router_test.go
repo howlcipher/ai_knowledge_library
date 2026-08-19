@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/howlcipher/ai_knowledge_library/internal/runtime"
+	"github.com/howlcipher/howlplane/internal/runtime"
 )
 
 // mockProvider is a minimal Provider implementation for exercising Router

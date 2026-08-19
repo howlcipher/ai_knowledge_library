@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/howlcipher/ai_knowledge_library/internal/project"
+	"github.com/howlcipher/howlplane/internal/project"
 	"github.com/spf13/cobra"
 )
 

@@ -5,6 +5,8 @@ install:
 	@echo "Installing Go and Python dependencies and global launcher..."
 	go mod tidy
 	pip install -e ".[dev]"
+	mkdir -p $(HOME)/.config/howlplane
+	printf '[control_plane]\npath = "%s"\n' "$$(pwd)" > $(HOME)/.config/howlplane/config.toml
 	mkdir -p $(HOME)/.config/ai-control-plane
 	printf '[control_plane]\npath = "%s"\n' "$$(pwd)" > $(HOME)/.config/ai-control-plane/config.toml
 	mkdir -p $(HOME)/.local/bin
