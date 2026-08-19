@@ -41,6 +41,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install .[dev,postgres,queue,google]
 
+      - name: Install SlopsLint
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          bash scripts/install_slopslint.sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
       - name: Run Pytest with Coverage
         run: |
           set +e

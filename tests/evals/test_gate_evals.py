@@ -81,7 +81,7 @@ def test_qa_approval_gate_eval(feedback, expected_approved, desc):
         result = qa_node_runnable.invoke(state)
 
         assert result.get("qa_approved") == expected_approved, (
-            f"Failed QA gate eval: {desc} (input: {feedback!r}, got: {result.get("qa_approved")})"
+            f"Failed QA gate eval: {desc} (input: {feedback!r}, got: {result.get('qa_approved')})"
         )
 
 
