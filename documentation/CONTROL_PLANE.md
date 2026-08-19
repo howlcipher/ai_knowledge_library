@@ -212,11 +212,19 @@ HowlPlane serves as a **primary real-world dogfooding consumer** of the HowlFram
         |
         +-- AI coding agents (Claude Code, Codex, Gemini CLI, Devin CLI, Antigravity)
         |
-        +-- HowlFrame bounded execution runtime (future bounded / constrained execution paths)
+        +-- HowlFrame bounded execution runtime (shadow verification / dogfooding)
   ```
 - **Why HowlPlane dogfoods HowlFrame:** Smaller applications prove individual language features; ChangeOps proves governed consequential change execution; HowlPlane provides high-frequency real AI engineering workloads that pressure generated structured programs, capability boundaries, malformed AI output, instruction budgets, partial failures, result normalization, and structured evidence.
-- **Independence:** HowlPlane remains completely functional without HowlFrame. HowlFrame is an optional runtime dependency for selected bounded tasks.
-- **Future Bounded Dogfooding:** Select one existing bounded/read-only HowlPlane operation (e.g. read-only metadata verification or schema inspection) and evaluate it as a HowlFrame-backed execution path.
+- **Independence & Fail-Closed Isolation:** HowlPlane remains completely functional without HowlFrame. HowlFrame is an optional runtime dependency for selected bounded tasks. If the HowlFrame binary is unavailable, crashes, times out, or exceeds budget, HowlPlane records the diagnostic failure in the evidence ledger and continues normal operation without altering any routing, human authority, or verification decisions.
+- **First Dogfooding Slice — Project Context Audit (`SHADOW MODE`):**
+  - **Program Artifact:** `integrations/howlframe/project_context_audit.howl` (compiled to `project_context_audit.hfbc`).
+  - **Input Contract:** `howlplane.project_context/v1` (normalized subset of `ProjectContext`).
+  - **Audit Contract:** `howlplane.project_context_audit/v1` (evaluating project types, AGENTS.md presence, verification surface counts, and hygiene policy status).
+  - **Runner Boundary:** `HowlFrameAuditRunner` invokes the fixed bytecode with finite instruction budget (`--max-instructions 100000`), zero capabilities granted (`CapNone`), no shell execution (`shell=False`), and finite process timeout.
+  - **Configuration:** `HOWLPLANE_HOWLFRAME_DOGFOOD=shadow` (or `~/.config/howlplane/config.toml` `[dogfood] howlframe = "shadow"`).
+  - **Disagreement Model:** Compares local `ProjectAdapter` facts against HowlFrame observed truth (`MATCH`, `MISMATCH`, `HOWLFRAME_FAILURE`, `HOWLFRAME_UNAVAILABLE`, `INVALID_OUTPUT`, `BUDGET_EXCEEDED`, `TIMEOUT`).
+  - **Evidence:** Audit results recorded durably into `logs/control_plane/evidence_ledger.jsonl`.
+  - **CLI Surface:** `ai status` and `ai howlframe-audit` display dogfood execution results and findings.
 
 ---
 

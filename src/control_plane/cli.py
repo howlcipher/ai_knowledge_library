@@ -13,6 +13,7 @@ from typing import List, Optional
 from src.control_plane.agent_registry import AgentRegistry
 from src.control_plane.evidence_ledger import EvidenceEntry, EvidenceLedger
 from src.control_plane.human_boundary import HumanBoundaryGate
+from src.control_plane.howlframe_runner import HowlFrameAuditRunner, DEFAULT_INSTRUCTION_BUDGET
 from src.control_plane.metrics import MetricsCalculator
 from src.control_plane.project_adapter import ProjectAdapter
 from src.control_plane.reconciliation import ReviewFinding, ReviewReconciler
@@ -306,8 +307,55 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         return 0
     else:
         print("Status: DEGRADED (One or more critical checks failed)")
-        return 1
+def cmd_howlframe_audit(args: argparse.Namespace) -> int:
+    """Executes HowlFrame project context audit on target repository."""
+    import json
+    project_dir = getattr(args, "project_dir", None) or "."
+    context = ProjectAdapter.discover(project_dir)
+    max_instructions = getattr(args, "max_instructions", DEFAULT_INSTRUCTION_BUDGET)
+    task_id = getattr(args, "task_id", None)
+    ledger_file = getattr(args, "ledger_file", None)
+    ledger = EvidenceLedger(ledger_file) if ledger_file else None
 
+    print(f"Running HowlFrame project context audit for '{context.name}'...")
+    res = HowlFrameAuditRunner.run_audit(
+        context=context,
+        max_instructions=max_instructions,
+        task_id=task_id,
+        ledger=ledger,
+        record_evidence=True,
+    )
+
+    print("=" * 60)
+    print(f"HOWLFRAME PROJECT CONTEXT AUDIT: {context.name}")
+    print("=" * 60)
+    print(f"Comparison Result:  {res.status}")
+    print(f"Audit Status:       {res.audit_status or 'N/A'}")
+    print(f"Execution Duration: {res.duration_seconds}s")
+    print(f"Instruction Budget: {res.instruction_budget}")
+    if res.howlframe_version:
+        print(f"HowlFrame Version:  {res.howlframe_version}")
+    if res.findings:
+        print("Audit Findings:")
+        for f in res.findings:
+            print(f"  - {f}")
+    if res.comparison_notes:
+        print("Comparison Notes:")
+        for n in res.comparison_notes:
+            print(f"  - {n}")
+    if res.error_message:
+        print(f"Error Message:      {res.error_message}")
+    print("=" * 60)
+
+    if getattr(args, "json", False):
+        print(json.dumps(res.to_dict(), indent=2))
+
+    if res.status in ("MATCH", "HOWLFRAME_UNAVAILABLE"):
+        return 0
+    elif res.status == "MISMATCH":
+        return 1
+    else:
+        return 2
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -409,6 +457,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_doc = subparsers.add_parser("doctor", help="Run deterministic workspace health diagnostics")
     p_doc.add_argument("--repo-dir", help="Target repository directory (defaults to current)")
 
+    # howlframe-audit
+    p_ha = subparsers.add_parser("howlframe-audit", help="Run HowlFrame project context audit")
+    p_ha.add_argument("--project-dir", default=".", help="Target project root directory")
+    p_ha.add_argument("--max-instructions", type=int, default=DEFAULT_INSTRUCTION_BUDGET, help="Instruction budget limit")
+    p_ha.add_argument("--task-id", help="Optional task ID for evidence ledger")
+    p_ha.add_argument("--ledger-file", help="Ledger file path")
+    p_ha.add_argument("--json", action="store_true", help="Output JSON result")
+
     return parser
 
 
@@ -434,6 +490,7 @@ def main(args: Optional[List[str]] = None) -> int:
         "report": cmd_metrics,
         "check-boundary": cmd_boundary,
         "doctor": cmd_doctor,
+        "howlframe-audit": cmd_howlframe_audit,
     }
 
     handler = handlers.get(parsed_args.subcommand)

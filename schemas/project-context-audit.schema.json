@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "howlplane.project_context_audit/v1",
+  "title": "HowlFrame Project Context Audit Result",
+  "description": "Structured deterministic audit report produced by HowlFrame project context audit program.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "howlplane.project_context_audit/v1",
+      "description": "Schema version identifier."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PASS", "WARN", "FAIL"],
+      "description": "Overall audit status."
+    },
+    "findings": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of discovered diagnostic findings or invariant violations."
+    },
+    "observed": {
+      "type": "object",
+      "properties": {
+        "project_name": {
+          "type": "string",
+          "description": "Observed project name."
+        },
+        "project_types": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Observed project types."
+        },
+        "has_agents_md": {
+          "type": "boolean",
+          "description": "Observed presence of AGENTS.md."
+        },
+        "has_manifest": {
+          "type": "boolean",
+          "description": "Observed presence of project manifest."
+        },
+        "verification_surfaces": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total verification surface count."
+        },
+        "hygiene_status": {
+          "type": "string",
+          "description": "Observed hygiene status."
+        },
+        "capabilities_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of declared capabilities."
+        }
+      },
+      "required": [
+        "project_name",
+        "project_types",
+        "has_agents_md",
+        "has_manifest",
+        "verification_surfaces",
+        "hygiene_status",
+        "capabilities_count"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": ["schema", "status", "findings", "observed"],
+  "additionalProperties": false
+}

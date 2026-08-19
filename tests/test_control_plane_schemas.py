@@ -18,6 +18,8 @@ CONTROL_PLANE_SCHEMAS = [
     "review-finding.schema.json",
     "verification-plan.schema.json",
     "evidence-entry.schema.json",
+    "project-context-contract.schema.json",
+    "project-context-audit.schema.json",
 ]
 
 
@@ -30,106 +32,130 @@ def test_control_plane_schema_is_valid_draft_2020_12(schema_name):
     Draft202012Validator.check_schema(schema_json)
 
 
-def test_task_spec_schema_validation():
-    schema_path = SCHEMA_DIR / "task-spec.schema.json"
+@pytest.mark.parametrize(
+    "schema_file, valid_payload, invalid_payload",
+    [
+        (
+            "task-spec.schema.json",
+            {
+                "schema": "ai.task_spec/v1",
+                "task_id": "TASK-100",
+                "repository": "howlplane",
+                "objective": "Test objective",
+                "acceptance_criteria": ["All tests pass"],
+                "risk_level": "medium",
+                "current_state": "discovered",
+            },
+            {"schema": "ai.task_spec/v1", "task_id": "TASK-100"},
+        ),
+        (
+            "agent-registry.schema.json",
+            {
+                "schema": "ai.agent_registry/v1",
+                "agents": [
+                    {
+                        "agent_id": "claude_code",
+                        "name": "Claude Code",
+                        "provider": "anthropic",
+                        "interface": "cli",
+                        "capabilities": ["code_generation"],
+                        "reasoning_tier": "tier_1",
+                        "cost_class": "subscription_included",
+                        "availability": "available",
+                    }
+                ],
+            },
+            {"schema": "ai.agent_registry/v1"},
+        ),
+        (
+            "review-finding.schema.json",
+            {
+                "schema": "ai.review_finding/v1",
+                "id": "F001",
+                "reviewer_role": "security-reviewer",
+                "title": "Unsafe command execution",
+                "severity": "high",
+                "category": "security",
+                "description": "shell=True used with untrusted input",
+                "status": "open",
+            },
+            {"schema": "ai.review_finding/v1"},
+        ),
+        (
+            "verification-plan.schema.json",
+            {
+                "schema": "ai.verification_plan/v1",
+                "task_id": "TASK-100",
+                "overall_status": "passed",
+                "steps": [
+                    {
+                        "step_id": "step-01",
+                        "name": "Run tests",
+                        "command": "pytest",
+                        "category": "unit_test",
+                        "status": "verified",
+                        "required": True,
+                    }
+                ],
+            },
+            {"schema": "ai.verification_plan/v1"},
+        ),
+        (
+            "evidence-entry.schema.json",
+            {
+                "schema": "ai.evidence_entry/v1",
+                "entry_id": "ev-123456",
+                "task_id": "TASK-100",
+                "agent_id": "claude_code",
+                "action": "task_created",
+                "timestamp": "2026-08-18T12:00:00Z",
+            },
+            {"schema": "ai.evidence_entry/v1"},
+        ),
+        (
+            "project-context-contract.schema.json",
+            {
+                "schema": "howlplane.project_context/v1",
+                "project_name": "howlplane",
+                "project_types": ["go", "python"],
+                "has_agents_md": True,
+                "has_manifest": False,
+                "verification": {
+                    "test_count": 1,
+                    "build_count": 1,
+                    "lint_count": 1,
+                    "hygiene_count": 1,
+                },
+                "hygiene_status": "configured_and_passed",
+                "declared_capabilities": [],
+            },
+            {"schema": "howlplane.project_context/v1"},
+        ),
+        (
+            "project-context-audit.schema.json",
+            {
+                "schema": "howlplane.project_context_audit/v1",
+                "status": "PASS",
+                "findings": [],
+                "observed": {
+                    "project_name": "howlplane",
+                    "project_types": ["go", "python"],
+                    "has_agents_md": True,
+                    "has_manifest": False,
+                    "verification_surfaces": 4,
+                    "hygiene_status": "configured_and_passed",
+                    "capabilities_count": 0,
+                },
+            },
+            {"schema": "howlplane.project_context_audit/v1", "status": "INVALID_STATUS"},
+        ),
+    ],
+)
+def test_schema_valid_and_invalid_payloads(schema_file, valid_payload, invalid_payload):
+    schema_path = SCHEMA_DIR / schema_file
     with open(schema_path, "r", encoding="utf-8") as f:
         schema = json.load(f)
 
-    valid_payload = {
-        "schema": "ai.task_spec/v1",
-        "task_id": "TASK-100",
-        "repository": "howlplane",
-        "objective": "Test objective",
-        "acceptance_criteria": ["All tests pass"],
-        "risk_level": "medium",
-        "current_state": "discovered",
-    }
     validate(instance=valid_payload, schema=schema)
-
-    # Missing required field
-    invalid_payload = {
-        "schema": "ai.task_spec/v1",
-        "task_id": "TASK-100",
-    }
     with pytest.raises(ValidationError):
         validate(instance=invalid_payload, schema=schema)
-
-
-def test_agent_registry_schema_validation():
-    schema_path = SCHEMA_DIR / "agent-registry.schema.json"
-    with open(schema_path, "r", encoding="utf-8") as f:
-        schema = json.load(f)
-
-    valid_payload = {
-        "schema": "ai.agent_registry/v1",
-        "agents": [
-            {
-                "agent_id": "claude_code",
-                "name": "Claude Code",
-                "provider": "anthropic",
-                "interface": "cli",
-                "capabilities": ["code_generation"],
-                "reasoning_tier": "tier_1",
-                "cost_class": "subscription_included",
-                "availability": "available",
-            }
-        ],
-    }
-    validate(instance=valid_payload, schema=schema)
-
-
-def test_review_finding_schema_validation():
-    schema_path = SCHEMA_DIR / "review-finding.schema.json"
-    with open(schema_path, "r", encoding="utf-8") as f:
-        schema = json.load(f)
-
-    valid_payload = {
-        "schema": "ai.review_finding/v1",
-        "id": "F001",
-        "reviewer_role": "security-reviewer",
-        "title": "Unsafe command execution",
-        "severity": "high",
-        "category": "security",
-        "description": "shell=True used with untrusted input",
-        "status": "open",
-    }
-    validate(instance=valid_payload, schema=schema)
-
-
-def test_verification_plan_schema_validation():
-    schema_path = SCHEMA_DIR / "verification-plan.schema.json"
-    with open(schema_path, "r", encoding="utf-8") as f:
-        schema = json.load(f)
-
-    valid_payload = {
-        "schema": "ai.verification_plan/v1",
-        "task_id": "TASK-100",
-        "overall_status": "passed",
-        "steps": [
-            {
-                "step_id": "step-01",
-                "name": "Run tests",
-                "command": "pytest",
-                "category": "unit_test",
-                "status": "verified",
-                "required": True,
-            }
-        ],
-    }
-    validate(instance=valid_payload, schema=schema)
-
-
-def test_evidence_entry_schema_validation():
-    schema_path = SCHEMA_DIR / "evidence-entry.schema.json"
-    with open(schema_path, "r", encoding="utf-8") as f:
-        schema = json.load(f)
-
-    valid_payload = {
-        "schema": "ai.evidence_entry/v1",
-        "entry_id": "ev-123456",
-        "task_id": "TASK-100",
-        "agent_id": "claude_code",
-        "action": "task_created",
-        "timestamp": "2026-08-18T12:00:00Z",
-    }
-    validate(instance=valid_payload, schema=schema)

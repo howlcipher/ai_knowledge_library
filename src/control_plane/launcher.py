@@ -19,8 +19,9 @@ import subprocess
 import sys
 from typing import List, Optional, Tuple, Union
 
-from src.control_plane.cli import cmd_doctor as cp_cmd_doctor, cmd_verify as cp_cmd_verify
+from src.control_plane.cli import cmd_doctor as cp_cmd_doctor, cmd_verify as cp_cmd_verify, cmd_howlframe_audit as cp_cmd_howlframe_audit
 from src.control_plane.evidence_ledger import EvidenceEntry, EvidenceLedger
+from src.control_plane.howlframe_runner import HowlFrameAuditRunner, find_howlframe_binary, get_howlframe_version, get_dogfood_mode, DEFAULT_INSTRUCTION_BUDGET
 from src.control_plane.human_boundary import HumanBoundaryGate
 from src.control_plane.project_adapter import ProjectAdapter, ProjectContext
 from src.control_plane.reviewers import get_reviewer_role
@@ -316,6 +317,21 @@ def cmd_work(args: argparse.Namespace) -> int:
 
     launch_cmd = format_agent_launch_command(decision.selected_agent_id, spec, run_dir, target_repo)
 
+    # Optional HowlFrame shadow mode project context audit (read-only, non-authoritative)
+    df_mode = get_dogfood_mode()
+    shadow_audit_res = None
+    if df_mode == "shadow":
+        try:
+            shadow_audit_res = HowlFrameAuditRunner.run_audit(
+                ctx,
+                record_evidence=True,
+                task_id=spec.task_id,
+                ledger=EvidenceLedger(str(cp_root / "logs" / "control_plane" / "evidence_ledger.jsonl")),
+                dogfood_mode="shadow",
+            )
+        except Exception:
+            pass
+
     print("=" * 60)
     print("AI ENGINEERING CONTROL PLANE — TASK INITIALIZED")
     print("=" * 60)
@@ -329,6 +345,14 @@ def cmd_work(args: argparse.Namespace) -> int:
     print(f"Reasoning Tier:       {decision.reasoning_tier}")
     if decision.is_override:
         print(f"Override Note:        {decision.override_reason}")
+    if df_mode == "shadow" and shadow_audit_res:
+        print("-" * 60)
+        print("HOWLFRAME SHADOW AUDIT (DOGFOODING):")
+        print(f"  Result:             {shadow_audit_res.audit_status or 'N/A'} ({shadow_audit_res.status}) [{shadow_audit_res.duration_seconds}s]")
+        if shadow_audit_res.findings:
+            print(f"  Findings:           {', '.join(shadow_audit_res.findings)}")
+        if shadow_audit_res.comparison_notes:
+            print(f"  Disagreements:      {', '.join(shadow_audit_res.comparison_notes)}")
     print("-" * 60)
     print("TASK ROUTING DECISION:")
     print(f"Selected Agent:       {decision.selected_agent_name} (`{decision.selected_agent_id}`)")
@@ -419,6 +443,13 @@ def cmd_verify(args: argparse.Namespace) -> int:
     return cp_cmd_verify(args)
 
 
+def cmd_howlframe_audit(args: argparse.Namespace) -> int:
+    """Executes HowlFrame project context audit by delegating to control plane cli."""
+    target_repo = find_git_repo_root(args.repo)
+    args.project_dir = str(target_repo)
+    return cp_cmd_howlframe_audit(args)
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     """Displays project status, active task runs, and hygiene metrics for the target repository."""
     target_repo = find_git_repo_root(args.repo)
@@ -441,6 +472,24 @@ def cmd_status(args: argparse.Namespace) -> int:
             print(f"  {idx}. [{s.category}] {' '.join(s.command)}")
     else:
         print("  (No automatic test/build commands detected)")
+
+    df_mode = get_dogfood_mode()
+    h_bin = find_howlframe_binary()
+    h_ver = get_howlframe_version(h_bin) if h_bin else None
+    print("-" * 60)
+    print("HOWLFRAME DOGFOOD STATUS:")
+    print(f"  Mode:               {df_mode}")
+    if h_bin:
+        print(f"  Binary:             {h_bin} ({h_ver or '0.1.0'})")
+        if df_mode == "shadow":
+            audit_res = HowlFrameAuditRunner.run_audit(ctx, record_evidence=False, dogfood_mode="shadow")
+            print(f"  Audit Result:       {audit_res.audit_status or 'N/A'} ({audit_res.status}) [{audit_res.duration_seconds}s]")
+            if audit_res.findings:
+                print(f"  Findings:           {', '.join(audit_res.findings)}")
+            if audit_res.comparison_notes:
+                print(f"  Disagreements:      {', '.join(audit_res.comparison_notes)}")
+    else:
+        print("  Binary:             Not available (PATH)")
 
     task_runs_dir = target_repo / ".task_runs"
     runs = []
@@ -529,6 +578,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_ver = subparsers.add_parser("verify", parents=[common_parser], help="Execute deterministic verification plan")
     p_ver.add_argument("--task-id", help="Task ID")
 
+    p_ha = subparsers.add_parser("howlframe-audit", parents=[common_parser], help="Run HowlFrame project context audit")
+    p_ha.add_argument("--max-instructions", type=int, default=DEFAULT_INSTRUCTION_BUDGET, help="Instruction budget limit")
+    p_ha.add_argument("--task-id", help="Task ID")
+    p_ha.add_argument("--json", action="store_true", help="Output JSON result")
+
     return parser
 
 
@@ -545,6 +599,7 @@ def main(args: Optional[List[str]] = None) -> int:
         "doctor": cmd_doctor,
         "status": cmd_status,
         "verify": cmd_verify,
+        "howlframe-audit": cmd_howlframe_audit,
     }
     fn = actions.get(opts.subcommand)
     if not fn:
