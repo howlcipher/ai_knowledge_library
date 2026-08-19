@@ -319,10 +319,12 @@ class Orchestrator:
                 "run_id"
             )
             ls_client = None
-            try:
-                ls_client = Client()
-            except Exception:
-                pass  # Ignore if LangSmith is not configured
+            operating_mode = self.cfg.get("operating_mode", "local_only")
+            if operating_mode == "connected":
+                try:
+                    ls_client = Client()
+                except Exception:
+                    pass  # Ignore if LangSmith is not configured
 
             if qa_feedback.strip().upper() == "APPROVED":
                 print("[Orchestrator] QA approved the draft.")

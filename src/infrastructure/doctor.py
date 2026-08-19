@@ -210,6 +210,39 @@ def check_control_plane_ledger(repo_root: Path) -> DiagnosticCheck:
         )
 
 
+def check_operating_mode(cfg: Optional[Dict] = None) -> DiagnosticCheck:
+    try:
+        from src.infrastructure.config_loader import default_loader
+
+        config_data = cfg if cfg is not None else default_loader.config
+        mode = config_data.get("operating_mode", "local_only")
+    except Exception as exc:
+        return DiagnosticCheck(
+            name="Operating Mode & Egress Guard",
+            status="error",
+            message=f"Failed to load operating mode configuration: {exc}",
+        )
+
+    if mode == "local_only":
+        return DiagnosticCheck(
+            name="Operating Mode & Egress Guard",
+            status="ok",
+            message="Operating mode is 'local_only' (100% Local Privacy enforced: network egress blocked).",
+        )
+    elif mode == "connected":
+        return DiagnosticCheck(
+            name="Operating Mode & Egress Guard",
+            status="ok",
+            message="Operating mode is 'connected' (Network egress enabled for external integrations).",
+        )
+    else:
+        return DiagnosticCheck(
+            name="Operating Mode & Egress Guard",
+            status="error",
+            message=f"Invalid operating mode: '{mode}'. Must be 'local_only' or 'connected'.",
+        )
+
+
 def run_diagnostics(repo_root: Optional[Path] = None) -> List[DiagnosticCheck]:
     root = repo_root or Path(__file__).resolve().parent.parent.parent
     return [
@@ -220,6 +253,7 @@ def run_diagnostics(repo_root: Optional[Path] = None) -> List[DiagnosticCheck]:
         check_git_hooks(root),
         check_slopslint(),
         check_control_plane_ledger(root),
+        check_operating_mode(),
     ]
 
 

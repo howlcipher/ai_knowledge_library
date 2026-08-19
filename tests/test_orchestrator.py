@@ -358,3 +358,46 @@ def test_orchestrator_shutdown_calls_close_on_every_mcp_client(mock_sync_cls):
         client.connect.assert_called_once_with(
             timeout=orchestrator.cfg.get("mcp_connect_timeout", 30.0)
         )
+
+
+@pytest.mark.parametrize(
+    "mode,expect_client_called",
+    [
+        ("local_only", False),
+        ("connected", True),
+    ],
+)
+@patch("src.core.orchestrator.Client")
+@patch("src.core.orchestrator.Agent.generate_response")
+def test_qa_node_operating_mode_langsmith_gating(
+    mock_generate, mock_client_cls, orchestrator_factory, mode, expect_client_called
+):
+    mock_client_instance = MagicMock()
+    mock_client_cls.return_value = mock_client_instance
+    mock_generate.return_value = MockMessage("APPROVED")
+    orchestrator = orchestrator_factory()
+    orchestrator.cfg["operating_mode"] = mode
+
+    app = orchestrator._build_graph()
+    state = {
+        "query": "test",
+        "context": "",
+        "draft_content": "some draft",
+        "tool_calls": [],
+        "iteration": 1,
+        "qa_approved": False,
+        "qa_exhausted": False,
+        "max_iterations": 1,
+        "stealth_mode": False,
+    }
+    app.invoke(
+        state, config={"configurable": {"run_id": "test-run-123", "thread_id": "1"}}
+    )
+    if expect_client_called:
+        mock_client_cls.assert_called_once()
+        mock_client_instance.create_feedback.assert_called_once_with(
+            "test-run-123", key="qa_approval", score=1.0
+        )
+    else:
+        mock_client_cls.assert_not_called()
+

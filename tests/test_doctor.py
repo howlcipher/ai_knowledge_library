@@ -13,6 +13,7 @@ from src.infrastructure.doctor import (
     check_git_hooks,
     check_slopslint,
     check_control_plane_ledger,
+    check_operating_mode,
     run_diagnostics,
     main as doctor_main,
 )
@@ -91,9 +92,24 @@ def test_check_control_plane_ledger(tmp_path):
     assert "2 valid" in check_valid.message
 
 
+def test_check_operating_mode():
+    check_local = check_operating_mode({"operating_mode": "local_only"})
+    assert check_local.status == "ok"
+    assert "local_only" in check_local.message
+    assert "100% Local Privacy" in check_local.message
+
+    check_conn = check_operating_mode({"operating_mode": "connected"})
+    assert check_conn.status == "ok"
+    assert "connected" in check_conn.message
+
+    check_invalid = check_operating_mode({"operating_mode": "invalid_mode"})
+    assert check_invalid.status == "error"
+    assert "Invalid operating mode" in check_invalid.message
+
+
 def test_run_diagnostics():
     checks = run_diagnostics()
-    assert len(checks) == 7
+    assert len(checks) == 8
     assert all(c.status in ("ok", "warning", "error") for c in checks)
 
 

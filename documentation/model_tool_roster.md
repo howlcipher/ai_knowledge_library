@@ -8,6 +8,11 @@
    - Antigravity's Claude Sonnet/Opus models bill the Google subscription, not Claude Code limits — a valid escalation path for hard items without spending Claude session budget.
 3. **Local Ollama.** Check live tags with `curl localhost:11434/api/tags` before assuming a model is pulled — do not hardcode tag names, they change. Good for small, well-bounded subtasks (drafting a function, reviewing a diff, writing a doc section) where a local model suffices.
 
+## Operating Modes & Network Egress Governance
+
+- **`local_only` (default):** Mechanical enforcement of 100% Local Privacy. Hosted model calls (Anthropic, Gemini, OpenAI, Claude Code headless CLI) are hard-blocked during preflight and generation; LangSmith telemetry client instantiation is skipped; Google Docs sync scripts refuse execution. Only local Ollama models (`localhost:11434`), local vector indices, and local tools run.
+- **`connected`:** Enables optional external egress to configured cloud LLM providers, LangSmith tracing (if `LANGCHAIN_TRACING_V2=true`), and Google Docs workspace synchronization.
+
 ## Delegation lessons (Antigravity / agy)
 
 - Headless `agy` does NOT treat the invocation directory as its workspace — a delegate could not find repo-relative paths at all. Always give absolute file paths in the brief.
