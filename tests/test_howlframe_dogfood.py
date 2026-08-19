@@ -56,6 +56,9 @@ def test_schema_and_artifacts():
     ],
 )
 def test_dogfood_matrix(name: str, types: list, has_agents: bool):
+    if not find_howlframe_binary():
+        pytest.skip("howlframe binary not available in test environment")
+
     dir_path = DEV_ROOT / name
     if not dir_path.is_dir():
         pytest.skip(f"Repo missing: {dir_path}")
@@ -119,6 +122,7 @@ def test_falsifications_subproc(tmp_path, script, expected_outcome):
 
 def test_falsifications_bounds_and_lifecycle(tmp_path):
     ctx = ProjectAdapter.discover(REPO_ROOT)
+    h_bin = find_howlframe_binary()
 
     # 1. Unbounded size
     huge_ctx = ProjectContext(project_root=str(tmp_path), name="huge", capabilities=["c" * 1000 for _ in range(100)])
@@ -134,13 +138,13 @@ def test_falsifications_bounds_and_lifecycle(tmp_path):
         assert HowlFrameAuditRunner.run_audit(ctx, timeout=0.1, record_evidence=False).status == "TIMEOUT"
 
     # 4. Budget limit
-    assert HowlFrameAuditRunner.run_audit(ctx, max_instructions=5, record_evidence=False).status == "BUDGET_EXCEEDED"
+    if h_bin:
+        assert HowlFrameAuditRunner.run_audit(ctx, max_instructions=5, record_evidence=False).status == "BUDGET_EXCEEDED"
 
     # 5. Fixed artifact path
     assert HowlFrameAuditRunner.resolve_artifact_path() == HFBC_FILE
 
     # 6. Source integrity check
-    h_bin = find_howlframe_binary()
     if h_bin:
         assert subprocess.run([h_bin, "check", str(HOWL_FILE)], capture_output=True, check=False).returncode == 0
 
@@ -160,6 +164,7 @@ def test_falsifications_bounds_and_lifecycle(tmp_path):
         assert r1.selected_agent_id == r2.selected_agent_id
 
     # 9. Ledger write
-    ldg = EvidenceLedger(str(tmp_path / "ldg.jsonl"))
-    assert HowlFrameAuditRunner.run_audit(ctx, record_evidence=True, ledger=ldg, task_id="T-EV", dogfood_mode="shadow").status == "MATCH"
-    assert len(ldg.list_all_entries()) == 1
+    if h_bin:
+        ldg = EvidenceLedger(str(tmp_path / "ldg.jsonl"))
+        assert HowlFrameAuditRunner.run_audit(ctx, record_evidence=True, ledger=ldg, task_id="T-EV", dogfood_mode="shadow").status == "MATCH"
+        assert len(ldg.list_all_entries()) == 1

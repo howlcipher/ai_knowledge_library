@@ -244,12 +244,29 @@ class HowlFrameAuditRunner:
         h_ver = get_howlframe_version(h_bin) if h_bin else None
         artifact_path = cls.resolve_artifact_path()
 
+        normalized_input = normalize_project_context(context)
+        input_json = json.dumps(normalized_input)
+        if len(input_json.encode("utf-8")) > MAX_INPUT_PAYLOAD_BYTES:
+            res = cls._create_result(
+                status="HOWLFRAME_FAILURE",
+                start_time=start_time,
+                instruction_budget=max_instructions,
+                howlframe_bin=h_bin,
+                howlframe_version=h_ver,
+                error_message=f"Normalized input payload exceeds size limit ({len(input_json)} bytes > {MAX_INPUT_PAYLOAD_BYTES})",
+                input_payload=normalized_input,
+            )
+            if record_evidence:
+                cls._record_evidence(res, context, task_id, ledger, mode)
+            return res
+
         if not h_bin:
             res = cls._create_result(
                 status="HOWLFRAME_UNAVAILABLE",
                 start_time=start_time,
                 instruction_budget=max_instructions,
                 error_message="howlframe executable not found on PATH or via HOWLFRAME_BIN",
+                input_payload=normalized_input,
             )
             if record_evidence:
                 cls._record_evidence(res, context, task_id, ledger, mode)
@@ -263,21 +280,6 @@ class HowlFrameAuditRunner:
                 howlframe_bin=h_bin,
                 howlframe_version=h_ver,
                 error_message=f"HowlFrame audit artifact not found at {artifact_path}",
-            )
-            if record_evidence:
-                cls._record_evidence(res, context, task_id, ledger, mode)
-            return res
-
-        normalized_input = normalize_project_context(context)
-        input_json = json.dumps(normalized_input)
-        if len(input_json.encode("utf-8")) > MAX_INPUT_PAYLOAD_BYTES:
-            res = cls._create_result(
-                status="HOWLFRAME_FAILURE",
-                start_time=start_time,
-                instruction_budget=max_instructions,
-                howlframe_bin=h_bin,
-                howlframe_version=h_ver,
-                error_message=f"Normalized input payload exceeds size limit ({len(input_json)} bytes > {MAX_INPUT_PAYLOAD_BYTES})",
                 input_payload=normalized_input,
             )
             if record_evidence:
