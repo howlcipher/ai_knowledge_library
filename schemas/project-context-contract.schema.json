@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "howlplane.project_context/v1",
+  "title": "HowlPlane Project Context Normalized Contract",
+  "description": "Normalized, bounded project context input contract for HowlFrame project context audits.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "howlplane.project_context/v1",
+      "description": "Schema version identifier."
+    },
+    "project_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Name of the target project repository."
+    },
+    "project_types": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Detected project types or languages (e.g. go, python, javascript, rust)."
+    },
+    "has_agents_md": {
+      "type": "boolean",
+      "description": "Whether an AGENTS.md file exists in the repository root."
+    },
+    "has_manifest": {
+      "type": "boolean",
+      "description": "Whether an .ai-project.toml or project_manifest.yaml exists."
+    },
+    "verification": {
+      "type": "object",
+      "properties": {
+        "test_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of discovered test commands."
+        },
+        "build_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of discovered build commands."
+        },
+        "lint_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of discovered lint commands."
+        },
+        "hygiene_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of discovered repository hygiene commands."
+        }
+      },
+      "required": ["test_count", "build_count", "lint_count", "hygiene_count"],
+      "additionalProperties": false
+    },
+    "hygiene_status": {
+      "type": "string",
+      "enum": [
+        "configured_and_passed",
+        "not_configured",
+        "configured_tool_missing",
+        "invalid_configuration",
+        "invalid_provider_version"
+      ],
+      "description": "Status of repository hygiene policy evaluation."
+    },
+    "declared_capabilities": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of declared capability strings if configured."
+    }
+  },
+  "required": [
+    "schema",
+    "project_name",
+    "project_types",
+    "has_agents_md",
+    "has_manifest",
+    "verification",
+    "hygiene_status",
+    "declared_capabilities"
+  ],
+  "additionalProperties": false
+}

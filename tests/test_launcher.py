@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+from typing import Optional
 import pytest
 
 from src.control_plane.launcher import (
@@ -176,14 +177,20 @@ def test_infer_task_metadata_explicit_overrides():
 
 
 # ============================================================================
-# 4. Command Execution Integration Tests
+# 5. CLI Execution Tests
 # ============================================================================
 
-def test_ai_route_subcommand(tmp_path, capsys):
-    repo_dir = tmp_path / "sample_repo"
-    repo_dir.mkdir()
-    (repo_dir / ".git").mkdir()
+def _make_test_repo(path: Path, files: Optional[dict] = None) -> Path:
+    path.mkdir(parents=True, exist_ok=True)
+    (path / ".git").mkdir(exist_ok=True)
+    if files:
+        for fname, content in files.items():
+            (path / fname).write_text(content, encoding="utf-8")
+    return path
 
+
+def test_ai_route_subcommand(tmp_path, capsys):
+    repo_dir = _make_test_repo(tmp_path / "sample_repo")
     code = launcher_main(["route", "fix issue 101", "--repo", str(repo_dir)])
     assert code == 0
     captured = capsys.readouterr().out
@@ -193,22 +200,15 @@ def test_ai_route_subcommand(tmp_path, capsys):
 
 
 def test_ai_doctor_subcommand(tmp_path, capsys):
-    repo_dir = tmp_path / "sample_repo"
-    repo_dir.mkdir()
-    (repo_dir / ".git").mkdir()
-
+    repo_dir = _make_test_repo(tmp_path / "sample_repo")
     code = launcher_main(["doctor", "--repo", str(repo_dir)])
-    assert code in (0, 1)  # 0 if healthy, 1 if warnings/errors
+    assert code in (0, 1)
     captured = capsys.readouterr().out
     assert "WORKSPACE HEALTH DIAGNOSTICS" in captured
 
 
 def test_ai_status_subcommand(tmp_path, capsys):
-    repo_dir = tmp_path / "sample_repo"
-    repo_dir.mkdir()
-    (repo_dir / ".git").mkdir()
-    (repo_dir / "go.mod").write_text("module sample\n", encoding="utf-8")
-
+    repo_dir = _make_test_repo(tmp_path / "sample_repo", {"go.mod": "module sample\n"})
     code = launcher_main(["status", "--repo", str(repo_dir)])
     assert code == 0
     captured = capsys.readouterr().out
@@ -217,11 +217,7 @@ def test_ai_status_subcommand(tmp_path, capsys):
 
 
 def test_ai_work_subcommand_creates_run_artifacts(tmp_path, capsys):
-    repo_dir = tmp_path / "work_project"
-    repo_dir.mkdir()
-    (repo_dir / ".git").mkdir()
-    (repo_dir / "go.mod").write_text("module workproj\n", encoding="utf-8")
-
+    repo_dir = _make_test_repo(tmp_path / "work_project", {"go.mod": "module workproj\n"})
     code = launcher_main([
         "work",
         "implement user profile validation",
@@ -235,7 +231,6 @@ def test_ai_work_subcommand_creates_run_artifacts(tmp_path, capsys):
     assert "WORK-001" in captured
     assert "RECOMMENDED AGENT LAUNCH COMMAND" in captured
 
-    # Verify run artifacts on disk in target repo
     run_dir = repo_dir / ".task_runs" / "WORK-001"
     assert run_dir.exists()
     assert (run_dir / "task.yaml").exists()
@@ -243,18 +238,13 @@ def test_ai_work_subcommand_creates_run_artifacts(tmp_path, capsys):
     assert (run_dir / "verification_plan.json").exists()
     assert (run_dir / "reviews" / "correctness-reviewer.md").exists()
 
-    # Verify task spec content
     spec = TaskSpec.load_from_file(str(run_dir / "task.yaml"))
     assert spec.task_id == "WORK-001"
     assert spec.repository == "work_project"
 
 
 def test_ai_work_human_boundary_awaiting_human(tmp_path, capsys):
-    repo_dir = tmp_path / "infra_project"
-    repo_dir.mkdir()
-    (repo_dir / ".git").mkdir()
-
-    # Trigger human boundary with infrastructure apply action
+    repo_dir = _make_test_repo(tmp_path / "infra_project")
     code = launcher_main([
         "work",
         "deploy production cluster",
@@ -262,11 +252,10 @@ def test_ai_work_human_boundary_awaiting_human(tmp_path, capsys):
         "--task-id", "INFRA-001",
         "--actions", "terraform apply",
     ])
-    assert code == 2  # Signal 2 = Awaiting Human Approval
+    assert code == 2
     captured = capsys.readouterr().out
     assert "AWAITING HUMAN APPROVAL" in captured
 
-    # Verify decision packet was written
     dp_file = repo_dir / ".task_runs" / "INFRA-001" / "decision_packet.md"
     assert dp_file.exists()
     assert "Human Authority Decision Packet" in dp_file.read_text(encoding="utf-8")
@@ -280,3 +269,28 @@ def test_ai_non_git_failure_ux(tmp_path, capsys):
     assert code == 1
     err_out = capsys.readouterr().err
     assert "ERROR: no target Git repository found" in err_out
+
+
+def test_ai_howlframe_audit_subcommand(tmp_path, capsys):
+    repo_dir = _make_test_repo(tmp_path / "audit_project", {
+        "AGENTS.md": "# Context\n",
+        "go.mod": "module auditproj\n",
+    })
+    code = launcher_main(["howlframe-audit", "--repo", str(repo_dir)])
+    assert code == 0
+    captured = capsys.readouterr().out
+    assert "HOWLFRAME PROJECT CONTEXT AUDIT" in captured
+    assert "audit_project" in captured
+
+
+def test_ai_status_with_shadow_mode(tmp_path, capsys, monkeypatch):
+    repo_dir = _make_test_repo(tmp_path / "status_project", {
+        "AGENTS.md": "# Context\n",
+        "go.mod": "module statusproj\n",
+    })
+    monkeypatch.setenv("HOWLPLANE_HOWLFRAME_DOGFOOD", "shadow")
+    code = launcher_main(["status", "--repo", str(repo_dir)])
+    assert code == 0
+    captured = capsys.readouterr().out
+    assert "HOWLFRAME DOGFOOD STATUS" in captured
+    assert "shadow" in captured
