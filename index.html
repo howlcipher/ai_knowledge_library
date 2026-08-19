@@ -2,115 +2,254 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Knowledge Library</title>
-    <meta property="og:title" content="AI Knowledge Library">
-    <meta property="og:description" content="A highly structured, locally hosted knowledge graph and vector database built for advanced autonomous agents.">
-    <meta property="og:image" content="https://howlcipher.github.io/ai_knowledge_library/og-image.jpg">
-    <meta property="og:url" content="https://howlcipher.github.io/ai_knowledge_library/">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="HowlPlane is an AI engineering control plane coordinating task routing, independent adversarial reviews, deterministic verification, evidence, and human authority boundaries.">
+    <link rel="canonical" href="https://howlcipher.github.io/howlplane/">
+
     <meta property="og:type" content="website">
+    <meta property="og:site_name" content="HowlPlane">
+    <meta property="og:title" content="HowlPlane | An AI Engineering Control Plane">
+    <meta property="og:description" content="AI proposes and implements. Deterministic systems verify. Humans retain authority over consequential risk.">
+    <meta property="og:url" content="https://howlcipher.github.io/howlplane/">
+    <meta property="og:image" content="https://howlcipher.github.io/howlplane/social-preview.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="HowlPlane systems console preview card">
+
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content="https://howlcipher.github.io/ai_knowledge_library/og-image.jpg">
+    <meta name="twitter:title" content="HowlPlane | An AI Engineering Control Plane">
+    <meta name="twitter:description" content="AI proposes and implements. Deterministic systems verify. Humans retain authority over consequential risk.">
+    <meta name="twitter:image" content="https://howlcipher.github.io/howlplane/social-preview.png">
+    <meta name="twitter:image:alt" content="HowlPlane systems console preview card">
+
+    <title>HowlPlane | An AI Engineering Control Plane</title>
+    <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=3">
+    <link rel="alternate icon" type="image/png" href="favicon.png">
 </head>
 <body>
-    <!-- CRT Scanline Effect Overlay -->
-    <div class="scanlines"></div>
-    
-    <!-- HUD Decorative Elements -->
-    <div class="hud-top-left">[SYS.OP.NORMAL]</div>
-    <div class="hud-top-right">PWR: 100%</div>
-    <div class="hud-bottom-left">ID: TYPE-01</div>
-    <div class="hud-bottom-right">SYNC_RATE: 99.8%</div>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <div class="container">
+        <header>
+            <div>
+                <p class="kicker">// AI Engineering Control Plane / Deterministic Verification</p>
+                <h1 id="main-title">HowlPlane</h1>
+            </div>
+            <div class="header-actions">
+                <a href="https://github.com/howlcipher/howlplane" target="_blank" rel="noreferrer">[ View on GitHub ]</a>
+                <button id="theme-toggle" type="button" aria-pressed="false">Switch to light theme</button>
+            </div>
+        </header>
 
-    <nav class="mecha-nav">
-        <div class="logo">AI_LIB<span class="blinking-cursor">_</span></div>
-        <div class="hamburger-menu" id="hamburger-menu">
-            <span class="bar"></span>
-            <span class="bar"></span>
-            <span class="bar"></span>
-        </div>
-        <ul class="nav-links" id="nav-links">
-            <li><a href="#features" data-i18n="nav_features">[FEATURES]</a></li>
-            <li><a href="api/" data-i18n="nav_docs">[API_DOCS]</a></li>
-            <li><a href="documentation/USER_GUIDE.html">[MANUAL]</a></li>
-            <li><a href="change_log.html">[CHANGELOG]</a></li>
-            <li><a href="https://github.com/howlcipher/ai_knowledge_library">[GITHUB]</a></li>
-        </ul>
-        <div class="controls">
-            <select id="langSelect" class="lang-select hud-box">
-                <option value="en">🇺🇸 EN</option>
-                <option value="ja">🇯🇵 JA</option>
-                <option value="es">🇪🇸 ES</option>
-                <option value="zh">🇨🇳 ZH</option>
-                <option value="fr">🇫🇷 FR</option>
-                <option value="de">🇩🇪 DE</option>
-            </select>
-            <button id="colorblindToggle" class="colorblind-toggle hud-box" data-i18n="colorblind_mode">COLORBLIND</button>
-            <button id="themeToggle" class="theme-toggle hud-box">NIGHT</button>
-        </div>
-    </nav>
+        <nav class="section-nav" aria-label="Page sections">
+            <span class="section-nav-label">READ_PATH:</span>
+            <a href="#overview">Overview</a>
+            <a href="#workflow">Workflow</a>
+            <a href="#capabilities">Capabilities</a>
+            <a href="#governance">Egress &amp; Modes</a>
+            <a href="#howlframe">HowlFrame</a>
+            <a href="#subsystem">Knowledge Subsystem</a>
+            <a href="#quickstart">Quick Start</a>
+            <a href="#docs">Documentation</a>
+        </nav>
 
-    <main class="hero-container">
-        <div class="hero-content mecha-panel">
-            <div class="panel-header">
-                <span>/// INIT_SEQUENCE ///</span>
-            </div>
-            <h1 class="mecha-title" data-i18n="hero_title">SUPERCHARGE YOUR AI CONTEXT</h1>
-            <p class="subtitle" data-i18n="hero_subtitle">
-                > A HIGHLY STRUCTURED, LOCALLY HOSTED KNOWLEDGE GRAPH AND VECTOR DATABASE BUILT FOR ADVANCED AUTONOMOUS AGENTS. COMPLETE WITH PGVECTOR INTEGRATION AND NATIVE GO INSTALLERS.
-            </p>
-            <div class="cta-buttons">
-                <a href="#download" class="btn btn-primary" data-i18n="hero_btn_download">EXECUTE INSTALL</a>
-            </div>
-        </div>
+        <main id="main-content">
+            <section id="overview">
+                <h2>Overview</h2>
+                <div class="overview-layout">
+                    <div>
+                        <p class="lead">HowlPlane coordinates AI-assisted engineering work across heterogeneous repositories through shared context, deterministic task routing, independent adversarial reviews, repeatable verification, durable evidence, and human-controlled authority boundaries.</p>
+                        <blockquote>
+                            <strong>Governing Directives:</strong><br>
+                            AI proposes and implements work.<br>
+                            Policies constrain actions.<br>
+                            Independent reviewers challenge assumptions.<br>
+                            Deterministic tools verify claims.<br>
+                            Evidence records historical truth.<br>
+                            Humans authorize consequential risk.
+                        </blockquote>
+                        <p>HowlPlane turns unstructured coding agent interactions into an accountable, verifiable engineering pipeline without requiring cloud infrastructure or heavyweight runtime daemons.</p>
+                    </div>
+                    <div class="signal-grid" aria-label="HowlPlane operating model">
+                        <div><strong>ROUTING</strong><span>Capability-based dispatch</span></div>
+                        <div><strong>REVIEW</strong><span>Adversarial falsification</span></div>
+                        <div><strong>VERIFY</strong><span>Deterministic test suites</span></div>
+                        <div><strong>AUTHORITY</strong><span>Fail-closed human gates</span></div>
+                    </div>
+                </div>
+            </section>
 
-        <div class="features-grid" id="features">
-            <div class="feature-card mecha-panel">
-                <div class="icon">TARGET_LOCK</div>
-                <h3 data-i18n="feat_1_title">ADVANCED RAG</h3>
-                <p data-i18n="feat_1_desc">> Seamless PgVector and ChromaDB integration for deep semantic search and context retrieval.</p>
-            </div>
-            <div class="feature-card mecha-panel">
-                <div class="icon">HYPER_SPEED</div>
-                <h3 data-i18n="feat_2_title">GO CLI INSTALLER</h3>
-                <p data-i18n="feat_2_desc">> Lightning-fast native Cobra CLI installer to seamlessly manage dependencies and global links.</p>
-            </div>
-            <div class="feature-card mecha-panel">
-                <div class="icon">AUTO_SYNC</div>
-                <h3 data-i18n="feat_3_title">AUTOMATED WEBHOOKS</h3>
-                <p data-i18n="feat_3_desc">> Background FastAPI servers that automatically sync and embed incoming repository changes.</p>
-            </div>
-        </div>
-        
-        <div class="download-section mecha-panel" id="download">
-            <div class="panel-header warning-stripes">
-                <span>/// DEPLOYMENT_MODULE ///</span>
-            </div>
-            <h2 data-i18n="download_title">SYSTEM DOWNLOADS</h2>
-            <p data-i18n="download_subtitle">> Select your target operating system to download the latest compiled executable:</p>
-            
-            <div class="download-links">
-                <a href="https://github.com/howlcipher/ai_knowledge_library/releases/latest/download/ai_installer_Linux_x86_64.tar.gz" class="btn btn-primary">LINUX (AMD64)</a>
-                <a href="https://github.com/howlcipher/ai_knowledge_library/releases/latest/download/ai_installer_Darwin_x86_64.tar.gz" class="btn btn-primary">MACOS (INTEL/M1)</a>
-                <a href="https://github.com/howlcipher/ai_knowledge_library/releases/latest/download/ai_installer_Windows_x86_64.tar.gz" class="btn btn-primary">WINDOWS (EXE)</a>
-            </div>
+            <section id="workflow">
+                <h2>Everyday Workflow</h2>
+                <p>Developers operate directly from inside any project repository using the thin <code>ai</code> global command:</p>
+                <pre><code># Stand inside any repository on your system and work an objective:
+cd /path/to/project
+ai work "fix the highest-value open bug"
 
-            <p style="margin-top: 2.5rem; color: var(--accent-1); font-weight: bold;">
-                <span data-i18n="download_repo_link">> SOURCE CODE REPOSITORY: </span>
-                <a href="https://github.com/howlcipher/ai_knowledge_library" style="color: var(--accent-2); text-decoration: underline;">GITHUB.COM/HOWLCIPHER/AI_KNOWLEDGE_LIBRARY</a>
-            </p>
-        </div>
-    </main>
+# Inspect active project context, verification suites, and task runs:
+ai status
 
-    <footer class="mecha-footer">
-        <p><span data-i18n="footer_text">> Built for the open-source agentic community. Open sourced on </span><a href="https://github.com/howlcipher/ai_knowledge_library">GitHub</a>.</p>
-    </footer>
+# Deterministically route a task and select reviewer roles without mutating code:
+ai route "patch authentication vulnerability"
 
-    <script src="app.js?v=3"></script>
+# Run system and toolchain preflight diagnostics:
+ai doctor
+
+# Execute deterministic verification suites on the active repository:
+ai verify</code></pre>
+
+                <h3>Operating Model</h3>
+                <pre><code>Human Objective / Backlog Item
+              ↓
+    Task Specification (TaskSpec)
+              ↓
+    Deterministic Task Router
+    ├── Agent Selection (Claude Code, Codex, Gemini CLI, Devin CLI, Antigravity)
+    └── Reviewer Role Selection
+              ↓
+    Implementation Delegate
+              ↓
+    Specialized Independent Reviewers (Falsification Briefs)
+    ├── correctness-reviewer
+    ├── regression-reviewer
+    ├── security-reviewer
+    ├── test-falsifier
+    ├── architecture-reviewer
+    └── simplicity-reviewer
+              ↓
+    Review Reconciliation Engine
+              ↓
+    Deterministic Verification Plan (claimed → tested → observed → verified)
+              ↓
+    Durable Evidence Ledger (Scrubbed / Redacted)
+              ↓
+    Human Authority Gate (AWAITING_HUMAN decision packet if boundary triggered)
+              ↓
+    Ship / Complete</code></pre>
+            </section>
+
+            <section id="capabilities">
+                <h2>Core Capabilities</h2>
+                <ul>
+                    <li><strong>Deterministic Task Routing (<code>src/control_plane/router.py</code>):</strong> Matches task risk tiers and reasoning demands to agent profiles without remote LLM calls.</li>
+                    <li><strong>Specialized Independent Reviewers (<code>src/control_plane/reviewers.py</code>):</strong> Generates targeted falsification briefs designed to catch subtle bugs, contract breaks, injection vectors, and missing test branches rather than cheerleading diffs.</li>
+                    <li><strong>Review Reconciliation (<code>src/control_plane/reconciler.py</code>):</strong> Synthesizes findings into <code>confirmed</code>, <code>likely</code>, <code>disputed</code>, or <code>requires_human</code> status. Silent dismissal of blocker/high findings is strictly forbidden.</li>
+                    <li><strong>Deterministic Verification Suites (<code>src/control_plane/verification.py</code>):</strong> Subprocess-based build, test, lint, and repository hygiene gates (<code>slopslint</code>) enforcing monotonic quality ceilings.</li>
+                    <li><strong>Durable Evidence Ledger (<code>logs/control_plane/evidence_ledger.jsonl</code>):</strong> Append-only JSONL record of task transitions, reviewer findings, and verification outcomes with automated credential sanitization.</li>
+                    <li><strong>Human Authority Boundaries (<code>src/control_plane/human_boundary.py</code>):</strong> Fail-closed boundary gate requiring explicit human sign-off on deployments, destructive migrations, secret rotation, package publishing, and policy weakenings.</li>
+                </ul>
+            </section>
+
+            <section id="governance">
+                <h2>Operating Modes &amp; Egress Governance</h2>
+                <p>HowlPlane enforces mechanical runtime egress governance configured in <code>config/settings.yaml</code>:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Operating Mode</th>
+                            <th>Provider Egress</th>
+                            <th>Telemetry / LangSmith</th>
+                            <th>Intended Environment</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong><code>local_only</code> (Default)</strong></td>
+                            <td>Hard-blocked at runtime; local Ollama allowed</td>
+                            <td>Disabled / Blocked</td>
+                            <td>Offline, airgapped, or strict privacy workstations</td>
+                        </tr>
+                        <tr>
+                            <td><strong><code>connected</code></strong></td>
+                            <td>Allowed for configured hosted providers</td>
+                            <td>Enabled if credentials present</td>
+                            <td>Connected development environments</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p><em>Note on Scope:</em> Runtime egress governance operates at the application runtime level. For full details on all network endpoints, see the <a href="documentation/data_flows.html">Data Flows &amp; Egress Reference</a>.</p>
+            </section>
+
+            <section id="howlframe">
+                <h2>HowlFrame Relationship</h2>
+                <p>HowlPlane serves as a <strong>primary real-world dogfooding consumer</strong> of the <a href="https://github.com/howlcipher/howlframe" target="_blank" rel="noreferrer">HowlFrame</a> language and capability-bounded execution runtime:</p>
+                <pre><code>HowlPlane (AI Engineering Control Plane)
+      |
+      +-- normal deterministic tooling (Go, Python, Make, Git)
+      |
+      +-- AI coding agents (Claude Code, Codex, Gemini CLI, Devin CLI, Antigravity)
+      |
+      +-- HowlFrame bounded execution runtime (future constrained / policy execution paths)</code></pre>
+                <ul>
+                    <li><strong>Why HowlPlane dogfoods HowlFrame:</strong> Smaller applications prove individual language constructs; ChangeOps proves governed consequential change execution; HowlPlane provides high-frequency real AI engineering workloads that pressure generated structured programs, capability boundaries, instruction budgets, partial failures, and result normalization.</li>
+                    <li><strong>Independence:</strong> HowlPlane remains completely usable without HowlFrame. HowlFrame is an optional runtime dependency for selected bounded operations.</li>
+                </ul>
+            </section>
+
+            <section id="subsystem">
+                <h2>Knowledge &amp; Skills Subsystem</h2>
+                <p>The repository's shared context layer operates as an integrated subsystem within HowlPlane:</p>
+                <ul>
+                    <li><strong><code>AGENTS.md</code>:</strong> Canonical global engineering context and epistemic humility grounding protocol loaded natively across agents.</li>
+                    <li><strong>Rules (<code>.agents/rules/</code>):</strong> Anti-manipulation, prompt sanitization, and security rules.</li>
+                    <li><strong>Skills (<code>.agents/skills/</code>):</strong> 40 domain skills across software engineering, quality assurance, defensive security, database management, and systems logic.</li>
+                    <li><strong>Prompts (<code>.agents/prompts/</code>):</strong> Canonical multi-agent prompt library (<code>work_next_item</code>, <code>route_task</code>, <code>review_change</code>, <code>reconcile_reviews</code>, <code>verify_change</code>, <code>ship_check</code>).</li>
+                    <li><strong>Grounding Profile (<code>USER_PROFILE.md</code>):</strong> Local user profile grounding personal context and career materials.</li>
+                </ul>
+            </section>
+
+            <section id="quickstart">
+                <h2>Quick Start &amp; Installation</h2>
+                <h3>1. Standalone Binary Installer (Recommended)</h3>
+                <p>Download the latest <code>ai_installer</code> binary from <a href="https://github.com/howlcipher/howlplane/releases" target="_blank" rel="noreferrer">GitHub Releases</a> and run:</p>
+                <pre><code>./ai_installer</code></pre>
+
+                <h3>2. Repository Setup</h3>
+                <pre><code>git clone https://github.com/howlcipher/howlplane.git
+cd howlplane
+
+# Run global installer (links rules to Claude, Codex, Gemini/Antigravity, Devin):
+chmod +x scripts/install_global.sh
+./scripts/install_global.sh
+
+# Or install Python development environment:
+pip install -e ".[dev]"</code></pre>
+
+                <h3>3. Control Plane Discovery Precedence</h3>
+                <ol>
+                    <li><code>--control-plane-dir &lt;path&gt;</code> CLI flag</li>
+                    <li><code>HOWLPLANE_HOME</code> or <code>HOWLPLANE_DIR</code> environment variable</li>
+                    <li><code>AI_KNOWLEDGE_LIBRARY</code> environment variable (deprecated fallback)</li>
+                    <li><code>~/.config/howlplane/config.toml</code> (canonical) → <code>~/.config/ai-control-plane/config.toml</code> (legacy)</li>
+                    <li>Self repository root detection</li>
+                </ol>
+            </section>
+
+            <section id="docs">
+                <h2>Documentation Index</h2>
+                <ul>
+                    <li><a href="api/">API Documentation (pdoc)</a></li>
+                    <li><a href="documentation/CONTROL_PLANE.html">Control Plane Architecture &amp; Governance</a></li>
+                    <li><a href="documentation/USER_GUIDE.html">User Guide &amp; Operator Reference</a></li>
+                    <li><a href="documentation/data_flows.html">Data Flows &amp; Network Egress Reference</a></li>
+                    <li><a href="documentation/coding_standards.html">Coding Standards &amp; Hygiene</a></li>
+                    <li><a href="documentation/AI_FRAMEWORK_BLUEPRINT.html">AI Framework Blueprint</a></li>
+                    <li><a href="change_log.html">Change Log</a></li>
+                </ul>
+            </section>
+        </main>
+
+        <footer>
+            <div>
+                <span class="status-dot"></span>
+                <span>SYS_STATUS: ACTIVE // HOWLPLANE CONTROL PLANE</span>
+            </div>
+            <div>
+                <a href="https://github.com/howlcipher/howlplane" target="_blank" rel="noreferrer">GitHub Repository</a> |
+                <a href="https://howlcipher.github.io/howlframe/" target="_blank" rel="noreferrer">HowlFrame</a>
+            </div>
+        </footer>
+    </div>
+    <script src="app.js"></script>
 </body>
 </html>

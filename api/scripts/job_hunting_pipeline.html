@@ -31,6 +31,9 @@
             <h2>API Documentation</h2>
                 <ul class="memberlist">
             <li>
+                    <a class="variable" href="#REPO_ROOT">REPO_ROOT</a>
+            </li>
+            <li>
                     <a class="variable" href="#PROFILE_PATH">PROFILE_PATH</a>
             </li>
             <li>
@@ -78,9 +81,9 @@
 </span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
 </span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a>
 </span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="c1"># USER_PROFILE.md is a local, untracked overlay.</span>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="c1"># If it does not exist, copy USER_PROFILE.example.md and fill it in.</span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="n">PROFILE_PATH</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">"/run/media/system/tallgeese/dev/ai_knowledge_library/USER_PROFILE.md"</span><span class="p">)</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="n">OUTPUT_DIR</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">"/run/media/system/tallgeese/dev/ai_knowledge_library/output/applications/"</span><span class="p">)</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="n">REPO_ROOT</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="n">PROFILE_PATH</span> <span class="o">=</span> <span class="n">REPO_ROOT</span> <span class="o">/</span> <span class="s2">"USER_PROFILE.md"</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="n">OUTPUT_DIR</span> <span class="o">=</span> <span class="n">REPO_ROOT</span> <span class="o">/</span> <span class="s2">"output"</span> <span class="o">/</span> <span class="s2">"applications"</span>
 </span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>
 </span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="k">def</span><span class="w"> </span><span class="nf">load_user_profile</span><span class="p">():</span>
 </span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">PROFILE_PATH</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
@@ -162,10 +165,22 @@
 
 
             </section>
+                <section id="REPO_ROOT">
+                    <div class="attr variable">
+            <span class="name">REPO_ROOT</span>        =
+<span class="default_value">PosixPath(&#39;/home/runner/work/ai_knowledge_library/ai_knowledge_library&#39;)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#REPO_ROOT"></a>
+    
+    
+
+                </section>
                 <section id="PROFILE_PATH">
                     <div class="attr variable">
             <span class="name">PROFILE_PATH</span>        =
-<span class="default_value">PosixPath(&#39;/run/media/system/tallgeese/dev/ai_knowledge_library/USER_PROFILE.md&#39;)</span>
+<span class="default_value">PosixPath(&#39;/home/runner/work/ai_knowledge_library/ai_knowledge_library/USER_PROFILE.md&#39;)</span>
 
         
     </div>
@@ -177,7 +192,7 @@
                 <section id="OUTPUT_DIR">
                     <div class="attr variable">
             <span class="name">OUTPUT_DIR</span>        =
-<span class="default_value">PosixPath(&#39;/run/media/system/tallgeese/dev/ai_knowledge_library/output/applications&#39;)</span>
+<span class="default_value">PosixPath(&#39;/home/runner/work/ai_knowledge_library/ai_knowledge_library/output/applications&#39;)</span>
 
         
     </div>

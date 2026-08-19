@@ -1,14 +1,15 @@
 # Data Flows & Network Egress Reference
 
-**Repository:** `howlcipher/ai_knowledge_library`  
+**Repository:** `howlcipher/howlplane`  
 **Purpose:** Comprehensive map of network egress points, local-versus-remote data handling, telemetry, and third-party service integrations across the repository.
 
 ---
 
 ## 1. Overview & Privacy Principles
 
-The AI Knowledge Library operates primarily as a **local-first control plane and knowledge base**.
+HowlPlane operates primarily as a **local-first control plane and knowledge base**.
 - **Operating Mode Enforcement:** Controlled by `operating_mode: "local_only"` (default) or `"connected"` in `config/settings.yaml`. In `local_only` mode, network egress is mechanically prevented across providers, telemetry, and external document integrations.
+- **Enforcement Scope:** Network isolation in `local_only` mode is enforced at the application runtime level (blocking hosted provider dispatches, suppressing telemetry, and failing preflight checks on cloud model ids). Note that application-level egress governance complements but is distinct from OS-level kernel network sandboxing.
 - Core rulebooks (`AGENTS.md`), domain skills (`.agents/skills/`), and prompts (`.agents/prompts/`) are evaluated locally on disk.
 - Embeddings and semantic search run against local ChromaDB (`.chroma/`) or optional local PostgreSQL pgvector.
 - Telemetry is stored in local SQLite (`.telemetry/telemetry.db`) and never transmitted externally by default.
