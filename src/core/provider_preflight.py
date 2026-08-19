@@ -103,16 +103,43 @@ def _check_generation(model: str, timeout: float) -> Optional[str]:
     return None
 
 
-def preflight_models(models: List[str], timeout: float = 120.0) -> PreflightResult:
+def preflight_models(
+    models: List[str],
+    timeout: float = 120.0,
+    operating_mode: Optional[str] = None,
+) -> PreflightResult:
     """
     Checks every distinct model once, collecting all failures so a run with
     two broken tiers reports both instead of the first. The generous default
     timeout covers cold loading a large local model into RAM, which also
     leaves it warm for pass 1.
+
+    If operating_mode is 'local_only', any non-local model is rejected before
+    any network request is made.
     """
+    if operating_mode is None:
+        try:
+            from src.infrastructure.config_loader import default_loader
+
+            operating_mode = default_loader.get("operating_mode", "local_only")
+        except Exception:
+            operating_mode = "local_only"
+
     result = PreflightResult(ok=True)
     for model in dict.fromkeys(models):
         result.checked_models.append(model)
+        if operating_mode == "local_only" and not (
+            model.startswith(OLLAMA_PREFIXES)
+            or model.startswith(("mock/", "test/", "stub"))
+        ):
+            error = (
+                f"Model '{model}' requires external network egress, which is disabled in 'local_only' operating mode. "
+                "Set 'operating_mode: connected' in config/settings.yaml to allow hosted providers."
+            )
+            result.errors.append(error)
+            result.ok = False
+            continue
+
         if model.startswith(OLLAMA_PREFIXES):
             error = _check_ollama_tag(model, timeout=min(timeout, 10.0))
             if error:

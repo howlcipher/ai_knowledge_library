@@ -1,4 +1,11 @@
 # Centralized Configuration Loader
+# Operating mode: "local_only" (default) or "connected".
+# In "local_only" mode, network egress is mechanically prevented: external telemetry
+# (e.g. LangSmith Client instantiation) is hard-disabled, hosted LLM calls are blocked,
+# and Google Workspace sync scripts refuse execution. In "connected" mode, optional
+# external integrations are permitted if configured.
+operating_mode: "local_only"
+
 # No Gemini/Anthropic API key is configured on this machine; default to a
 # locally pulled Ollama model so a plain run works with no subscription cost.
 llm_model: "ollama/qwen3:30b-instruct"

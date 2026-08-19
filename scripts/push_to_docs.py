@@ -37,6 +37,19 @@ class GoogleDocsPusher:
         """
         Executes the push operation to Google Docs.
         """
+        from src.infrastructure.config_loader import is_local_only
+
+        if is_local_only():
+            print(
+                "Error: Network egress is blocked because operating_mode is set to 'local_only'.",
+                file=sys.stderr,
+            )
+            print(
+                "Set 'operating_mode: connected' in config/settings.yaml to enable Google Docs sync.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
         if not self.validate_file():
             sys.exit(1)
 

@@ -70,15 +70,23 @@ def test_missing_tag_names_available_models(mock_urlopen, mock_completion):
 
 @patch("src.core.provider_preflight.litellm.completion")
 def test_non_ollama_model_only_runs_generation(mock_completion):
-    result = preflight_models(["gemini/gemini-1.5-pro"])
+    result = preflight_models(["gemini/gemini-1.5-pro"], operating_mode="connected")
     assert result.ok
     mock_completion.assert_called_once()
 
 
 @patch("src.core.provider_preflight.litellm.completion")
+def test_non_ollama_model_blocked_in_local_only_mode(mock_completion):
+    result = preflight_models(["gemini/gemini-1.5-pro"], operating_mode="local_only")
+    assert not result.ok
+    assert "network egress" in result.errors[0].lower()
+    mock_completion.assert_not_called()
+
+
+@patch("src.core.provider_preflight.litellm.completion")
 def test_generation_failure_is_reported(mock_completion):
     mock_completion.side_effect = RuntimeError("no api key")
-    result = preflight_models(["gemini/gemini-1.5-pro"])
+    result = preflight_models(["gemini/gemini-1.5-pro"], operating_mode="connected")
     assert not result.ok
     assert "no api key" in result.errors[0]
 
@@ -91,7 +99,8 @@ def test_duplicate_models_checked_once_and_all_errors_collected(
     mock_urlopen.side_effect = urllib.error.URLError("down")
     mock_completion.side_effect = RuntimeError("no api key")
     result = preflight_models(
-        ["ollama/qwen3", "gemini/gemini-1.5-pro", "ollama/qwen3"]
+        ["ollama/qwen3", "gemini/gemini-1.5-pro", "ollama/qwen3"],
+        operating_mode="connected",
     )
     assert not result.ok
     assert len(result.checked_models) == 2
@@ -127,7 +136,7 @@ def test_payload_loop_skips_preflight_when_disabled(mock_preflight, mock_generat
 @patch("src.core.provider_preflight.shutil.which")
 def test_claude_code_model_checks_cli_on_path(mock_which):
     mock_which.return_value = "/usr/bin/claude"
-    result = preflight_models([CLAUDE_CODE_MODEL])
+    result = preflight_models([CLAUDE_CODE_MODEL], operating_mode="connected")
     assert result.ok
     assert result.errors == []
     mock_which.assert_called_once_with("claude")
@@ -136,6 +145,14 @@ def test_claude_code_model_checks_cli_on_path(mock_which):
 @patch("src.core.provider_preflight.shutil.which")
 def test_claude_code_model_missing_cli_fails(mock_which):
     mock_which.return_value = None
-    result = preflight_models([CLAUDE_CODE_MODEL])
+    result = preflight_models([CLAUDE_CODE_MODEL], operating_mode="connected")
     assert not result.ok
     assert "claude" in result.errors[0].lower()
+
+
+@patch("src.core.provider_preflight.shutil.which")
+def test_claude_code_model_blocked_in_local_only_mode(mock_which):
+    result = preflight_models([CLAUDE_CODE_MODEL], operating_mode="local_only")
+    assert not result.ok
+    assert "network egress" in result.errors[0].lower()
+    mock_which.assert_not_called()

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+from typing import Literal
 
 import yaml
 from pydantic import BaseModel
@@ -72,7 +73,8 @@ class IndexingSettings(BaseModel):
 
 
 class AppSettings(BaseSettings):
-    llm_model: str = "gemini/gemini-1.5-pro"
+    operating_mode: Literal["local_only", "connected"] = "local_only"
+    llm_model: str = "ollama/qwen3:30b-instruct"
     llm_timeout: float = 600.0
     preflight: bool = True
     mcp_connect_timeout: float = 30.0
@@ -164,6 +166,18 @@ class ConfigLoader:
         """
         return self.repo_root
 
+    def is_local_only(self) -> bool:
+        """
+        Returns True if the operating mode is 'local_only'.
+        """
+        return self.get("operating_mode", "local_only") == "local_only"
+
+    def is_connected(self) -> bool:
+        """
+        Returns True if the operating mode is 'connected'.
+        """
+        return self.get("operating_mode", "local_only") == "connected"
+
 
 # Provide a default instance and config dictionary for backward compatibility
 default_loader = ConfigLoader()
@@ -175,6 +189,20 @@ def load_config():
     Legacy function to load config directly.
     """
     return default_loader.config
+
+
+def is_local_only() -> bool:
+    """
+    Convenience function to check if the current configuration enforces local_only mode.
+    """
+    return default_loader.is_local_only()
+
+
+def is_connected() -> bool:
+    """
+    Convenience function to check if the current configuration permits connected mode.
+    """
+    return default_loader.is_connected()
 
 
 def main():
