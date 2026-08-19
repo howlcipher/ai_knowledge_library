@@ -1,7 +1,7 @@
 # Multi-Agent Engineering Control Plane
 
 **Repository:** `howlcipher/ai_knowledge_library`  
-**Status:** Active Core Control Plane  
+**Status:** Operational / Maintenance Mode (Architectural Freeze)  
 **Architecture Principle:**  
 > *AI proposes and performs work.*  
 > *Policies constrain actions.*  
@@ -12,7 +12,29 @@
 
 ---
 
-## 1. What This Is and What It Is Not
+## 1. Operating Mode & Governance
+
+### 1.1 Architectural Freeze Directives
+The control plane architecture is **FROZEN**. It is infrastructure now (treated like CI, Git, or a test harness).
+New framework capabilities are forbidden unless real operational portfolio usage exposes a correctness, security, verification, authority, or severe usability defect.
+
+The default rule for any feature proposal:
+- *"Is X blocking real engineering work?"* If no: **DO NOT BUILD IT**.
+
+### 1.2 Maintenance Priority Triage
+Future control-plane issues and maintenance requests are classified strictly into:
+
+| Tier | Classification | Action Policy |
+| :--- | :--- | :--- |
+| **P0** | Authority, security, or correctness failure | Fix immediately |
+| **P1** | Deterministic verification failure | Fix promptly |
+| **P2** | Repeated operational friction | Require repeated evidence across multiple tasks before changing architecture |
+| **P3** | Optimization | Backlog only |
+| **P4** | Speculative feature | Reject unless future evidence changes the need |
+
+---
+
+## 2. What This Is and What It Is Not
 
 ### What This Is
 - A **local-first engineering control plane** for coordinating CLI coding agents (Claude Code, Codex, Gemini CLI, Devin CLI, Antigravity CLI / agy, Local Ollama, and future tools).
@@ -261,3 +283,62 @@ The delegate applies changes to `internal/parser/keyword_density.go` and `intern
 - Evidence entry recorded in ledger.
 - `HumanBoundaryGate.evaluate` checks actions → No boundary triggered (`low` risk internal library).
 - Task transitions: `verifying` → `complete`.
+
+---
+
+## 6. Global Command Launcher (`ai`)
+
+The `ai` command is a thin, deterministic global entrypoint into the Multi-Agent Engineering Control Plane. It allows developers to operate from inside **any** project repository without manually loading shared rules or specifying library paths.
+
+### 6.1 Installation & Configuration
+Install the global launcher to `~/.local/bin/ai`:
+```bash
+# Run global installer from ai_knowledge_library
+bash scripts/install_global.sh
+```
+Or configure user configuration at `~/.config/ai-control-plane/config.toml`:
+```toml
+[control_plane]
+path = "/path/to/ai_knowledge_library"
+```
+
+Resolution precedence for the control plane:
+1. `--control-plane-dir <path>` CLI argument
+2. `AI_KNOWLEDGE_LIBRARY` environment variable
+3. `~/.config/ai-control-plane/config.toml` (or `~/.config/ai/config.toml`)
+4. Relative installation repository detection
+5. Fail closed (`ERROR: configured ai_knowledge_library control plane not found`)
+
+### 6.2 Normal Operator Workflow
+```bash
+# Stand inside any repository and work an objective:
+cd ~/projects/changeops
+ai work "work the next highest-value backlog item"
+
+cd ~/projects/howlframe
+ai work "fix runtime memory limit correctness bug"
+
+cd ~/projects/Career_Agent_Core
+ai work "fix issue 552"
+
+# Inspect project status, verification suites, and active task runs:
+ai status
+
+# Deterministically route a task without creating artifacts:
+ai route "patch authentication vulnerability"
+
+# Run preflight diagnostics:
+ai doctor
+
+# Execute deterministic verification on the current project:
+ai verify
+```
+
+### 6.3 Direct Provider Escape Hatches
+Direct vendor commands remain available as ungoverned escape hatches when full multi-agent orchestration is not desired:
+```bash
+claude
+codex
+agy
+```
+`ai work` remains the governed, fail-closed default.

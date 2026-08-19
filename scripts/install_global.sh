@@ -25,6 +25,21 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# --- Global Control Plane Configuration & Launcher ---
+mkdir -p "$HOME/.config/ai-control-plane"
+cat << EOF > "$HOME/.config/ai-control-plane/config.toml"
+# AI Engineering Control Plane Configuration
+[control_plane]
+path = "$REPO_ROOT"
+EOF
+
+mkdir -p "$HOME/.local/bin"
+if [ -f "$REPO_ROOT/bin/ai" ]; then
+  chmod +x "$REPO_ROOT/bin/ai"
+  ln -sf "$REPO_ROOT/bin/ai" "$HOME/.local/bin/ai"
+  echo "Installed 'ai' global launcher to $HOME/.local/bin/ai"
+fi
+
 # --- Gemini / Antigravity (AGY) integration ---
 AGY_DIR="$HOME/.gemini/antigravity-cli"
 

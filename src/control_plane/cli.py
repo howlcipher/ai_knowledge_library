@@ -279,6 +279,37 @@ def cmd_boundary(args: argparse.Namespace) -> int:
         return 0
 
 
+def cmd_doctor(args: argparse.Namespace) -> int:
+    """Executes workspace health diagnostics."""
+    from src.infrastructure.doctor import run_diagnostics
+    repo_dir = Path(args.repo_dir) if getattr(args, "repo_dir", None) else None
+    results = run_diagnostics(repo_root=repo_dir)
+
+    print("=" * 60)
+    print("WORKSPACE HEALTH DIAGNOSTICS (DOCTOR)")
+    print("=" * 60)
+    has_error = False
+    for res in results:
+        if res.status == "ok":
+            mark = "✓"
+        elif res.status == "warning":
+            mark = "!"
+        else:
+            mark = "✗"
+            has_error = True
+        print(f"[{mark}] {res.name}: {res.message}")
+        if res.details and isinstance(res.details, dict) and "action" in res.details:
+            print(f"    Action: {res.details['action']}")
+    print("=" * 60)
+    if not has_error:
+        print("Status: HEALTHY (All critical checks passed)")
+        return 0
+    else:
+        print("Status: DEGRADED (One or more critical checks failed)")
+        return 1
+
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="control_plane",
@@ -374,6 +405,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_bound.add_argument("--output", "-o", help="Save decision packet markdown to path")
     p_bound.add_argument("--run-dir", help="Task run directory path")
 
+    # doctor
+    p_doc = subparsers.add_parser("doctor", help="Run deterministic workspace health diagnostics")
+    p_doc.add_argument("--repo-dir", help="Target repository directory (defaults to current)")
+
     return parser
 
 
@@ -398,6 +433,7 @@ def main(args: Optional[List[str]] = None) -> int:
         "metrics": cmd_metrics,
         "report": cmd_metrics,
         "check-boundary": cmd_boundary,
+        "doctor": cmd_doctor,
     }
 
     handler = handlers.get(parsed_args.subcommand)

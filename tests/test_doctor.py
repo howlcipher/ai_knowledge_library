@@ -10,6 +10,8 @@ from src.infrastructure.doctor import (
     check_dependencies,
     check_go_toolchain,
     check_git_status,
+    check_git_hooks,
+    check_slopslint,
     check_control_plane_ledger,
     run_diagnostics,
     main as doctor_main,
@@ -49,6 +51,32 @@ def test_check_git_status(tmp_path):
     assert check_bad.status == "warning"
 
 
+def test_check_git_hooks(tmp_path):
+    hooks_dir = tmp_path / ".git" / "hooks"
+    hooks_dir.mkdir(parents=True)
+
+    # Missing hooks
+    check_missing = check_git_hooks(tmp_path)
+    assert check_missing.status == "warning"
+    assert "missing" in check_missing.message
+
+    # Create dummy hooks
+    pre_commit = hooks_dir / "pre-commit"
+    pre_push = hooks_dir / "pre-push"
+    pre_commit.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    pre_push.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    pre_commit.chmod(0o755)
+    pre_push.chmod(0o755)
+
+    check_ok = check_git_hooks(tmp_path)
+    assert check_ok.status == "ok"
+
+
+def test_check_slopslint():
+    check = check_slopslint()
+    assert check.status in ("ok", "warning")
+
+
 def test_check_control_plane_ledger(tmp_path):
     check_empty = check_control_plane_ledger(tmp_path)
     assert check_empty.status == "ok"
@@ -65,8 +93,8 @@ def test_check_control_plane_ledger(tmp_path):
 
 def test_run_diagnostics():
     checks = run_diagnostics()
-    assert len(checks) == 5
-    assert all(c.status in ("ok", "warning") for c in checks)
+    assert len(checks) == 7
+    assert all(c.status in ("ok", "warning", "error") for c in checks)
 
 
 def test_doctor_main():
