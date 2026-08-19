@@ -1,0 +1,68 @@
+name: Repository Hygiene and Slop Gate
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - '.slop/**'
+      - '.github/workflows/hygiene.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - '.slop/**'
+      - '.github/workflows/hygiene.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hygiene:
+    name: SlopsLint Duplication & Ceiling Ratchet
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install Pinned SlopsLint
+        env:
+          SLOPSLINT_VERSION: "0.1.0"
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          if [ -f "scripts/install_slopslint.sh" ]; then
+            bash scripts/install_slopslint.sh
+          fi
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Verify Pinned SlopsLint Provenance
+        run: |
+          if ! command -v slopslint >/dev/null 2>&1; then
+            echo "::error::SlopsLint binary missing from PATH"
+            exit 1
+          fi
+          SLOP_VER=$(slopslint --version | awk '{print $2}')
+          if [ "$SLOP_VER" != "0.1.0" ]; then
+            echo "::error::SlopsLint version mismatch: got '$SLOP_VER', expected '0.1.0'"
+            exit 1
+          fi
+          echo "Verified slopslint version: $SLOP_VER"
+
+      - name: Execute Hygiene Gate (Classify & Enforce)
+        run: |
+          slopslint check --classify --enforce
+
+      - name: Enforce Ceiling Ratchet against Base Branch
+        if: github.event_name == 'pull_request'
+        run: |
+          BASE_BRANCH="${{ github.base_ref }}"
+          echo "Resolving base branch: origin/${BASE_BRANCH}"
+          git fetch origin "${BASE_BRANCH}:refs/remotes/origin/${BASE_BRANCH}" || true
+          slopslint ratchet "origin/${BASE_BRANCH}"

@@ -73,6 +73,9 @@ docs/_config.yml
 /*.log
 /*.diff
 /*.zip
+/logs/
+/.task_runs/
+/task_*.yaml
 
 # Ignore personal user profile and PII
 USER_PROFILE.md

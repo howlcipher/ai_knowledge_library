@@ -1,0 +1,263 @@
+# Multi-Agent Engineering Control Plane
+
+**Repository:** `howlcipher/ai_knowledge_library`  
+**Status:** Active Core Control Plane  
+**Architecture Principle:**  
+> *AI proposes and performs work.*  
+> *Policies constrain actions.*  
+> *Independent reviewers challenge assumptions.*  
+> *Deterministic tools verify claims.*  
+> *Evidence records historical truth.*  
+> *Humans authorize meaningful risk.*
+
+---
+
+## 1. What This Is and What It Is Not
+
+### What This Is
+- A **local-first engineering control plane** for coordinating CLI coding agents (Claude Code, Codex, Gemini CLI, Devin CLI, Antigravity CLI / agy, Local Ollama, and future tools).
+- A **deterministic lifecycle orchestrator** with explicit state transitions, reproducible routing, independent adversarial reviews, evidence collection, and fail-closed human authority gates.
+- A **shared policy and verification harness** separating orchestration rules from project-specific local truth.
+
+### What This Is Not
+- **Not an autonomous software company simulation:** Does not pretend LLM agents possess infallible judgment or replace human engineering authority.
+- **Not another coding agent or LLM wrapper:** Does not compete with Claude Code, Gemini CLI, Codex, or Devin CLI; it coordinates them.
+- **Not a heavyweight enterprise platform:** Requires zero cloud infrastructure, no Kubernetes, no Redis, no background daemons, and zero paid API calls to route. It runs directly in the developer's terminal.
+
+---
+
+## 2. Core Architectural Workflow
+
+```text
+Human Objective / Backlog Item
+              ↓
+    Task Specification (TaskSpec)
+              ↓
+    Deterministic Task Router
+    ├── Agent Type Selection
+    └── Independent Reviewer Role Selection
+              ↓
+    Implementation Delegate (or local agent)
+              ↓
+    Specialized Independent Reviewers (Falsification Briefs)
+    ├── correctness-reviewer
+    ├── regression-reviewer
+    ├── security-reviewer
+    ├── test-falsifier
+    ├── architecture-reviewer
+    └── simplicity-reviewer
+              ↓
+    Review Reconciliation Engine
+    (confirmed | likely | disputed | false_positive | out_of_scope | requires_human)
+              ↓
+    Remediation
+              ↓
+    Deterministic Verification Plan
+    (claimed → tested → observed → verified)
+              ↓
+    Durable Evidence Ledger (Scrubbed / Redacted)
+              ↓
+    Human Authority Gate (AWAITING_HUMAN decision packet if boundary triggered)
+              ↓
+    Ship / Complete
+```
+
+---
+
+## 3. Control Plane Capabilities
+
+### 3.1 Task Specification (`TaskSpec`)
+Represents an engineering task as a canonical, machine-readable object conforming to JSON Schema Draft 2020-12 (`schemas/task-spec.schema.json`).
+
+**Explicit Lifecycle States:**
+- `discovered`
+- `planned`
+- `implementing`
+- `reviewing`
+- `remediating`
+- `verifying`
+- `awaiting_human`
+- `complete`
+- `failed`
+- `blocked`
+
+State transitions are strictly enforced via `spec.transition_to(new_state)`. Illegal transitions (e.g. jumping from `discovered` directly to `complete`) raise an `InvalidStateTransitionError`.
+
+### 3.2 Agent Capability Registry (`AgentRegistry`)
+A declarative registry describing available agent types without hardcoding ephemeral model names.
+
+Fields:
+- `agent_id`: Identifier (e.g. `claude_code`, `codex`, `gemini_cli`, `devin_cli`, `agy`, `local_ollama`)
+- `provider`: `anthropic`, `google`, `openai`, `cognition`, `local`
+- `interface`: `cli`, `headless_cli`, `api`, `ide`
+- `capabilities`: `[code_generation, file_editing, code_review, terminal_execution, git_operations, architectural_reasoning, deep_debugging, autonomous_workflow]`
+- `reasoning_tier`: `tier_1`, `tier_2`, `tier_3`
+- `cost_class`: `free_local`, `subscription_included`, `paid_api`
+- `availability`: `available`, `degraded`, `unavailable`
+
+### 3.3 Deterministic Task Router (`TaskRouter`)
+Matches task requirements against agent capabilities without making remote LLM calls:
+- High-risk, security, or architectural tasks (`tier_1`) route to `claude_code` or `devin_cli`.
+- Standard implementation tasks (`tier_2`) route to `agy`, `codex`, or `gemini_cli`.
+- Low-risk, local-only helper subtasks (`tier_3`) route to `local_ollama`.
+- Explicit human overrides (`preferred_agent`) are honored immediately and recorded.
+- Automatically selects specialized reviewer roles based on domain and risk.
+
+### 3.4 Specialized Independent Reviewer Roles
+Reviewers are instructed explicitly to **challenge assumptions and falsify correctness**:
+1. **`correctness-reviewer`**: Identifies logic bugs, unhandled boundary cases, and contract mismatches.
+2. **`regression-reviewer`**: Identifies breaking changes to call sites, signatures, and configuration drift.
+3. **`security-reviewer`**: Audits trust boundaries, credential leaks, injection vectors, and authorization.
+4. **`test-falsifier`**: Searches for vacuous assertions, inaccurate mocks, and missing negative test branches.
+5. **`architecture-reviewer`**: Flags unnecessary coupling, leaky abstractions, and structural violations.
+6. **`simplicity-reviewer`**: Searches for opportunities to solve the problem with a smaller diff and less code.
+
+### 3.5 Review Reconciliation Engine (`ReviewReconciler`)
+Synthesizes findings across multiple reviewer roles:
+- **`confirmed`**: Findings with multi-reviewer agreement or verified proof.
+- **`likely`**: High-confidence findings from domain reviewers.
+- **`disputed`**: Conflicting evaluations preserved for explicit resolution.
+- **`requires_human_judgment`**: Security or policy disputes routed to human authority.
+- **`false_positive` / `out_of_scope`**: **Strict Rule:** Any dismissal of a `blocker` or `high` finding requires an explicit, non-empty `resolution_reason`. Silent dismissal is forbidden.
+
+### 3.6 Deterministic Verification Plan (`VerificationPlan`)
+Separates review claims from verifiable command outcomes:
+- **Status lifecycle:** `claimed` → `tested` → `observed` → `verified` (or `failed`).
+- Executes build, lint, repository hygiene, unit tests, integration tests, and security scans via deterministic subprocess calls (no `shell=True`).
+- **Repository Hygiene Gate (`slopslint`):** Runs deterministic repository hygiene gates enforcing monotonic duplication ceilings (`slopslint check --classify --enforce`), ceiling ratchets (`slopslint ratchet <base-ref>`), stale tombstone elimination, and provider integrity verification. Policy modifications are semantically classified (`TIGHTENING`, `NEUTRAL`, `WEAKENING`, `DEBT_ACCEPTANCE`, `HARD_REJECT`, `UNKNOWN`), enabling autonomous quality improvements (ceiling decreases, stale tombstone deletions) while gating debt acceptance and policy weakenings behind human authority.
+
+### 3.7 Durable Evidence Ledger (`EvidenceLedger`)
+Append-only log (`logs/control_plane/evidence_ledger.jsonl`) recording actions, commands, results, findings, and verification outcomes.
+- **Automated redaction:** Automatically scrubs API keys (`sk-...`, `ghp_...`), passwords, authorization headers, private keys, and email addresses before recording.
+
+### 3.8 Transparent Performance Metrics (`MetricsCalculator`)
+Calculates real engineering statistics from evidence history without subjective guessing:
+- First-pass success rate
+- Task completion and abandonment rates
+- Total review findings and blocker counts
+- Verification failure counts
+- Rework cycle counts
+- Repository hygiene checks, regressions caught, ceilings lowered, ceiling raise attempts blocked, and debt acceptance tracking
+- Per-agent performance breakdowns
+
+### 3.9 Project Adapters (`ProjectAdapter`)
+Establishes a clean architectural boundary:
+- **Control plane** supplies orchestration rules, reviewer roles, and verification schemas.
+- **Project repository** supplies local truth: `.ai-project.toml`, `project_manifest.yaml`, `AGENTS.md`, `.slop/config.yml`, `.slop/ceilings.yml`, local skills, and test/build commands.
+
+### 3.10 Human Authority Boundaries (`HumanBoundaryGate`)
+Enforces strict human sign-off on high-risk operations:
+- Production deployments
+- Infrastructure apply (`terraform apply`, `kubectl apply`)
+- Destructive database migrations (`DROP TABLE`, truncate)
+- Credential provisioning and rotations
+- Paid service consumption
+- External communications (emails, webhooks)
+- Package publishing
+- Submitting applications or resumes
+- Accepting debt tombstones or repointing existing debt (`slop_debt_acceptance`) — **Invariant:** AI agents cannot self-accept slop debt. Proposing a new tombstone or repointing a fingerprint pauses at `AWAITING_HUMAN`.
+- Weakening repository hygiene scan scope, ignore rules, or detector parameters (`hygiene_policy_weakening`).
+- Prohibited ceiling inflation or configuration deletion (`hygiene_policy_violation`) — **Invariant:** Ceilings cannot be increased without explicit human policy override; ceiling raises are rejected by default.
+
+When triggered, the task enters `awaiting_human` and produces a structured **Decision Packet**:
+```markdown
+# 🛑 Human Authority Decision Packet: Task `<id>`
+- Objective
+- Boundary Triggers
+- Proposed Change Summary
+- Verification Status
+- Key Evidence
+- Identified Risks
+- Recommended Action
+```
+
+---
+
+## 4. CLI & Prompt UX
+
+### CLI Subcommands
+```bash
+# Initialize a new task specification
+python -m src.control_plane init-task --task-id TASK-101 --objective "Implement feature" --risk medium
+
+# Route task to appropriate agent and reviewers
+python -m src.control_plane route-task --task-file task_TASK-101.yaml
+
+# Generate independent review briefs for a diff
+python -m src.control_plane briefs --task-file task_TASK-101.yaml --diff-file change.diff
+
+# Reconcile multi-agent review findings
+python -m src.control_plane reconcile --findings-file findings.yaml --output report.md
+
+# Run deterministic project verification
+python -m src.control_plane verify --project-dir . --task-id TASK-101
+
+# Record evidence to the append-only ledger
+python -m src.control_plane record --task-id TASK-101 --agent-id agy --action verification_executed --result passed
+
+# View transparent historical metrics
+python -m src.control_plane metrics
+
+# Check human authority boundaries
+python -m src.control_plane check-boundary --task-file task_TASK-101.yaml --actions "terraform apply"
+```
+
+### High-Level Canonical Prompts
+- `/work_next_item`: Full end-to-end backlog item orchestration.
+- `/route_task`: Deterministic task classification and routing.
+- `/review_change`: Specialized independent reviewer falsification.
+- `/reconcile_reviews`: Finding reconciliation preserving disagreements.
+- `/verify_change`: Deterministic verification execution.
+- `/ship_check`: Pre-ship verification and human boundary evaluation.
+
+---
+
+## 5. Worked Example: Career Agent Core
+
+### 1. Specification (`TaskSpec`)
+```yaml
+schema: ai.task_spec/v1
+task_id: CAREER-042
+repository: Career_Agent_Core
+objective: Add ATS keyword density analysis to resume parser
+acceptance_criteria:
+  - Calculate frequency of job posting keywords in parsed resume sections
+  - Return missing high-frequency keywords
+  - 100% test coverage on scoring edge cases
+constraints:
+  - Zero external cloud API calls
+  - Must run within existing Go pipeline
+risk_level: medium
+required_skills:
+  - software_development
+  - career_assistant
+recommended_reasoning_tier: tier_2
+current_state: discovered
+```
+
+### 2. Routing (`python -m src.control_plane route-task`)
+- **Selected Agent:** `agy` (Antigravity CLI / Tier 2)
+- **Rationale:** Balanced Go implementation; delegates code edits to headless CLI.
+- **Reviewers:** `correctness-reviewer`, `test-falsifier`, `regression-reviewer`, `simplicity-reviewer`.
+
+### 3. Implementation
+The delegate applies changes to `internal/parser/keyword_density.go` and `internal/parser/keyword_density_test.go`.
+
+### 4. Independent Review & Falsification
+- `correctness-reviewer` checks boundary handling (empty keyword lists, duplicate tokens).
+- `test-falsifier` discovers that the test suite does not check case-insensitive keyword collisions.
+- Finding `F001` recorded: High severity test gap.
+
+### 5. Reconciliation (`python -m src.control_plane reconcile`)
+- `F001` classified as `likely` finding.
+- Implementation delegate adds case-insensitive collision test and normalizes tokens.
+- Finding `F001` marked `confirmed` and `fixed`.
+
+### 6. Verification (`python -m src.control_plane verify`)
+- `go test ./...` → `verified` (exit 0)
+- `go build ./...` → `verified` (exit 0)
+
+### 7. Evidence Recording & Human Gate Check
+- Evidence entry recorded in ledger.
+- `HumanBoundaryGate.evaluate` checks actions → No boundary triggered (`low` risk internal library).
+- Task transitions: `verifying` → `complete`.

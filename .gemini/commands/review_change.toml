@@ -1,0 +1,2 @@
+description = "Conduct specialized independent reviews to falsify correctness and uncover defects"
+prompt = "Read the file .agents/prompts/review_change.md and follow it exactly."

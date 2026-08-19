@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ai.agent_registry/v1",
+  "title": "Agent Registry Schema",
+  "description": "Declarative schema describing agent types, providers, and capabilities.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "ai.agent_registry/v1",
+      "description": "Identifies the schema and version this document conforms to."
+    },
+    "agents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "provider": {
+            "type": "string",
+            "minLength": 1
+          },
+          "interface": {
+            "type": "string",
+            "enum": ["cli", "headless_cli", "api", "ide"]
+          },
+          "capabilities": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "available_tools": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "reasoning_tier": {
+            "type": "string",
+            "enum": ["tier_1", "tier_2", "tier_3"]
+          },
+          "supports_repository_access": {
+            "type": "boolean"
+          },
+          "supports_command_execution": {
+            "type": "boolean"
+          },
+          "supports_long_running_tasks": {
+            "type": "boolean"
+          },
+          "supports_independent_sessions": {
+            "type": "boolean"
+          },
+          "cost_class": {
+            "type": "string",
+            "enum": ["free_local", "subscription_included", "paid_api"]
+          },
+          "availability": {
+            "type": "string",
+            "enum": ["available", "degraded", "unavailable"]
+          },
+          "operator_preference": {
+            "type": ["string", "null"]
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "agent_id",
+          "name",
+          "provider",
+          "interface",
+          "capabilities",
+          "reasoning_tier",
+          "cost_class",
+          "availability"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["schema", "agents"],
+  "additionalProperties": false
+}

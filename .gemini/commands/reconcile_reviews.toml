@@ -1,0 +1,2 @@
+description = "Reconcile findings across multiple reviewers without silent dismissal of defects"
+prompt = "Read the file .agents/prompts/reconcile_reviews.md and follow it exactly."

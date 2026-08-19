@@ -6,20 +6,25 @@ install:
 	go mod tidy
 	pip install -e ".[dev]"
 
+PYTEST ?= $(shell if [ -f /run/media/system/tallgeese/dev/.ci_verify_venv/bin/pytest ]; then echo /run/media/system/tallgeese/dev/.ci_verify_venv/bin/pytest; elif [ -f venv/bin/pytest ]; then echo venv/bin/pytest; else echo pytest; fi)
+FLAKE8 ?= $(shell if [ -f /run/media/system/tallgeese/dev/.ci_verify_venv/bin/flake8 ]; then echo /run/media/system/tallgeese/dev/.ci_verify_venv/bin/flake8; elif [ -f venv/bin/flake8 ]; then echo venv/bin/flake8; else echo flake8; fi)
+BANDIT ?= $(shell if [ -f /run/media/system/tallgeese/dev/.ci_verify_venv/bin/bandit ]; then echo /run/media/system/tallgeese/dev/.ci_verify_venv/bin/bandit; elif [ -f venv/bin/bandit ]; then echo venv/bin/bandit; else echo bandit; fi)
+PDOC ?= $(shell if [ -f /run/media/system/tallgeese/dev/.ci_verify_venv/bin/pdoc ]; then echo /run/media/system/tallgeese/dev/.ci_verify_venv/bin/pdoc; elif [ -f venv/bin/pdoc ]; then echo venv/bin/pdoc; else echo pdoc; fi)
+
 # Testing and Coverage
 test:
 	@echo "Running Python tests..."
-	PYTHONPATH=. pytest tests/ -v
+	PYTHONPATH=. $(PYTEST) tests/ -v
 	@echo "Running Go tests..."
 	go test -v ./...
 
 test-changed:
 	@echo "Selecting tests relevant to the current change set..."
-	PYTHONPATH=. python scripts/select_relevant_tests.py
+	PYTHONPATH=. python3 scripts/select_relevant_tests.py
 
 coverage-python:
 	@echo "Generating Python coverage..."
-	PYTHONPATH=. pytest tests/ -v --cov=src --cov=scripts --cov-report=term-missing --cov-fail-under=42
+	PYTHONPATH=. $(PYTEST) tests/ -v --cov=src --cov=scripts --cov-report=term-missing --cov-fail-under=42
 
 coverage-go:
 	@echo "Generating Go coverage..."
@@ -29,9 +34,9 @@ coverage-go:
 # Linting and Quality Checks
 lint:
 	@echo "Running Python linting (flake8)..."
-	flake8 src/ scripts/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+	$(FLAKE8) src/ scripts/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
 	@echo "Running Python SAST (bandit)..."
-	bandit -r src/ scripts/ tests/ -ll -ii
+	$(BANDIT) -r src/ scripts/ tests/ -ll -ii
 	@echo "Running Go linting..."
 	if command -v golangci-lint >/dev/null 2>&1; then golangci-lint run; else echo "golangci-lint not installed, skipping..."; fi
 	@echo "Running Go SAST (gosec)..."
@@ -63,7 +68,7 @@ docs:
 	@echo "Generating API documentation via pdoc..."
 	rm -rf docs/.build-tmp
 	mkdir -p docs/.build-tmp/api
-	pdoc ./src ./scripts -o docs/.build-tmp/api
+	$(PDOC) ./src ./scripts -o docs/.build-tmp/api # pdoc staging build
 	cp -r documentation docs/.build-tmp/documentation
 	cp -r assets docs/.build-tmp/assets
 	cp -r .agents docs/.build-tmp/.agents

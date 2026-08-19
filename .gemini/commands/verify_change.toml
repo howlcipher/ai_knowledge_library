@@ -1,0 +1,2 @@
+description = "Execute deterministic verification suites and capture verifiable evidence"
+prompt = "Read the file .agents/prompts/verify_change.md and follow it exactly."

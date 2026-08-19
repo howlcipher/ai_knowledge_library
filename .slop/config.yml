@@ -1,0 +1,26 @@
+schema: 1
+detector:
+  name: jscpd
+  version: "4.2.5"
+defaults:
+  format: python
+  mode: mild
+  min_lines: 5
+  min_tokens: 40
+global_ignore:
+  - "**/__pycache__/**"
+  - "**/venv/**"
+  - "**/.venv/**"
+  - "**/.scratch*/**"
+  - "**/*.egg-info/**"
+  - "**/dist/**"
+  - "**/build/**"
+scopes:
+  python_src:
+    scan_path: src
+    pattern: "**/*.py"
+    ignore: []
+  python_tests:
+    scan_path: tests
+    pattern: "**/*.py"
+    ignore: []

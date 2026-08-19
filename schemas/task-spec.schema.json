@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ai.task_spec/v1",
+  "title": "Task Specification",
+  "description": "Canonical machine-readable representation of an engineering task.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "ai.task_spec/v1",
+      "description": "Identifies the schema and version this document conforms to."
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for the task (e.g. TASK-101, imp-51, bug-12)."
+    },
+    "repository": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Repository or project name / relative path."
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Natural language summary of the task objective."
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Concrete, verifiable criteria required for task completion."
+    },
+    "constraints": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Hard operational, architectural, or security constraints."
+    },
+    "task_class": {
+      "type": "string",
+      "enum": ["bug_fix", "feature", "refactor", "security_patch", "test_improvement", "infrastructure", "docs", "automation", "other"],
+      "description": "Category/class of the engineering task."
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "description": "Assessed operational and security risk level."
+    },
+    "required_skills": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of skill names required to execute this task."
+    },
+    "recommended_reasoning_tier": {
+      "type": "string",
+      "enum": ["tier_1", "tier_2", "tier_3"],
+      "description": "Recommended agent reasoning depth tier."
+    },
+    "preferred_agent": {
+      "type": ["string", "null"],
+      "description": "Optional user or policy override specifying the preferred agent ID."
+    },
+    "recommended_agent": {
+      "type": ["string", "null"],
+      "description": "Agent type recommended by deterministic router."
+    },
+    "actual_agent": {
+      "type": ["string", "null"],
+      "description": "Agent type that actually executed implementation."
+    },
+    "is_override": {
+      "type": ["boolean", "null"],
+      "description": "Whether an operator override altered the routed agent."
+    },
+    "override_reason": {
+      "type": ["string", "null"],
+      "description": "Explicit rationale for human operator routing override."
+    },
+    "allowed_tools": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Whitelist of tools or capabilities allowed for this task."
+    },
+    "prohibited_actions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Actions strictly forbidden during task execution."
+    },
+    "verification_requirements": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Required verification checks (e.g. unit tests, lint, build)."
+    },
+    "reviewer_requirements": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of specialized reviewer roles required before completion."
+    },
+    "human_approval_requirements": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Actions or boundary conditions that require human sign-off."
+    },
+    "current_state": {
+      "type": "string",
+      "enum": [
+        "discovered",
+        "planned",
+        "implementing",
+        "reviewing",
+        "remediating",
+        "verifying",
+        "awaiting_human",
+        "complete",
+        "failed",
+        "blocked"
+      ],
+      "description": "Current lifecycle state of the task."
+    },
+    "task_journal_path": {
+      "type": ["string", "null"],
+      "description": "Relative or absolute path to the active task journal."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional free-form metadata.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "schema",
+    "task_id",
+    "repository",
+    "objective",
+    "acceptance_criteria",
+    "risk_level",
+    "current_state"
+  ],
+  "additionalProperties": false
+}

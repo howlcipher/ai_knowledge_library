@@ -9,6 +9,11 @@ Reusable task prompts for any agent working in this repository. Each `.md` file 
 | `work_next_item.md` | Work the single highest-priority open item across `issues.md` and `improvements.md`, end to end, per the Working Protocol, delegating implementation to non-Claude models to preserve Claude session limits |
 | `resume_task.md` | Resume an interrupted task from its journal in `documentation/task_journals/` |
 | `groom_backlogs.md` | Re-evaluate, re-rank, and clean up both backlogs and stale journals without implementing anything |
+| `route_task.md` | Deterministically classify and route a task specification to an agent and reviewers |
+| `review_change.md` | Conduct specialized independent reviews to falsify correctness and uncover defects |
+| `reconcile_reviews.md` | Reconcile findings across multiple reviewers without silent dismissal of defects |
+| `verify_change.md` | Execute deterministic verification suites and capture verifiable evidence |
+| `ship_check.md` | Verify evidence and evaluate human authority boundaries before completion |
 
 ## Invocation
 

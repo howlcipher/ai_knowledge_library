@@ -1,0 +1,2 @@
+description = "Verify evidence and evaluate human authority boundaries before completion"
+prompt = "Read the file .agents/prompts/ship_check.md and follow it exactly."

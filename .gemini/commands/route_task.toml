@@ -1,0 +1,2 @@
+description = "Deterministically classify and route a task specification to an agent and reviewers"
+prompt = "Read the file .agents/prompts/route_task.md and follow it exactly."
