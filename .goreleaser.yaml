@@ -23,10 +23,10 @@ archives:
 nfpms:
   - id: default
     file_name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}'
-    vendor: "AI Knowledge Library"
-    homepage: "https://github.com/howlcipher/ai_knowledge_library"
+    vendor: "HowlPlane"
+    homepage: "https://github.com/howlcipher/howlplane"
     maintainer: "William Elias"
-    description: "AI Knowledge Library Installer"
+    description: "HowlPlane Installer"
     formats:
       - deb
       - rpm

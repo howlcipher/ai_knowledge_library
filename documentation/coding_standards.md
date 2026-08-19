@@ -1,6 +1,6 @@
 # Global Coding Standards and Hygiene
 
-This document defines the baseline coding hygiene, architectural patterns, and defensive programming practices for the AI Knowledge Library. Because this repository utilizes AI Orchestration, maintaining deterministic, incredibly readable, and strictly typed code is vital to prevent context drift and hallucination.
+This document defines the baseline coding hygiene, architectural patterns, and defensive programming practices for HowlPlane. Because this repository utilizes AI Orchestration, maintaining deterministic, incredibly readable, and strictly typed code is vital to prevent context drift and hallucination.
 
 ## 1. Architectural Paradigms & Patterns
 * **Context-Driven Architecture**: Choose paradigms based on the context. Use **Object-Oriented Programming (OOP)** for stateful systems (like Orchestrators, Database Clients, and Agents). Use **Functional Programming (FP)** for data transformation pipelines (like data sanitization, vector math, and log parsing) to ensure pure, side-effect-free execution.

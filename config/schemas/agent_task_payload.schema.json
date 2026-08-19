@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/howlcipher/ai_knowledge_library/config/schemas/agent_task_payload.schema.json",
+  "$id": "https://github.com/howlcipher/howlplane/config/schemas/agent_task_payload.schema.json",
   "title": "AgentTaskPayload",
   "description": "Envelope passed between tiered agents in the 3 pass validation loop. One envelope shape for every pass; per pass mutation rights are defined in documentation/multi_agent_payload_protocol.md.",
   "type": "object",

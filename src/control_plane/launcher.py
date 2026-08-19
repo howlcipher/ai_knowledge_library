@@ -39,7 +39,7 @@ class TargetRepositoryNotFoundError(ControlPlaneError):
 
 
 class ControlPlaneNotFoundError(ControlPlaneError):
-    """Raised when ai_knowledge_library cannot be located."""
+    """Raised when HowlPlane control plane cannot be located."""
     pass
 
 
@@ -70,25 +70,42 @@ def find_git_repo_root(start_dir: Optional[Union[str, Path]] = None) -> Path:
 
 
 def find_control_plane_root(override_path: Optional[str] = None) -> Path:
-    """Discovers the ai_knowledge_library repository path using the 5-step precedence."""
+    """Discovers the HowlPlane repository path using the 5-step precedence."""
     if override_path:
         p = Path(override_path).expanduser().resolve()
         if (p / "src" / "control_plane").is_dir() or (p / "AGENTS.md").is_file():
             return p
         raise ControlPlaneNotFoundError(
-            f"ERROR: specified ai_knowledge_library control plane path does not exist: {override_path}"
+            f"ERROR: specified HowlPlane control plane path does not exist: {override_path}"
         )
 
-    env_path = os.environ.get("AI_KNOWLEDGE_LIBRARY")
+    # 1. Primary canonical environment variable: HOWLPLANE_HOME / HOWLPLANE_DIR
+    env_path = os.environ.get("HOWLPLANE_HOME") or os.environ.get("HOWLPLANE_DIR")
     if env_path:
         p = Path(env_path).expanduser().resolve()
         if (p / "src" / "control_plane").is_dir() or (p / "AGENTS.md").is_file():
             return p
         raise ControlPlaneNotFoundError(
-            f"ERROR: AI_KNOWLEDGE_LIBRARY environment variable points to invalid path: {env_path}"
+            f"ERROR: HOWLPLANE_HOME environment variable points to invalid path: {env_path}"
         )
 
+    # 2. Deprecated legacy environment variable: AI_KNOWLEDGE_LIBRARY
+    legacy_env = os.environ.get("AI_KNOWLEDGE_LIBRARY")
+    if legacy_env:
+        p = Path(legacy_env).expanduser().resolve()
+        if (p / "src" / "control_plane").is_dir() or (p / "AGENTS.md").is_file():
+            print(
+                "WARNING: AI_KNOWLEDGE_LIBRARY environment variable is deprecated; please use HOWLPLANE_HOME instead.",
+                file=sys.stderr,
+            )
+            return p
+        raise ControlPlaneNotFoundError(
+            f"ERROR: legacy AI_KNOWLEDGE_LIBRARY environment variable points to invalid path: {legacy_env}"
+        )
+
+    # 3. Config file candidates (canonical ~/.config/howlplane/ followed by legacy fallbacks)
     candidates = [
+        Path.home() / ".config" / "howlplane" / "config.toml",
         Path.home() / ".config" / "ai-control-plane" / "config.toml",
         Path.home() / ".config" / "ai" / "config.toml",
     ]
@@ -107,15 +124,16 @@ def find_control_plane_root(override_path: Optional[str] = None) -> Path:
             except Exception:
                 pass
 
+    # 4. Self repository root detection
     self_root = Path(__file__).resolve().parent.parent.parent
     if (self_root / "src" / "control_plane").is_dir() and (self_root / "AGENTS.md").is_file():
         return self_root
 
     raise ControlPlaneNotFoundError(
-        "ERROR: configured ai_knowledge_library control plane not found.\n"
-        "Please set the AI_KNOWLEDGE_LIBRARY environment variable or configure ~/.config/ai-control-plane/config.toml:\n\n"
+        "ERROR: configured HowlPlane control plane not found.\n"
+        "Please set the HOWLPLANE_HOME environment variable or configure ~/.config/howlplane/config.toml:\n\n"
         "  [control_plane]\n"
-        "  path = \"/path/to/ai_knowledge_library\"\n"
+        "  path = \"/path/to/howlplane\"\n"
     )
 
 
@@ -462,7 +480,7 @@ def build_parser() -> argparse.ArgumentParser:
     common_parser.add_argument(
         "--control-plane-dir",
         "-C",
-        help="Explicit path to ai_knowledge_library repository",
+        help="Explicit path to HowlPlane control plane repository",
     )
     common_parser.add_argument(
         "--repo",

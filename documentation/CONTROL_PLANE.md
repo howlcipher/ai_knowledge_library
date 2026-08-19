@@ -1,6 +1,6 @@
-# Multi-Agent Engineering Control Plane
+# HowlPlane — Multi-Agent Engineering Control Plane
 
-**Repository:** `howlcipher/ai_knowledge_library`  
+**Repository:** `howlcipher/howlplane`  
 **Status:** Operational / Maintenance Mode (Architectural Freeze)  
 **Architecture Principle:**  
 > *AI proposes and performs work.*  
@@ -193,6 +193,31 @@ When triggered, the task enters `awaiting_human` and produces a structured **Dec
 - Recommended Action
 ```
 
+### 3.11 Knowledge & Skills Layer Subsystem
+The former `ai_knowledge_library` now operates as the context, policy, and capability subsystem within HowlPlane:
+- **`AGENTS.md`**: Canonical global engineering context and grounding protocol loaded across all agents.
+- **Rules (`.agents/rules/`)**: Anti-manipulation, prompt sanitization, and architectural constraints.
+- **Skills (`.agents/skills/`)**: Tiered domain skills providing deterministic workflows and references.
+- **Prompts (`.agents/prompts/`)**: Canonical multi-agent prompt library.
+- **Grounding Profile (`USER_PROFILE.md`)**: Local user profile grounding personal context and career materials.
+
+### 3.12 HowlFrame Architectural Relationship & Dogfooding Position
+HowlPlane serves as a **primary real-world dogfooding consumer** of the HowlFrame toolchain:
+- **What HowlFrame is:** An AI-native programming language and capability-bounded execution runtime.
+- **Architectural role:**
+  ```text
+  HowlPlane (AI Engineering Control Plane)
+        |
+        +-- normal deterministic tooling (Go, Python, Make, Git)
+        |
+        +-- AI coding agents (Claude Code, Codex, Gemini CLI, Devin CLI, Antigravity)
+        |
+        +-- HowlFrame bounded execution runtime (future bounded / constrained execution paths)
+  ```
+- **Why HowlPlane dogfoods HowlFrame:** Smaller applications prove individual language features; ChangeOps proves governed consequential change execution; HowlPlane provides high-frequency real AI engineering workloads that pressure generated structured programs, capability boundaries, malformed AI output, instruction budgets, partial failures, result normalization, and structured evidence.
+- **Independence:** HowlPlane remains completely functional without HowlFrame. HowlFrame is an optional runtime dependency for selected bounded tasks.
+- **Future Bounded Dogfooding:** Select one existing bounded/read-only HowlPlane operation (e.g. read-only metadata verification or schema inspection) and evaluate it as a HowlFrame-backed execution path.
+
 ---
 
 ## 4. CLI & Prompt UX
@@ -293,21 +318,22 @@ The `ai` command is a thin, deterministic global entrypoint into the Multi-Agent
 ### 6.1 Installation & Configuration
 Install the global launcher to `~/.local/bin/ai`:
 ```bash
-# Run global installer from ai_knowledge_library
+# Run global installer from HowlPlane
 bash scripts/install_global.sh
 ```
-Or configure user configuration at `~/.config/ai-control-plane/config.toml`:
+Or configure user configuration at `~/.config/howlplane/config.toml` (canonical) or `~/.config/ai-control-plane/config.toml` (legacy):
 ```toml
 [control_plane]
-path = "/path/to/ai_knowledge_library"
+path = "/path/to/howlplane"
 ```
 
 Resolution precedence for the control plane:
 1. `--control-plane-dir <path>` CLI argument
-2. `AI_KNOWLEDGE_LIBRARY` environment variable
-3. `~/.config/ai-control-plane/config.toml` (or `~/.config/ai/config.toml`)
-4. Relative installation repository detection
-5. Fail closed (`ERROR: configured ai_knowledge_library control plane not found`)
+2. `HOWLPLANE_HOME` or `HOWLPLANE_DIR` environment variable
+3. `AI_KNOWLEDGE_LIBRARY` environment variable (deprecated fallback)
+4. `~/.config/howlplane/config.toml` -> `~/.config/ai-control-plane/config.toml` -> `~/.config/ai/config.toml`
+5. Relative installation repository detection
+6. Fail closed (`ERROR: configured HowlPlane control plane not found`)
 
 ### 6.2 Normal Operator Workflow
 ```bash

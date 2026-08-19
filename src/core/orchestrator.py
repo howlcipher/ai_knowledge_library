@@ -773,7 +773,7 @@ class Orchestrator:
 
 
 def main():
-    print("Welcome to the AI Knowledge Library Orchestrator.")
+    print("Welcome to the HowlPlane Orchestrator.")
     print("Type 'exit' or 'quit' to stop.")
 
     orchestrator = Orchestrator()

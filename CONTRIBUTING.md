@@ -1,6 +1,6 @@
 # Contributing Guidelines
 
-Thank you for your interest in contributing to the Personal AI Knowledge Library!
+Thank you for your interest in contributing to HowlPlane!
 
 ## Workflow
 1. Fork the repository.

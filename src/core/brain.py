@@ -64,7 +64,7 @@ def main():
     """
     CLI entry point for testing the brain search script standalone.
     """
-    parser = argparse.ArgumentParser(description="AI Knowledge Library Search (Brain)")
+    parser = argparse.ArgumentParser(description="HowlPlane Knowledge Search (Brain)")
     parser.add_argument(
         "query", type=str, help="The search query to look for in the library"
     )

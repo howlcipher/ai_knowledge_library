@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/howlcipher/ai_knowledge_library/internal/capability"
+	"github.com/howlcipher/howlplane/internal/capability"
 )
 
 // taskRequestSchema is the exact $id value every TaskRequest document must

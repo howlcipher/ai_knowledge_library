@@ -1,14 +1,15 @@
 # AI Framework Blueprint
 
-**Repository:** `howlcipher/ai_knowledge_library`
-**Status:** Proposed target architecture
+**Product:** HowlPlane (formerly `ai_knowledge_library`)  
+**Repository:** `howlcipher/howlplane`  
+**Status:** Target Architecture  
 **Purpose:** Define the long-term architecture, ownership boundaries, migration path, and acceptance criteria for turning this repository into the central AI framework used across the operator's devices and projects.
 
 ---
 
 ## 1. Executive Summary
 
-`ai_knowledge_library` should evolve from a collection of rules, skills, prompts, utilities, and experimental orchestration components into a portable **local AI control plane**.
+HowlPlane evolves from a collection of rules, skills, prompts, utilities, and experimental orchestration components into a portable **local AI engineering control plane**.
 
 The framework should be installed once per device and become the default entry point for AI-assisted work. Individual repositories should not carry full copies of global prompts, provider routing, memory systems, retry logic, or agent commands. Instead, each project should contain a small portable manifest describing its local context, commands, skills, security requirements, and routing preferences.
 

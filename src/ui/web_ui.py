@@ -28,9 +28,9 @@ class KnowledgeUI:
 
     def render(self):
         """Render the Streamlit interface."""
-        st.set_page_config(page_title="AI Knowledge Library", layout="wide")
+        st.set_page_config(page_title="HowlPlane", layout="wide")
 
-        st.title("🤖 AI Knowledge Library")
+        st.title("HowlPlane")
 
         tab1, tab2 = st.tabs(["💬 RAG Chat", "📊 Telemetry Dashboard"])
 

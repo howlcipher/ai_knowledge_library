@@ -2,17 +2,29 @@
 # Thin deterministic global launcher for the AI engineering control plane.
 set -euo pipefail
 
-# 1. Determine script directory (in case invoked directly from ai_knowledge_library/bin/ai)
+# 1. Determine script directory (in case invoked directly from howlplane/bin/ai)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd || true)"
 
 CP_DIR=""
 
-# 2. Check environment variable
-if [[ -n "${AI_KNOWLEDGE_LIBRARY:-}" && -d "${AI_KNOWLEDGE_LIBRARY}/src/control_plane" ]]; then
+# 2. Check canonical environment variables: HOWLPLANE_HOME / HOWLPLANE_DIR
+if [[ -n "${HOWLPLANE_HOME:-}" && -d "${HOWLPLANE_HOME}/src/control_plane" ]]; then
+    CP_DIR="${HOWLPLANE_HOME}"
+elif [[ -n "${HOWLPLANE_DIR:-}" && -d "${HOWLPLANE_DIR}/src/control_plane" ]]; then
+    CP_DIR="${HOWLPLANE_DIR}"
+elif [[ -n "${AI_KNOWLEDGE_LIBRARY:-}" && -d "${AI_KNOWLEDGE_LIBRARY}/src/control_plane" ]]; then
     CP_DIR="${AI_KNOWLEDGE_LIBRARY}"
 fi
 
-# 3. Check user config file ~/.config/ai-control-plane/config.toml
+# 3. Check canonical user config file ~/.config/howlplane/config.toml
+if [[ -z "${CP_DIR}" && -f "${HOME}/.config/howlplane/config.toml" ]]; then
+    CFG_PATH="$(grep -E '^[[:space:]]*path[[:space:]]*=' "${HOME}/.config/howlplane/config.toml" 2>/dev/null | head -n1 | sed -E 's/^[[:space:]]*path[[:space:]]*=[[:space:]]*["'"'"']?([^"'"'"']+)["'"'"']?.*/\1/' || true)"
+    if [[ -n "${CFG_PATH}" && -d "${CFG_PATH}/src/control_plane" ]]; then
+        CP_DIR="${CFG_PATH}"
+    fi
+fi
+
+# 4. Check legacy user config file ~/.config/ai-control-plane/config.toml
 if [[ -z "${CP_DIR}" && -f "${HOME}/.config/ai-control-plane/config.toml" ]]; then
     CFG_PATH="$(grep -E '^[[:space:]]*path[[:space:]]*=' "${HOME}/.config/ai-control-plane/config.toml" 2>/dev/null | head -n1 | sed -E 's/^[[:space:]]*path[[:space:]]*=[[:space:]]*["'"'"']?([^"'"'"']+)["'"'"']?.*/\1/' || true)"
     if [[ -n "${CFG_PATH}" && -d "${CFG_PATH}/src/control_plane" ]]; then
@@ -20,7 +32,7 @@ if [[ -z "${CP_DIR}" && -f "${HOME}/.config/ai-control-plane/config.toml" ]]; th
     fi
 fi
 
-# 4. Check user config file ~/.config/ai/config.toml
+# 5. Check user config file ~/.config/ai/config.toml
 if [[ -z "${CP_DIR}" && -f "${HOME}/.config/ai/config.toml" ]]; then
     CFG_PATH="$(grep -E '^[[:space:]]*path[[:space:]]*=' "${HOME}/.config/ai/config.toml" 2>/dev/null | head -n1 | sed -E 's/^[[:space:]]*path[[:space:]]*=[[:space:]]*["'"'"']?([^"'"'"']+)["'"'"']?.*/\1/' || true)"
     if [[ -n "${CFG_PATH}" && -d "${CFG_PATH}/src/control_plane" ]]; then
@@ -28,19 +40,21 @@ if [[ -z "${CP_DIR}" && -f "${HOME}/.config/ai/config.toml" ]]; then
     fi
 fi
 
-# 5. Check script directory
+# 6. Check script directory
 if [[ -z "${CP_DIR}" && -n "${SCRIPT_DIR}" && -d "${SCRIPT_DIR}/src/control_plane" ]]; then
     CP_DIR="${SCRIPT_DIR}"
 fi
 
-# 6. If still not found, check default development location
-if [[ -z "${CP_DIR}" && -d "/run/media/system/tallgeese/dev/ai_knowledge_library/src/control_plane" ]]; then
+# 7. If still not found, check default development location
+if [[ -z "${CP_DIR}" && -d "/run/media/system/tallgeese/dev/howlplane/src/control_plane" ]]; then
+    CP_DIR="/run/media/system/tallgeese/dev/howlplane"
+elif [[ -z "${CP_DIR}" && -d "/run/media/system/tallgeese/dev/ai_knowledge_library/src/control_plane" ]]; then
     CP_DIR="/run/media/system/tallgeese/dev/ai_knowledge_library"
 fi
 
 if [[ -z "${CP_DIR}" ]]; then
-    echo "ERROR: configured ai_knowledge_library control plane not found." >&2
-    echo "Please set AI_KNOWLEDGE_LIBRARY or configure ~/.config/ai-control-plane/config.toml" >&2
+    echo "ERROR: configured HowlPlane control plane not found." >&2
+    echo "Please set HOWLPLANE_HOME or configure ~/.config/howlplane/config.toml" >&2
     exit 1
 fi
 

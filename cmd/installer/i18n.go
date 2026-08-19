@@ -2,7 +2,7 @@ package main
 
 var translations = map[string]map[string]string{
 	"en_US": {
-		"Title":      "AI Knowledge Library Installer",
+		"Title":      "HowlPlane Installer",
 		"LangPrompt": "Select your language",
 		"NamePrompt": "What is your Name or GitHub Handle?",
 		"ModePrompt": "Preferred Interaction Mode?",
@@ -16,7 +16,7 @@ var translations = map[string]map[string]string{
 		"Success":    "Successfully generated your custom USER_PROFILE.md!",
 	},
 	"ja_JP": {
-		"Title":      "AIナレッジライブラリインストーラー",
+		"Title":      "HowlPlane インストーラー",
 		"LangPrompt": "言語を選択してください",
 		"NamePrompt": "名前またはGitHubハンドルは何ですか？",
 		"ModePrompt": "希望するインタラクションモードは？",
@@ -30,7 +30,7 @@ var translations = map[string]map[string]string{
 		"Success":    "カスタムUSER_PROFILE.mdが正常に生成されました！",
 	},
 	"zh_CN": {
-		"Title":      "AI知识库安装程序",
+		"Title":      "HowlPlane 安装程序",
 		"LangPrompt": "选择您的语言",
 		"NamePrompt": "您的名字或GitHub用户名是什么？",
 		"ModePrompt": "首选交互模式？",
@@ -44,7 +44,7 @@ var translations = map[string]map[string]string{
 		"Success":    "成功生成您的自定义USER_PROFILE.md！",
 	},
 	"es_ES": {
-		"Title":      "Instalador de la Biblioteca de Conocimiento de IA",
+		"Title":      "Instalador de HowlPlane",
 		"LangPrompt": "Seleccione su idioma",
 		"NamePrompt": "¿Cuál es tu nombre o usuario de GitHub?",
 		"ModePrompt": "¿Modo de interacción preferido?",
@@ -58,7 +58,7 @@ var translations = map[string]map[string]string{
 		"Success":    "¡Se generó correctamente tu USER_PROFILE.md personalizado!",
 	},
 	"de_DE": {
-		"Title":      "KI-Wissensdatenbank-Installationsprogramm",
+		"Title":      "HowlPlane-Installationsprogramm",
 		"LangPrompt": "Wählen Sie Ihre Sprache",
 		"NamePrompt": "Wie lautet Ihr Name oder GitHub-Handle?",
 		"ModePrompt": "Bevorzugter Interaktionsmodus?",
@@ -72,7 +72,7 @@ var translations = map[string]map[string]string{
 		"Success":    "Ihr benutzerdefiniertes USER_PROFILE.md wurde erfolgreich generiert!",
 	},
 	"fr_FR": {
-		"Title":      "Installateur de la bibliothèque de connaissances IA",
+		"Title":      "Installateur HowlPlane",
 		"LangPrompt": "Sélectionnez votre langue",
 		"NamePrompt": "Quel est votre nom ou pseudo GitHub ?",
 		"ModePrompt": "Mode d'interaction préféré ?",
@@ -86,7 +86,7 @@ var translations = map[string]map[string]string{
 		"Success":    "Votre USER_PROFILE.md personnalisé a été généré avec succès !",
 	},
 	"ru_RU": {
-		"Title":      "Установщик базы знаний ИИ",
+		"Title":      "Установщик HowlPlane",
 		"LangPrompt": "Выберите язык",
 		"NamePrompt": "Как вас зовут или ваш ник на GitHub?",
 		"ModePrompt": "Предпочтительный режим взаимодействия?",
@@ -100,10 +100,10 @@ var translations = map[string]map[string]string{
 		"Success":    "Ваш пользовательский USER_PROFILE.md успешно создан!",
 	},
 	"ko_KR": {
-		"Title":      "AI 지식 라이브러리 설치 프로그램",
+		"Title":      "HowlPlane 설치 프로그램",
 		"LangPrompt": "언어를 선택하세요",
 		"NamePrompt": "이름이나 GitHub 핸들이 무엇입니까?",
-		"ModePrompt": "선호하는 상호 작용 모드는?",
+		"ModePrompt": "선호하는 상호 작용 mode는?",
 		"MenuTitle":  "무엇을 하시겠습니까?",
 		"Install":    "설치 / 환경 설정",
 		"Customize":  "프로필 사용자 지정",
@@ -114,7 +114,7 @@ var translations = map[string]map[string]string{
 		"Success":    "사용자 지정 USER_PROFILE.md가 성공적으로 생성되었습니다!",
 	},
 	"hi_IN": {
-		"Title":      "एआई ज्ञान पुस्तकालय इंस्टॉलर",
+		"Title":      "HowlPlane इंस्टॉलर",
 		"LangPrompt": "अपनी भाषा चुनें",
 		"NamePrompt": "आपका नाम या गिटहब हैंडल क्या है?",
 		"ModePrompt": "पसंदीदा इंटरैक्शन मोड?",
@@ -128,7 +128,7 @@ var translations = map[string]map[string]string{
 		"Success":    "आपकी कस्टम USER_PROFILE.md सफलतापूर्वक जेनरेट हो गई!",
 	},
 	"ar_SA": {
-		"Title":      "مثبت مكتبة المعرفة للذكاء الاصطناعي",
+		"Title":      "مثبت HowlPlane",
 		"LangPrompt": "اختر لغتك",
 		"NamePrompt": "ما هو اسمك أو مقبض GitHub الخاص بك؟",
 		"ModePrompt": "وضع التفاعل المفضل؟",
@@ -142,7 +142,7 @@ var translations = map[string]map[string]string{
 		"Success":    "تم إنشاء USER_PROFILE.md المخصص الخاص بك بنجاح!",
 	},
 	"en_UK": {
-		"Title":      "AI Knowledge Library Installer",
+		"Title":      "HowlPlane Installer",
 		"LangPrompt": "Select your language",
 		"NamePrompt": "What is your Name or GitHub Handle?",
 		"ModePrompt": "Preferred Interaction Mode?",
@@ -156,7 +156,7 @@ var translations = map[string]map[string]string{
 		"Success":    "Successfully generated your custom USER_PROFILE.md!",
 	},
 	"en_AU": {
-		"Title":      "AI Knowledge Library Installer",
+		"Title":      "HowlPlane Installer",
 		"LangPrompt": "Select your language",
 		"NamePrompt": "What is your Name or GitHub Handle?",
 		"ModePrompt": "Preferred Interaction Mode?",
@@ -170,7 +170,7 @@ var translations = map[string]map[string]string{
 		"Success":    "Successfully generated your custom USER_PROFILE.md!",
 	},
 	"zh_TW": {
-		"Title":      "AI Knowledge Library Installer",
+		"Title":      "HowlPlane Installer",
 		"LangPrompt": "Select your language",
 		"NamePrompt": "What is your Name or GitHub Handle?",
 		"ModePrompt": "Preferred Interaction Mode?",
@@ -184,7 +184,7 @@ var translations = map[string]map[string]string{
 		"Success":    "Successfully generated your custom USER_PROFILE.md!",
 	},
 	"bn_IN": {
-		"Title":      "AI Knowledge Library Installer",
+		"Title":      "HowlPlane Installer",
 		"LangPrompt": "Select your language",
 		"NamePrompt": "What is your Name or GitHub Handle?",
 		"ModePrompt": "Preferred Interaction Mode?",
@@ -198,7 +198,7 @@ var translations = map[string]map[string]string{
 		"Success":    "Successfully generated your custom USER_PROFILE.md!",
 	},
 	"pl_PL": {
-		"Title":      "AI Knowledge Library Installer",
+		"Title":      "HowlPlane Installer",
 		"LangPrompt": "Select your language",
 		"NamePrompt": "What is your Name or GitHub Handle?",
 		"ModePrompt": "Preferred Interaction Mode?",
@@ -212,7 +212,7 @@ var translations = map[string]map[string]string{
 		"Success":    "Successfully generated your custom USER_PROFILE.md!",
 	},
 	"fi_FI": {
-		"Title":      "AI Knowledge Library Installer",
+		"Title":      "HowlPlane Installer",
 		"LangPrompt": "Select your language",
 		"NamePrompt": "What is your Name or GitHub Handle?",
 		"ModePrompt": "Preferred Interaction Mode?",
@@ -226,7 +226,7 @@ var translations = map[string]map[string]string{
 		"Success":    "Successfully generated your custom USER_PROFILE.md!",
 	},
 	"sk_SK": {
-		"Title":      "AI Knowledge Library Installer",
+		"Title":      "HowlPlane Installer",
 		"LangPrompt": "Select your language",
 		"NamePrompt": "What is your Name or GitHub Handle?",
 		"ModePrompt": "Preferred Interaction Mode?",

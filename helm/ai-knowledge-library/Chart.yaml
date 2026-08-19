@@ -1,6 +1,6 @@
 apiVersion: v2
-name: ai-knowledge-library
-description: A Helm chart for deploying the AI Knowledge Library system
+name: howlplane
+description: A Helm chart for deploying the HowlPlane engineering control plane
 type: application
 version: 0.1.0
 appVersion: "1.0.0"

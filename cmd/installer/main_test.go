@@ -10,9 +10,9 @@ import (
 func TestFormatPath(t *testing.T) {
 	// A simple test since most of main.go is command-line UI logic
 	// In a real application, we'd extract logic into testable packages
-	expected := "ai_knowledge_library"
-	if !strings.Contains(expected, "knowledge") {
-		t.Errorf("Expected string to contain knowledge")
+	expected := "howlplane"
+	if !strings.Contains(expected, "howlplane") {
+		t.Errorf("Expected string to contain howlplane")
 	}
 }
 

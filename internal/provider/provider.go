@@ -7,7 +7,7 @@
 // Router are the extraction point future adapters plug into.
 package provider
 
-import "github.com/howlcipher/ai_knowledge_library/internal/runtime"
+import "github.com/howlcipher/howlplane/internal/runtime"
 
 // Probe reports whether a provider's executable is installed and, if so,
 // its version.

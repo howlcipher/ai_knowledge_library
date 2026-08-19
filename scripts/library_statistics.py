@@ -29,8 +29,8 @@ class LibraryStatisticsGenerator:
             self.repo_root = repo_root
 
         self.readme_path = os.path.join(self.repo_root, "README.md")
-        self.badge_pattern = r'<img src="https://img\.shields\.io/static/v1\?label=Neural_Nodes&message=\d+&color=00ff41&style=for_the_badge" alt="Neural Nodes Badge" />'
-        self.first_badge_line = '<img src="https://img.shields.io/static/v1?label=SYS_CORE&message=Active&color=00f0ff&style=for_the_badge" alt="AI Library Badge" />'
+        self.badge_pattern = r'<img src="https://img\.shields\.io/static/v1\?label=Skills&message=\d+&color=39ff14&style=for_the_badge" alt="Skills Badge" />'
+        self.first_badge_line = '<img src="https://img.shields.io/static/v1?label=HowlPlane&message=Active&color=4a5aa8&style=for_the_badge" alt="HowlPlane Badge" />'
         # Path to the skills manifest JSON file
         self.skills_manifest_path = os.path.join(self.repo_root, ".agents", "skills.json")
 
@@ -54,7 +54,7 @@ class LibraryStatisticsGenerator:
         with open(self.readme_path, "r") as f:
             content = f.read()
 
-        new_badge = f'<img src="https://img.shields.io/static/v1?label=Neural_Nodes&message={skill_count}&color=00ff41&style=for_the_badge" alt="Neural Nodes Badge" />'
+        new_badge = f'<img src="https://img.shields.io/static/v1?label=Skills&message={skill_count}&color=39ff14&style=for_the_badge" alt="Skills Badge" />'
 
         if re.search(self.badge_pattern, content):
             content = re.sub(self.badge_pattern, new_badge, content)

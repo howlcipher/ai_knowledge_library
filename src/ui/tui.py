@@ -20,7 +20,7 @@ class ChatArea(Static):
 
 
 class AILibraryTUI(App):
-    """A Textual UI for the AI Knowledge Library."""
+    """A Textual UI for HowlPlane."""
 
     CSS = """
     Screen {
@@ -74,7 +74,7 @@ class AILibraryTUI(App):
 
         with Horizontal():
             with Vertical(id="sidebar"):
-                yield Label("🤖 AI Knowledge Library")
+                yield Label("HowlPlane")
                 yield Label("")
                 yield Label("Select LLM Provider:")
                 yield Select(

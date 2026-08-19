@@ -4,8 +4,8 @@ import json
 import sys
 import pathlib
 
-# Add scripts directory to path to import the script
-repo_root = pathlib.Path("/run/media/system/tallgeese/dev/ai_knowledge_library")
+# Add repo root to path to import the script
+repo_root = pathlib.Path(__file__).resolve().parents[1]
 sys.path.append(str(repo_root))
 
 from scripts.job_hunting_pipeline import load_user_profile, fetch_job_postings, generate_application_materials, save_materials, main

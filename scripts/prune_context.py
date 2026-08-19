@@ -45,7 +45,7 @@ class ContextPruner:
         client = chromadb.PersistentClient(
             path=db_path, settings=Settings(allow_reset=True)
         )
-        client.get_or_create_collection("ai_knowledge_library")
+        client.get_or_create_collection("howlplane_knowledge")
 
         # In a real scenario, this would query embeddings and compute cosine similarity
         # to find duplicates or outdated nodes.

@@ -26,9 +26,17 @@ if [ $? -ne 0 ]; then
 fi
 
 # --- Global Control Plane Configuration & Launcher ---
+mkdir -p "$HOME/.config/howlplane"
+cat << EOF > "$HOME/.config/howlplane/config.toml"
+# HowlPlane Engineering Control Plane Configuration
+[control_plane]
+path = "$REPO_ROOT"
+EOF
+
+# Legacy compatibility fallback path
 mkdir -p "$HOME/.config/ai-control-plane"
 cat << EOF > "$HOME/.config/ai-control-plane/config.toml"
-# AI Engineering Control Plane Configuration
+# HowlPlane (legacy fallback path)
 [control_plane]
 path = "$REPO_ROOT"
 EOF
@@ -217,4 +225,4 @@ else
   } >> "$DEVIN_AGENTS"
 fi
 
-echo "Integration complete. Your AI Knowledge Library is now globally accessible to Gemini, Claude, Codex, and Devin."
+echo "Integration complete. HowlPlane is now globally accessible to Gemini, Claude, Codex, and Devin."

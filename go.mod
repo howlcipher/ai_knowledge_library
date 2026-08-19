@@ -1,4 +1,4 @@
-module github.com/howlcipher/ai_knowledge_library
+module github.com/howlcipher/howlplane
 
 go 1.26.4
 

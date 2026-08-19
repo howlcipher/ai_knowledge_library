@@ -38,7 +38,7 @@ def test_task_spec_schema_validation():
     valid_payload = {
         "schema": "ai.task_spec/v1",
         "task_id": "TASK-100",
-        "repository": "ai_knowledge_library",
+        "repository": "howlplane",
         "objective": "Test objective",
         "acceptance_criteria": ["All tests pass"],
         "risk_level": "medium",

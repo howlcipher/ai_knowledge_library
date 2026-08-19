@@ -1,47 +1,48 @@
 <!DOCTYPE html>
 <html lang="{{ site.lang | default: "en-US" }}">
-  <head>
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ page.title | default: site.title | default: "AI_KNOWLEDGE_LIBRARY" }}</title>
+    <title>{{ page.title | default: "HowlPlane | An AI Engineering Control Plane" }}</title>
+    <link rel="stylesheet" href="{{ '/styles.css' | relative_url }}">
     <link rel="icon" type="image/svg+xml" href="{{ '/favicon.svg' | relative_url }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ '/styles.css' | relative_url }}?v=3">
-  </head>
-  <body>
-    <div class="scanlines"></div>
+    <link rel="alternate icon" type="image/png" href="{{ '/favicon.png' | relative_url }}">
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <div class="container">
+        <header>
+            <div>
+                <p class="kicker">// AI Engineering Control Plane / Documentation</p>
+                <h1 id="main-title">HowlPlane</h1>
+            </div>
+            <div class="header-actions">
+                <a href="{{ '/' | relative_url }}">[ Home ]</a>
+                <a href="{{ '/api/' | relative_url }}">[ API ]</a>
+                <a href="https://github.com/howlcipher/howlplane" target="_blank" rel="noreferrer">[ View on GitHub ]</a>
+                <button id="theme-toggle" type="button" aria-pressed="false">Switch to light theme</button>
+            </div>
+        </header>
 
-    <nav class="mecha-nav">
-      <div class="logo">AI_LIB<span class="blinking-cursor">_</span></div>
-      <div class="hamburger-menu" id="hamburger-menu">
-        <span class="bar"></span>
-        <span class="bar"></span>
-        <span class="bar"></span>
-      </div>
-      <ul class="nav-links" id="nav-links">
-        <li><a href="{{ '/' | relative_url }}">[HOME]</a></li>
-        <li><a href="{{ '/api/' | relative_url }}">[API_DOCS]</a></li>
-        <li><a href="{{ '/documentation/USER_GUIDE.html' | relative_url }}">[MANUAL]</a></li>
-        <li><a href="{{ '/change_log.html' | relative_url }}">[CHANGELOG]</a></li>
-        <li><a href="{{ '/AGENTS.html' | relative_url }}">[RULES]</a></li>
-        <li><a href="https://github.com/howlcipher/ai_knowledge_library">[GITHUB]</a></li>
-      </ul>
-      <div class="controls">
-        <button id="colorblindToggle" class="colorblind-toggle hud-box">COLORBLIND</button>
-        <button id="themeToggle" class="theme-toggle hud-box">NIGHT</button>
-      </div>
-    </nav>
+        <main id="main-content">
+            <section id="doc-content">
+                {{ content }}
+            </section>
+        </main>
 
-    <main class="content-panel">
-      {{ content }}
-    </main>
-
-    <footer class="mecha-footer">
-      <p>&gt; Built for the open-source agentic community. Open sourced on <a href="https://github.com/howlcipher/ai_knowledge_library">GitHub</a>.</p>
-    </footer>
-
-    <script src="{{ '/app.js' | relative_url }}?v=3"></script>
-  </body>
+        <footer>
+            <div>
+                <span class="status-dot"></span>
+                <span>SYS_STATUS: ACTIVE // HOWLPLANE CONTROL PLANE</span>
+            </div>
+            <div>
+                <a href="{{ '/' | relative_url }}">Home</a> |
+                <a href="{{ '/api/' | relative_url }}">API</a> |
+                <a href="https://github.com/howlcipher/howlplane" target="_blank" rel="noreferrer">GitHub</a> |
+                <a href="https://howlcipher.github.io/howlframe/" target="_blank" rel="noreferrer">HowlFrame</a>
+            </div>
+        </footer>
+    </div>
+    <script src="{{ '/app.js' | relative_url }}"></script>
+</body>
 </html>
