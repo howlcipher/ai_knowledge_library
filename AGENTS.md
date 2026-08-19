@@ -29,6 +29,8 @@ When a conflict is detected:
 ## Domain Routing
 
 * **Active Projects:** Check `projects/` for ongoing software development tasks and repositories.
+* **Control Plane:** Check `documentation/CONTROL_PLANE.md` and `src/control_plane/` for multi-agent task specifications, deterministic routing, independent reviews, and verification.
+* **Data Flows & Egress:** Check `documentation/data_flows.md` for complete reference on network egress, telemetry, and external integrations.
 * **Scripts and Utilities:** Check `tools/` for automated scripts, RCA programs, and helper utilities.
 * **Server and Environment:** Check `infrastructure/` for configurations regarding local servers, Docker setups, and networking.
 * **Processes and Standards:** Check `documentation/` for coding standards, workflows, and generic guides.
@@ -43,7 +45,7 @@ This file is the single canonical rulebook. The per-agent context files (`GEMINI
 
 ## Prompt Library
 
-Reusable task prompts live in `.agents/prompts/`; its `README.md` is the index. Each prompt file is canonical, with thin per-agent wrappers that only point at it: command skills in `.agents/skill_commands/<name>/SKILL.md` (available to Claude Code through `.claude/skills/`, to Codex through native repository discovery, and globally to both after running `scripts/install_global.sh`/`.ps1`), Gemini CLI commands in `.gemini/commands/`, and Devin CLI skills in `.devin/skills/<name>/SKILL.md`. Edit the canonical prompt only, never the wrappers, so invocations never drift between agents. Current prompts: `work_next_item` (work the top open item across `issues.md` and `improvements.md` per the Working Protocol), `resume_task` (continue an interrupted task from its journal), `groom_backlogs` (re-evaluate and clean both backlogs without implementing).
+Reusable task prompts live in `.agents/prompts/`; its `README.md` is the index. Each prompt file is canonical, with thin per-agent wrappers that only point at it: command skills in `.agents/skill_commands/<name>/SKILL.md` (available to Claude Code through `.claude/skills/`, to Codex through native repository discovery, and globally to both after running `scripts/install_global.sh`/`.ps1`), Gemini CLI commands in `.gemini/commands/`, and Devin CLI skills in `.devin/skills/<name>/SKILL.md`. Edit the canonical prompt only, never the wrappers, so invocations never drift between agents. Current prompts: `work_next_item` (work the top open item across `issues.md` and `improvements.md` per the Working Protocol), `resume_task` (continue an interrupted task from its journal), `groom_backlogs` (re-evaluate and clean both backlogs without implementing), `route_task` (classify and route tasks), `review_change` (run independent falsification reviews), `reconcile_reviews` (reconcile multi-agent review findings), `verify_change` (run deterministic verification), `ship_check` (verify evidence and evaluate human authority boundaries).
 
 ## Skills Manifest
 
