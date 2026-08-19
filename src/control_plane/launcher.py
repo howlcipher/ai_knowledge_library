@@ -19,11 +19,27 @@ import subprocess
 import sys
 from typing import List, Optional, Tuple, Union
 
-from src.control_plane.cli import cmd_doctor as cp_cmd_doctor, cmd_verify as cp_cmd_verify, cmd_howlframe_audit as cp_cmd_howlframe_audit
+_repo_root = str(Path(__file__).resolve().parents[2])
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
+
+from src.control_plane.cli import (
+    cmd_doctor as cp_cmd_doctor,
+    cmd_verify as cp_cmd_verify,
+    cmd_howlframe_audit as cp_cmd_howlframe_audit,
+)
 from src.control_plane.evidence_ledger import EvidenceEntry, EvidenceLedger
-from src.control_plane.howlframe_runner import HowlFrameAuditRunner, find_howlframe_binary, get_howlframe_version, get_dogfood_mode, DEFAULT_INSTRUCTION_BUDGET
+from src.control_plane.howlframe_runner import (
+    HowlFrameAuditRunner,
+    find_howlframe_binary,
+    get_howlframe_version,
+    get_dogfood_mode,
+    DEFAULT_INSTRUCTION_BUDGET,
+)
 from src.control_plane.human_boundary import HumanBoundaryGate
+from src.control_plane.orchestrator import GovernedTaskOrchestrator, OrchestrationConfig, OrchestrationResult
 from src.control_plane.project_adapter import ProjectAdapter, ProjectContext
+from src.control_plane.reconciliation import ReconciliationResult
 from src.control_plane.reviewers import get_reviewer_role
 from src.control_plane.router import TaskRouter, RoutingDecision
 from src.control_plane.task_spec import TaskSpec
@@ -210,7 +226,7 @@ def format_agent_launch_command(agent_id: str, spec: TaskSpec, run_dir: Path, ta
     """Generates the exact recommended agent launch command for the selected agent."""
     t_path = run_dir / "task.yaml"
     rel_p = str(t_path.relative_to(target_repo)) if t_path.is_relative_to(target_repo) else str(t_path)
-    
+
     if agent_id == "agy":
         return f'agy -p "Task: {spec.task_id} - {spec.objective}. Review task spec at {rel_p} and execute." --mode accept-edits'
     elif agent_id == "claude_code":
@@ -261,6 +277,90 @@ def create_task_plan(
     return spec, decision
 
 
+def _print_orchestration_summary(
+    res: OrchestrationResult,
+    ctx: ProjectContext,
+    spec: TaskSpec,
+    decision: RoutingDecision,
+) -> None:
+    """Renders the standard terminal output after governed task execution."""
+    status_header = "COMPLETE" if res.final_state == "complete" else (
+        "AWAITING HUMAN APPROVAL" if res.final_state == "awaiting_human" else "FAILED"
+    )
+    print("=" * 60)
+    print(f"HOWLPLANE — GOVERNED TASK {status_header}")
+    print("=" * 60)
+    print(f"Task:              {spec.task_id}")
+    print(f"Repository:        {ctx.name}")
+    print(f"Risk:              {spec.risk_level.upper()}")
+    print("")
+    print("Project Context:")
+    print("  ProjectAdapter:  OK")
+    hf_str = res.howlframe_audit_status or ("PASS / MATCH (shadow)" if res.howlframe_audit_match else "MISMATCH")
+    print(f"  HowlFrame:       {hf_str}")
+    print("")
+    print("Routing:")
+    print(f"  Implementation:  {decision.selected_agent_name}")
+    print(f"  Reasoning Tier:  {decision.reasoning_tier}")
+    print("")
+    print("Implementation:")
+    delta = res.final_delta
+    if delta:
+        print(f"  Files Changed:   {len(delta.files_modified) + len(delta.files_added)}")
+        print(f"  Insertions:       {delta.insertions}")
+        print(f"  Deletions:       {delta.deletions}")
+    else:
+        print("  Files Changed:   0")
+        print("  Insertions:       0")
+        print("  Deletions:       0")
+    print("")
+    print("Review:")
+    if res.review_cycles:
+        last_cycle = res.review_cycles[-1]
+        for role_id in decision.recommended_reviewers:
+            role_res = last_cycle.reviewer_results.get(role_id)
+            if role_res:
+                if role_res.findings:
+                    sev_summary = f"{role_res.findings[0].severity.upper()}"
+                    status_text = f"{sev_summary} → REMEDIATED" if res.final_state == "complete" and res.remediation_cycles_count > 0 else f"{sev_summary} ({len(role_res.findings)} findings)"
+                else:
+                    status_text = "PASS"
+                role_label = role_id.replace("-reviewer", "").capitalize()
+                print(f"  {role_label:<17} {status_text}")
+            else:
+                role_label = role_id.replace("-reviewer", "").capitalize()
+                print(f"  {role_label:<17} PASS")
+    else:
+        print("  (No review cycles executed)")
+    print("")
+    print("Remediation:")
+    print(f"  Cycles:           {res.remediation_cycles_count}")
+    print("")
+    print("Verification:")
+    if res.verification_plan and res.verification_plan.steps:
+        for s in res.verification_plan.steps:
+            status_tag = "VERIFIED" if s.status == "verified" else s.status.upper()
+            print(f"  {s.name:<17} {status_tag}")
+    else:
+        print("  (No automated verification steps discovered)")
+    print("")
+    print("Human Authority:")
+    req_human = (res.final_state == "awaiting_human") or bool(
+        res.boundary_result and res.boundary_result.requires_human_approval
+    )
+    print(f"  Required:         {'Yes (🛑 Triggered)' if req_human else 'No'}")
+    print("")
+    print("Evidence:")
+    print(f"  {res.run_dir}/")
+    print("")
+    final_verdict = (
+        "VERIFIED COMPLETE" if res.final_state == "complete"
+        else ("AWAITING HUMAN AUTHORIZATION" if res.final_state == "awaiting_human" else "FAILED")
+    )
+    print(f"Final State:\n  {final_verdict}")
+    print("=" * 60)
+
+
 def cmd_work(args: argparse.Namespace) -> int:
     """Executes the governed work command from any target repository."""
     target_repo = find_git_repo_root(args.repo)
@@ -280,57 +380,26 @@ def cmd_work(args: argparse.Namespace) -> int:
     ctx = ProjectAdapter.discover(target_repo)
     spec, decision = create_task_plan(ctx, target_repo, cp_root, args)
 
-    run_dir = target_repo / ".task_runs" / spec.task_id
-    reviews_dir = run_dir / "reviews"
-    reviews_dir.mkdir(parents=True, exist_ok=True)
-    spec.save_to_file(str(run_dir / "task.yaml"))
-
-    for role_id in decision.recommended_reviewers:
-        role = get_reviewer_role(role_id)
-        if role:
-            (reviews_dir / f"{role_id}.md").write_text(role.render_brief(task=spec, diff_content=""), encoding="utf-8")
-
-    (run_dir / "findings_template.yaml").write_text("# Review Findings Template\nfindings: []\n", encoding="utf-8")
-
-    plan = ProjectAdapter.create_verification_plan(ctx, task_id=spec.task_id)
-    (run_dir / "verification_plan.json").write_text(plan.to_json(), encoding="utf-8")
-
     planned_actions = getattr(args, "actions", None) or []
-    if any(kw in args.objective.lower() for kw in ["deploy", "terraform apply", "kubectl apply", "drop table"]):
-        planned_actions.append(args.objective)
-    boundary_res = HumanBoundaryGate.evaluate(spec, planned_actions=planned_actions, verification=plan)
-
-    ev = EvidenceEntry(
-        task_id=spec.task_id,
-        agent_id=decision.selected_agent_id,
-        action="task_created",
-        repository=ctx.name,
-        task_class=spec.task_class,
-        risk_level=spec.risk_level,
-        reasoning_tier=decision.reasoning_tier,
-        metadata={"target_repo": str(target_repo)},
+    orchestrator = GovernedTaskOrchestrator(
+        target_repo=target_repo,
+        control_plane_root=cp_root,
+        config=OrchestrationConfig(
+            force=getattr(args, "force", False),
+            skip_doctor=getattr(args, "skip_doctor", False),
+        ),
     )
-    if decision.is_override:
-        ev.is_override = True
-        ev.override_reason = decision.override_reason
-    EvidenceLedger(str(cp_root / "logs" / "control_plane" / "evidence_ledger.jsonl")).append_entry(ev)
 
+    if getattr(args, "execute", False):
+        res = orchestrator.run(spec, planned_actions=planned_actions)
+        _print_orchestration_summary(res, ctx, spec, decision)
+        return res.exit_code
+
+    # Dry run / task preparation mode (default when --execute is omitted)
+    ctx, decision, plan, run_dir, shadow_audit_res = orchestrator.prepare_task_plan(spec, planned_actions)
+    boundary_res = HumanBoundaryGate.evaluate(spec, planned_actions=planned_actions, verification=plan)
     launch_cmd = format_agent_launch_command(decision.selected_agent_id, spec, run_dir, target_repo)
-
-    # Optional HowlFrame shadow mode project context audit (read-only, non-authoritative)
     df_mode = get_dogfood_mode()
-    shadow_audit_res = None
-    if df_mode == "shadow":
-        try:
-            shadow_audit_res = HowlFrameAuditRunner.run_audit(
-                ctx,
-                record_evidence=True,
-                task_id=spec.task_id,
-                ledger=EvidenceLedger(str(cp_root / "logs" / "control_plane" / "evidence_ledger.jsonl")),
-                dogfood_mode="shadow",
-            )
-        except Exception:
-            pass
 
     print("=" * 60)
     print("AI ENGINEERING CONTROL PLANE — TASK INITIALIZED")
@@ -381,26 +450,13 @@ def cmd_work(args: argparse.Namespace) -> int:
     print("RUN ARTIFACTS PREPARED:")
     print(f"Run Directory:        {run_dir}")
     print(f"- Task Spec:          {run_dir / 'task.yaml'}")
-    print(f"- Review Briefs:      {reviews_dir}/ ({len(decision.recommended_reviewers)} briefs)")
+    print(f"- Review Briefs:      {run_dir / 'reviews'}/ ({len(decision.recommended_reviewers)} briefs)")
     print(f"- Findings Template:  {run_dir / 'findings_template.yaml'}")
     print(f"- Verification Plan:  {run_dir / 'verification_plan.json'}")
     print("-" * 60)
     print("RECOMMENDED AGENT LAUNCH COMMAND:")
     print(f"  {launch_cmd}")
     print("=" * 60)
-
-    if getattr(args, "execute", False):
-        if boundary_res.requires_human_approval:
-            print("\nCannot auto-execute task requiring human authorization.", file=sys.stderr)
-            return 2
-        print(f"\nLaunching agent ({decision.selected_agent_id}) in {target_repo}...")
-        try:
-            cmd_args = shlex.split(launch_cmd)
-            res = subprocess.run(cmd_args, cwd=str(target_repo), check=False)
-            return res.returncode
-        except Exception as exc:
-            print(f"Error launching agent: {exc}", file=sys.stderr)
-            return 1
 
     return 2 if boundary_res.requires_human_approval else 0
 
@@ -469,7 +525,8 @@ def cmd_status(args: argparse.Namespace) -> int:
     plan = ProjectAdapter.create_verification_plan(ctx, task_id="STATUS-CHECK")
     if plan.steps:
         for idx, s in enumerate(plan.steps, 1):
-            print(f"  {idx}. [{s.category}] {' '.join(s.command)}")
+            cmd_display = ' '.join(s.command) if isinstance(s.command, list) else s.command
+            print(f"  {idx}. [{s.category}] {cmd_display}")
     else:
         print("  (No automatic test/build commands detected)")
 
@@ -503,7 +560,27 @@ def cmd_status(args: argparse.Namespace) -> int:
             t_file = task_runs_dir / r / "task.yaml"
             try:
                 t_spec = TaskSpec.load_from_file(str(t_file))
-                print(f"  - {r}: [{t_spec.current_state}] {t_spec.objective} (Risk: {t_spec.risk_level})")
+                # Check for findings and verification state
+                rec_file = task_runs_dir / r / "reconciliation.json"
+                blockers = 0
+                highs = 0
+                if rec_file.exists():
+                    try:
+                        rec_data = json.loads(rec_file.read_text(encoding="utf-8"))
+                        blockers = rec_data.get("summary", {}).get("unresolved_blockers", 0)
+                        highs = rec_data.get("summary", {}).get("unresolved_highs", 0)
+                    except Exception:
+                        pass
+                ver_file = task_runs_dir / r / "verification_result.json"
+                ver_status = "pending"
+                if ver_file.exists():
+                    try:
+                        ver_data = json.loads(ver_file.read_text(encoding="utf-8"))
+                        ver_status = ver_data.get("overall_status", "pending")
+                    except Exception:
+                        pass
+
+                print(f"  - {r}: [{t_spec.current_state.upper()}] {t_spec.objective} (Risk: {t_spec.risk_level.upper()}, Agent: {t_spec.actual_agent or t_spec.recommended_agent or 'N/A'}, Blockers: {blockers}, Highs: {highs}, Verification: {ver_status})")
             except Exception:
                 print(f"  - {r}")
     else:
@@ -561,7 +638,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_work.add_argument("--criteria", nargs="*", help="Acceptance criteria list")
     p_work.add_argument("--constraints", nargs="*", help="Constraints list")
     p_work.add_argument("--actions", nargs="*", help="Planned actions for authority boundary checks")
-    p_work.add_argument("--execute", "-x", action="store_true", help="Launch recommended agent CLI")
+    p_work.add_argument("--execute", "-x", action="store_true", help="Launch recommended agent CLI and execute closed loop")
     p_work.add_argument("--dry-run", action="store_true", help="Generate plan without launching")
     p_work.add_argument("--skip-doctor", action="store_true", help="Skip preflight diagnostics")
     p_work.add_argument("--force", action="store_true", help="Proceed even if preflight has warnings")

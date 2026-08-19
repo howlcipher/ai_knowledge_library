@@ -7,10 +7,9 @@ classifies agreement/disagreement, and prevents silent suppression of defects.
 """
 
 from dataclasses import dataclass, field, asdict
-import json
+import json, yaml
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-import yaml
 
 REVIEW_FINDING_SCHEMA_VERSION = "ai.review_finding/v1"
 

@@ -3,7 +3,8 @@ Multi-Agent Engineering Control Plane.
 
 Provides task specification, agent capability registry, deterministic routing,
 specialized independent reviewers, review reconciliation, verification plans,
-evidence ledgers, transparent performance metrics, project adapters, and human authority boundaries.
+evidence ledgers, transparent performance metrics, project adapters, human authority boundaries,
+and closed-loop governed task orchestration.
 """
 
 from src.control_plane.task_spec import (
@@ -17,6 +18,21 @@ from src.control_plane.agent_registry import (
     AgentRegistry,
     BUILTIN_AGENTS,
 )
+from src.control_plane.agent_execution import (
+    AgentBackend,
+    AgentBackendRegistry,
+    AgentExecutionResult,
+    AgentExecutionError,
+    AgentUnavailableError,
+    FakeAgentBackend,
+    SubprocessAgentBackend,
+)
+from src.control_plane.git_baseline import (
+    GitBaseline,
+    RepositoryDelta,
+    capture_baseline,
+    capture_delta,
+)
 from src.control_plane.router import (
     TaskRouter,
     RoutingDecision,
@@ -26,6 +42,12 @@ from src.control_plane.reviewers import (
     REVIEWER_ROLES,
     get_reviewer_role,
     list_reviewer_roles,
+)
+from src.control_plane.review_runner import (
+    SingleReviewResult,
+    ReviewCycleResult,
+    ReviewRunner,
+    parse_and_validate_findings,
 )
 from src.control_plane.reconciliation import (
     ReviewFinding,
@@ -58,6 +80,11 @@ from src.control_plane.human_boundary import (
     BoundaryCheckResult,
     HUMAN_BOUNDARY_TRIGGERS,
 )
+from src.control_plane.orchestrator import (
+    GovernedTaskOrchestrator,
+    OrchestrationConfig,
+    OrchestrationResult,
+)
 
 __all__ = [
     "TaskSpec",
@@ -67,12 +94,27 @@ __all__ = [
     "AgentProfile",
     "AgentRegistry",
     "BUILTIN_AGENTS",
+    "AgentBackend",
+    "AgentBackendRegistry",
+    "AgentExecutionResult",
+    "AgentExecutionError",
+    "AgentUnavailableError",
+    "FakeAgentBackend",
+    "SubprocessAgentBackend",
+    "GitBaseline",
+    "RepositoryDelta",
+    "capture_baseline",
+    "capture_delta",
     "TaskRouter",
     "RoutingDecision",
     "ReviewerRole",
     "REVIEWER_ROLES",
     "get_reviewer_role",
     "list_reviewer_roles",
+    "SingleReviewResult",
+    "ReviewCycleResult",
+    "ReviewRunner",
+    "parse_and_validate_findings",
     "ReviewFinding",
     "ReconciliationResult",
     "ReviewReconciler",
@@ -92,4 +134,7 @@ __all__ = [
     "HumanDecisionPacket",
     "BoundaryCheckResult",
     "HUMAN_BOUNDARY_TRIGGERS",
+    "GovernedTaskOrchestrator",
+    "OrchestrationConfig",
+    "OrchestrationResult",
 ]
