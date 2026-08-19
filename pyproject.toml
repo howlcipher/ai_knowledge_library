@@ -56,6 +56,9 @@ dev = [
     "jsonschema"
 ]
 
+[project.scripts]
+ai = "src.control_plane.launcher:main"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]

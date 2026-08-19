@@ -104,6 +104,84 @@ def check_git_status(repo_root: Path) -> DiagnosticCheck:
     )
 
 
+def check_git_hooks(repo_root: Path) -> DiagnosticCheck:
+    hooks_dir = repo_root / ".git" / "hooks"
+    if not hooks_dir.is_dir():
+        return DiagnosticCheck(
+            name="Git Hooks",
+            status="warning",
+            message="Git hooks directory .git/hooks not found.",
+        )
+    pre_commit = hooks_dir / "pre-commit"
+    pre_push = hooks_dir / "pre-push"
+    missing = []
+    if not pre_commit.exists():
+        missing.append("pre-commit")
+    elif not os.access(pre_commit, os.X_OK):
+        missing.append("pre-commit (not executable)")
+
+    if not pre_push.exists():
+        missing.append("pre-push")
+    elif not os.access(pre_push, os.X_OK):
+        missing.append("pre-push (not executable)")
+
+    if missing:
+        return DiagnosticCheck(
+            name="Git Hooks",
+            status="warning",
+            message=f"Git hooks missing or not executable: {', '.join(missing)}.",
+            details={"action": "Run hook installer scripts to install."},
+        )
+    return DiagnosticCheck(
+        name="Git Hooks",
+        status="ok",
+        message="Required Git hooks ('pre-commit', 'pre-push') are installed and executable.",
+    )
+
+
+def check_slopslint() -> DiagnosticCheck:
+    slop_bin = shutil.which("slopslint")
+    if not slop_bin:
+        return DiagnosticCheck(
+            name="SlopsLint Binary",
+            status="warning",
+            message="SlopsLint binary 'slopslint' not found on PATH.",
+            details={"action": "Run 'bash scripts/install_slopslint.sh' to install pinned v0.1.0."},
+        )
+    try:
+        res = subprocess.run(
+            ["slopslint", "--version"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10.0,
+        )
+        if res.returncode == 0:
+            ver_line = res.stdout.strip()
+            if "0.1.0" in ver_line:
+                return DiagnosticCheck(
+                    name="SlopsLint Binary",
+                    status="ok",
+                    message=f"SlopsLint v0.1.0 verified ({ver_line}).",
+                )
+            return DiagnosticCheck(
+                name="SlopsLint Binary",
+                status="warning",
+                message=f"SlopsLint version mismatch: got '{ver_line}', expected '0.1.0'.",
+            )
+        return DiagnosticCheck(
+            name="SlopsLint Binary",
+            status="warning",
+            message=f"SlopsLint returned non-zero exit code: {res.returncode}.",
+        )
+    except Exception as exc:
+        return DiagnosticCheck(
+            name="SlopsLint Binary",
+            status="warning",
+            message=f"Error checking slopslint: {exc}.",
+        )
+
+
 def check_control_plane_ledger(repo_root: Path) -> DiagnosticCheck:
     ledger_file = repo_root / "logs" / "control_plane" / "evidence_ledger.jsonl"
     if not ledger_file.exists():
@@ -139,6 +217,8 @@ def run_diagnostics(repo_root: Optional[Path] = None) -> List[DiagnosticCheck]:
         check_dependencies(),
         check_go_toolchain(),
         check_git_status(root),
+        check_git_hooks(root),
+        check_slopslint(),
         check_control_plane_ledger(root),
     ]
 
