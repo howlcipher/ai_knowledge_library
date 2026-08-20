@@ -4,7 +4,7 @@
   <p><a href="https://howlcipher.github.io/howlplane/"><strong>[ Documentation & Interactive System Console: howlcipher.github.io/howlplane ]</strong></a></p>
   <p>
     <img src="https://img.shields.io/static/v1?label=HowlPlane&message=Active&color=4a5aa8&style=for_the_badge" alt="HowlPlane Badge" />
-    <img src="https://img.shields.io/static/v1?label=Skills&message=40&color=39ff14&style=for_the_badge" alt="Skills Badge" />
+    <img src="https://img.shields.io/static/v1?label=Skills&message=41&color=39ff14&style=for_the_badge" alt="Skills Badge" />
   </p>
   <p>
     <img src="https://img.shields.io/static/v1?label=Runtime&message=Python&color=3776AB&style=flat_square&logo=python" alt="Python Badge" />
