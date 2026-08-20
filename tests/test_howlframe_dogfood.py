@@ -169,3 +169,25 @@ def test_falsifications_bounds_and_lifecycle(tmp_path):
         ldg = EvidenceLedger(str(tmp_path / "ldg.jsonl"))
         assert HowlFrameAuditRunner.run_audit(ctx, record_evidence=True, ledger=ldg, task_id="T-EV", dogfood_mode="shadow").status == "MATCH"
         assert len(ldg.list_all_entries()) == 1
+
+
+def test_bytecode_compilation_deterministic_reproducibility(tmp_path: Path):
+    """Proves that compiling project_context_audit.howl reproduces the exact committed .hfbc artifact."""
+    h_bin = find_howlframe_binary()
+    if not h_bin:
+        pytest.skip("howlframe binary unavailable")
+
+    out_hfbc = tmp_path / "compiled_audit.hfbc"
+    proc = subprocess.run(
+        [h_bin, "build", str(HOWL_FILE), "-o", str(out_hfbc)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, f"Compilation failed: {proc.stderr}"
+    assert out_hfbc.is_file(), "Compiled .hfbc missing"
+
+    import hashlib
+    committed_hash = hashlib.sha256(HFBC_FILE.read_bytes()).hexdigest()
+    compiled_hash = hashlib.sha256(out_hfbc.read_bytes()).hexdigest()
+    assert compiled_hash == committed_hash, f"Bytecode drift detected: {committed_hash} != {compiled_hash}"

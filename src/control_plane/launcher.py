@@ -28,6 +28,9 @@ from src.control_plane.cli import (
     cmd_doctor as cp_cmd_doctor,
     cmd_verify as cp_cmd_verify,
     cmd_howlframe_audit as cp_cmd_howlframe_audit,
+    cmd_approve as cp_cmd_approve,
+    cmd_reject as cp_cmd_reject,
+    cmd_resume as cp_cmd_resume,
 )
 from src.control_plane.evidence_ledger import EvidenceEntry, EvidenceLedger
 from src.control_plane.howlframe_runner import (
@@ -37,7 +40,13 @@ from src.control_plane.howlframe_runner import (
     get_dogfood_mode,
     DEFAULT_INSTRUCTION_BUDGET,
 )
-from src.control_plane.human_boundary import HumanBoundaryGate
+from src.control_plane.human_boundary import (
+    HumanBoundaryGate,
+    HumanLifecycleManager,
+    HumanDecisionRecord,
+    compute_repository_fingerprint,
+    check_repository_drift,
+)
 from src.control_plane.orchestrator import GovernedTaskOrchestrator, OrchestrationConfig, OrchestrationResult
 from src.control_plane.project_adapter import ProjectAdapter, ProjectContext
 from src.control_plane.reconciliation import ReconciliationResult
@@ -558,11 +567,11 @@ def cmd_status(args: argparse.Namespace) -> int:
     print(f"ACTIVE TASK RUNS ({len(runs)}):")
     if runs:
         for r in sorted(runs):
-            t_file = task_runs_dir / r / "task.yaml"
+            t_dir = task_runs_dir / r
+            t_file = t_dir / "task.yaml"
             try:
                 t_spec = TaskSpec.load_from_file(str(t_file))
-                # Check for findings and verification state
-                rec_file = task_runs_dir / r / "reconciliation.json"
+                rec_file = t_dir / "reconciliation.json"
                 blockers = 0
                 highs = 0
                 if rec_file.exists():
@@ -572,16 +581,68 @@ def cmd_status(args: argparse.Namespace) -> int:
                         highs = rec_data.get("summary", {}).get("unresolved_highs", 0)
                     except Exception:
                         pass
-                ver_file = task_runs_dir / r / "verification_result.json"
-                ver_status = "pending"
+                ver_file = t_dir / "verification_result.json"
+                ver_status = "unverified"
                 if ver_file.exists():
                     try:
                         ver_data = json.loads(ver_file.read_text(encoding="utf-8"))
-                        ver_status = ver_data.get("overall_status", "pending")
+                        ver_status = ver_data.get("overall_status", "unverified")
                     except Exception:
                         pass
 
-                print(f"  - {r}: [{t_spec.current_state.upper()}] {t_spec.objective} (Risk: {t_spec.risk_level.upper()}, Agent: {t_spec.actual_agent or t_spec.recommended_agent or 'N/A'}, Blockers: {blockers}, Highs: {highs}, Verification: {ver_status})")
+                dp_file = t_dir / "decision_packet.md"
+                dp_rel = (
+                    str(dp_file.relative_to(target_repo))
+                    if dp_file.is_file() and dp_file.is_relative_to(target_repo)
+                    else str(dp_file)
+                )
+
+                if t_spec.current_state == "awaiting_human":
+                    dec_record = HumanLifecycleManager.load_decision(t_dir)
+                    current_fp = compute_repository_fingerprint(target_repo, t_dir)
+                    boundaries_list = t_spec.human_approval_requirements or ["human_authority_boundary"]
+                    boundaries_str = ", ".join(boundaries_list)
+
+                    print(f"  Task:               {t_spec.task_id}")
+                    print(f"  State:              AWAITING_HUMAN")
+                    print(f"  Verification:       {ver_status.upper()}")
+
+                    if not dec_record:
+                        print(f"  Repository State:   CURRENT")
+                        print(f"  Boundary:           {boundaries_str}")
+                        print(f"  Decision:           pending")
+                        if dp_file.is_file():
+                            print(f"  Decision Packet:    {dp_rel}")
+                        print("")
+                        print("  Next Action:")
+                        print(f"    ai approve {t_spec.task_id}")
+                        print(f"    ai reject {t_spec.task_id}")
+                    elif dec_record.decision == "approved":
+                        has_drift, drift_reason = (
+                            check_repository_drift(dec_record.repository_state, current_fp)
+                            if dec_record.repository_state
+                            else (False, None)
+                        )
+                        appr_state = f"STALE ({drift_reason})" if has_drift else "CURRENT"
+                        print(f"  Boundary:           {boundaries_str}")
+                        print(f"  Decision:           APPROVED")
+                        print(f"  Approval State:     {appr_state}")
+                        if dp_file.is_file():
+                            print(f"  Decision Packet:    {dp_rel}")
+                        print("")
+                        print("  Next Action:")
+                        if has_drift:
+                            print(f"    ai approve {t_spec.task_id} --reason \"re-approved after drift\"")
+                        else:
+                            print(f"    ai resume {t_spec.task_id}")
+                    elif dec_record.decision == "rejected":
+                        print(f"  Decision:           REJECTED")
+                        if dec_record.reason:
+                            print(f"  Reason:             {dec_record.reason}")
+                        print("  Terminal state:     FAILED (Rejected)")
+                    print("-" * 40)
+                else:
+                    print(f"  - {r}: [{t_spec.current_state.upper()}] {t_spec.objective} (Risk: {t_spec.risk_level.upper()}, Agent: {t_spec.actual_agent or t_spec.recommended_agent or 'N/A'}, Blockers: {blockers}, Highs: {highs}, Verification: {ver_status})")
             except Exception:
                 print(f"  - {r}")
     else:
@@ -600,6 +661,33 @@ def cmd_status(args: argparse.Namespace) -> int:
 
     print("=" * 60)
     return 0
+
+
+def cmd_approve(args: argparse.Namespace) -> int:
+    """Explicitly approves a task awaiting human authorization."""
+    target_repo = find_git_repo_root(args.repo)
+    cp_root = find_control_plane_root(args.control_plane_dir)
+    args.repo_dir = str(target_repo)
+    args.ledger_file = str(cp_root / "logs" / "control_plane" / "evidence_ledger.jsonl")
+    return cp_cmd_approve(args)
+
+
+def cmd_reject(args: argparse.Namespace) -> int:
+    """Explicitly rejects a task awaiting human authorization."""
+    target_repo = find_git_repo_root(args.repo)
+    cp_root = find_control_plane_root(args.control_plane_dir)
+    args.repo_dir = str(target_repo)
+    args.ledger_file = str(cp_root / "logs" / "control_plane" / "evidence_ledger.jsonl")
+    return cp_cmd_reject(args)
+
+
+def cmd_resume(args: argparse.Namespace) -> int:
+    """Resumes task execution following human authorization."""
+    target_repo = find_git_repo_root(args.repo)
+    cp_root = find_control_plane_root(args.control_plane_dir)
+    args.repo_dir = str(target_repo)
+    args.ledger_file = str(cp_root / "logs" / "control_plane" / "evidence_ledger.jsonl")
+    return cp_cmd_resume(args)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -653,6 +741,23 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("doctor", parents=[common_parser], help="Run workspace health diagnostics")
     subparsers.add_parser("status", parents=[common_parser], help="Show project status and verification plan")
 
+    # approve
+    p_appr = subparsers.add_parser("approve", parents=[common_parser], help="Approve an awaiting_human task")
+    p_appr.add_argument("task_id", help="Task ID to approve")
+    p_appr.add_argument("--reason", help="Optional human reason for approval")
+    p_appr.add_argument("--json", action="store_true", help="Output JSON result")
+
+    # reject
+    p_rej = subparsers.add_parser("reject", parents=[common_parser], help="Reject an awaiting_human task")
+    p_rej.add_argument("task_id", help="Task ID to reject")
+    p_rej.add_argument("--reason", help="Optional human reason for rejection")
+    p_rej.add_argument("--json", action="store_true", help="Output JSON result")
+
+    # resume
+    p_res = subparsers.add_parser("resume", parents=[common_parser], help="Resume a task after human approval or interruption")
+    p_res.add_argument("task_id", help="Task ID to resume")
+    p_res.add_argument("--json", action="store_true", help="Output JSON result")
+
     p_ver = subparsers.add_parser("verify", parents=[common_parser], help="Execute deterministic verification plan")
     p_ver.add_argument("--task-id", help="Task ID")
 
@@ -676,6 +781,9 @@ def main(args: Optional[List[str]] = None) -> int:
         "route": cmd_route,
         "doctor": cmd_doctor,
         "status": cmd_status,
+        "approve": cmd_approve,
+        "reject": cmd_reject,
+        "resume": cmd_resume,
         "verify": cmd_verify,
         "howlframe-audit": cmd_howlframe_audit,
     }

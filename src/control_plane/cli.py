@@ -12,7 +12,7 @@ from typing import List, Optional
 
 from src.control_plane.agent_registry import AgentRegistry
 from src.control_plane.evidence_ledger import EvidenceEntry, EvidenceLedger
-from src.control_plane.human_boundary import HumanBoundaryGate
+from src.control_plane.human_boundary import HumanBoundaryGate, HumanLifecycleManager
 from src.control_plane.howlframe_runner import HowlFrameAuditRunner, DEFAULT_INSTRUCTION_BUDGET
 from src.control_plane.metrics import MetricsCalculator
 from src.control_plane.project_adapter import ProjectAdapter
@@ -465,7 +465,85 @@ def build_parser() -> argparse.ArgumentParser:
     p_ha.add_argument("--ledger-file", help="Ledger file path")
     p_ha.add_argument("--json", action="store_true", help="Output JSON result")
 
+    # approve
+    p_appr = subparsers.add_parser("approve", help="Approve an awaiting_human task")
+    p_appr.add_argument("task_id", help="Task ID to approve")
+    p_appr.add_argument("--repo-dir", default=".", help="Target project root directory")
+    p_appr.add_argument("--reason", help="Optional human reason for approval")
+    p_appr.add_argument("--ledger-file", help="Ledger file path")
+    p_appr.add_argument("--json", action="store_true", help="Output JSON result")
+
+    # reject
+    p_rej = subparsers.add_parser("reject", help="Reject an awaiting_human task")
+    p_rej.add_argument("task_id", help="Task ID to reject")
+    p_rej.add_argument("--repo-dir", default=".", help="Target project root directory")
+    p_rej.add_argument("--reason", help="Optional human reason for rejection")
+    p_rej.add_argument("--ledger-file", help="Ledger file path")
+    p_rej.add_argument("--json", action="store_true", help="Output JSON result")
+
+    # resume
+    p_res = subparsers.add_parser("resume", help="Resume an approved task")
+    p_res.add_argument("task_id", help="Task ID to resume")
+    p_res.add_argument("--repo-dir", default=".", help="Target project root directory")
+    p_res.add_argument("--ledger-file", help="Ledger file path")
+    p_res.add_argument("--json", action="store_true", help="Output JSON result")
+
     return parser
+
+
+def _handle_decision(args: argparse.Namespace, decision: str) -> int:
+    ledger = EvidenceLedger(args.ledger_file) if getattr(args, "ledger_file", None) else None
+    fn = HumanLifecycleManager.approve if decision == "approved" else HumanLifecycleManager.reject
+    record = fn(
+        target_repo=args.repo_dir,
+        task_id=args.task_id,
+        reason=getattr(args, "reason", None),
+        operator_source="cli",
+        ledger=ledger,
+    )
+    if getattr(args, "json", False):
+        print(record.to_json())
+    else:
+        title = "TASK AUTHORIZED" if decision == "approved" else "TASK REJECTED"
+        print("=" * 60)
+        print(f"HOWLPLANE — {title}: {record.task_id}")
+        print("=" * 60)
+        print(f"Task:               {record.task_id}")
+        print(f"Decision:           {decision.upper()}")
+        print(f"Timestamp:          {record.timestamp}")
+        if record.reason:
+            print(f"Reason:             {record.reason}")
+        if decision == "approved":
+            print("")
+            print("Next Action:")
+            print(f"  ai resume {record.task_id}")
+        else:
+            print("Terminal state:     FAILED (Rejected)")
+        print("=" * 60)
+    return 0
+
+
+def cmd_approve(args: argparse.Namespace) -> int:
+    return _handle_decision(args, "approved")
+
+
+def cmd_reject(args: argparse.Namespace) -> int:
+    return _handle_decision(args, "rejected")
+
+
+def cmd_resume(args: argparse.Namespace) -> int:
+    ledger = EvidenceLedger(args.ledger_file) if getattr(args, "ledger_file", None) else None
+    res = HumanLifecycleManager.resume(
+        target_repo=args.repo_dir,
+        task_id=args.task_id,
+        ledger=ledger,
+    )
+    if getattr(args, "json", False):
+        import json
+        print(json.dumps(res.to_dict(), indent=2))
+    else:
+        print(f"Task '{res.task_id}' RESUMED. Final state: {res.final_state.upper()} (Exit {res.exit_code}).")
+    return res.exit_code
 
 
 def main(args: Optional[List[str]] = None) -> int:
@@ -491,6 +569,9 @@ def main(args: Optional[List[str]] = None) -> int:
         "check-boundary": cmd_boundary,
         "doctor": cmd_doctor,
         "howlframe-audit": cmd_howlframe_audit,
+        "approve": cmd_approve,
+        "reject": cmd_reject,
+        "resume": cmd_resume,
     }
 
     handler = handlers.get(parsed_args.subcommand)

@@ -18,7 +18,13 @@ fi
 # definition is part of the commit.
 if git diff --cached --name-only | grep -qE "^\\.agents/(skills|skill_commands)/"; then
     echo "Skill files changed; regenerating skills manifest and index..."
-    if python3 scripts/generate_skills_manifest.py; then
+    PYTHON_BIN="python3"
+    if [ -n "$VIRTUAL_ENV" ] && [ -x "$VIRTUAL_ENV/bin/python3" ]; then
+        PYTHON_BIN="$VIRTUAL_ENV/bin/python3"
+    elif [ -x "/run/media/system/tallgeese/dev/.ci_verify_venv/bin/python3" ]; then
+        PYTHON_BIN="/run/media/system/tallgeese/dev/.ci_verify_venv/bin/python3"
+    fi
+    if "$PYTHON_BIN" scripts/generate_skills_manifest.py; then
         git add AGENTS.md .agents/skills.json .claude/skills
     else
         echo "ERROR: skills manifest regeneration failed. Commit aborted."

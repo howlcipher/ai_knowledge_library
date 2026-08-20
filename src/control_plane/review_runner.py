@@ -15,7 +15,7 @@ import yaml
 
 from src.control_plane.agent_execution import AgentBackend, AgentBackendRegistry, AgentExecutionResult
 from src.control_plane.reconciliation import ReviewFinding, ReconciliationResult, ReviewReconciler, VALID_SEVERITIES
-from src.control_plane.reviewers import get_reviewer_role, ReviewerRole
+from src.control_plane.reviewers import get_reviewer_role, ReviewerRole, build_skill_context
 from src.control_plane.task_spec import TaskSpec
 
 REVIEW_RUN_SCHEMA_VERSION = "howlplane.review_runner/v1"
@@ -226,12 +226,18 @@ class ReviewRunner:
         all_findings: List[ReviewFinding] = []
         has_failure = False
 
+        skill_context = build_skill_context(task)
+
         for role_id in reviewer_roles:
             role = get_reviewer_role(role_id)
             role_name = role.name if role else role_id
 
-            # Render brief with the REAL implementation diff
-            brief = role.render_brief(task=task, diff_content=diff_content) if role else f"# Review Brief for {role_id}\n```diff\n{diff_content}\n```"
+            # Render brief with the REAL implementation diff and skill context
+            brief = (
+                role.render_brief(task=task, diff_content=diff_content, context=skill_context)
+                if role
+                else f"# Review Brief for {role_id}\n{skill_context or ''}\n```diff\n{diff_content}\n```"
+            )
 
             raw_output = ""
             err_message = None

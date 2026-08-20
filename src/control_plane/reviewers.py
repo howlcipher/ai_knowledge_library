@@ -190,3 +190,19 @@ def get_reviewer_role(role_id: str) -> Optional[ReviewerRole]:
 def list_reviewer_roles() -> List[ReviewerRole]:
     """Returns all available specialized reviewer roles."""
     return list(REVIEWER_ROLES.values())
+
+
+def build_skill_context(task: TaskSpec) -> Optional[str]:
+    """Constructs relevant domain guidance based on task required skills."""
+    parts: List[str] = []
+    if task.required_skills:
+        parts.append(f"Required Skills: {', '.join(task.required_skills)}")
+    if "howlframe-app-development" in (task.required_skills or []) or "howlframe" in (task.required_skills or []):
+        parts.append(
+            "HowlFrame Application Rules & Invariants:\n"
+            "- Exactly one root form (`http_server`, `web_app`, `cli_app`, or `module`) per `.howl` file.\n"
+            "- Standalone bytecode VM enforces finite instruction budgets and capability gates (`network`, `database`, `filesystem`).\n"
+            "- Fail closed on invalid inputs, missing keys, or parse failures with `try_let`.\n"
+            "- Deterministic verification requires `bash scripts/build.sh` and `bash scripts/test.sh` to pass."
+        )
+    return "\n\n".join(parts) if parts else None

@@ -25,7 +25,7 @@ from src.control_plane.human_boundary import HumanBoundaryGate, BoundaryCheckRes
 from src.control_plane.project_adapter import ProjectAdapter, ProjectContext
 from src.control_plane.reconciliation import ReviewFinding, ReconciliationResult, ReviewReconciler
 from src.control_plane.review_runner import ReviewRunner, ReviewCycleResult, SingleReviewResult
-from src.control_plane.reviewers import get_reviewer_role
+from src.control_plane.reviewers import get_reviewer_role, build_skill_context
 from src.control_plane.router import TaskRouter, RoutingDecision
 from src.control_plane.task_spec import TaskSpec
 from src.control_plane.verification import VerificationPlan, VerificationStep
@@ -186,12 +186,12 @@ class GovernedTaskOrchestrator:
         if task_spec.current_state == "discovered":
             task_spec.transition_to("planned", "Task routed and verification plan generated")
         task_spec.save_to_file(str(run_dir / "task.yaml"))
-
+        skill_ctx = build_skill_context(task_spec)
         for role_id in routing.recommended_reviewers:
             role = get_reviewer_role(role_id)
             if role:
                 (run_dir / "reviews" / f"{role_id}.md").write_text(
-                    role.render_brief(task=task_spec, diff_content=""), encoding="utf-8"
+                    role.render_brief(task=task_spec, diff_content="", context=skill_ctx), encoding="utf-8"
                 )
         (run_dir / "findings_template.yaml").write_text("# Review Findings Template\nfindings: []\n", encoding="utf-8")
 
@@ -275,32 +275,24 @@ class GovernedTaskOrchestrator:
         impl_backend = self.config.custom_backend or AgentBackendRegistry.get_backend(routing.selected_agent_id)
         if not impl_backend.is_available() and not self.config.custom_backend:
             err_msg = f"Selected agent '{routing.selected_agent_id}' is not installed or available on PATH."
-            task_spec.transition_to("failed", err_msg)
-            task_spec.save_to_file(str(run_dir / "task.yaml"))
-            self._record_event(
-                task_id=task_spec.task_id,
-                agent_id=routing.selected_agent_id,
-                action="task_failed",
-                result=err_msg,
-                spec=task_spec,
-            )
-            return OrchestrationResult(
-                task_id=task_spec.task_id,
-                task_spec=task_spec,
-                final_state="failed",
+            return self._fail_task(
+                task_spec,
+                run_dir,
+                err_msg,
+                start_time,
                 exit_code=1,
-                routing_decision=routing,
-                howlframe_audit_status=hf_audit_status,
-                howlframe_audit_match=hf_audit_match,
-                duration_seconds=round(time.time() - start_time, 3),
-                error_message=err_msg,
-                run_dir=str(run_dir),
+                agent_id=routing.selected_agent_id,
+                routing=routing,
+                hf_status=hf_audit_status,
+                hf_match=hf_audit_match,
             )
 
+        impl_prompt = self._build_implementation_prompt(task_spec, ctx)
         impl_res = impl_backend.execute(
             task=task_spec,
             cwd=self.target_repo,
             role="implementation",
+            prompt_override=impl_prompt,
             timeout_seconds=self.config.timeout_seconds,
         )
 
@@ -314,8 +306,6 @@ class GovernedTaskOrchestrator:
                 if impl_res.stderr and impl_res.stderr.strip()
                 else (impl_res.error_message or f"Implementation failed with exit code {impl_res.exit_code}")
             )
-            task_spec.transition_to("failed", f"Implementation agent error: {err_msg}")
-            task_spec.save_to_file(str(run_dir / "task.yaml"))
             self._record_event(
                 task_id=task_spec.task_id,
                 agent_id=routing.selected_agent_id,
@@ -324,24 +314,16 @@ class GovernedTaskOrchestrator:
                 spec=task_spec,
                 metadata={"exit_code": impl_res.exit_code, "error": err_msg},
             )
-            self._record_event(
-                task_id=task_spec.task_id,
-                agent_id="control_plane",
-                action="task_failed",
-                result=err_msg,
-                spec=task_spec,
-            )
-            return OrchestrationResult(
-                task_id=task_spec.task_id,
-                task_spec=task_spec,
-                final_state="failed",
+            return self._fail_task(
+                task_spec,
+                run_dir,
+                err_msg,
+                start_time,
                 exit_code=impl_res.exit_code if impl_res.exit_code != 0 else 1,
-                routing_decision=routing,
-                howlframe_audit_status=hf_audit_status,
-                howlframe_audit_match=hf_audit_match,
-                duration_seconds=round(time.time() - start_time, 3),
-                error_message=err_msg,
-                run_dir=str(run_dir),
+                agent_id="control_plane",
+                routing=routing,
+                hf_status=hf_audit_status,
+                hf_match=hf_audit_match,
             )
 
         # Capture actual repository delta attributable to the task
@@ -465,28 +447,21 @@ class GovernedTaskOrchestrator:
                     recommended_action="Review finding report in reconciliation_report.md and authorize override or manual remediation.",
                 )
                 (run_dir / "decision_packet.md").write_text(decision_pkt.render_markdown(), encoding="utf-8")
-                self._record_event(
-                    task_id=task_spec.task_id,
-                    agent_id="control_plane",
-                    action="human_boundary_triggered",
-                    spec=task_spec,
-                    metadata={"reason": err_msg},
-                )
-                return OrchestrationResult(
-                    task_id=task_spec.task_id,
+                self._record_human_boundary_events(task_spec, run_dir, reason=err_msg)
+                return self._make_result(
                     task_spec=task_spec,
                     final_state="awaiting_human",
                     exit_code=2,
-                    routing_decision=routing,
+                    start_time=start_time,
+                    run_dir=run_dir,
+                    routing=routing,
                     initial_delta=initial_delta,
-                    final_delta=current_delta,
+                    current_delta=current_delta,
                     review_cycles=review_cycles,
                     reconciliation=latest_reconciliation,
-                    verification_plan=verif_plan,
-                    remediation_cycles_count=remediation_count,
-                    duration_seconds=round(time.time() - start_time, 3),
-                    error_message=err_msg,
-                    run_dir=str(run_dir),
+                    verif_plan=verif_plan,
+                    remediation_count=remediation_count,
+                    err_msg=err_msg,
                 )
 
             # Trigger remediation cycle
@@ -583,32 +558,21 @@ class GovernedTaskOrchestrator:
         if verif_status != "passed":
             failed_steps = [s.name for s in verif_plan.steps if s.status == "failed" and s.required]
             err_msg = f"Deterministic verification failed on required steps: {', '.join(failed_steps)}"
-            task_spec.transition_to("failed", err_msg)
-            task_spec.save_to_file(str(run_dir / "task.yaml"))
-            self._record_event(
-                task_id=task_spec.task_id,
-                agent_id="control_plane",
-                action="task_failed",
-                result=err_msg,
-                spec=task_spec,
-            )
-            return OrchestrationResult(
-                task_id=task_spec.task_id,
-                task_spec=task_spec,
-                final_state="failed",
+            return self._fail_task(
+                task_spec,
+                run_dir,
+                err_msg,
+                start_time,
                 exit_code=1,
-                routing_decision=routing,
+                routing=routing,
                 initial_delta=initial_delta,
-                final_delta=current_delta,
+                current_delta=current_delta,
                 review_cycles=review_cycles,
                 reconciliation=latest_reconciliation,
-                verification_plan=verif_plan,
-                howlframe_audit_status=hf_audit_status,
-                howlframe_audit_match=hf_audit_match,
-                remediation_cycles_count=remediation_count,
-                duration_seconds=round(time.time() - start_time, 3),
-                error_message=err_msg,
-                run_dir=str(run_dir),
+                verif_plan=verif_plan,
+                hf_status=hf_audit_status,
+                hf_match=hf_audit_match,
+                remediation_count=remediation_count,
             )
 
         # --------------------------------------------------------------------
@@ -626,6 +590,21 @@ class GovernedTaskOrchestrator:
             verification=verif_plan,
         )
 
+        stage_kwargs = dict(
+            start_time=start_time,
+            run_dir=run_dir,
+            routing=routing,
+            initial_delta=initial_delta,
+            current_delta=current_delta,
+            review_cycles=review_cycles,
+            reconciliation=latest_reconciliation,
+            verif_plan=verif_plan,
+            boundary_res=boundary_res,
+            hf_status=hf_audit_status,
+            hf_match=hf_audit_match,
+            remediation_count=remediation_count,
+        )
+
         if boundary_res.requires_human_approval:
             task_spec.transition_to("awaiting_human", f"Human authority boundary triggered: {boundary_res.triggered_boundaries}")
             task_spec.save_to_file(str(run_dir / "task.yaml"))
@@ -633,32 +612,11 @@ class GovernedTaskOrchestrator:
             if boundary_res.decision_packet:
                 (run_dir / "decision_packet.md").write_text(boundary_res.decision_packet.render_markdown(), encoding="utf-8")
 
-            self._record_event(
-                task_id=task_spec.task_id,
-                agent_id="control_plane",
-                action="human_boundary_triggered",
-                spec=task_spec,
-                metadata={"boundaries": boundary_res.triggered_boundaries},
+            self._record_human_boundary_events(
+                task_spec, run_dir, boundaries=boundary_res.triggered_boundaries
             )
 
-            return OrchestrationResult(
-                task_id=task_spec.task_id,
-                task_spec=task_spec,
-                final_state="awaiting_human",
-                exit_code=2,
-                routing_decision=routing,
-                initial_delta=initial_delta,
-                final_delta=current_delta,
-                review_cycles=review_cycles,
-                reconciliation=latest_reconciliation,
-                verification_plan=verif_plan,
-                boundary_result=boundary_res,
-                howlframe_audit_status=hf_audit_status,
-                howlframe_audit_match=hf_audit_match,
-                remediation_cycles_count=remediation_count,
-                duration_seconds=round(time.time() - start_time, 3),
-                run_dir=str(run_dir),
-            )
+            return self._make_result(task_spec, "awaiting_human", 2, **stage_kwargs)
 
         # --------------------------------------------------------------------
         # Stage 8: Governed Completion (complete)
@@ -690,24 +648,132 @@ class GovernedTaskOrchestrator:
             },
         )
 
+        return self._make_result(task_spec, "complete", 0, **stage_kwargs)
+
+    def _record_human_boundary_events(
+        self,
+        task_spec: TaskSpec,
+        run_dir: Path,
+        boundaries: Optional[List[str]] = None,
+        reason: Optional[str] = None,
+    ) -> None:
+        meta = {"boundaries": boundaries} if boundaries else {"reason": reason}
+        self._record_event(
+            task_id=task_spec.task_id,
+            agent_id="control_plane",
+            action="human_decision_requested",
+            artifact=str(run_dir / "decision_packet.md"),
+            spec=task_spec,
+            metadata=meta,
+        )
+        self._record_event(
+            task_id=task_spec.task_id,
+            agent_id="control_plane",
+            action="human_boundary_triggered",
+            spec=task_spec,
+            metadata=meta,
+        )
+
+    def _make_result(
+        self,
+        task_spec: TaskSpec,
+        final_state: str,
+        exit_code: int,
+        start_time: float,
+        run_dir: Path,
+        routing: Optional[Any] = None,
+        initial_delta: Optional[Any] = None,
+        current_delta: Optional[Any] = None,
+        review_cycles: Optional[List[Any]] = None,
+        reconciliation: Optional[Any] = None,
+        verif_plan: Optional[Any] = None,
+        boundary_res: Optional[Any] = None,
+        hf_status: Optional[str] = None,
+        hf_match: Optional[bool] = None,
+        remediation_count: int = 0,
+        err_msg: Optional[str] = None,
+    ) -> OrchestrationResult:
         return OrchestrationResult(
             task_id=task_spec.task_id,
             task_spec=task_spec,
-            final_state="complete",
-            exit_code=0,
+            final_state=final_state,
+            exit_code=exit_code,
             routing_decision=routing,
             initial_delta=initial_delta,
             final_delta=current_delta,
-            review_cycles=review_cycles,
-            reconciliation=latest_reconciliation,
+            review_cycles=review_cycles or [],
+            reconciliation=reconciliation,
             verification_plan=verif_plan,
             boundary_result=boundary_res,
-            howlframe_audit_status=hf_audit_status,
-            howlframe_audit_match=hf_audit_match,
+            howlframe_audit_status=hf_status,
+            howlframe_audit_match=hf_match,
             remediation_cycles_count=remediation_count,
             duration_seconds=round(time.time() - start_time, 3),
+            error_message=err_msg,
             run_dir=str(run_dir),
         )
+
+    def _fail_task(
+        self,
+        task_spec: TaskSpec,
+        run_dir: Path,
+        err_msg: str,
+        start_time: float,
+        exit_code: int = 1,
+        agent_id: str = "control_plane",
+        **kwargs,
+    ) -> OrchestrationResult:
+        task_spec.transition_to("failed", err_msg)
+        task_spec.save_to_file(str(run_dir / "task.yaml"))
+        self._record_event(
+            task_id=task_spec.task_id,
+            agent_id=agent_id,
+            action="task_failed",
+            result=err_msg,
+            spec=task_spec,
+        )
+        return self._make_result(
+            task_spec=task_spec,
+            final_state="failed",
+            exit_code=exit_code,
+            start_time=start_time,
+            run_dir=run_dir,
+            err_msg=err_msg,
+            **kwargs,
+        )
+
+    def _build_implementation_prompt(
+        self,
+        task: TaskSpec,
+        ctx: Optional[ProjectContext] = None,
+    ) -> str:
+        """Constructs an implementation prompt with criteria and skill guidance."""
+        lines = [
+            f"# Task Implementation Request: `{task.task_id}`",
+            f"**Objective:** {task.objective}",
+            "",
+            "## Acceptance Criteria",
+        ]
+        for c in task.acceptance_criteria:
+            lines.append(f"- {c}")
+        if task.constraints:
+            lines.append("")
+            lines.append("## Constraints")
+            for c in task.constraints:
+                lines.append(f"- {c}")
+        if task.required_skills:
+            lines.append("")
+            lines.append("## Required Skills")
+            for s in task.required_skills:
+                lines.append(f"- {s}")
+        if "howlframe-app-development" in (task.required_skills or []):
+            lines.append("")
+            lines.append("## HowlFrame Application Guidance")
+            lines.append("- Build & test commands: `bash scripts/build.sh`, `bash scripts/test.sh`")
+            lines.append("- Standalone bytecode VM runs under capability gates (`network,database,filesystem`).")
+            lines.append("- Single root form (`http_server`, `web_app`, `cli_app`, or `module`) per `.howl` file.")
+            lines.append("- Handle fallible parsing/io using `try_let`.")
+        return "\n".join(lines)
 
     def _build_remediation_prompt(
         self,

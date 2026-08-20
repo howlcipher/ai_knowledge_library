@@ -184,11 +184,16 @@ class ProjectAdapter:
         if howl_sources:
             if "howlframe" not in project_types:
                 project_types.append("howlframe")
+            if "howlframe-app-development" not in skills:
+                skills.append("howlframe-app-development")
             metadata["howl_sources"] = [str(p.relative_to(root)) for p in howl_sources]
             metadata["howl_source_count"] = len(howl_sources)
             apparent_targets = _extract_apparent_targets(howl_sources)
             if apparent_targets:
                 metadata["apparent_targets"] = apparent_targets
+
+        if "howlframe" in project_types and "howlframe-app-development" not in skills:
+            skills.append("howlframe-app-development")
 
         # Check for HowlFrame bootstrap revision in scripts/bootstrap.sh
         bootstrap_sh = root / "scripts" / "bootstrap.sh"
