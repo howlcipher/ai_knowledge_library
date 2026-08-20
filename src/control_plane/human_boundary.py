@@ -456,6 +456,7 @@ def compute_repository_fingerprint(
                 path_part = path_part.split(" -> ")[1].strip()
             if (
                 path_part.startswith(".task_runs")
+                or path_part.startswith(".howlchangeops")
                 or path_part.startswith("logs/control_plane")
                 or path_part.endswith(".jsonl")
             ):
@@ -548,6 +549,7 @@ class HumanLifecycleManager:
         target_repo: Union[str, Path],
         task_id: str,
         decision: str,
+        reason: Optional[str] = None,
     ) -> Tuple[Path, TaskSpec, RepositoryStateFingerprint, Optional[str], List[str], Optional[str]]:
         run_dir = cls.get_run_dir(target_repo, task_id)
         if not run_dir.is_dir() or not (run_dir / "task.yaml").is_file():
@@ -558,11 +560,13 @@ class HumanLifecycleManager:
         existing = cls.load_decision(run_dir)
         if existing:
             if existing.decision == decision:
-                return run_dir, task_spec, None, None, None, None
-            opp = "APPROVED" if decision == "rejected" else "REJECTED"
-            raise ContradictoryDecisionError(
-                f"Task '{task_id}' was previously {opp}. Contradictory {decision} rejected (fail-closed)."
-            )
+                if not reason or reason == existing.reason:
+                    return run_dir, task_spec, None, None, None, None
+            else:
+                opp = "APPROVED" if decision == "rejected" else "REJECTED"
+                raise ContradictoryDecisionError(
+                    f"Task '{task_id}' was previously {opp}. Contradictory {decision} rejected (fail-closed)."
+                )
 
         if decision == "approved" and task_spec.current_state != "awaiting_human":
             if task_spec.current_state == "complete":
@@ -612,7 +616,7 @@ class HumanLifecycleManager:
         and links authorization to HowlChangeOps when applicable.
         """
         run_dir, task_spec, current_fp, dp_sha, triggers, changeops_dec_id = cls._prepare_decision(
-            target_repo, task_id, "approved"
+            target_repo, task_id, "approved", reason=reason
         )
         if current_fp is None:
             return cls.load_decision(run_dir)
@@ -685,7 +689,7 @@ class HumanLifecycleManager:
         Enforces fail-closed behavior, transitions task to FAILED, and records evidence.
         """
         run_dir, task_spec, current_fp, dp_sha, triggers, changeops_dec_id = cls._prepare_decision(
-            target_repo, task_id, "rejected"
+            target_repo, task_id, "rejected", reason=reason
         )
         if current_fp is None:
             return cls.load_decision(run_dir)
@@ -747,228 +751,17 @@ class HumanLifecycleManager:
             InvalidReceiptError,
             UnsupportedActionError,
         )
+        from src.control_plane.locking import TaskLock, RepoLock
         from src.control_plane.proposed_action import infer_proposed_actions, ProposedAction
 
         run_dir = cls.get_run_dir(target_repo, task_id)
         if not run_dir.is_dir() or not (run_dir / "task.yaml").is_file():
             raise TaskRunNotFoundError(f"Task run '{task_id}' not found in {target_repo}/.task_runs")
 
-        task_spec = cls.load_task_spec(run_dir)
+        with TaskLock(target_repo, task_id, operation="resume", command=f"ai resume {task_id}"):
+            task_spec = cls.load_task_spec(run_dir)
 
-        if task_spec.current_state == "complete":
-            return OrchestrationResult(
-                task_id=task_id,
-                task_spec=task_spec,
-                final_state="complete",
-                exit_code=0,
-                run_dir=str(run_dir),
-            )
-
-        if task_spec.current_state == "failed":
-            dec = cls.load_decision(run_dir)
-            if dec and dec.decision == "rejected":
-                raise InvalidTaskStateError(
-                    f"Task '{task_id}' was rejected by human operator and cannot be resumed."
-                )
-            raise InvalidTaskStateError(
-                f"Task '{task_id}' is in FAILED state. Cannot resume a failed task without re-running."
-            )
-
-        if task_spec.current_state == "awaiting_human":
-            decision = cls.load_decision(run_dir)
-            if not decision:
-                raise ApprovalRequiredError(
-                    f"Task '{task_id}' is AWAITING_HUMAN and requires explicit human approval before resuming. Run 'ai approve {task_id}'."
-                )
-            if decision.decision == "rejected":
-                raise InvalidTaskStateError(f"Task '{task_id}' authorization was REJECTED by human operator.")
-
-            if decision.decision == "approved":
-                # Validate repository state binding (drift check)
-                current_fp = compute_repository_fingerprint(target_repo, run_dir)
-                if decision.repository_state:
-                    has_drift, drift_reason = check_repository_drift(decision.repository_state, current_fp)
-                    if has_drift:
-                        if ledger:
-                            ledger.append_entry(
-                                EvidenceEntry(
-                                    task_id=task_id,
-                                    agent_id="control_plane",
-                                    action="stale_approval_detected",
-                                    result=f"Repository drift detected: {drift_reason}",
-                                    metadata={"drift_reason": drift_reason},
-                                )
-                            )
-                        raise StaleApprovalError(
-                            f"Repository state has drifted since approval was granted ({drift_reason}). "
-                            f"Approval is STALE. Re-review and re-approval required."
-                        )
-
-                # Check if this task requires bounded consequential execution
-                exec_boundaries = [b for b in decision.boundary_triggers if b in EXECUTABLE_BOUNDARIES]
-                if not exec_boundaries and task_spec.human_approval_requirements:
-                    exec_boundaries = [b for b in task_spec.human_approval_requirements if b in EXECUTABLE_BOUNDARIES]
-
-                receipt_file = run_dir / "execution_receipt.json"
-
-                if exec_boundaries:
-                    # Bounded consequential execution is required! Approval alone != Complete
-                    if receipt_file.is_file():
-                        try:
-                            receipt = ExecutionReceipt.load_from_file(receipt_file)
-                        except Exception as e:
-                            raise InvalidReceiptError(f"Execution receipt at {receipt_file} is malformed: {e}")
-
-                        executor = (
-                            ExecutorRegistry.get_executor(receipt.executor)
-                            or ExecutorRegistry.get_executor_for_action(receipt.action_type)
-                        )
-                        if not executor:
-                            raise InvalidReceiptError(f"Unknown executor '{receipt.executor}' in execution receipt")
-
-                        is_valid, val_reason = executor.verify_receipt(
-                            receipt,
-                            expected_action=receipt.action_type,
-                            expected_repo=Path(target_repo).name,
-                            expected_commit=current_fp.commit_sha,
-                            run_dir=run_dir,
-                        )
-                        if not is_valid:
-                            raise InvalidReceiptError(f"Execution receipt verification failed: {val_reason}")
-                    else:
-                        # Infer the consequential actions to execute
-                        proposed_actions = infer_proposed_actions(
-                            objective=task_spec.objective,
-                            repo_name=Path(target_repo).name,
-                            human_approval_requirements=decision.boundary_triggers,
-                        )
-                        if not proposed_actions:
-                            primary_b = exec_boundaries[0]
-                            proposed_actions = [
-                                ProposedAction(
-                                    action_type=primary_b,
-                                    target_repo=Path(target_repo).name,
-                                    authority_boundary=primary_b,
-                                    risk_level="critical" if primary_b in ("infrastructure_apply", "destructive_database_change") else "high",
-                                )
-                            ]
-
-                        for action in proposed_actions:
-                            executor = ExecutorRegistry.get_executor_for_action(action.action_type)
-                            if action.executor_id and not executor:
-                                executor = ExecutorRegistry.get_executor(action.executor_id)
-
-                            if not executor or not executor.is_available() or not executor.supports_action(action.action_type):
-                                raise UnsupportedActionError(
-                                    f"AUTHORIZED ACTION CANNOT EXECUTE: No configured bounded executor supports '{action.action_type}'. "
-                                    f"Task cannot complete without trusted bounded execution."
-                                )
-
-                            # Resolve or evaluate decision_id
-                            decision_id = action.decision_id or decision.changeops_decision_id
-                            if not decision_id:
-                                verdict, dec_id, eval_reason = executor.evaluate(action, target_repo, run_dir)
-                                if verdict == "DENY":
-                                    raise ExecutionFailedError(f"Bounded executor policy denied execution: {eval_reason}")
-                                decision_id = dec_id
-
-                            if not decision_id:
-                                raise ExecutionFailedError(
-                                    f"Failed to obtain decision ID from bounded executor for '{action.action_type}'"
-                                )
-
-                            # Submit approval linkage
-                            app_ok, app_msg = executor.approve(decision_id, target_repo, run_dir)
-                            if not app_ok and "already approved" not in (app_msg or "").lower():
-                                if "key" in (app_msg or "").lower() or "not set" in (app_msg or "").lower():
-                                    raise ExecutionFailedError(f"Bounded execution authorization failed: {app_msg}")
-
-                            # Execute bounded action
-                            exec_res = executor.execute(decision_id, target_repo, run_dir, action, task_id)
-                            if exec_res.status == "stale":
-                                if ledger:
-                                    ledger.append_entry(
-                                        EvidenceEntry(
-                                            task_id=task_id,
-                                            agent_id=executor.name,
-                                            action="stale_evidence_detected",
-                                            result=exec_res.error_message,
-                                            metadata={"decision_id": decision_id},
-                                        )
-                                    )
-                                raise StaleApprovalError(f"Bounded executor detected stale evidence / TOCTOU drift: {exec_res.error_message}")
-
-                            if exec_res.status != "success" or not exec_res.receipt:
-                                raise ExecutionFailedError(f"Bounded execution failed: {exec_res.error_message}")
-
-                            # Verify receipt
-                            is_valid, val_reason = executor.verify_receipt(
-                                exec_res.receipt,
-                                expected_action=action.action_type,
-                                expected_repo=Path(target_repo).name,
-                                expected_commit=current_fp.commit_sha,
-                                run_dir=run_dir,
-                            )
-                            if not is_valid:
-                                raise InvalidReceiptError(f"Execution receipt verification failed: {val_reason}")
-
-                            if ledger:
-                                ledger.append_entry(
-                                    EvidenceEntry(
-                                        task_id=task_id,
-                                        agent_id=executor.name,
-                                        action="bounded_execution_completed",
-                                        result="success",
-                                        artifact=exec_res.receipt_path,
-                                        metadata={
-                                            "executor": executor.name,
-                                            "decision_id": decision_id,
-                                            "action_type": action.action_type,
-                                            "verification_status": exec_res.verification_status,
-                                        },
-                                    )
-                                )
-
-                # Valid approval (+ valid bounded execution receipt if required) -> complete
-                if ledger:
-                    ledger.append_entry(
-                        EvidenceEntry(
-                            task_id=task_id,
-                            agent_id="control_plane",
-                            action="task_resumed",
-                            metadata={"task_id": task_id, "resumed_from": "awaiting_human"},
-                        )
-                    )
-
-                task_spec.transition_to(
-                    "complete",
-                    f"Human authority approved ({decision.reason or 'No reason specified'}): all gates and bounded execution satisfied.",
-                )
-                task_spec.save_to_file(str(run_dir / "task.yaml"))
-
-                if ledger:
-                    ledger.append_entry(
-                        EvidenceEntry(
-                            task_id=task_id,
-                            agent_id="control_plane",
-                            action="task_completed",
-                            task_class=task_spec.task_class,
-                            risk_level=task_spec.risk_level,
-                            reasoning_tier=task_spec.recommended_reasoning_tier,
-                            metadata={"human_approved": True, "resumed": True},
-                        )
-                    )
-
-                summary_file = run_dir / "summary.md"
-                if not summary_file.is_file():
-                    summary_file.write_text(
-                        f"# Governed Task Run Summary: `{task_id}`\n\n"
-                        f"- **Objective:** {task_spec.objective}\n"
-                        f"- **Final State:** `COMPLETE` (Human Approved & Verified)\n"
-                        f"- **Approved At:** {decision.timestamp}\n",
-                        encoding="utf-8",
-                    )
-
+            if task_spec.current_state == "complete":
                 return OrchestrationResult(
                     task_id=task_id,
                     task_spec=task_spec,
@@ -977,13 +770,329 @@ class HumanLifecycleManager:
                     run_dir=str(run_dir),
                 )
 
-        # For tasks interrupted in intermediate states (discovered, planned, implementing, reviewing, verifying)
-        if orchestrator:
-            return orchestrator.run(task_spec)
-        else:
-            from src.control_plane.orchestrator import GovernedTaskOrchestrator
-            orch = GovernedTaskOrchestrator(
-                target_repo=target_repo,
-                control_plane_root=control_plane_root,
+            if task_spec.current_state == "cancelled":
+                raise InvalidTaskStateError(f"Task '{task_id}' was CANCELLED and cannot be resumed.")
+
+            if task_spec.current_state == "failed":
+                dec = cls.load_decision(run_dir)
+                if dec and dec.decision == "rejected":
+                    raise InvalidTaskStateError(
+                        f"Task '{task_id}' was rejected by human operator and cannot be resumed."
+                    )
+                raise InvalidTaskStateError(
+                    f"Task '{task_id}' is in FAILED state. Cannot resume a failed task without re-running."
+                )
+
+            if task_spec.current_state == "awaiting_human":
+                decision = cls.load_decision(run_dir)
+                if not decision:
+                    raise ApprovalRequiredError(
+                        f"Task '{task_id}' is AWAITING_HUMAN and requires explicit human approval before resuming. Run 'ai approve {task_id}'."
+                    )
+                if decision.decision == "rejected":
+                    raise InvalidTaskStateError(f"Task '{task_id}' authorization was REJECTED by human operator.")
+
+                if decision.decision == "approved":
+                    # Validate repository state binding (drift check)
+                    current_fp = compute_repository_fingerprint(target_repo, run_dir)
+                    if decision.repository_state:
+                        has_drift, drift_reason = check_repository_drift(decision.repository_state, current_fp)
+                        if has_drift:
+                            if ledger:
+                                ledger.append_entry(
+                                    EvidenceEntry(
+                                        task_id=task_id,
+                                        agent_id="control_plane",
+                                        action="stale_approval_detected",
+                                        result=f"Repository drift detected: {drift_reason}",
+                                        metadata={"drift_reason": drift_reason},
+                                    )
+                                )
+                            raise StaleApprovalError(
+                                f"Repository state has drifted since approval was granted ({drift_reason}). "
+                                f"Approval is STALE. Re-review and re-approval required."
+                            )
+
+                    # Check if this task requires bounded consequential execution
+                    exec_boundaries = [b for b in decision.boundary_triggers if b in EXECUTABLE_BOUNDARIES]
+                    if not exec_boundaries and task_spec.human_approval_requirements:
+                        exec_boundaries = [b for b in task_spec.human_approval_requirements if b in EXECUTABLE_BOUNDARIES]
+
+                    receipt_file = run_dir / "execution_receipt.json"
+
+                    if exec_boundaries:
+                        # Bounded consequential execution is required! Approval alone != Complete
+                        if receipt_file.is_file():
+                            try:
+                                receipt = ExecutionReceipt.load_from_file(receipt_file)
+                            except Exception as e:
+                                raise InvalidReceiptError(f"Execution receipt at {receipt_file} is malformed: {e}")
+
+                            executor = (
+                                ExecutorRegistry.get_executor(receipt.executor)
+                                or ExecutorRegistry.get_executor_for_action(receipt.action_type)
+                            )
+                            if not executor:
+                                raise InvalidReceiptError(f"Unknown executor '{receipt.executor}' in execution receipt")
+
+                            is_valid, val_reason = executor.verify_receipt(
+                                receipt,
+                                expected_action=receipt.action_type,
+                                expected_repo=Path(target_repo).name,
+                                expected_commit=current_fp.commit_sha,
+                                run_dir=run_dir,
+                            )
+                            if not is_valid:
+                                raise InvalidReceiptError(f"Execution receipt verification failed: {val_reason}")
+                        else:
+                            # Infer the consequential actions to execute
+                            proposed_actions = infer_proposed_actions(
+                                objective=task_spec.objective,
+                                repo_name=Path(target_repo).name,
+                                human_approval_requirements=decision.boundary_triggers,
+                            )
+                            if not proposed_actions:
+                                primary_b = exec_boundaries[0]
+                                proposed_actions = [
+                                    ProposedAction(
+                                        action_type=primary_b,
+                                        target_repo=Path(target_repo).name,
+                                        authority_boundary=primary_b,
+                                        risk_level="critical" if primary_b in ("infrastructure_apply", "destructive_database_change") else "high",
+                                    )
+                                ]
+
+                            for action in proposed_actions:
+                                executor = ExecutorRegistry.get_executor_for_action(action.action_type)
+                                if action.executor_id and not executor:
+                                    executor = ExecutorRegistry.get_executor(action.executor_id)
+
+                                if not executor or not executor.is_available() or not executor.supports_action(action.action_type):
+                                    raise UnsupportedActionError(
+                                        f"AUTHORIZED ACTION CANNOT EXECUTE: No configured bounded executor supports '{action.action_type}'. "
+                                        f"Task cannot complete without trusted bounded execution."
+                                    )
+
+                                # Resolve or evaluate decision_id
+                                decision_id = action.decision_id or decision.changeops_decision_id
+                                if not decision_id:
+                                    verdict, dec_id, eval_reason = executor.evaluate(action, target_repo, run_dir)
+                                    if verdict == "DENY":
+                                        raise ExecutionFailedError(f"Bounded executor policy denied execution: {eval_reason}")
+                                    decision_id = dec_id
+
+                                if not decision_id:
+                                    raise ExecutionFailedError(
+                                        f"Failed to obtain decision ID from bounded executor for '{action.action_type}'"
+                                    )
+
+                                # Check if already executed natively before calling execute (Prevent Replay Hazard!)
+                                q_status, q_receipt, q_msg = executor.query_execution_status(
+                                    decision_id=decision_id,
+                                    repo_path=target_repo,
+                                    task_run_dir=run_dir,
+                                    action=action,
+                                    task_id=task_id,
+                                )
+
+                                if q_status == "already_executed" and q_receipt:
+                                    # Native receipt successfully recovered! Verify and advance
+                                    is_valid, val_reason = executor.verify_receipt(
+                                        q_receipt,
+                                        expected_action=action.action_type,
+                                        expected_repo=Path(target_repo).name,
+                                        expected_commit=current_fp.commit_sha,
+                                        run_dir=run_dir,
+                                    )
+                                    if not is_valid:
+                                        raise InvalidReceiptError(f"Recovered native execution receipt verification failed: {val_reason}")
+                                    continue
+                                elif q_status == "ambiguous":
+                                    raise ExecutionFailedError(
+                                        f"Ambiguous execution state for decision '{decision_id}': {q_msg}. Human intervention required."
+                                    )
+                                elif q_status == "failed":
+                                    raise ExecutionFailedError(
+                                        f"Prior native execution for decision '{decision_id}' failed: {q_msg}."
+                                    )
+
+                                # Submit approval linkage
+                                app_ok, app_msg = executor.approve(decision_id, target_repo, run_dir)
+                                if not app_ok and "already approved" not in (app_msg or "").lower():
+                                    if "key" in (app_msg or "").lower() or "not set" in (app_msg or "").lower():
+                                        raise ExecutionFailedError(f"Bounded execution authorization failed: {app_msg}")
+
+                                # Execute bounded action
+                                exec_res = executor.execute(decision_id, target_repo, run_dir, action, task_id)
+                                if exec_res.status == "stale":
+                                    if ledger:
+                                        ledger.append_entry(
+                                            EvidenceEntry(
+                                                task_id=task_id,
+                                                agent_id=executor.name,
+                                                action="stale_evidence_detected",
+                                                result=exec_res.error_message,
+                                                metadata={"decision_id": decision_id},
+                                            )
+                                        )
+                                    raise StaleApprovalError(f"Bounded executor detected stale evidence / TOCTOU drift: {exec_res.error_message}")
+
+                                if exec_res.status != "success" or not exec_res.receipt:
+                                    raise ExecutionFailedError(f"Bounded execution failed: {exec_res.error_message}")
+
+                                # Verify receipt
+                                is_valid, val_reason = executor.verify_receipt(
+                                    exec_res.receipt,
+                                    expected_action=action.action_type,
+                                    expected_repo=Path(target_repo).name,
+                                    expected_commit=current_fp.commit_sha,
+                                    run_dir=run_dir,
+                                )
+                                if not is_valid:
+                                    raise InvalidReceiptError(f"Execution receipt verification failed: {val_reason}")
+
+                                if ledger:
+                                    ledger.append_entry(
+                                        EvidenceEntry(
+                                            task_id=task_id,
+                                            agent_id=executor.name,
+                                            action="bounded_execution_completed",
+                                            result="success",
+                                            artifact=exec_res.receipt_path,
+                                            metadata={
+                                                "executor": executor.name,
+                                                "decision_id": decision_id,
+                                                "action_type": action.action_type,
+                                                "verification_status": exec_res.verification_status,
+                                            },
+                                        )
+                                    )
+
+                    # Valid approval (+ valid bounded execution receipt if required) -> complete
+                    if ledger:
+                        ledger.append_entry(
+                            EvidenceEntry(
+                                task_id=task_id,
+                                agent_id="control_plane",
+                                action="task_resumed",
+                                metadata={"task_id": task_id, "resumed_from": "awaiting_human"},
+                            )
+                        )
+
+                    task_spec.transition_to(
+                        "complete",
+                        f"Human authority approved ({decision.reason or 'No reason specified'}): all gates and bounded execution satisfied.",
+                    )
+                    task_spec.save_to_file(str(run_dir / "task.yaml"))
+
+                    if ledger:
+                        ledger.append_entry(
+                            EvidenceEntry(
+                                task_id=task_id,
+                                agent_id="control_plane",
+                                action="task_completed",
+                                task_class=task_spec.task_class,
+                                risk_level=task_spec.risk_level,
+                                reasoning_tier=task_spec.recommended_reasoning_tier,
+                                metadata={"human_approved": True, "resumed": True},
+                            )
+                        )
+
+                    summary_file = run_dir / "summary.md"
+                    if not summary_file.is_file():
+                        summary_file.write_text(
+                            f"# Governed Task Run Summary: `{task_id}`\n\n"
+                            f"- **Objective:** {task_spec.objective}\n"
+                            f"- **Final State:** `COMPLETE` (Human Approved & Verified)\n"
+                            f"- **Approved At:** {decision.timestamp}\n",
+                            encoding="utf-8",
+                        )
+
+                    return OrchestrationResult(
+                        task_id=task_id,
+                        task_spec=task_spec,
+                        final_state="complete",
+                        exit_code=0,
+                        run_dir=str(run_dir),
+                    )
+
+            # For tasks interrupted in intermediate states (discovered, planned, implementing, reviewing, verifying, interrupted)
+            if orchestrator:
+                return orchestrator.run(task_spec)
+            else:
+                from src.control_plane.orchestrator import GovernedTaskOrchestrator
+                orch = GovernedTaskOrchestrator(
+                    target_repo=target_repo,
+                    control_plane_root=control_plane_root,
+                )
+                return orch.run(task_spec)
+
+    @classmethod
+    def cancel(
+        cls,
+        target_repo: Union[str, Path],
+        task_id: str,
+        reason: Optional[str] = None,
+        ledger: Optional[EvidenceLedger] = None,
+    ) -> Any:
+        """
+        Cancels an active or interrupted task run safely.
+        Terminates child processes, releases locks, and transitions state to 'cancelled'.
+        Never reverts or destroys repository working tree changes.
+        """
+        from src.control_plane.checkpoints import CheckpointManager
+        from src.control_plane.locking import TaskLock
+        from src.control_plane.orchestrator import OrchestrationResult
+        from src.control_plane.process_manager import ProcessTracker
+
+        run_dir = cls.get_run_dir(target_repo, task_id)
+        if not run_dir.is_dir() or not (run_dir / "task.yaml").is_file():
+            raise TaskRunNotFoundError(f"Task run '{task_id}' not found in {target_repo}/.task_runs")
+
+        with TaskLock(target_repo, task_id, operation="cancel", command=f"ai cancel {task_id}"):
+            task_spec = cls.load_task_spec(run_dir)
+
+            if task_spec.current_state == "complete":
+                raise InvalidTaskStateError(f"Task '{task_id}' is already COMPLETE and cannot be cancelled.")
+
+            if task_spec.current_state == "cancelled":
+                return OrchestrationResult(
+                    task_id=task_id,
+                    task_spec=task_spec,
+                    final_state="cancelled",
+                    exit_code=0,
+                    run_dir=str(run_dir),
+                )
+
+            # Terminate active process if running
+            terminated, term_msg = ProcessTracker.terminate_task_process(run_dir)
+
+            cancel_reason = reason or "Cancelled by human operator via CLI"
+            task_spec.transition_to("cancelled", cancel_reason)
+            task_spec.save_to_file(str(run_dir / "task.yaml"))
+
+            CheckpointManager.record_interrupted(
+                run_dir,
+                stage="cancelled",
+                reason=cancel_reason,
+                metadata={"process_terminated": terminated, "process_message": term_msg},
             )
-            return orch.run(task_spec)
+
+            if ledger:
+                ledger.append_entry(
+                    EvidenceEntry(
+                        task_id=task_id,
+                        agent_id="control_plane",
+                        action="task_cancelled",
+                        result="cancelled",
+                        metadata={"reason": cancel_reason, "process_terminated": terminated},
+                    )
+                )
+
+            return OrchestrationResult(
+                task_id=task_id,
+                task_spec=task_spec,
+                final_state="cancelled",
+                exit_code=0,
+                run_dir=str(run_dir),
+            )

@@ -151,6 +151,21 @@ class AuthorityExecutor(ABC):
         """
         pass
 
+    def query_execution_status(
+        self,
+        decision_id: str,
+        repo_path: Union[str, Path],
+        task_run_dir: Union[str, Path],
+        action: ProposedAction,
+        task_id: str,
+    ) -> Tuple[str, Optional[ExecutionReceipt], Optional[str]]:
+        """
+        Queries native executor state to check if a decision has already been executed.
+        Returns: (status, optional_receipt, message).
+        status is one of 'already_executed', 'not_executed', 'ambiguous', 'failed'.
+        """
+        return "not_executed", None, "Default executor does not support status query"
+
 
 def find_howlchangeops_binary() -> Optional[Path]:
     """Discovers the canonical HowlChangeOps executable with safe fallbacks."""
@@ -429,24 +444,13 @@ class HowlChangeOpsExecutor(AuthorityExecutor):
             )
 
         # Build HowlPlane execution receipt
-        c_res = subprocess.run(["git", "-C", str(target_dir), "rev-parse", "HEAD"], capture_output=True, text=True, check=False)
-        commit_sha = c_res.stdout.strip() if c_res.returncode == 0 else ""
-
-        receipt = ExecutionReceipt(
+        receipt = self._create_receipt_from_native(
             task_id=task_id,
-            executor=self.name,
-            executor_version="0.2.0",
             decision_id=decision_id,
-            action_type=action.action_type,
-            repository=target_dir.name,
-            commit_sha=commit_sha,
-            status="success",
-            executed_at=datetime.now(timezone.utc).isoformat(),
-            verification_status="PASS",
-            native_receipt=native_receipt_data,
-            rollback_status=native_receipt_data.get("rollback_status") if native_receipt_data else None,
+            action=action,
+            target_dir=target_dir,
+            native_data=native_receipt_data,
         )
-
         receipt_file = run_dir / "execution_receipt.json"
         receipt.save_to_file(receipt_file)
 
@@ -504,6 +508,91 @@ class HowlChangeOpsExecutor(AuthorityExecutor):
                     return False, "Receipt failed provenance check: no matching native HowlChangeOps receipt found"
 
         return True, None
+
+    def _create_receipt_from_native(
+        self,
+        task_id: str,
+        decision_id: str,
+        action: ProposedAction,
+        target_dir: Path,
+        native_data: Optional[Dict[str, Any]],
+    ) -> ExecutionReceipt:
+        """Helper to construct ExecutionReceipt from native HowlChangeOps proof."""
+        c_res = subprocess.run(
+            ["git", "-C", str(target_dir), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        commit_sha = c_res.stdout.strip() if c_res.returncode == 0 else ""
+        exec_at = (
+            native_data.get("timestamp", datetime.now(timezone.utc).isoformat())
+            if native_data
+            else datetime.now(timezone.utc).isoformat()
+        )
+        return ExecutionReceipt(
+            task_id=task_id,
+            executor=self.name,
+            executor_version="0.2.0",
+            decision_id=decision_id,
+            action_type=action.action_type,
+            repository=target_dir.name,
+            commit_sha=commit_sha,
+            status="success",
+            executed_at=exec_at,
+            verification_status="PASS",
+            native_receipt=native_data,
+            rollback_status=native_data.get("rollback_status") if native_data else None,
+        )
+
+    def query_execution_status(
+        self,
+        decision_id: str,
+        repo_path: Union[str, Path],
+        task_run_dir: Union[str, Path],
+        action: ProposedAction,
+        task_id: str,
+    ) -> Tuple[str, Optional[ExecutionReceipt], Optional[str]]:
+        """
+        Inspects HowlChangeOps authoritative state/receipts to detect prior execution.
+        """
+        target_dir = Path(repo_path).resolve()
+        run_dir = Path(task_run_dir).resolve()
+        hco_base = target_dir / ".howlchangeops"
+        native_receipt_file = hco_base / "receipts" / f"{decision_id}.json"
+
+        if native_receipt_file.is_file():
+            try:
+                native_data = json.loads(native_receipt_file.read_text(encoding="utf-8"))
+                if native_data.get("verification") == "PASS":
+                    receipt = self._create_receipt_from_native(
+                        task_id=task_id,
+                        decision_id=decision_id,
+                        action=action,
+                        target_dir=target_dir,
+                        native_data=native_data,
+                    )
+                    receipt_file = run_dir / "execution_receipt.json"
+                    receipt.save_to_file(receipt_file)
+                    return "already_executed", receipt, f"Found verified native receipt for decision '{decision_id}'"
+                elif native_data.get("verification") == "FAIL":
+                    return "failed", None, f"Native receipt indicates verification failure for decision '{decision_id}'"
+            except Exception as e:
+                return "ambiguous", None, f"Error reading native receipt for '{decision_id}': {e}"
+
+        # Inspect decisions directory
+        dec_file = hco_base / "decisions" / f"{decision_id}.json"
+        if dec_file.is_file():
+            try:
+                dec_data = json.loads(dec_file.read_text(encoding="utf-8"))
+                state = dec_data.get("state", "").upper()
+                if state in ("CONSUMED", "EXECUTED"):
+                    return "ambiguous", None, f"Decision '{decision_id}' is marked {state} but receipt file is missing"
+                return "not_executed", None, f"Decision '{decision_id}' is recorded in state '{state}'"
+            except Exception:
+                pass
+
+        return "not_executed", None, f"No prior execution evidence for decision '{decision_id}'"
 
 
 class ExecutorRegistry:

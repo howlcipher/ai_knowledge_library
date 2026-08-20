@@ -477,6 +477,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_res.add_argument("--ledger-file", help="Ledger file path")
     p_res.add_argument("--json", action="store_true", help="Output JSON result")
 
+    # cancel
+    p_can = subparsers.add_parser("cancel", help="Cancel an active or interrupted task run")
+    p_can.add_argument("task_id", help="Task ID to cancel")
+    p_can.add_argument("--repo-dir", default=".", help="Target project root directory")
+    p_can.add_argument("--reason", help="Optional reason for cancellation")
+    p_can.add_argument("--ledger-file", help="Ledger file path")
+    p_can.add_argument("--json", action="store_true", help="Output JSON result")
+
     return parser
 
 
@@ -535,6 +543,22 @@ def cmd_resume(args: argparse.Namespace) -> int:
     return res.exit_code
 
 
+def cmd_cancel(args: argparse.Namespace) -> int:
+    ledger = EvidenceLedger(args.ledger_file) if getattr(args, "ledger_file", None) else None
+    res = HumanLifecycleManager.cancel(
+        target_repo=args.repo_dir,
+        task_id=args.task_id,
+        reason=getattr(args, "reason", None),
+        ledger=ledger,
+    )
+    if getattr(args, "json", False):
+        import json
+        print(json.dumps(res.to_dict(), indent=2))
+    else:
+        print(f"Task '{res.task_id}' CANCELLED safely. Code changes preserved in working tree.")
+    return res.exit_code
+
+
 def main(args: Optional[List[str]] = None) -> int:
     if args is None:
         args = sys.argv[1:]
@@ -561,6 +585,7 @@ def main(args: Optional[List[str]] = None) -> int:
         "approve": cmd_approve,
         "reject": cmd_reject,
         "resume": cmd_resume,
+        "cancel": cmd_cancel,
     }
 
     handler = handlers.get(parsed_args.subcommand)
