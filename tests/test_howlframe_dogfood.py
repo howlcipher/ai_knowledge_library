@@ -52,7 +52,7 @@ def test_schema_and_artifacts():
         ("howlplane", ["go", "python", "howlframe"], True),
         ("howlframe", ["go"], True),
         ("howlnotes", ["howlframe"], False),
-        ("changeops", ["go"], False),
+        ("howlchangeops", ["go"], False),
         ("DevOps-Learn-by-Doing", ["python"], False),
     ],
 )

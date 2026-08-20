@@ -153,7 +153,7 @@ HowlPlane (AI Engineering Control Plane)
 ```
 
 - **What HowlFrame is:** An AI-native programming language and capability-bounded execution runtime.
-- **Why HowlPlane dogfoods HowlFrame:** Smaller applications prove individual language features; ChangeOps proves governed consequential change execution; HowlPlane provides high-frequency real AI engineering workloads that pressure generated structured programs, capability boundaries, malformed AI output, instruction budgets, partial failures, result normalization, and structured evidence.
+- **Why HowlPlane dogfoods HowlFrame:** Smaller applications prove individual language features; HowlChangeOps proves governed consequential change execution; HowlPlane provides high-frequency real AI engineering workloads that pressure generated structured programs, capability boundaries, malformed AI output, instruction budgets, partial failures, result normalization, and structured evidence.
 - **Independence:** HowlPlane remains completely usable without HowlFrame. HowlFrame is an optional runtime dependency for selected bounded tasks.
 
 ---
