@@ -5,11 +5,14 @@ Importing this module suppresses the warning during the initial load of langchai
 """
 import warnings
 
-with warnings.catch_warnings():
-    warnings.filterwarnings(
-        "ignore",
-        message="Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.",
-        category=UserWarning,
-        module="langchain_core.utils.pydantic"
-    )
-    import langchain_core.utils.pydantic  # noqa: F401
+try:
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.",
+            category=UserWarning,
+            module="langchain_core.utils.pydantic"
+        )
+        import langchain_core.utils.pydantic  # noqa: F401
+except ImportError:
+    pass

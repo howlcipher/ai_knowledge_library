@@ -13,6 +13,7 @@ install:
 	ln -sf $$(pwd)/bin/ai $(HOME)/.local/bin/ai
 
 PYTEST ?= $(shell if [ -f /run/media/system/tallgeese/dev/.ci_verify_venv/bin/pytest ]; then echo /run/media/system/tallgeese/dev/.ci_verify_venv/bin/pytest; elif [ -f venv/bin/pytest ]; then echo venv/bin/pytest; else echo pytest; fi)
+PYTHON ?= $(shell if [ -f /run/media/system/tallgeese/dev/.ci_verify_venv/bin/python3 ]; then echo /run/media/system/tallgeese/dev/.ci_verify_venv/bin/python3; elif [ -f venv/bin/python3 ]; then echo venv/bin/python3; else echo python3; fi)
 FLAKE8 ?= $(shell if [ -f /run/media/system/tallgeese/dev/.ci_verify_venv/bin/flake8 ]; then echo /run/media/system/tallgeese/dev/.ci_verify_venv/bin/flake8; elif [ -f venv/bin/flake8 ]; then echo venv/bin/flake8; else echo flake8; fi)
 BANDIT ?= $(shell if [ -f /run/media/system/tallgeese/dev/.ci_verify_venv/bin/bandit ]; then echo /run/media/system/tallgeese/dev/.ci_verify_venv/bin/bandit; elif [ -f venv/bin/bandit ]; then echo venv/bin/bandit; else echo bandit; fi)
 PDOC ?= $(shell if [ -f /run/media/system/tallgeese/dev/.ci_verify_venv/bin/pdoc ]; then echo /run/media/system/tallgeese/dev/.ci_verify_venv/bin/pdoc; elif [ -f venv/bin/pdoc ]; then echo venv/bin/pdoc; else echo pdoc; fi)
@@ -26,7 +27,7 @@ test:
 
 test-changed:
 	@echo "Selecting tests relevant to the current change set..."
-	PYTHONPATH=. python3 scripts/select_relevant_tests.py
+	PYTHONPATH=. $(PYTHON) scripts/select_relevant_tests.py
 
 coverage-python:
 	@echo "Generating Python coverage..."

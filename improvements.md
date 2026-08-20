@@ -82,6 +82,8 @@ Scores apply to Pending rows only; Done, Closed, and Merged rows show `—`.
 | 48 | [Add a `doctor` CLI diagnostic command](#48-add-a-doctor-cli-diagnostic-command) | Done (2026-08-18) | — | Sonnet 5 | Gemini 3 Pro | Consolidated environment, toolchain, git hooks, and ledger diagnostic command in `src/infrastructure/doctor.py` and `python -m src.control_plane doctor` |
 | 49 | [Add deterministic regression evals for the QA approval gate and the human-authorization gate](#49-add-deterministic-regression-evals-for-the-qa-approval-gate-and-the-human-authorization-gate) | Done (2026-08-18) | — | Sonnet 5 | Gemini 3 Pro | Higher effort black-box eval harness; directly guards the exact two gates issues.md bugs 7, 8, and 9 just broke |
 | 47 | [Narrow the blanket `*.json` gitignore rule](#47-narrow-the-blanket-json-gitignore-rule) | Closed (2026-08-11) | — | Haiku 4.5 | Gemini 3 Flash | User closed at groom: fourth instance of the tracked/ignored-artifact-hygiene theme (items 2, 3, 35 already shipped), heavily decayed (0.125) below the floor, and no concrete recurrence has been observed since filing |
+| 52 | [Native HowlFrame project discovery and HowlNotes closed-loop dogfooding](#52-native-howlframe-project-discovery-and-howlnotes-closed-loop-dogfooding) | Done (2026-08-20) | — | Sonnet 5 | Gemini 3.7 Flash | High architectural value; establishes first-class HowlFrame app discovery and closed-loop verification for external consumer apps |
+| 53 | [Human approval lifecycle commands (`approve`/`reject`/`resume`) for awaiting_human tasks](#53-human-approval-lifecycle-commands-for-awaiting_human-tasks) | Pending | 1.33 | Sonnet 5 | Gemini 3.7 Flash | Score = (4 × 1.0) ÷ 3 ≈ 1.33; HowlPlane can enter awaiting_human state but lacks public lifecycle commands to inspect decision packets, approve/reject, and resume execution |
 
 ## Details
 
@@ -615,6 +617,53 @@ Found during the 2026-07-31 hardening audit (`AGENTS.md` grooming controller, po
 **Model suggestions (re-evaluate at execution time):** Claude Haiku 4.5 or Gemini 3 Flash — mostly enumeration and accurate description once the integration points are identified (already done by this audit); escalate only if the writing surfaces an ambiguous data-flow case needing code-reading judgment.
 
 **Done 2026-08-18:** Added `documentation/data_flows.md` detailing network egress integration points (hosted LiteLLM models, local Ollama, MCP fetch/memory, LangSmith tracing, Google Workspace OAuth, GitHub Actions) and local-only data stores (`.telemetry/telemetry.db`, `.chroma/`, `logs/control_plane/evidence_ledger.jsonl`). Cross-linked from `README.md` and `AGENTS.md`. Dogfooded through the Multi-Agent Engineering Control Plane (`TaskSpec` -> `TaskRouter` -> implementation -> review brief generation -> reconciliation -> deterministic verification plan -> evidence ledger). Added regression test in `tests/test_docs.py`. Verified all 306 tests pass cleanly.
+
+### 52. Native HowlFrame project discovery and HowlNotes closed-loop dogfooding
+Found during HowlNotes external dogfooding integration (2026-08-20). HowlPlane's `ProjectAdapter` previously detected only root-level `Makefile`, `go.mod`, `pyproject.toml`, `package.json`, `Cargo.toml`, and shell tests directly under `tests/`. External HowlFrame applications (such as HowlNotes with `app/backend.howl`, `app/frontend.howl`, `scripts/build.sh`, `scripts/test.sh`, and `tests/go.mod`) were not recognized, producing empty project types and empty verification plans.
+
+**Impact:** external HowlFrame projects could not be governed or verified through HowlPlane out-of-the-box without manual manifests or synthetic wrappers.
+
+**Scope:**
+- Teach `ProjectAdapter` to recognize HowlFrame applications by detecting `.howl` source files across project directories (pruning heavy/ignored directories like `.git`, `node_modules`, `build`, etc.).
+- Extract structured metadata: discovered `.howl` source paths, source count, apparent root form targets (`http_server`, `web_app`, `cli_app`, `wasm_app`, `module`), pinned HowlFrame revision in bootstrap scripts, and nested Go test modules.
+- Conservative script convention discovery: resolve `scripts/build.sh` (or `scripts/build`), `scripts/test.sh` (or `scripts/test`), and `scripts/lint.sh` (or `scripts/lint`) as argv-safe `["bash", "scripts/..."]` commands when explicit manifests or Makefiles do not specify commands.
+- Preserve project sovereignty: `.ai-project.toml` and `project_manifest.yaml` explicit commands strictly outrank heuristics.
+- Account for nested test modules (`tests/go.mod`) without unbounded filesystem traversal.
+- Add regression tests in `tests/test_project_adapter.py` and update `tests/test_howlframe_dogfood.py`.
+- Dogfood against the live external HowlNotes checkout (`/run/media/system/tallgeese/dev/howlnotes`) and perform a safe closed-loop verification run.
+
+**Non-goals:**
+- Do not create an unbounded recursive scanner across arbitrary subdirectories.
+- Do not execute arbitrary `.sh` files outside the explicit conventional build/test/lint entrypoints.
+- Do not couple HowlPlane to HowlNotes-specific hacks or paths.
+
+**Acceptance criteria:**
+- Synthetic and real HowlFrame repositories are detected with `project_types: ["howlframe"]` and appropriate metadata.
+- HowlNotes resolves `build_commands: [["bash", "scripts/build.sh"]]` and `test_commands: [["bash", "scripts/test.sh"]]`.
+- Explicit manifest configurations override heuristics.
+- Arbitrary `.sh` scripts in unrelated directories are ignored.
+- Dogfood against local HowlNotes checkout succeeds and executes real build/test verification.
+- Full HowlPlane test suite and lint remain green.
+
+**Value/Effort/Decay/Score:** Value 6 (enables first-class external app governance across HowlFrame ecosystem), Effort 3 (discovery extension, metadata extraction, script resolver, and tests). Decay 1.0 (new ground; first external consumer dogfooding). Score = 6×1.0÷3 = 2.0.
+
+**Done 2026-08-20:** Implemented HowlFrame stack detection, metadata extraction (`howl_sources`, `howl_source_count`, `apparent_targets`, `howlframe_pinned_rev`, `nested_modules`), and conservative script convention discovery (`scripts/build.sh`, `scripts/test.sh`, `scripts/lint.sh`) in `src/control_plane/project_adapter.py`. Added unit and regression test suite in `tests/test_project_adapter.py` and updated `tests/test_howlframe_dogfood.py`. Recompiled `project_context_audit.hfbc` with current compiler. Dogfooded against live HowlNotes (`/run/media/system/tallgeese/dev/howlnotes`), verified `ai status`, `ai route`, `ai howlframe-audit`, and `ai verify` end-to-end. Completed closed-loop HowlNotes improvement exposing version `0.1.0` in `/api/health` and verified with `./scripts/build.sh` and `./scripts/test.sh`. All 474 Python tests and Go tests pass clean.
+
+### 53. Human approval lifecycle commands for awaiting_human tasks
+Found during closed-loop control plane dogfooding (2026-08-20). When a task triggers a human authority boundary (e.g. infrastructure mutation, financial transaction, destructive filesystem operation), HowlPlane transitions the task to state `awaiting_human` and generates a decision packet in `.task_runs/<task_id>/decision_packet.md`. However, HowlPlane currently lacks public CLI subcommands (e.g. `ai approve <task_id>`, `ai reject <task_id>`, `ai resume <task_id>`) to inspect, approve, reject, or resume execution of tasks in `awaiting_human` state without modifying task spec files by hand.
+
+**Impact:** human-gated workflows require manual YAML editing to transition out of `awaiting_human` into `complete` or resumed execution.
+
+**Scope:** add public lifecycle CLI subcommands (`approve`, `reject`, `resume`) to `src/control_plane/cli.py` and `src/control_plane/launcher.py`, with audit logging into the durable evidence ledger.
+
+**Non-goals:** do not weaken or bypass human authority boundaries.
+
+**Acceptance criteria:**
+- `ai approve <task_id>` records human authorization in task spec and evidence ledger, and transitions task to `complete`.
+- `ai reject <task_id>` records rejection and transitions task to `blocked` or `failed`.
+- `ai resume <task_id>` resumes verification and post-implementation flow after human intervention.
+
+**Value/Effort/Decay/Score:** Value 4 (essential UX lifecycle for human authority boundaries), Effort 3 (CLI subcommands, ledger recording, and state transition handling). Decay 1.0. Score = 4×1.0÷3 ≈ 1.33.
 
 ## ✅ Completed
 
