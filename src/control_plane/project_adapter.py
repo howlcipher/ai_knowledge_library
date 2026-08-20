@@ -8,7 +8,9 @@ The control plane provides orchestration; the project supplies local truth.
 
 from dataclasses import dataclass, field, asdict
 import json
+import os
 from pathlib import Path
+import re
 from typing import Any, Dict, List, Union
 import tomllib
 import yaml
@@ -39,6 +41,56 @@ class ProjectContext(DataClassSerializationMixin):
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
+IGNORED_SCAN_DIRS = {
+    ".git",
+    ".deps",
+    "node_modules",
+    "venv",
+    ".venv",
+    ".chroma",
+    ".scratch_venv_test",
+    "build",
+    "dist",
+    "__pycache__",
+    ".slop",
+    ".system_generated",
+    ".telemetry",
+}
+
+ROOT_FORM_PATTERN = re.compile(
+    r'^\s*\(\s*(cli_app|http_server|web_app|wasm_app|module)\b',
+    re.MULTILINE,
+)
+
+
+def _find_howl_sources(root: Path) -> List[Path]:
+    """Finds all .howl source files in root, pruning ignored directories."""
+    sources: List[Path] = []
+    try:
+        for current_root, dirs, files in os.walk(root):
+            dirs[:] = [d for d in dirs if d not in IGNORED_SCAN_DIRS and not d.startswith(".")]
+            for file in files:
+                if file.endswith(".howl"):
+                    sources.append(Path(current_root) / file)
+    except Exception:
+        pass
+    return sorted(sources)
+
+
+def _extract_apparent_targets(howl_sources: List[Path]) -> List[str]:
+    """Extracts root form target identifiers from discovered .howl source files."""
+    targets = set()
+    for src in howl_sources:
+        try:
+            text = src.read_text(encoding="utf-8", errors="ignore")
+            match = ROOT_FORM_PATTERN.search(text)
+            if match:
+                targets.add(match.group(1))
+        except Exception:
+            pass
+    return sorted(targets)
+
+
 class ProjectAdapter:
     """
     Discovers project configuration and constructs project-specific verification plans
@@ -61,6 +113,7 @@ class ProjectAdapter:
         hygiene_commands: List[List[str]] = []
         hygiene_status = "not_configured"
         capabilities: List[str] = []
+        metadata: Dict[str, Any] = {}
         has_manifest = False
         has_agents_md = (root / "AGENTS.md").exists()
 
@@ -93,6 +146,7 @@ class ProjectAdapter:
             _extract_manifest_cmds(data.get("commands", {}))
             sec = data.get("security", {})
             capabilities = sec.get("capabilities", [])
+            metadata.update(data.get("metadata", {}))
 
         # 2. Check for project_manifest.yaml
         manifest_yaml = root / "project_manifest.yaml"
@@ -105,6 +159,7 @@ class ProjectAdapter:
             skills = data.get("skills", [])
             _extract_manifest_cmds(data.get("commands", {}))
             capabilities = data.get("capabilities", [])
+            metadata.update(data.get("metadata", {}))
 
         # 3. Discover SlopsLint repository hygiene configuration
         slop_config = root / ".slop" / "config.yml"
@@ -124,20 +179,48 @@ class ProjectAdapter:
             if not hygiene_commands:
                 hygiene_commands.append(["slopslint", "check", "--classify", "--enforce"])
 
-        # 4. Stack heuristics if commands are not explicitly specified
-        if not test_commands and not build_commands:
+        # 4. Discover HowlFrame source files and metadata
+        howl_sources = _find_howl_sources(root)
+        if howl_sources:
+            if "howlframe" not in project_types:
+                project_types.append("howlframe")
+            metadata["howl_sources"] = [str(p.relative_to(root)) for p in howl_sources]
+            metadata["howl_source_count"] = len(howl_sources)
+            apparent_targets = _extract_apparent_targets(howl_sources)
+            if apparent_targets:
+                metadata["apparent_targets"] = apparent_targets
+
+        # Check for HowlFrame bootstrap revision in scripts/bootstrap.sh
+        bootstrap_sh = root / "scripts" / "bootstrap.sh"
+        if bootstrap_sh.is_file():
+            try:
+                boot_txt = bootstrap_sh.read_text(encoding="utf-8", errors="ignore")
+                rev_match = re.search(r'PINNED_HOWLFRAME_REV\s*=\s*["\']?([a-f0-9]+)["\']?', boot_txt)
+                if rev_match:
+                    metadata["howlframe_pinned_rev"] = rev_match.group(1)
+            except Exception:
+                pass
+
+        # Check for nested Go module (e.g. tests/go.mod)
+        tests_go_mod = root / "tests" / "go.mod"
+        if tests_go_mod.is_file():
+            metadata.setdefault("nested_modules", []).append({"type": "go", "path": "tests"})
+            metadata["test_module"] = "tests/go.mod"
+
+        # 5. Stack heuristics if commands are not explicitly specified
+        if not test_commands or not build_commands or not lint_commands:
             # Check for Makefile
             makefile = root / "Makefile"
             if makefile.exists():
                 text = makefile.read_text(encoding="utf-8", errors="ignore")
-                if "test:" in text:
+                if "test:" in text and not test_commands:
                     test_commands.append(["make", "test"])
-                if "lint:" in text:
+                if "lint:" in text and not lint_commands:
                     lint_commands.append(["make", "lint"])
-                if "build:" in text:
+                if "build:" in text and not build_commands:
                     build_commands.append(["make", "build"])
 
-            # Check for Go
+            # Check for Go (root module)
             if (root / "go.mod").exists():
                 if "go" not in project_types:
                     project_types.append("go")
@@ -173,6 +256,29 @@ class ProjectAdapter:
                 if not build_commands:
                     build_commands.append(["cargo", "build"])
 
+            # Check for conventional script entrypoints in scripts/
+            if not build_commands:
+                if (root / "scripts" / "build.sh").is_file():
+                    build_commands.append(["bash", "scripts/build.sh"])
+                elif (root / "scripts" / "build").is_file():
+                    build_commands.append(["bash", "scripts/build"])
+
+            if not test_commands:
+                if (root / "scripts" / "test.sh").is_file():
+                    test_commands.append(["bash", "scripts/test.sh"])
+                elif (root / "scripts" / "test").is_file():
+                    test_commands.append(["bash", "scripts/test"])
+
+            if not lint_commands:
+                if (root / "scripts" / "lint.sh").is_file():
+                    lint_commands.append(["bash", "scripts/lint.sh"])
+                elif (root / "scripts" / "lint").is_file():
+                    lint_commands.append(["bash", "scripts/lint"])
+
+            # Check for nested test module fallback if test_commands still empty
+            if not test_commands and tests_go_mod.is_file():
+                test_commands.append(["bash", "-c", "cd tests && go test ./..."])
+
             # Check for standalone shell test suites
             tests_dir = root / "tests"
             if tests_dir.is_dir() and not test_commands:
@@ -194,6 +300,7 @@ class ProjectAdapter:
             capabilities=capabilities,
             has_manifest=has_manifest,
             has_agents_md=has_agents_md,
+            metadata=metadata,
         )
 
     @classmethod

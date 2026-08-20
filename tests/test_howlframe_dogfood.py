@@ -49,8 +49,9 @@ def test_schema_and_artifacts():
 @pytest.mark.parametrize(
     "name, types, has_agents",
     [
-        ("ai_knowledge_library", ["go", "python"], True),
+        ("howlplane", ["go", "python", "howlframe"], True),
         ("howlframe", ["go"], True),
+        ("howlnotes", ["howlframe"], False),
         ("changeops", ["go"], False),
         ("DevOps-Learn-by-Doing", ["python"], False),
     ],
