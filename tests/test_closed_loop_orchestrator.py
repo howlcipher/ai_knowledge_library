@@ -20,9 +20,12 @@ from src.control_plane.task_spec import TaskSpec
 def _init_test_git_repo(path: Path) -> Path:
     """Helper to initialize a real git repository with pyproject and sample code."""
     path.mkdir(parents=True, exist_ok=True)
-    subprocess.run(["git", "init", "-b", "main"], cwd=str(path), check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "ci@howlplane.local"], cwd=str(path), check=True)
-    subprocess.run(["git", "config", "user.name", "HowlPlane CI"], cwd=str(path), check=True)
+    for cmd in [
+        ["git", "init", "-b", "main"],
+        ["git", "config", "user.email", "ci@howlplane.local"],
+        ["git", "config", "user.name", "HowlPlane CI"],
+    ]:
+        subprocess.run(cmd, cwd=str(path), check=True, capture_output=True)
 
     (path / "AGENTS.md").write_text("# Test Project Engineering Context\n", encoding="utf-8")
     (path / "pyproject.toml").write_text(

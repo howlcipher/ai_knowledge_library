@@ -15,6 +15,8 @@ import re
 from typing import Any, Dict, List, Optional
 import uuid
 
+from src.control_plane.task_spec import DataClassSerializationMixin
+
 EVIDENCE_ENTRY_SCHEMA_VERSION = "ai.evidence_entry/v1"
 
 # Patterns for sensitive data redaction
@@ -49,7 +51,7 @@ def sanitize_value(val: Any) -> Any:
 
 
 @dataclass
-class EvidenceEntry:
+class EvidenceEntry(DataClassSerializationMixin):
     """Represents a single immutable event in the evidence ledger."""
 
     task_id: str
@@ -96,9 +98,6 @@ class EvidenceEntry:
             self.artifact = redact_sensitive_data(self.artifact)
         if self.metadata:
             self.metadata = sanitize_value(self.metadata)
-
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "EvidenceEntry":

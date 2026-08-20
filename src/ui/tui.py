@@ -176,31 +176,10 @@ class AILibraryTUI(App):
 
             # Log telemetry
             try:
-                from src.infrastructure.telemetry_logger import log_telemetry
+                from src.infrastructure.telemetry_logger import log_response_telemetry
 
                 cost = litellm.completion_cost(completion_response=response)
-                usage = response.usage
-
-                # Extract cached tokens safely from different provider formats
-                cached_tokens = 0
-                if usage:
-                    cached_tokens = getattr(usage, "cache_read_input_tokens", 0)
-                    if not cached_tokens and hasattr(usage, "prompt_tokens_details"):
-                        prompt_details = getattr(usage, "prompt_tokens_details", {})
-                        if isinstance(prompt_details, dict):
-                            cached_tokens = prompt_details.get("cached_tokens", 0)
-                        elif hasattr(prompt_details, "cached_tokens"):
-                            cached_tokens = prompt_details.cached_tokens
-
-                log_telemetry(
-                    model=response.model,
-                    prompt_tokens=usage.prompt_tokens if usage else 0,
-                    completion_tokens=usage.completion_tokens if usage else 0,
-                    total_tokens=usage.total_tokens if usage else 0,
-                    cost=float(cost) if cost else 0.0,
-                    latency=latency,
-                    cached_tokens=cached_tokens,
-                )
+                log_response_telemetry(response, cost=float(cost) if cost else 0.0, latency=latency)
             except Exception as e:
                 import sys
 

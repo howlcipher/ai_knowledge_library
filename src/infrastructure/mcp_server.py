@@ -32,11 +32,7 @@ def search_knowledge_library(query: str, n_results: int = 5) -> str:
         if not results:
             return "No relevant context found in the library."
 
-        cleaned_chunks = []
-        for result in results:
-            content, source, score = result
-            chunk = f"Source: {source}\n{content.strip()}"
-            cleaned_chunks.append(chunk)
+        cleaned_chunks = [f"Source: {src}\n{c.strip()}" for c, src, _ in results]
 
         safe_output = format_safe_prompt(
             system_instruction="The following are results from the knowledge library semantic search tool.",

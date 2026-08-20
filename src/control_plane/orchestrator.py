@@ -27,6 +27,7 @@ from src.control_plane.reconciliation import ReviewFinding, ReconciliationResult
 from src.control_plane.review_runner import ReviewRunner, ReviewCycleResult, SingleReviewResult
 from src.control_plane.reviewers import get_reviewer_role, build_skill_context
 from src.control_plane.router import TaskRouter, RoutingDecision
+from src.control_plane.proposed_action import ProposedAction, infer_proposed_actions
 from src.control_plane.task_spec import TaskSpec
 from src.control_plane.verification import VerificationPlan, VerificationStep
 
@@ -209,6 +210,25 @@ class GovernedTaskOrchestrator:
             except Exception:
                 pass
 
+        # Check pre-execution human authority boundary and bind HowlChangeOps decision if applicable
+        pre_b = HumanBoundaryGate.evaluate_pre_execution(
+            task=task_spec,
+            planned_actions=planned_actions,
+            target_repo=self.target_repo,
+        )
+        if pre_b.requires_human_approval and pre_b.decision_packet:
+            if pre_b.decision_packet.proposed_actions:
+                act_dict = pre_b.decision_packet.proposed_actions[0]
+                action_obj = ProposedAction.from_dict(act_dict)
+                from src.control_plane.executor import ExecutorRegistry
+                executor = ExecutorRegistry.get_executor_for_action(action_obj.action_type)
+                if executor and executor.is_available():
+                    verdict, dec_id, eval_reason = executor.evaluate(action_obj, self.target_repo, run_dir)
+                    if dec_id:
+                        pre_b.decision_packet.changeops_decision_id = dec_id
+                        pre_b.decision_packet.executor_id = executor.name
+            (run_dir / "decision_packet.md").write_text(pre_b.decision_packet.render_markdown(), encoding="utf-8")
+
         return ctx, routing, verif_plan, run_dir, hf_res
 
     def run(
@@ -251,6 +271,59 @@ class GovernedTaskOrchestrator:
                 "is_override": routing.is_override,
             },
         )
+
+        # --------------------------------------------------------------------
+        # Stage 2.5: Pre-Execution Human Authority Gating
+        # --------------------------------------------------------------------
+        pre_boundary = HumanBoundaryGate.evaluate_pre_execution(
+            task=task_spec,
+            planned_actions=planned_actions,
+            target_repo=self.target_repo,
+        )
+
+        if pre_boundary.requires_human_approval:
+            # Bind HowlChangeOps decision if applicable
+            if pre_boundary.decision_packet and pre_boundary.decision_packet.proposed_actions:
+                act_dict = pre_boundary.decision_packet.proposed_actions[0]
+                action_obj = ProposedAction.from_dict(act_dict)
+                from src.control_plane.executor import ExecutorRegistry
+                executor = ExecutorRegistry.get_executor_for_action(action_obj.action_type)
+                if executor and executor.is_available():
+                    verdict, dec_id, eval_reason = executor.evaluate(action_obj, self.target_repo, run_dir)
+                    if dec_id:
+                        pre_boundary.decision_packet.changeops_decision_id = dec_id
+                        pre_boundary.decision_packet.executor_id = executor.name
+
+            task_spec.transition_to(
+                "awaiting_human",
+                f"Pre-execution human authority boundary triggered: {pre_boundary.triggered_boundaries}",
+            )
+            task_spec.save_to_file(str(run_dir / "task.yaml"))
+
+            if pre_boundary.decision_packet:
+                (run_dir / "decision_packet.md").write_text(
+                    pre_boundary.decision_packet.render_markdown(), encoding="utf-8"
+                )
+
+            self._record_human_boundary_events(
+                task_spec, run_dir, boundaries=pre_boundary.triggered_boundaries, reason="Pre-execution boundary triggered"
+            )
+
+            stage_kwargs = dict(
+                start_time=start_time,
+                run_dir=run_dir,
+                routing=routing,
+                initial_delta=None,
+                current_delta=None,
+                review_cycles=[],
+                reconciliation=None,
+                verif_plan=verif_plan,
+                boundary_res=pre_boundary,
+                hf_status=hf_audit_status,
+                hf_match=hf_audit_match,
+                remediation_count=0,
+            )
+            return self._make_result(task_spec, "awaiting_human", 2, **stage_kwargs)
 
         # --------------------------------------------------------------------
         # Stage 3: Baseline Capture

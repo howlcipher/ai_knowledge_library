@@ -45,9 +45,9 @@ def test_agent_execution_result_serialization():
 
 def test_fake_agent_backend_execution(tmp_path):
     spec = TaskSpec(
-        task_id="TASK-001",
-        repository="test_repo",
-        objective="Create a hello.py file",
+        task_id="TASK-EXEC-001",
+        repository="repo_sample",
+        objective="Create a hello.py file for testing",
     )
 
     def side_effect(task, cwd, prompt):
@@ -66,7 +66,7 @@ def test_fake_agent_backend_execution(tmp_path):
     assert res.stdout == "Created hello.py"
     assert (tmp_path / "hello.py").read_text(encoding="utf-8") == "print('hello')"
     assert len(backend.executed_calls) == 1
-    assert backend.executed_calls[0]["task_id"] == "TASK-001"
+    assert backend.executed_calls[0]["task_id"] == spec.task_id
 
 
 def test_fake_agent_backend_failure(tmp_path):

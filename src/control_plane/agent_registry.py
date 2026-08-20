@@ -181,7 +181,7 @@ BUILTIN_AGENTS: List[AgentProfile] = [
 ]
 
 
-class AgentRegistry:
+class AgentRegistry(DataClassSerializationMixin):
     """Manages agent type definitions and capabilities."""
 
     def __init__(self, agents: Optional[List[AgentProfile]] = None):
@@ -236,29 +236,3 @@ class AgentRegistry:
         agents_data = data.get("agents", [])
         profiles = [AgentProfile.from_dict(item) for item in agents_data]
         return cls(agents=profiles)
-
-    def to_yaml(self) -> str:
-        return yaml.dump(self.to_dict(), sort_keys=False)
-
-    @classmethod
-    def from_yaml(cls, yaml_str: str) -> "AgentRegistry":
-        data = yaml.safe_load(yaml_str)
-        return cls.from_dict(data)
-
-    def save_to_file(self, file_path: str) -> None:
-        p = Path(file_path)
-        p.parent.mkdir(parents=True, exist_ok=True)
-        if p.suffix in (".yaml", ".yml"):
-            p.write_text(self.to_yaml(), encoding="utf-8")
-        else:
-            p.write_text(json.dumps(self.to_dict(), indent=2), encoding="utf-8")
-
-    @classmethod
-    def load_from_file(cls, file_path: str) -> "AgentRegistry":
-        p = Path(file_path)
-        if not p.exists():
-            raise FileNotFoundError(f"Registry file not found: {file_path}")
-        text = p.read_text(encoding="utf-8")
-        if p.suffix in (".yaml", ".yml"):
-            return cls.from_yaml(text)
-        return cls.from_dict(json.loads(text))

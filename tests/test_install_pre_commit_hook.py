@@ -18,9 +18,8 @@ SCRIPT_SRC = repo_root / "scripts" / "install_pre_commit_hook.py"
 
 
 def _copy_script_to_tmp(tmp_path: pathlib.Path) -> pathlib.Path:
-    scripts_dir = tmp_path / "scripts"
-    scripts_dir.mkdir(parents=True, exist_ok=True)
-    dest = scripts_dir / "install_pre_commit_hook.py"
+    dest = tmp_path / "scripts" / "install_pre_commit_hook.py"
+    dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(SCRIPT_SRC, dest)
     return dest
 

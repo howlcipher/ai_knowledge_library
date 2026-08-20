@@ -27,6 +27,22 @@ class RoutingDecision:
     alternatives: List[str] = field(default_factory=list)
     metadata: Dict[str, str] = field(default_factory=dict)
 
+    def render_text(self, task_id: str = "") -> str:
+        lines = [
+            "=" * 60,
+            f"TASK ROUTING DECISION: {task_id}".strip(),
+            "=" * 60,
+            f"Selected Agent: {self.selected_agent_name} (`{self.selected_agent_id}`)",
+            f"Reasoning Tier: {self.reasoning_tier}",
+            f"Is Override:    {self.is_override}",
+            f"Rationale:      {self.rationale}",
+            f"Reviewers:      {', '.join(self.recommended_reviewers)}",
+        ]
+        if self.alternatives:
+            lines.append(f"Alternatives:   {', '.join(self.alternatives)}")
+        lines.append("=" * 60)
+        return "\n".join(lines)
+
 
 class TaskRouter:
     """

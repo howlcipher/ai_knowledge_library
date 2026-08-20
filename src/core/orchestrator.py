@@ -21,7 +21,7 @@ from langsmith import Client
 
 from src.core.claude_code_backend import CLAUDE_CODE_MODEL, ClaudeCodeAgent
 from src.infrastructure.config_loader import default_loader, load_config
-from src.infrastructure.telemetry_logger import log_gate_failure, log_telemetry
+from src.infrastructure.telemetry_logger import log_gate_failure, log_telemetry, extract_cached_tokens
 import atexit
 
 
@@ -119,24 +119,14 @@ class Agent:
             return None
 
         try:
-            usage = response.usage
+            usage = getattr(response, "usage", None)
             cost = litellm.completion_cost(completion_response=response) or 0.0
-
-            cached_tokens = 0
-            if usage:
-                cached_tokens = getattr(usage, "cache_read_input_tokens", 0)
-                if not cached_tokens and hasattr(usage, "prompt_tokens_details"):
-                    prompt_details = getattr(usage, "prompt_tokens_details", {})
-                    if isinstance(prompt_details, dict):
-                        cached_tokens = prompt_details.get("cached_tokens", 0)
-                    elif hasattr(prompt_details, "cached_tokens"):
-                        cached_tokens = prompt_details.cached_tokens
-
+            cached_tokens = extract_cached_tokens(usage)
             log_telemetry(
                 model=self.model,
-                prompt_tokens=usage.prompt_tokens,
-                completion_tokens=usage.completion_tokens,
-                total_tokens=usage.total_tokens,
+                prompt_tokens=getattr(usage, "prompt_tokens", 0) if usage else 0,
+                completion_tokens=getattr(usage, "completion_tokens", 0) if usage else 0,
+                total_tokens=getattr(usage, "total_tokens", 0) if usage else 0,
                 cost=cost,
                 latency=0.0,
                 cached_tokens=cached_tokens,

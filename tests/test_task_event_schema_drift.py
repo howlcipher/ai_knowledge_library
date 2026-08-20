@@ -32,8 +32,7 @@ FAILURE_CLASS_SCHEMA_PATH = SCHEMA_DIR / "failure-class.schema.json"
 
 
 def _load_json(path: Path) -> dict:
-    with open(path, "r", encoding="utf-8") as handle:
-        return json.load(handle)
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 @pytest.fixture(scope="module")

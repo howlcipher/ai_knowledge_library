@@ -12,6 +12,7 @@ Pending bugs carry the same diminishing-returns score defined in `improvements.m
 
 | # | Bug | Status | Score (V×D÷E) | Claude model | Gemini model | ROI rationale |
 | --- | --- | --- | --- | --- | --- | --- |
+| 11 | [Consequential execution is not mechanically separated from proposal/implementation, and approval can be mistaken for completion](#11-consequential-execution-is-not-mechanically-separated-from-proposalimplementation-and-approval-can-be-mistaken-for-completion) | Done (2026-08-20) | — | Sonnet 5 | Gemini 3 Pro | Critical authority bypass where consequential actions launch unrestricted implementation agent before human boundary, and approved tasks falsely complete without bounded execution or receipt |
 | 8 | [Blank input authorizes executable tool calls in the human-approval gate](#8-blank-input-authorizes-executable-tool-calls-in-the-human-approval-gate) | Done (2026-08-05) | — | Sonnet 5 | Gemini 3 Pro | Trivial one-line fix; a deny-by-default authorization gate currently authorizes on an empty Enter keypress, the exact opposite of its stated contract |
 | 7 | [QA gate approves drafts on a substring match, so rejection text containing "APPROVED" passes](#7-qa-gate-approves-drafts-on-a-substring-match-so-rejection-text-containing-approved-passes) | Done (2026-08-05) | — | Sonnet 5 | Gemini 3 Pro | Small, well-isolated fix; the QA gate's own system prompt promises an exact `APPROVED` token but the check accepts any superstring, so a QA reviewer explaining why something is *not* approved can silently pass it |
 | 9 | [Maximum-iteration exhaustion silently ships a QA-rejected draft as if it had passed](#9-maximum-iteration-exhaustion-silently-ships-a-qa-rejected-draft-as-if-it-had-passed) | Done (2026-08-05) | — | Sonnet 5 | Gemini 3 Pro | Small fix in the same graph as bugs 7 and 8 but a distinct failure mode (exhaustion, not misparse); needs its own test asserting the shipped output is flagged as unreviewed |
@@ -24,6 +25,35 @@ Pending bugs carry the same diminishing-returns score defined in `improvements.m
 | 5 | [Orchestrator leaks MCP server subprocesses across instances](#5-orchestrator-leaks-mcp-server-subprocesses-across-instances) | Done (2026-07-20) | — | Sonnet 5 | Gemini 3 Pro | New-theme reliability bug (Decay 1.0); verified live — leaked subprocesses accumulated to 1.9GB+ RSS and visibly throttled a single pre-push test run, risking CI OOM/timeout on tighter runners |
 
 ## Details
+
+### 11. Consequential execution is not mechanically separated from proposal/implementation, and approval can be mistaken for completion
+Found during architectural audit (2026-08-20). In HowlPlane's `ai work --execute` path, task execution progressed linearly from baseline capture directly into launching the unrestricted implementation agent backend before evaluating human authority boundaries. When an objective or planned action contained a consequential operation (such as `terraform apply`, `kubectl apply`, package publishing, or destructive database mutations), the agent was invoked unconditionally. Additionally, `HumanLifecycleManager.resume()` previously transitioned `awaiting_human` tasks to `COMPLETE` immediately upon detecting a valid approval and clean repository fingerprint, without requiring proof that any bounded execution actually occurred or succeeded.
+
+**Impact:** (1) Autonomous agents could attempt consequential side effects before human operators authorized them. (2) Consequential tasks could be falsely recorded as COMPLETE simply because approval was granted, even if no execution took place or no bounded executor was available.
+
+**Scope:**
+- Separate change proposal/implementation from consequential execution. Model executable actions (`ProposedAction`) mechanically.
+- Enforce pre-execution human authority boundary gating in `GovernedTaskOrchestrator`: if planned actions or task intent require human authorization/bounded execution, pause at `AWAITING_HUMAN` before launching any unrestricted backend.
+- Fix `HumanLifecycleManager.resume()`: approval alone never marks a consequential task `COMPLETE`. Resuming an authorized consequential action requires executing via a trusted bounded executor (or validating an authentic execution receipt).
+- Return clear, actionable terminal states (e.g. `approved_but_not_executed` or blocked state) when no trusted executor supports the requested action.
+
+**Acceptance criteria:**
+- Consequential actions cannot reach implementation backend before human authorization.
+- Resuming an approved task without trusted execution evidence does not mark the task complete.
+- Deterministic regression tests prove pre-execution gating and receipt validation.
+
+**Done 2026-08-20:**
+- Implemented `ProposedAction` dataclass in `src/control_plane/proposed_action.py` and action inference rules for consequential boundaries (`infrastructure_apply`, `destructive_database_change`, `package_publishing`, `create_release_candidate`, `production_deployment`).
+- Implemented pre-execution boundary evaluation in `GovernedTaskOrchestrator.prepare_task_plan` and `orchestrator.run`: consequential actions pause at `AWAITING_HUMAN` (exit code 2) before invoking any implementation backend.
+- Updated `HumanLifecycleManager.approve` and `HumanLifecycleManager.resume` in `src/control_plane/human_boundary.py`:
+  - Approval alone does NOT mark consequential tasks complete.
+  - Linked approvals with HowlChangeOps HMAC tokens.
+  - Required bounded execution via `HowlChangeOpsExecutor` / `ExecutorRegistry`.
+  - Enforced verification of native execution receipts (`howlplane.execution_receipt/v1`) before marking `COMPLETE`.
+  - Failed closed with `UnsupportedActionError` ("AUTHORIZED ACTION CANNOT EXECUTE") when no trusted executor supports an authorized consequential action.
+- Added comprehensive test suite in `tests/test_authority_execution_gap.py` (pre-execution gating, ordinary autonomy, approval without execution blocked, verified receipt completion, forged receipt rejection). All 499 tests pass 100%.
+
+**Value/Effort/Decay/Score:** Value 8 (core authority model integrity), Effort 3, Decay 1.0. Score = 8×1.0÷3 = 2.67.
 
 ### 1. Remove the obfuscated dead hook installer
 Found during the 2026-07-18 backlog groom.

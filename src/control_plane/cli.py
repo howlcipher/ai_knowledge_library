@@ -48,18 +48,7 @@ def cmd_route_task(args: argparse.Namespace) -> int:
     spec = TaskSpec.load_from_file(args.task_file)
     router = TaskRouter()
     decision = router.route(spec)
-
-    print("=" * 60)
-    print(f"TASK ROUTING DECISION: {spec.task_id}")
-    print("=" * 60)
-    print(f"Selected Agent: {decision.selected_agent_name} (`{decision.selected_agent_id}`)")
-    print(f"Reasoning Tier: {decision.reasoning_tier}")
-    print(f"Is Override:    {decision.is_override}")
-    print(f"Rationale:      {decision.rationale}")
-    print(f"Reviewers:      {', '.join(decision.recommended_reviewers)}")
-    if decision.alternatives:
-        print(f"Alternatives:   {', '.join(decision.alternatives)}")
-    print("=" * 60)
+    print(decision.render_text(spec.task_id))
     return 0
 
 
@@ -575,10 +564,10 @@ def main(args: Optional[List[str]] = None) -> int:
     }
 
     handler = handlers.get(parsed_args.subcommand)
-    if handler:
-        return handler(parsed_args)
-    parser.print_help()
-    return 1
+    if not handler:
+        parser.print_help()
+        return 1
+    return handler(parsed_args)
 
 
 if __name__ == "__main__":

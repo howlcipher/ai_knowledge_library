@@ -89,8 +89,11 @@ def resolve_python_interpreter(project_root: Optional[Union[str, Path]] = None) 
     )
 
 
+from src.control_plane.task_spec import DataClassSerializationMixin
+
+
 @dataclass
-class VerificationStep:
+class VerificationStep(DataClassSerializationMixin):
     """Represents a discrete verification command or check."""
 
     step_id: str
@@ -121,19 +124,9 @@ class VerificationStep:
                 f"status '{self.status}' invalid. Allowed: {sorted(VALID_STEP_STATUSES)}"
             )
 
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "VerificationStep":
-        d = dict(data)
-        valid_fields = {f.name for f in fields(cls)}
-        filtered = {k: v for k, v in d.items() if k in valid_fields}
-        return cls(**filtered)
-
 
 @dataclass
-class VerificationPlan:
+class VerificationPlan(DataClassSerializationMixin):
     """Represents the complete verification suite for a task or project."""
 
     task_id: str
@@ -273,10 +266,10 @@ class VerificationPlan:
             elif step.status != "verified":
                 all_passed = False
 
-        if all_passed and self.steps:
-            self.overall_status = "passed"
-        elif any_failed:
+        if any_failed:
             self.overall_status = "failed"
+        elif all_passed:
+            self.overall_status = "passed"
         else:
             self.overall_status = "partial"
 
@@ -299,17 +292,3 @@ class VerificationPlan:
             steps=steps,
             overall_status=data.get("overall_status", "unverified"),
         )
-
-    def to_json(self, indent: int = 2) -> str:
-        return json.dumps(self.to_dict(), indent=indent)
-
-    @classmethod
-    def from_json(cls, text: str) -> "VerificationPlan":
-        return cls.from_dict(json.loads(text))
-
-    def to_yaml(self) -> str:
-        return yaml.dump(self.to_dict(), sort_keys=False)
-
-    @classmethod
-    def from_yaml(cls, text: str) -> "VerificationPlan":
-        return cls.from_dict(yaml.safe_load(text))

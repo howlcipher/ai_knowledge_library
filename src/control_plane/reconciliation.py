@@ -31,8 +31,11 @@ class ReconciliationValidationError(ValueError):
     pass
 
 
+from src.control_plane.task_spec import DataClassSerializationMixin
+
+
 @dataclass
-class ReviewFinding:
+class ReviewFinding(DataClassSerializationMixin):
     """Represents a single finding discovered during review."""
 
     id: str
@@ -78,9 +81,6 @@ class ReviewFinding:
                     f"Finding '{self.id}' with severity '{self.severity}' cannot be marked '{self.status}' "
                     "without an explicit non-empty resolution_reason."
                 )
-
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "ReviewFinding":

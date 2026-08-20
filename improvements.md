@@ -31,6 +31,7 @@ Scores apply to Pending rows only; Done, Closed, and Merged rows show `—`.
 
 | # | Improvement | Status | Score (V×D÷E) | Claude model | Gemini model | ROI rationale |
 | --- | --- | --- | --- | --- | --- | --- |
+| 55 | [HowlChangeOps bounded execution handoff](#55-howlchangeops-bounded-execution-handoff) | Done (2026-08-20) | — | Sonnet 5 | Gemini 3 Pro | Canonical integration with HowlChangeOps for policy evaluation, HMAC-signed approval linkage, bounded execution, and immutable receipt validation |
 | 1 | [Rebuild the vector index](#1-rebuild-the-vector-index) | Done (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Minutes of work; unblocks semantic search over the newly refined skills |
 | 2 | [Ignore build artifacts and local state in git](#2-ignore-build-artifacts-and-local-state-in-git) | Done (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Minutes of work; clears permanent noise from git status and prevents accidental commits |
 | 3 | [Purge tracked scratch files from the repo root](#3-purge-tracked-scratch-files-from-the-repo-root) | Done (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Minutes of work; stops one-off scratch files traveling with every clone |
@@ -655,6 +656,25 @@ Found during HowlNotes external dogfooding integration (2026-08-20). HowlPlane's
 Canonical guidance for building, modifying, debugging, testing, and reviewing fullstack and CLI applications written in HowlFrame (`.howl`). Distinct from compiler/transpiler internals, this skill covers application architecture, HTTP backend services, REST JSON routing, native structured record store persistence, browser web applications, CLI tools, scripts convention verification (`scripts/build.sh`, `scripts/test.sh`), capability model boundaries, and reviewer falsification checklists.
 
 **Done 2026-08-20:** Created `.agents/skills/howlframe-app-development/SKILL.md` (Tier 2), updated skills manifest (41 skills indexed) and Claude Code symlinks via `scripts/generate_skills_manifest.py`. Integrated automatic skill assignment in `ProjectAdapter.discover` for HowlFrame projects. Wired skill context into reviewer briefs via `ReviewRunner` and implementation prompts via `GovernedTaskOrchestrator._build_implementation_prompt`. Added 6 deterministic skill tests in `tests/test_howlframe_app_skill.py`. Added deterministic bytecode compilation reproducibility test in `tests/test_howlframe_dogfood.py` proving byte-for-byte SHA256 match (`e68847a7f6...`) with pinned compiler. Verified end-to-end against live HowlNotes repository. All 493 Python tests and Go tests pass clean.
+
+### 55. HowlChangeOps Bounded Execution Handoff
+Establish the canonical integration boundary between HowlPlane (discovery, proposal, review, remediation, verification) and HowlChangeOps (evidence evaluation, HMAC-authorized approval, bounded execution, post-action verification, and rollback receipts). HowlPlane delegates consequential actions (such as release candidate creation and tagged mutations) to HowlChangeOps rather than running arbitrary commands through unrestricted implementation agents. Resumption requires valid HowlChangeOps execution receipts (`howlchangeops.execution_receipt/v1`), failing closed if no trusted executor is configured or if evidence is stale.
+
+**Done 2026-08-20:**
+- Created `ProposedAction` dataclass in `src/control_plane/proposed_action.py` and action inference rules for consequential authority boundaries.
+- Created `HowlChangeOpsExecutor` and `ExecutorRegistry` in `src/control_plane/executor.py` implementing the `AuthorityExecutor` interface (`evaluate`, `approve`, `execute`, `verify_receipt`), binary discovery, HMAC approval linkage, structured receipt verification (`howlplane.execution_receipt/v1`), and rollback support.
+- Updated `HumanBoundaryGate.evaluate_pre_execution` and `GovernedTaskOrchestrator`: pre-execution gating halts consequential tasks at `AWAITING_HUMAN` (exit code 2) before launching any general-purpose implementation backend.
+- Updated `HumanLifecycleManager.approve` and `HumanLifecycleManager.resume` in `src/control_plane/human_boundary.py`:
+  - Enforced that approval alone does not equal task completion.
+  - Linked approvals to HowlChangeOps decisions.
+  - Executed authorized actions through registered bounded executors upon resumption.
+  - Required validated execution receipts before transitioning to `COMPLETE`.
+  - Enforced closed-failure with `UnsupportedActionError` ("AUTHORIZED ACTION CANNOT EXECUTE") when unsupported actions (e.g. `infrastructure_apply`, `terraform apply`) are attempted.
+- Added comprehensive unit and end-to-end integration tests in `tests/test_authority_execution_gap.py`.
+- Refactored token logging and query formatting across `src/infrastructure/telemetry_logger.py`, maintaining `python_src` clone ceiling at 14 and reducing `python_tests` clone count to 29.
+- Verified all 499 tests pass 100% cleanly in `pytest`.
+
+**Value/Effort/Decay/Score:** Value 7, Effort 3, Decay 1.0. Score = 7×1.0÷3 = 2.33.
 
 ## ✅ Completed
 

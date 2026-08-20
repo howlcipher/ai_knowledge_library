@@ -56,19 +56,21 @@ def test_get_telemetry_data_with_pandas(mock_db_path):
     assert len(df) == 1
     assert df.iloc[0]["model"] == "test-model"
 
-def test_get_telemetry_data_without_pandas(mock_db_path, monkeypatch):
-    telemetry_logger.log_telemetry("test-model", 10, 20, 30, 0.05, 1.2)
-    
-    # Mock ImportError for pandas
+def _mock_no_pandas(monkeypatch):
     import builtins
     real_import = builtins.__import__
+
     def mock_import(name, *args, **kwargs):
-        if name == 'pandas':
+        if name == "pandas":
             raise ImportError("No module named pandas")
         return real_import(name, *args, **kwargs)
-        
+
     monkeypatch.setattr(builtins, "__import__", mock_import)
-    
+
+
+def test_get_telemetry_data_without_pandas(mock_db_path, monkeypatch):
+    telemetry_logger.log_telemetry("test-model", 10, 20, 30, 0.05, 1.2)
+    _mock_no_pandas(monkeypatch)
     data = telemetry_logger.get_telemetry_data()
     
     assert isinstance(data, list)
@@ -115,16 +117,7 @@ def test_get_gate_failure_data_with_pandas(mock_db_path):
 
 def test_get_gate_failure_data_without_pandas(mock_db_path, monkeypatch):
     telemetry_logger.log_gate_failure("test-model", 1, 1, "parse", "not json")
-
-    import builtins
-    real_import = builtins.__import__
-    def mock_import(name, *args, **kwargs):
-        if name == 'pandas':
-            raise ImportError("No module named pandas")
-        return real_import(name, *args, **kwargs)
-
-    monkeypatch.setattr(builtins, "__import__", mock_import)
-
+    _mock_no_pandas(monkeypatch)
     data = telemetry_logger.get_gate_failure_data()
 
     assert isinstance(data, list)

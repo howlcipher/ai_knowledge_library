@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from src.control_plane.evidence_ledger import EvidenceEntry, EvidenceLedger, sanitize_value
 from src.control_plane.project_adapter import ProjectContext
+from src.control_plane.task_spec import DataClassSerializationMixin
 
 PROJECT_CONTEXT_SCHEMA_VERSION = "howlplane.project_context/v1"
 PROJECT_CONTEXT_AUDIT_SCHEMA_VERSION = "howlplane.project_context_audit/v1"
@@ -34,7 +35,7 @@ VALID_COMPARISON_STATUSES = {
 
 
 @dataclass
-class AuditRunResult:
+class AuditRunResult(DataClassSerializationMixin):
     """Structured execution outcome of a HowlFrame project context audit."""
 
     status: str
@@ -51,9 +52,6 @@ class AuditRunResult:
     input_payload: Dict[str, Any] = field(default_factory=dict)
     context_schema_version: str = PROJECT_CONTEXT_SCHEMA_VERSION
     audit_schema_version: str = PROJECT_CONTEXT_AUDIT_SCHEMA_VERSION
-
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
 
 
 def get_dogfood_mode() -> str:

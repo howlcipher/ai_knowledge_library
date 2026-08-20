@@ -476,20 +476,8 @@ def cmd_route(args: argparse.Namespace) -> int:
     target_repo = find_git_repo_root(args.repo)
     ctx = ProjectAdapter.discover(target_repo)
     spec, decision = create_task_plan(ctx, target_repo, None, args)
-
-    print("=" * 60)
-    print(f"TASK ROUTING DECISION: {spec.task_id}")
-    print("=" * 60)
-    print(f"Target Repository: {target_repo} ({ctx.name})")
-    print(f"Objective:         {spec.objective}")
-    print(f"Selected Agent:    {decision.selected_agent_name} (`{decision.selected_agent_id}`)")
-    print(f"Reasoning Tier:    {decision.reasoning_tier}")
-    print(f"Is Override:       {decision.is_override}")
-    print(f"Rationale:         {decision.rationale}")
-    print(f"Reviewers:         {', '.join(decision.recommended_reviewers)}")
-    if decision.alternatives:
-        print(f"Alternatives:      {', '.join(decision.alternatives)}")
-    print("=" * 60)
+    print(f"Target Repository: {target_repo} ({ctx.name})\nObjective:         {spec.objective}")
+    print(decision.render_text(spec.task_id))
     return 0
 
 
@@ -602,10 +590,19 @@ def cmd_status(args: argparse.Namespace) -> int:
                     current_fp = compute_repository_fingerprint(target_repo, t_dir)
                     boundaries_list = t_spec.human_approval_requirements or ["human_authority_boundary"]
                     boundaries_str = ", ".join(boundaries_list)
+                    receipt_file = t_dir / "execution_receipt.json"
 
                     print(f"  Task:               {t_spec.task_id}")
                     print(f"  State:              AWAITING_HUMAN")
                     print(f"  Verification:       {ver_status.upper()}")
+                    if dec_record and dec_record.changeops_decision_id:
+                        print(f"  ChangeOps Decision: {dec_record.changeops_decision_id}")
+                    if receipt_file.is_file():
+                        try:
+                            rc_data = json.loads(receipt_file.read_text(encoding="utf-8"))
+                            print(f"  Execution Receipt:  {rc_data.get('status', 'unknown').upper()} (Verification: {rc_data.get('verification_status', 'PASS')})")
+                        except Exception:
+                            pass
 
                     if not dec_record:
                         print(f"  Repository State:   CURRENT")
