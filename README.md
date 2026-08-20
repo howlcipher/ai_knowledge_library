@@ -37,9 +37,15 @@
 The primary entry point is the global `ai` command. Run it from inside any project repository on your machine:
 
 ```bash
-# Stand inside any repository and execute an engineering objective:
+# Stand inside any repository and prepare a governed task run (plan & dry-run):
 cd /path/to/project
 ai work "fix the highest-value open bug"
+
+# Genuinely execute the complete closed-loop AI engineering lifecycle:
+ai work "fix the highest-value open bug" --execute
+
+# Force a specific implementation agent (e.g. claude_code, codex, gemini_cli, agy, devin_cli):
+ai work "refactor database adapter" --agent codex --execute
 
 # Inspect active project context, verification suites, and task runs:
 ai status
@@ -58,37 +64,47 @@ Direct vendor commands (`claude`, `codex`, `agy`) remain available as escape hat
 
 ---
 
-## Operating Model
+## Closed-Loop Operating Model
+
+HowlPlane mechanically enforces every stage of the engineering lifecycle. An agent claiming "Done." has no authority to move a task to `complete`; `complete` must be earned through clean git deltas, independent review falsification, remediation, deterministic verification, and human authority authorization:
 
 ```text
 Human Objective / Backlog Item
               ↓
-    Task Specification (TaskSpec)
+  Stage 1: Discovery & Context Audit (discovered)
+  ├── Project stack discovery (.ai-project.toml, project_manifest.yaml, stack markers)
+  └── HowlFrame capability-bounded shadow context audit (read-only dogfooding)
               ↓
-    Deterministic Task Router
-    ├── Agent Selection (Claude Code, Codex, Gemini CLI, Devin CLI, Antigravity)
-    └── Reviewer Role Selection
+  Stage 2: Deterministic Planning & Routing (planned)
+  ├── Agent Selection (Claude Code, Codex, Gemini CLI, Devin CLI, Antigravity)
+  └── Specialized Reviewer Selection
               ↓
-    Implementation Delegate
+  Stage 3: Repository Baseline Isolation
+  └── Captures commit SHA, modified files, and untracked files prior to agent launch
               ↓
-    Specialized Independent Reviewers (Falsification Briefs)
-    ├── correctness-reviewer
-    ├── regression-reviewer
-    ├── security-reviewer
-    ├── test-falsifier
-    ├── architecture-reviewer
-    └── simplicity-reviewer
+  Stage 4: Implementation Agent Launch (implementing)
+  └── Subprocess execution with live stdio streaming and timeout enforcement
               ↓
-    Review Reconciliation Engine
+  Stage 5: Task-Attributable Delta Capture
+  └── Isolates newly created/modified diffs from pre-existing repository dirt
               ↓
-    Deterministic Verification Plan
-    (claimed → tested → observed → verified)
+  Stage 6: Independent Adversarial Reviews (reviewing)
+  ├── Specialized Reviewer Roles (Correctness, Regression, Security, Test Falsifier, etc.)
+  ├── Strict structured findings parsing (YAML/JSON with fail-closed malformed handling)
+  └── Review Reconciliation Engine (confirmed, likely, disputed, requires_human)
               ↓
-    Durable Evidence Ledger (Redacted / Scrubbed)
+  Stage 7: Autonomous Remediation & Re-Review Loop (remediating ↔ reviewing)
+  ├── Targeted re-review dispatching only to reviewers with open findings
+  └── Configurable remediation cycle limits
               ↓
-    Human Authority Gate (AWAITING_HUMAN decision packet if boundary triggered)
+  Stage 8: Deterministic Verification (verifying)
+  └── Executes test suites, linters, and repository hygiene gates (slopslint)
               ↓
-    Ship / Complete
+  Stage 9: Human Authority Boundary Gate (awaiting_human)
+  └── Enforces explicit operator authorization for high-risk actions
+              ↓
+  Stage 10: Complete Evidence Ledger & Run Finalization (complete / awaiting_human / failed)
+  └── Writes structured artifacts to .task_runs/<task_id>/ and durable ledger
 ```
 
 ---

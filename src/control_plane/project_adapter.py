@@ -6,7 +6,8 @@ Boundary adapter that interfaces between the control plane and target project re
 The control plane provides orchestration; the project supplies local truth.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
+import json
 from pathlib import Path
 from typing import Any, Dict, List, Union
 import tomllib
@@ -16,8 +17,11 @@ from src.control_plane.hygiene_policy import HygienePolicyClassifier
 from src.control_plane.verification import VerificationPlan
 
 
+from src.control_plane.task_spec import DataClassSerializationMixin
+
+
 @dataclass
-class ProjectContext:
+class ProjectContext(DataClassSerializationMixin):
     """Represents discovered local truth for a specific project repository."""
 
     project_root: str

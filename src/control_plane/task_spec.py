@@ -69,6 +69,27 @@ STATE_TRANSITIONS: Dict[str, Set[str]] = {
 }
 
 
+class DataClassSerializationMixin:
+    """Base mixin providing unified JSON/dict serialization for dataclasses."""
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]):
+        d = dict(data)
+        valid_fields = {f.name for f in fields(cls)}
+        filtered = {k: v for k, v in d.items() if k in valid_fields}
+        return cls(**filtered)
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_json(cls, json_str: str):
+        return cls.from_dict(json.loads(json_str))
+
+
 class InvalidStateTransitionError(ValueError):
     """Raised when an illegal task state transition is attempted."""
     pass
@@ -80,7 +101,7 @@ class TaskSpecValidationError(ValueError):
 
 
 @dataclass
-class TaskSpec:
+class TaskSpec(DataClassSerializationMixin):
     """Represents a discrete engineering task handled by the multi-agent control plane."""
 
     task_id: str
