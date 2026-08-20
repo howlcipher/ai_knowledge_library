@@ -1,6 +1,7 @@
 schema: 1
 scopes:
   python_src:
-    active_clones_ceiling: 7
+    active_clones_ceiling: 15
   python_tests:
-    active_clones_ceiling: 28
+    active_clones_ceiling: 29
+

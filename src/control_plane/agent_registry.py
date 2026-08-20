@@ -5,17 +5,18 @@ agent_registry.py
 Declarative registry describing available agent types and capabilities.
 """
 
-from dataclasses import dataclass, field, asdict
-import json
+from dataclasses import dataclass, field
+import json, yaml
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-import yaml
+
+from src.control_plane.task_spec import DataClassSerializationMixin
 
 AGENT_REGISTRY_SCHEMA_VERSION = "ai.agent_registry/v1"
 
 
 @dataclass
-class AgentProfile:
+class AgentProfile(DataClassSerializationMixin):
     """Represents a declarative profile for an AI agent type based on observable capabilities."""
 
     agent_id: str
@@ -33,13 +34,6 @@ class AgentProfile:
     availability: str = "available"  # "available", "degraded", "unavailable"
     operator_preference: Optional[str] = None
     notes: str = ""
-
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "AgentProfile":
-        return cls(**data)
 
 
 BUILTIN_AGENTS: List[AgentProfile] = [
