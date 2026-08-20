@@ -23,6 +23,7 @@ from src.control_plane.proposed_action import (
     ProposedAction,
     infer_proposed_actions,
 )
+from src.control_plane.reconciliation import ReconciliationResult
 from src.control_plane.task_spec import DataClassSerializationMixin, TaskSpec
 from src.control_plane.verification import VerificationPlan
 

@@ -31,6 +31,7 @@ Scores apply to Pending rows only; Done, Closed, and Merged rows show `—`.
 
 | # | Improvement | Status | Score (V×D÷E) | Claude model | Gemini model | ROI rationale |
 | --- | --- | --- | --- | --- | --- | --- |
+| 56 | [Operational resilience: crash recovery, durable resume, repository locking, cancellation, and exactly-once execution](#56-operational-resilience-crash-recovery-durable-resume-repository-locking-cancellation-and-exactly-once-execution) | In Progress | 2.67 | Sonnet 5 | Gemini 3.7 Flash | Comprehensive operational resilience: durable stage checkpoints, process tracking, repo mutation lock, task lock, safe retry classification, crash recovery, cancellation without rollback, drift invalidation, and HowlChangeOps replay prevention |
 | 55 | [HowlChangeOps bounded execution handoff](#55-howlchangeops-bounded-execution-handoff) | Done (2026-08-20) | — | Sonnet 5 | Gemini 3 Pro | Canonical integration with HowlChangeOps for policy evaluation, HMAC-signed approval linkage, bounded execution, and immutable receipt validation |
 | 1 | [Rebuild the vector index](#1-rebuild-the-vector-index) | Done (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Minutes of work; unblocks semantic search over the newly refined skills |
 | 2 | [Ignore build artifacts and local state in git](#2-ignore-build-artifacts-and-local-state-in-git) | Done (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Minutes of work; clears permanent noise from git status and prevents accidental commits |
@@ -674,7 +675,27 @@ Establish the canonical integration boundary between HowlPlane (discovery, propo
 - Refactored token logging and query formatting across `src/infrastructure/telemetry_logger.py`, maintaining `python_src` clone ceiling at 14 and reducing `python_tests` clone count to 29.
 - Verified all 499 tests pass 100% cleanly in `pytest`.
 
-**Value/Effort/Decay/Score:** Value 7, Effort 3, Decay 1.0. Score = 7×1.0÷3 = 2.33.
+### 56. Operational Resilience: Crash Recovery, Durable Resume, Repository Locking, Cancellation, and Exactly-Once Execution
+Make HowlPlane operationally trustworthy under process interruption, session/laptop crashes, killed implementation or reviewer processes, repeated resume/approve commands, concurrent task runs targeting the same repository, duplicate execution attempts, Ctrl+C / cancellation, stale repository state, and partially-written artifacts.
+
+**Governing Invariant:**
+No interruption may silently lose task history, repeat consequential execution, overwrite another task's work, trust partial/corrupt artifacts, bypass review or verification, or incorrectly transition to COMPLETE.
+
+**Scope:**
+- **Durable Orchestration Checkpoints:** Explicit `interrupted` and `cancelled` states, stage checkpoints with repository fingerprints, artifact hashes, and process identity.
+- **Crash Recovery:** `ai resume <task-id>` inspects durable artifacts, reconciles repository deltas for interrupted implementations without duplicate blind reruns, preserves completed reviewer work and reruns only incomplete reviewers, and resumes verification.
+- **Safe-Retry Classification:** Deterministic classification (`SAFE_TO_RETRY`, `RECONCILE_FIRST`, `NEVER_AUTO_RETRY`, `ALREADY_COMPLETE`, `HUMAN_DECISION_REQUIRED`).
+- **Repository Mutation Lock:** Local filesystem lock (`.git/howlplane.lock` / `.task_runs/.repo.lock`) with PID and process identity validation to prevent concurrent mutation workflows.
+- **Task-Run Lock:** Atomic lock on `.task_runs/<task_id>/.task.lock` protecting lifecycle commands (`approve`, `reject`, `resume`, `cancel`, `execute`).
+- **Task Cancellation:** `ai cancel <task-id>` stops in-flight processes gracefully, records cancellation in ledger, preserves repository changes, releases locks, and marks task CANCELLED.
+- **Process Management:** Persist child process metadata (PID, create time, command, backend) to reliably detect running vs crashed tasks.
+- **Atomic Artifact Writes:** Atomic file writes (`.tmp` + `os.replace`) for critical artifacts (`task.yaml`, `route.json`, `human_decision.json`, `execution_receipt.json`, etc.) with fail-closed validation.
+- **Repository Drift Invalidation:** Invalidate review, verification, or approval when repository drifts prior to subsequent stages.
+- **Exactly-Once Consequential Execution:** Never replay HowlChangeOps actions blindly. Reconcile native HowlChangeOps receipts if local receipts are missing after a crash. Ambiguous states fail closed.
+- **Status UX:** Enhanced `ai status` displaying active lock, process, reviewer progress, and actionable recovery commands.
+- **Failure Injection & Test Harness:** Comprehensive test suite covering all 20 required failure scenarios.
+
+**Value/Effort/Decay/Score:** Value 8 (operational resilience & data integrity), Effort 3, Decay 1.0. Score = 8×1.0÷3 = 2.67.
 
 ## ✅ Completed
 

@@ -8,7 +8,7 @@ Canonical machine-readable representation of an engineering task and its lifecyc
 from dataclasses import dataclass, field, asdict, fields
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 import yaml
 
 TASK_SPEC_SCHEMA_VERSION = "ai.task_spec/v1"
