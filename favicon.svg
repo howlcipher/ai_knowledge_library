@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" fill="#000000" />
-  <rect x="2" y="2" width="60" height="60" fill="#070a14" stroke="#4a5aa8" stroke-width="2" />
-  <!-- HowlPlane Command Plane / Frame Icon -->
-  <polygon points="14,18 50,32 14,46 22,32" fill="#6e4aa3" stroke="#ffffff" stroke-width="2" stroke-linejoin="miter" />
-  <line x1="22" y1="32" x2="48" y2="32" stroke="#ffffff" stroke-width="2" />
-  <!-- Live Status Dot -->
-  <circle cx="50" cy="14" r="4" fill="#39ff14" />
+  <rect width="64" height="64" rx="4" fill="#14191C"/>
+  <rect x="2" y="2" width="60" height="60" rx="3" fill="none" stroke="#353B3D" stroke-width="2"/>
+  <rect x="6" y="6" width="52" height="14" fill="#102A43"/>
+  <line x1="6" y1="20" x2="58" y2="20" stroke="#087FAF" stroke-width="2"/>
+  <polygon points="12,28 52,28 48,56 16,56" fill="#1B2226" stroke="#087FAF" stroke-width="1.5"/>
+  <text x="32" y="47" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace" font-size="22" font-weight="bold" fill="#E7E1CE" text-anchor="middle">HP</text>
+  <circle cx="10" cy="13" r="2.5" fill="#087FAF"/>
 </svg>

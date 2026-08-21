@@ -214,7 +214,7 @@ HowlPlane serves as a **primary real-world dogfooding consumer** of the HowlFram
         |
         +-- HowlFrame bounded execution runtime (shadow verification / dogfooding)
   ```
-- **Why HowlPlane dogfoods HowlFrame:** Smaller applications prove individual language features; ChangeOps proves governed consequential change execution; HowlPlane provides high-frequency real AI engineering workloads that pressure generated structured programs, capability boundaries, malformed AI output, instruction budgets, partial failures, result normalization, and structured evidence.
+- **Why HowlPlane dogfoods HowlFrame:** Smaller applications prove individual language features; HowlChangeOps proves governed consequential change execution; HowlPlane provides high-frequency real AI engineering workloads that pressure generated structured programs, capability boundaries, malformed AI output, instruction budgets, partial failures, result normalization, and structured evidence.
 - **Independence & Fail-Closed Isolation:** HowlPlane remains completely functional without HowlFrame. HowlFrame is an optional runtime dependency for selected bounded tasks. If the HowlFrame binary is unavailable, crashes, times out, or exceeds budget, HowlPlane records the diagnostic failure in the evidence ledger and continues normal operation without altering any routing, human authority, or verification decisions.
 - **First Dogfooding Slice — Project Context Audit (`SHADOW MODE`):**
   - **Program Artifact:** `integrations/howlframe/project_context_audit.howl` (compiled to `project_context_audit.hfbc`).
@@ -346,7 +346,7 @@ Resolution precedence for the control plane:
 ### 6.2 Normal Operator Workflow
 ```bash
 # Stand inside any repository and work an objective:
-cd ~/projects/changeops
+cd ~/projects/howlchangeops
 ai work "work the next highest-value backlog item"
 
 cd ~/projects/howlframe

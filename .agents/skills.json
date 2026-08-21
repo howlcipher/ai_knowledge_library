@@ -292,6 +292,13 @@
       "path": ".agents/skills/hallucination_guardrails/SKILL.md"
     },
     {
+      "name": "howlframe-app-development",
+      "description": "Canonical guidance for building, modifying, debugging, testing, and reviewing fullstack and CLI applications written in HowlFrame (.howl). Use when developing or reviewing HowlFrame applications (e.g. backend services, HTTP APIs, web_app frontends, CLI tools, native store persistence, scripts/build.sh, and scripts/test.sh).",
+      "triggers": [],
+      "tier": 2,
+      "path": ".agents/skills/howlframe-app-development/SKILL.md"
+    },
+    {
       "name": "howlframe-transpiler",
       "description": "Canonical HowlFrame language and transpiler guidance covering the compiler, .howl source, HFIR, bytecode, VM, backends, examples, fixtures, builds, tests, and verification. Use to write a HowlFrame program or change any of those toolchain components.",
       "triggers": [],
