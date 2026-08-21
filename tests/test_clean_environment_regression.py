@@ -15,6 +15,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import pytest
 
 from src.control_plane.agent_execution import (
@@ -142,6 +143,62 @@ def test_provider_fallback_chain_clean_environment(tmp_path: Path):
     assert pool.get_status("agy") in (ProviderAvailabilityStatus.RATE_LIMITED, ProviderAvailabilityStatus.SESSION_EXHAUSTED)
     assert pool.get_status("devin_cli") in (ProviderAvailabilityStatus.RATE_LIMITED, ProviderAvailabilityStatus.SESSION_EXHAUSTED)
     assert pool.get_status("claude_code") == ProviderAvailabilityStatus.AVAILABLE
+
+
+def test_real_compiler_integration_tests_skip_cleanly_without_real_compiler(tmp_path: Path):
+    """Proves the real HowlFrame compiler integration suites (test_howlframe_dogfood.py,
+    test_launcher.py) exercise the genuine discovery contract -- not the synthesis
+    fixture's fake compiler -- and therefore skip/degrade cleanly (never hard-fail)
+    in a clean environment with no real `howlframe` binary on PATH.
+
+    This reproduces the exact clean-CI failure mode fixed in tests/conftest.py: the
+    global fake-compiler injection previously applied to every test file, which made
+    `find_howlframe_binary()` return the fake compiler for these real-integration
+    suites too, causing them to skip their intended `pytest.skip`/`HOWLFRAME_UNAVAILABLE`
+    paths and hard-fail against a fixture never meant to satisfy their fidelity checks.
+    """
+    repo_root = Path(__file__).resolve().parents[1]
+
+    # Build a PATH with every locally installed tool except howlframe itself, so the
+    # subprocess faithfully emulates a clean CI machine without masking unrelated
+    # tooling (pytest, go, slopslint, etc.) that the rest of the suite also needs.
+    real_bin_dirs = [p for p in os.environ.get("PATH", "").split(os.pathsep) if p]
+    filtered_dir = tmp_path / "path_without_howlframe"
+    filtered_dir.mkdir()
+    for bin_dir in real_bin_dirs:
+        d = Path(bin_dir)
+        if not d.is_dir():
+            continue
+        for entry in d.iterdir():
+            if entry.name == "howlframe" or (filtered_dir / entry.name).exists():
+                continue
+            try:
+                (filtered_dir / entry.name).symlink_to(entry)
+            except OSError:
+                continue
+
+    env = os.environ.copy()
+    env.pop("HOWLFRAME_BIN", None)
+    env["PATH"] = str(filtered_dir)
+    env["PYTHONPATH"] = str(repo_root)
+
+    result = subprocess.run(
+        [
+            sys.executable, "-m", "pytest", "-q",
+            "tests/test_howlframe_dogfood.py",
+            "tests/test_launcher.py::test_ai_howlframe_audit_subcommand",
+        ],
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert result.returncode == 0, (
+        f"Real compiler integration tests must skip cleanly without a real "
+        f"HowlFrame compiler, not hard-fail.\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+    )
+    assert "failed" not in result.stdout.lower(), result.stdout
 
 
 def test_mcp_fastmcp_import_safety():
