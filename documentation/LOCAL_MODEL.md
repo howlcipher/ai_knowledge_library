@@ -135,6 +135,42 @@ loads durable state directly from disk, never constructs a provider pool,
 never probes agent binaries/services, never invokes a provider, and never
 mutates campaign scope.
 
+## Real local dogfood evidence (2026-08-21)
+
+A real end-to-end exercise on the target machine, using the genuine
+`OllamaLocalBackend` (no fakes), verifying the full contract:
+
+1. **Setup:** `ollama pull qwen2.5-coder:7b-instruct` (4.7 GB), `ollama list`
+   confirmed, `ollama run qwen2.5-coder:7b-instruct "Respond only with
+   LOCAL_OK"` → `LOCAL_OK` in ~5.6s.
+2. **`ai local setup`** (through the actual CLI, not a test double): reported
+   `PASS` with a real inference (`stdout='LOCAL_OK'`, `duration=4.886s`).
+3. **Real low-risk local task:** a genuine HowlFrame compiler diagnostic was
+   produced from a deliberately invalid `.howl` file (raw JSON object literal
+   instead of an S-expression), then handed to a `risk_level="low"`,
+   `task_class="docs"` `TaskSpec` via the real `local_ollama` backend to
+   explain the failure for a troubleshooting note:
+
+   - Backend: `local_ollama` (genuinely invoked; `output_sha256` recorded)
+   - Duration: 8.365s; context length: 8192
+   - Available RAM: 9.287 GiB before → 8.817 GiB after (well above the 8 GiB
+     floor throughout)
+   - Model's explanation (verbatim): *"The source code is using standard
+     JSON syntax for an object literal, which HowlFrame does not support.
+     Instead, HowlFrame requires S-expression forms for object literals. To
+     fix it, replace the standard JSON object literal with the HowlFrame
+     equivalent S-expression, such as `(hash "status" "ok")`."*
+
+   The diagnosis (raw `{...}` JSON literals are invalid; HowlFrame needs an
+   S-expression form) was **correct**. The suggested replacement syntax,
+   `(hash "status" "ok")`, was **not** — real HowlFrame sources use
+   `(dict ("status" "ok"))` (see `res_json`/`dict` usage across this repo's
+   generated products). This is exactly why local output is never trusted
+   without deterministic verification and review (#58 Phase 12): the model
+   correctly localized and explained the failure, an appropriate Tier-3 task,
+   but got a specific syntactic detail wrong that a compiler/test check would
+   have caught immediately had this been an actual code change.
+
 ## Recommended first overnight campaign command
 
 Only after local unit tests, a real Ollama smoke test, and a short bounded
