@@ -42,17 +42,25 @@ from src.control_plane.synthesis.provider_pool import (
     ProviderPoolManager,
     ProviderStatus,
 )
+from src.control_plane.synthesis.campaign_state import (
+    CAMPAIGN_STATE_SCHEMA_VERSION,
+    DurableCampaignState,
+    GitIntegrationRecord,
+)
 from src.control_plane.synthesis.spec_synthesizer import NaturalLanguageSynthesizer
 
 __all__ = [
     "AcceptanceCheckResult",
     "BehaviorSpec",
+    "CAMPAIGN_STATE_SCHEMA_VERSION",
     "CapabilityNegotiator",
     "DogfoodIterationResult",
+    "DurableCampaignState",
     "EntitySpec",
     "FeasibilityStatus",
     "FieldSpec",
     "FrameworkGap",
+    "GitIntegrationRecord",
     "HowlFrameCapabilityRegistry",
     "MarathonDogfoodEngine",
     "MarathonSummaryReport",

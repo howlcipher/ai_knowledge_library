@@ -7,14 +7,27 @@ This allows any MCP-compatible agent to securely search the library, with all da
 through the ContextSanitizer.
 """
 
-from mcp.server.fastmcp import FastMCP
+try:
+    from mcp.server.fastmcp import FastMCP
+except ImportError:
+    try:
+        from mcp.server.fastmcp.server import FastMCP  # type: ignore
+    except ImportError:
+        FastMCP = None
+
 from src.infrastructure.semantic_search import SemanticSearcher
 from src.core.context_sanitizer import format_safe_prompt
 
-# Initialize the MCP Server
-mcp = FastMCP("HowlPlane")
+def _noop_tool_decorator(*args, **kwargs):
+    def _wrapper(fn):
+        return fn
+    return _wrapper
 
-@mcp.tool()
+# Initialize the MCP Server if available
+mcp = FastMCP("HowlPlane") if FastMCP is not None else None
+tool_decorator = mcp.tool() if mcp is not None else _noop_tool_decorator()
+
+@tool_decorator
 def search_knowledge_library(query: str, n_results: int = 5) -> str:
     """
     Search the HowlPlane knowledge base for context related to a query.
@@ -47,4 +60,5 @@ def search_knowledge_library(query: str, n_results: int = 5) -> str:
 
 if __name__ == "__main__":
     # Standard MCP initialization over stdio
-    mcp.run(transport='stdio')
+    if mcp is not None:
+        mcp.run(transport='stdio')

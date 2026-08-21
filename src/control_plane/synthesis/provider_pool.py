@@ -138,28 +138,55 @@ class ProviderPoolManager:
                 status=initial_status,
             )
 
+    def _normalize(self, agent_id: str) -> str:
+        return AgentBackendRegistry.normalize_agent_id(agent_id)
+
     def get_status(self, agent_id: str) -> ProviderAvailabilityStatus:
-        if agent_id in self._provider_states:
-            return self._provider_states[agent_id].status
+        nid = self._normalize(agent_id)
+        if nid in self._provider_states:
+            return self._provider_states[nid].status
         return ProviderAvailabilityStatus.UNKNOWN
 
     def set_status(self, agent_id: str, status: ProviderAvailabilityStatus, event: Optional[ProviderExhaustionEvent] = None) -> None:
-        if agent_id not in self._provider_states:
-            self._provider_states[agent_id] = ProviderStatus(agent_id=agent_id, name=agent_id)
-        self._provider_states[agent_id].status = status
-        self._provider_states[agent_id].last_checked = datetime.now(timezone.utc).isoformat()
+        nid = self._normalize(agent_id)
+        if nid not in self._provider_states:
+            self._provider_states[nid] = ProviderStatus(agent_id=nid, name=nid)
+        self._provider_states[nid].status = status
+        self._provider_states[nid].last_checked = datetime.now(timezone.utc).isoformat()
         if event:
-            self._provider_states[agent_id].exhaustion_event = event
+            self._provider_states[nid].exhaustion_event = event
+
+    def reset_transient_exhaustion(self) -> None:
+        """Resets transient rate-limited and session-exhausted states on new or resumed campaigns."""
+        for agent_id, status_obj in self._provider_states.items():
+            backend = AgentBackendRegistry.get_backend(agent_id)
+            if backend.is_available():
+                status_obj.status = ProviderAvailabilityStatus.AVAILABLE
+                status_obj.exhaustion_event = None
+            else:
+                status_obj.status = ProviderAvailabilityStatus.UNAVAILABLE
+
+    def get_all_statuses(self) -> Dict[str, str]:
+        """Returns snapshot of current provider statuses."""
+        return {aid: s.status.value for aid, s in self._provider_states.items()}
+
+    def has_available_providers(self) -> bool:
+        """Returns True if at least one provider is currently AVAILABLE."""
+        return any(
+            s.status == ProviderAvailabilityStatus.AVAILABLE
+            for s in self._provider_states.values()
+        )
 
     def detect_exhaustion(self, agent_id: str, result: AgentExecutionResult, task_id: Optional[str] = None) -> Optional[ProviderExhaustionEvent]:
         """
         Distinguishes provider availability failures from normal engineering failures.
         """
+        nid = self._normalize(agent_id)
         if result.success:
-            if agent_id in self._provider_states:
-                self._provider_states[agent_id].status = ProviderAvailabilityStatus.AVAILABLE
-                self._provider_states[agent_id].success_count += 1
-                self._provider_states[agent_id].total_duration_seconds += result.duration_seconds
+            if nid in self._provider_states:
+                self._provider_states[nid].status = ProviderAvailabilityStatus.AVAILABLE
+                self._provider_states[nid].success_count += 1
+                self._provider_states[nid].total_duration_seconds += result.duration_seconds
             return None
 
         combined_output = (result.stderr + "\n" + result.stdout).lower()
@@ -167,27 +194,42 @@ class ProviderPoolManager:
         # Check binary missing
         if result.exit_code == 127 or "not installed" in combined_output or "not found" in combined_output:
             event = ProviderExhaustionEvent(
-                agent_id=agent_id,
+                agent_id=nid,
                 failure_type="unavailable",
                 raw_error=result.stderr.strip() or "Binary not found",
                 task_id=task_id,
             )
-            self.set_status(agent_id, ProviderAvailabilityStatus.UNAVAILABLE, event)
+            self.set_status(nid, ProviderAvailabilityStatus.UNAVAILABLE, event)
             return event
 
-        # Check provider exhaustion signatures
-        patterns = EXHAUSTION_PATTERNS.get(agent_id, [])
-        for pattern in patterns:
+        # Check provider exhaustion signatures across specific provider patterns and generic patterns
+        patterns = list(EXHAUSTION_PATTERNS.get(nid, []))
+        generic_exhaustion = [
+            "quota exceeded",
+            "rate limit",
+            "rate_limit",
+            "usage limit",
+            "session limit",
+            "credits exhausted",
+            "insufficient quota",
+            "429 too many requests",
+            "resource exhausted",
+            "out of capacity",
+            "session exhausted",
+        ]
+        all_patterns = patterns + generic_exhaustion
+
+        for pattern in all_patterns:
             if pattern in combined_output:
-                ftype = "rate_limit" if "rate" in pattern else "session_limit"
+                ftype = "rate_limit" if "rate" in pattern or "429" in pattern else "session_limit"
                 event = ProviderExhaustionEvent(
-                    agent_id=agent_id,
+                    agent_id=nid,
                     failure_type=ftype,
                     raw_error=result.stderr.strip() or pattern,
                     task_id=task_id,
                 )
                 new_status = ProviderAvailabilityStatus.RATE_LIMITED if ftype == "rate_limit" else ProviderAvailabilityStatus.SESSION_EXHAUSTED
-                self.set_status(agent_id, new_status, event)
+                self.set_status(nid, new_status, event)
                 return event
 
         # Normal engineering failure: tests failed, compiler syntax error, etc.
@@ -204,14 +246,17 @@ class ProviderPoolManager:
         Ranks candidate agents by task suitability and availability,
         placing avoided/fallback providers last.
         """
-        avoid = avoid_provider or self.avoid_provider or self.fallback_provider
-        pref_list = TASK_SUITABILITY_PREFERENCES.get(task_category, TASK_SUITABILITY_PREFERENCES["code_heavy"])
+        avoid_norm = self._normalize(avoid_provider) if avoid_provider else (
+            self._normalize(self.avoid_provider) if self.avoid_provider else None
+        )
+        pref_agent_norm = self._normalize(preferred_agent) if preferred_agent else None
+        pref_list = [self._normalize(a) for a in TASK_SUITABILITY_PREFERENCES.get(task_category, TASK_SUITABILITY_PREFERENCES["code_heavy"])]
 
         candidates: List[str] = []
 
         # If user specified preferred agent and it's available, place first
-        if preferred_agent and self.get_status(preferred_agent) == ProviderAvailabilityStatus.AVAILABLE:
-            candidates.append(preferred_agent)
+        if pref_agent_norm and self.get_status(pref_agent_norm) == ProviderAvailabilityStatus.AVAILABLE:
+            candidates.append(pref_agent_norm)
 
         for agent_id in pref_list:
             if agent_id not in candidates and self.get_status(agent_id) == ProviderAvailabilityStatus.AVAILABLE:
@@ -223,9 +268,9 @@ class ProviderPoolManager:
                 candidates.append(agent_id)
 
         # Move avoid_provider to the very end
-        if avoid and avoid in candidates:
-            candidates.remove(avoid)
-            candidates.append(avoid)
+        if avoid_norm and avoid_norm in candidates:
+            candidates.remove(avoid_norm)
+            candidates.append(avoid_norm)
 
         return candidates
 
@@ -239,13 +284,14 @@ class ProviderPoolManager:
         Selects independent reviewers from distinct providers whenever available.
         Returns mapping of role_id -> agent_id, and boolean indicating if full provider diversity was achieved.
         """
+        impl_norm = self._normalize(implementing_agent_id)
         available_agents = [
-            a.agent_id
+            self._normalize(a.agent_id)
             for a in self.registry.list_agents()
             if self.get_status(a.agent_id) == ProviderAvailabilityStatus.AVAILABLE
         ]
 
-        distinct_candidates = [a for a in available_agents if a != implementing_agent_id]
+        distinct_candidates = [a for a in available_agents if a != impl_norm]
         role_mapping: Dict[str, str] = {}
         diversity_achieved = True
 
@@ -254,10 +300,10 @@ class ProviderPoolManager:
                 chosen = distinct_candidates[idx % len(distinct_candidates)]
                 role_mapping[role] = chosen
             elif allow_same_provider and available_agents:
-                role_mapping[role] = implementing_agent_id
+                role_mapping[role] = impl_norm
                 diversity_achieved = False
             else:
-                role_mapping[role] = implementing_agent_id
+                role_mapping[role] = impl_norm
                 diversity_achieved = False
 
         return role_mapping, diversity_achieved

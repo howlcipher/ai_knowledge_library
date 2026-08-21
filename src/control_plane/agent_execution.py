@@ -183,7 +183,7 @@ class ClaudeCodeBackend(SubprocessAgentBackend):
 
 class CodexBackend(SubprocessAgentBackend):
     def __init__(self):
-        super().__init__("codex", "codex", lambda t, c, r, p: ["codex", p])
+        super().__init__("codex", "codex", lambda t, c, r, p: ["codex", "exec", p])
 
 
 class GeminiCLIBackend(SubprocessAgentBackend):
@@ -199,8 +199,7 @@ class AgyBackend(SubprocessAgentBackend):
 class DevinCLIBackend(SubprocessAgentBackend):
     def __init__(self):
         def _devin_cmd(t, c, r, p):
-            tf = c / ".task_runs" / t.task_id / "task.yaml"
-            return ["devin", "run", "--task-file", str(tf)] if tf.exists() else ["devin", "run", "--task", p]
+            return ["devin", "-p", p, "--permission-mode", "accept-edits"]
         super().__init__("devin_cli", "devin", _devin_cmd)
 
 
@@ -245,7 +244,7 @@ class FakeAgentBackend(AgentBackend):
         target_cwd = Path(cwd).resolve()
         prompt = prompt_override or f"Fake execute: {task.objective}"
         self.executed_calls.append({
-            "task_id": task.task_id,
+            "task_id": task.task_id if task else "unknown",
             "role": role,
             "prompt": prompt,
             "cwd": str(target_cwd),
@@ -293,14 +292,27 @@ class AgentBackendRegistry:
         "local_ollama": LocalOllamaBackend(),
     }
 
+    _ALIASES: Dict[str, str] = {
+        "claude": "claude_code",
+        "devin": "devin_cli",
+        "gemini": "gemini_cli",
+        "ollama": "local_ollama",
+    }
+
+    @classmethod
+    def normalize_agent_id(cls, agent_id: str) -> str:
+        return cls._ALIASES.get(agent_id, agent_id)
+
     @classmethod
     def get_backend(cls, agent_id: str, custom_backend: Optional[AgentBackend] = None) -> AgentBackend:
         if custom_backend is not None:
             return custom_backend
-        if agent_id in cls._instances:
-            return cls._instances[agent_id]
+        canonical_id = cls.normalize_agent_id(agent_id)
+        if canonical_id in cls._instances:
+            return cls._instances[canonical_id]
         return SubprocessAgentBackend(agent_id=agent_id, binary_name=agent_id)
 
     @classmethod
     def register_backend(cls, agent_id: str, backend: AgentBackend) -> None:
-        cls._instances[agent_id] = backend
+        canonical_id = cls.normalize_agent_id(agent_id)
+        cls._instances[canonical_id] = backend

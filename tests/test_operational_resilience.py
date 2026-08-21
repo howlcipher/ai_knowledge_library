@@ -332,6 +332,9 @@ def test_interrupted_bounded_execution_with_native_receipt_never_replays(tmp_pat
             super().__init__()
             self.execute_calls = 0
 
+        def is_available(self) -> bool:
+            return True
+
         def execute(self, *args, **kwargs):
             self.execute_calls += 1
             return super().execute(*args, **kwargs)
