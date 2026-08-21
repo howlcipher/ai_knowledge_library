@@ -29,6 +29,16 @@ OLLAMA_DEFAULT_CONTEXT_LENGTH = 8192
 OLLAMA_DEFAULT_MIN_AVAILABLE_RAM_GIB = 8.0
 OLLAMA_DEFAULT_HOST = "http://127.0.0.1:11434"
 OLLAMA_DEFAULT_TIMEOUT_SECONDS = 300
+# Matches Ollama's own implicit default when the field is omitted; sent
+# explicitly now that the payload carries a keep_alive key at all (#59
+# Phase 17). Overnight-safe campaigns use 0 (unload immediately) instead.
+OLLAMA_DEFAULT_KEEP_ALIVE: Union[int, str] = "5m"
+# Conservative overnight-safe launch threshold (#59 Phase 16) -- separate
+# from OLLAMA_DEFAULT_MIN_AVAILABLE_RAM_GIB, which remains the interactive
+# default. Real target-machine evidence from #58 showed ~9.287 GiB before /
+# ~8.817 GiB after a local task -- not a huge margin for an unattended
+# desktop, hence the higher floor for unattended overnight operation.
+OLLAMA_OVERNIGHT_MIN_AVAILABLE_RAM_GIB = 9.0
 
 
 class OllamaAvailabilityReason:
@@ -349,6 +359,7 @@ class OllamaLocalBackend(AgentBackend):
         diagnostics_fn: Optional[Callable[[], "OllamaDiagnostics"]] = None,
         http_generate: Optional[Callable[[Dict[str, Any], float], Dict[str, Any]]] = None,
         memory_reader: Callable[[], Optional[float]] = read_available_memory_gib,
+        keep_alive: Union[int, str] = OLLAMA_DEFAULT_KEEP_ALIVE,
     ):
         self.model = model
         self.context_length = context_length
@@ -356,6 +367,14 @@ class OllamaLocalBackend(AgentBackend):
         self.host = host
         self.repo_root = Path(repo_root).resolve()
         self._memory_reader = memory_reader
+        # Ollama's own implicit default keep_alive is "5m" when the field is
+        # omitted entirely -- the prior implementation never sent this key
+        # at all, so "5m" here preserves that behavior explicitly rather
+        # than changing it. Overnight-safe campaigns construct a separate
+        # instance with keep_alive=0 (unload immediately after each
+        # inference, #59 Phase 17) rather than changing this default, which
+        # would also affect normal interactive/local development use.
+        self.keep_alive = keep_alive
         self._diagnostics_fn = diagnostics_fn or (
             lambda: diagnose_ollama(
                 model=self.model,
@@ -449,6 +468,7 @@ class OllamaLocalBackend(AgentBackend):
                         "prompt": prompt,
                         "stream": False,
                         "options": {"num_ctx": self.context_length},
+                        "keep_alive": self.keep_alive,
                     },
                     timeout_seconds,
                 )
@@ -469,6 +489,12 @@ class OllamaLocalBackend(AgentBackend):
 
             elapsed = round(time.time() - t0, 3)
             ram_after = self._memory_reader()
+            # Best-effort: Ollama unloads asynchronously after the response,
+            # so this measurement may lag the actual unload (#59 Phase 17).
+            # Recorded regardless of keep_alive value so the two are
+            # directly comparable in evidence; only meaningful when
+            # keep_alive == 0 requested an immediate unload.
+            ram_after_unload = self._memory_reader() if self.keep_alive == 0 else None
             output_text = result.get("response", "") if isinstance(result, dict) else ""
             done = bool(result.get("done", True)) if isinstance(result, dict) else False
             success = done and bool(output_text.strip())
@@ -485,7 +511,9 @@ class OllamaLocalBackend(AgentBackend):
                     "task_class": getattr(task, "task_class", None) if task else None,
                     "start_time": start_iso, "finish_time": datetime.now(timezone.utc).isoformat(),
                     "context_length": self.context_length,
+                    "keep_alive": self.keep_alive,
                     "ram_before_gib": ram_before, "ram_after_gib": ram_after,
+                    "ram_after_unload_gib": ram_after_unload,
                     "output_sha256": hashlib.sha256(output_text.encode("utf-8")).hexdigest() if output_text else None,
                 },
             )

@@ -21,6 +21,7 @@ VALID_TASK_STATES = {
     "remediating",
     "verifying",
     "awaiting_human",
+    "parked_awaiting_human",
     "complete",
     "failed",
     "blocked",
@@ -44,15 +45,23 @@ VALID_TASK_CLASSES = {
 
 _CORE_STAGES = {"discovered", "planned", "implementing", "reviewing", "remediating", "verifying"}
 
+# "awaiting_human" halts the single task's own ai work/ai resume flow pending
+# a human decision. "parked_awaiting_human" is the distinct campaign-level
+# signal introduced in #59: a durable campaign (marathon dogfooding) loop
+# preserves this task's state and a decision packet, then continues with
+# other independent evidence-backed work rather than halting -- it must
+# never be conflated with plain awaiting_human, whose existing single-task
+# CLI semantics stay unchanged.
 STATE_TRANSITIONS: Dict[str, Set[str]] = {
     "discovered": {"planned", "awaiting_human", "blocked", "failed", "interrupted", "cancelled"},
-    "planned": {"implementing", "awaiting_human", "blocked", "failed", "interrupted", "cancelled"},
-    "implementing": {"reviewing", "verifying", "awaiting_human", "blocked", "failed", "interrupted", "cancelled"},
-    "reviewing": {"remediating", "verifying", "awaiting_human", "blocked", "failed", "interrupted", "cancelled"},
-    "remediating": {"reviewing", "verifying", "awaiting_human", "blocked", "failed", "interrupted", "cancelled"},
-    "verifying": {"awaiting_human", "complete", "remediating", "blocked", "failed", "interrupted", "cancelled"},
+    "planned": {"implementing", "awaiting_human", "parked_awaiting_human", "blocked", "failed", "interrupted", "cancelled"},
+    "implementing": {"reviewing", "verifying", "awaiting_human", "parked_awaiting_human", "blocked", "failed", "interrupted", "cancelled"},
+    "reviewing": {"remediating", "verifying", "awaiting_human", "parked_awaiting_human", "blocked", "failed", "interrupted", "cancelled"},
+    "remediating": {"reviewing", "verifying", "awaiting_human", "parked_awaiting_human", "blocked", "failed", "interrupted", "cancelled"},
+    "verifying": {"awaiting_human", "parked_awaiting_human", "complete", "remediating", "blocked", "failed", "interrupted", "cancelled"},
     "awaiting_human": {"complete", "implementing", "remediating", "verifying", "blocked", "failed", "interrupted", "cancelled"},
-    "interrupted": _CORE_STAGES | {"awaiting_human", "complete", "failed", "cancelled"},
+    "parked_awaiting_human": {"complete", "implementing", "remediating", "verifying", "blocked", "failed", "interrupted", "cancelled"},
+    "interrupted": _CORE_STAGES | {"awaiting_human", "parked_awaiting_human", "complete", "failed", "cancelled"},
     "cancelled": _CORE_STAGES | {"failed"},
     "blocked": _CORE_STAGES | {"failed", "cancelled", "interrupted"},
     "failed": {"discovered", "planned", "cancelled", "interrupted"},

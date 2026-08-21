@@ -12,6 +12,7 @@ subscription. All Ollama interactions are injected fakes.
 """
 
 from pathlib import Path
+import subprocess
 from typing import Dict
 
 import pytest
@@ -23,6 +24,9 @@ from src.control_plane.agent_execution import (
     OllamaLocalBackend,
     diagnose_ollama,
 )
+from src.control_plane.authority_envelope import create_envelope
+from src.control_plane.authority_profile import get_profile
+from src.control_plane.git_integration import GitIntegrationExecutor
 from src.control_plane.locking import LocalInferenceLock
 from src.control_plane.synthesis.campaign_state import DurableCampaignState
 from src.control_plane.synthesis.marathon import MarathonDogfoodEngine
@@ -32,6 +36,55 @@ from src.control_plane.synthesis.provider_pool import (
     is_task_local_eligible,
 )
 from src.control_plane.task_spec import TaskSpec
+from tests._dogfood_test_helpers import FakeOrchestrator
+
+
+class _AlwaysSucceedGitRunner:
+    """
+    Generic real-git-shaped fake for tests that only care about the
+    local-only-continuation loop's counters, not exact plumbing (#59):
+    returns success with SHA-consistent stdout for every call.
+    """
+
+    def __call__(self, repo_root, args, timeout=60):
+        cmd = args[0] if args else ""
+        if cmd == "rev-parse":
+            return subprocess.CompletedProcess(args, 0, stdout="fakesha1234\n", stderr="")
+        if cmd == "ls-remote":
+            return subprocess.CompletedProcess(args, 0, stdout="fakesha1234\trefs/heads/x\n", stderr="")
+        return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+
+class _AlwaysSucceedGhRunner:
+    """Generic real-gh-shaped fake mirroring _AlwaysSucceedGitRunner."""
+
+    def __call__(self, repo_root, args, timeout=120):
+        joined = " ".join(args)
+        if args[:2] == ["pr", "create"]:
+            return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+        if args[:2] == ["pr", "list"]:
+            return subprocess.CompletedProcess(
+                args, 0, stdout='[{"number": 1, "url": "https://github.com/x/y/pull/1"}]', stderr=""
+            )
+        if args[:2] == ["pr", "view"] and "headRefName" in joined:
+            return subprocess.CompletedProcess(args, 0, stdout='{"headRefName": "fix/x"}', stderr="")
+        if args[:2] == ["pr", "view"] and "state,merged,mergeCommit" in joined:
+            return subprocess.CompletedProcess(
+                args, 0, stdout='{"state": "MERGED", "merged": true, "mergeCommit": {"oid": "fakemergesha"}}', stderr=""
+            )
+        if args[:2] == ["pr", "view"]:
+            return subprocess.CompletedProcess(args, 0, stdout='{"number": 1}', stderr="")
+        if args[:2] == ["pr", "checks"]:
+            return subprocess.CompletedProcess(
+                args, 0, stdout='[{"name": "test-python", "state": "SUCCESS", "bucket": "pass"}]', stderr=""
+            )
+        if args[:2] == ["pr", "merge"]:
+            return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+        if args[0] == "api":
+            return subprocess.CompletedProcess(
+                args, 0, stdout='{"required_status_checks": {"contexts": ["test-python"]}}', stderr=""
+            )
+        return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
 
 
 def _task(risk_level="low", task_class="bug_fix", skills=None, task_id="T-1"):
@@ -128,6 +181,66 @@ def test_backend_invoked_when_available(tmp_path):
     assert result.stdout == "LOCAL_OK"
     assert result.metadata["provider"] == "local_ollama"
     assert result.metadata["model"]
+
+
+def test_default_keep_alive_preserves_interactive_behavior(tmp_path):
+    """Default keep_alive ("5m") matches Ollama's own implicit default --
+    interactive/local development behavior is unchanged by #59."""
+    payloads = []
+    backend = _available_backend(tmp_path, http_generate=lambda p, t: payloads.append(p) or {"response": "ok", "done": True})
+    backend.execute(_task(), tmp_path, prompt_override="fix it")
+    assert payloads[0]["keep_alive"] == "5m"
+
+
+def test_keep_alive_zero_sent_for_overnight_profile(tmp_path):
+    """Overnight-safe campaigns construct a backend with keep_alive=0 so the
+    model unloads immediately after each inference (#59 Phase 17)."""
+    payloads = []
+    backend = OllamaLocalBackend(
+        repo_root=tmp_path, keep_alive=0,
+        diagnostics_fn=lambda: OllamaDiagnostics(reason=OllamaAvailabilityReason.AVAILABLE, available=True, available_ram_gib=16.0),
+        http_generate=lambda p, t: payloads.append(p) or {"response": "ok", "done": True},
+        memory_reader=lambda: 16.0,
+    )
+    backend.execute(_task(), tmp_path, prompt_override="fix it")
+    assert payloads[0]["keep_alive"] == 0
+
+
+def test_overnight_ram_threshold_9gib_blocks_below_floor():
+    """The overnight-safe profile's conservative 9 GiB launch threshold
+    (#59 Phase 16) blocks launch even when the interactive 8 GiB floor
+    would have allowed it."""
+    diag = diagnose_ollama(
+        binary_check=lambda: True, service_check=lambda host: True,
+        model_check=lambda model, host: True,
+        min_available_ram_gib=9.0, memory_reader=lambda: 8.5,
+    )
+    assert diag.available is False
+    assert diag.reason == OllamaAvailabilityReason.RESOURCE_CONSTRAINED
+
+
+def test_ram_measured_before_after_and_after_unload(tmp_path):
+    """RAM before inference, RAM immediately after response, and (when
+    keep_alive=0) RAM after unload are all recorded as evidence (#59 Phase 17)."""
+    readings = iter([16.0, 15.2, 15.1])  # before, after-response, after-unload
+    backend = OllamaLocalBackend(
+        repo_root=tmp_path, keep_alive=0,
+        diagnostics_fn=lambda: OllamaDiagnostics(reason=OllamaAvailabilityReason.AVAILABLE, available=True, available_ram_gib=16.0),
+        http_generate=lambda p, t: {"response": "LOCAL_OK", "done": True},
+        memory_reader=lambda: next(readings),
+    )
+    result = backend.execute(_task(), tmp_path, prompt_override="fix it")
+    assert result.metadata["ram_before_gib"] == 16.0
+    assert result.metadata["ram_after_gib"] == 15.2
+    assert result.metadata["ram_after_unload_gib"] == 15.1
+
+
+def test_ram_after_unload_not_measured_when_keep_alive_nonzero(tmp_path):
+    """When keep_alive is not 0, no unload was requested, so no
+    ram_after_unload_gib measurement is claimed."""
+    backend = _available_backend(tmp_path, http_generate=lambda p, t: {"response": "ok", "done": True})
+    result = backend.execute(_task(), tmp_path, prompt_override="fix it")
+    assert result.metadata["ram_after_unload_gib"] is None
 
 
 def test_backend_engineering_failure_on_bad_output(tmp_path):
@@ -382,7 +495,26 @@ def _gap_record(code: str, behavior: str) -> Dict[str, str]:
 def _local_only_engine(tmp_path, monkeypatch, *, succeed: bool = True) -> MarathonDogfoodEngine:
     _patch_local_backend_always_available(monkeypatch, succeed=succeed)
     pool = _cloud_exhausted_local_available_pool()
-    return MarathonDogfoodEngine(provider_pool=pool, base_output_dir=tmp_path / "dogfood", campaign_dir=tmp_path / "runs")
+    engine = MarathonDogfoodEngine(
+        provider_pool=pool,
+        base_output_dir=tmp_path / "dogfood",
+        campaign_dir=tmp_path / "runs",
+        target_repo=tmp_path,
+        repo_slug="howlcipher/howlplane",
+        orchestrator_factory=lambda config: FakeOrchestrator(tmp_path / "fake_run", "src/control_plane/howlframe_runtime.py"),
+    )
+    # These tests call _run_local_only_continuation() directly, bypassing
+    # run_marathon()'s envelope-binding/git-executor construction step, so
+    # both must be set up explicitly here rather than via the constructor
+    # injection seams (which only take effect when run_marathon() runs).
+    engine.authority_envelope = create_envelope(
+        get_profile("overnight-safe"), "TEST-LOCAL-ONLY-CAMPAIGN", "cli:test@host",
+    )
+    engine.git_executor = GitIntegrationExecutor(
+        tmp_path, "howlcipher/howlplane", engine.authority_envelope,
+        git_runner=_AlwaysSucceedGitRunner(), gh_runner=_AlwaysSucceedGhRunner(),
+    )
+    return engine
 
 
 def test_local_only_continuation_resolves_pending_gap_and_bounds_iterations(tmp_path, monkeypatch):

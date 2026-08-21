@@ -44,19 +44,61 @@ def default_local_model_state() -> Dict[str, Any]:
 
 @dataclass
 class GitIntegrationRecord(DataClassSerializationMixin):
-    """Tracks a git commit, branch, PR, CI evaluation, and merge for an engineering task."""
+    """
+    Tracks a git commit, branch, PR, CI evaluation, and merge for an
+    engineering task. Fail-closed by design (#59 Phase 1): every field that
+    represents an observed real-world fact defaults to "nothing has been
+    observed yet" rather than "assume success". `merged` in particular
+    defaults to False and must never be set True by any code path except
+    immediately after independently verifying the merge SHA is reachable
+    from the remote's main branch -- see is_fully_integrated().
+    """
 
     task_id: str
     target_repo: str
-    branch: str
-    commit_sha: str
-    commit_message: str
+    # "real": actual git/GitHub operations performed and independently
+    #   verified. "simulated": no real integration was attempted (legacy /
+    #   non-campaign paths). "test_fake": test-boundary fakes exercised the
+    #   real production call sequence. Consumers must never treat
+    #   "simulated" as evidence of a landed change.
+    integration_mode: str = "simulated"
+    branch: Optional[str] = None
+    branch_observed: bool = False
+    commit_sha: Optional[str] = None
+    commit_observed: bool = False
+    commit_message: str = ""
+    push_observed: bool = False
     pr_number: Optional[int] = None
     pr_url: Optional[str] = None
-    ci_status: str = "passed"  # "passed", "failed", "pending", "simulated_green"
-    merged: bool = True
+    pr_observed: bool = False
+    required_checks: List[Dict[str, str]] = field(default_factory=list)
+    required_checks_observed: bool = False
+    required_checks_green: bool = False
+    ci_status: str = "pending"  # "pending", "passed", "failed", "cancelled", "timed_out", "unavailable"
+    merge_observed: bool = False
+    merged: bool = False
+    merge_sha: Optional[str] = None  # GitHub-produced squash-merge SHA, distinct from commit_sha
     merged_at: Optional[str] = None
-    schema: str = "howlplane.git_record/v1"
+    remote_main_contains_merge: bool = False
+    local_main_synced: bool = False
+    provider: Optional[str] = None
+    failure_reason: Optional[str] = None
+    schema: str = "howlplane.git_record/v2"
+
+    def is_fully_integrated(self) -> bool:
+        """
+        The single source of truth for "this task actually landed". No other
+        code path should independently decide a task is integrated.
+        """
+        return (
+            self.branch_observed
+            and self.commit_observed
+            and self.push_observed
+            and self.pr_observed
+            and self.required_checks_green
+            and self.merge_observed
+            and self.remote_main_contains_merge
+        )
 
 
 @dataclass
@@ -88,6 +130,15 @@ class DurableCampaignState(DataClassSerializationMixin):
     git_records: List[Dict[str, Any]] = field(default_factory=list)
     reviewer_diversity_records: List[Dict[str, Any]] = field(default_factory=list)
     repair_cycles_total: int = 0
+    # Delegated overnight authority (#59). `authority_envelope` is the
+    # serialized AuthorityEnvelope this campaign was bound to at creation or
+    # explicit resume-reauthorization; the envelope file itself remains the
+    # tamper-evident source of truth (see authority_envelope.py) -- this
+    # copy is for display/audit only and is never re-verified from here.
+    authority_envelope: Optional[Dict[str, Any]] = None
+    parked_tasks: List[Dict[str, Any]] = field(default_factory=list)
+    pending_human_decisions: List[Dict[str, Any]] = field(default_factory=list)
+    merges_this_campaign: int = 0
     stop_reason: str = "in_progress"
     next_action: str = "continue_benchmarks"
     total_duration_seconds: float = 0.0
@@ -186,8 +237,38 @@ class DurableCampaignState(DataClassSerializationMixin):
             self.update_timestamp()
 
     def record_git_integration(self, git_rec: Dict[str, Any]) -> None:
+        """
+        Records/updates a task's GitIntegrationRecord. Deduplicates by
+        task_id: a task's git integration record is progressively updated
+        as real steps complete (#59 Phase 2/22), so a later call for the
+        same task_id replaces the prior entry rather than appending a
+        duplicate.
+        """
+        task_id = git_rec.get("task_id")
+        self.git_records = [g for g in self.git_records if g.get("task_id") != task_id]
         self.git_records.append(git_rec)
         self.update_timestamp()
+
+    def record_park(self, parked_record: Dict[str, Any]) -> None:
+        """Records a task parked awaiting human authority (#59 Phase 12)."""
+        task_id = parked_record.get("task_id")
+        if not any(p.get("task_id") == task_id for p in self.parked_tasks):
+            self.parked_tasks.append(parked_record)
+        self.pending_human_decisions = list(self.parked_tasks)
+        self.update_timestamp()
+
+    def is_task_parked(self, task_id: str) -> bool:
+        return any(p.get("task_id") == task_id for p in self.parked_tasks)
+
+    def increment_merge_count(self) -> int:
+        self.merges_this_campaign += 1
+        self.update_timestamp()
+        return self.merges_this_campaign
+
+    def merge_budget_reached(self, envelope: Optional[Dict[str, Any]] = None) -> bool:
+        env = envelope or self.authority_envelope
+        max_merges = env.get("max_merges", 0) if env else 0
+        return self.merges_this_campaign >= max_merges
 
     def save(self, run_dir: Union[str, Path]) -> Path:
         """Atomically saves campaign state and markdown report to directory."""
@@ -301,14 +382,31 @@ class DurableCampaignState(DataClassSerializationMixin):
                 "",
                 "## Git Commits, Pull Requests & Merges",
                 "",
-                "| Task ID | Repo | Branch | Commit SHA | PR | CI Status | Merged |",
-                "| --- | --- | --- | --- | --- | --- | --- |",
+                "| Task ID | Repo | Mode | Branch | Commit SHA | PR | CI Status | Merged |",
+                "| --- | --- | --- | --- | --- | --- | --- | --- |",
             ])
             for gr in self.git_records:
                 pr_str = f"#{gr.get('pr_number')}" if gr.get("pr_number") else "N/A"
                 merged_str = "✓ MERGED" if gr.get("merged") else "PENDING"
+                commit_sha = gr.get("commit_sha") or ""
                 lines.append(
-                    f"| `{gr.get('task_id')}` | `{gr.get('target_repo')}` | `{gr.get('branch')}` | `{gr.get('commit_sha', '')[:8]}` | {pr_str} | `{gr.get('ci_status')}` | {merged_str} |"
+                    f"| `{gr.get('task_id')}` | `{gr.get('target_repo')}` | `{gr.get('integration_mode', 'simulated')}` | "
+                    f"`{gr.get('branch') or 'N/A'}` | `{commit_sha[:8]}` | {pr_str} | `{gr.get('ci_status')}` | {merged_str} |"
+                )
+
+        if self.pending_human_decisions:
+            lines.extend([
+                "",
+                "## Pending Human Decisions",
+                "",
+                "| Task ID | Objective | Boundary | Repo | Recommended | Blocks Other Work |",
+                "| --- | --- | --- | --- | --- | --- |",
+            ])
+            for pd in self.pending_human_decisions:
+                blocks_str = "⚠ YES" if pd.get("blocks_other_work") else "no"
+                lines.append(
+                    f"| `{pd.get('task_id')}` | {pd.get('objective', '')[:60]} | `{pd.get('boundary_type')}` | "
+                    f"`{pd.get('repository')}` | `{pd.get('recommended_action')}` | {blocks_str} |"
                 )
 
         if self.reviewer_diversity_records:

@@ -524,6 +524,27 @@ def register_synthesis_subparsers(subparsers: Any, parents: Optional[List[Any]] 
     p_dogfood.add_argument("--output-dir", default="output", help="Base output directory for generated products")
     p_dogfood.add_argument("--ledger-file", help="Ledger file path")
     p_dogfood.add_argument("--json", action="store_true", help="Output JSON result")
+    p_dogfood.add_argument(
+        "--authority-profile", choices=["strict", "overnight-safe"], default=None,
+        help=(
+            "Binds delegated campaign authority for real git/GitHub integration (#59). "
+            "Required for any autonomous merge; without it, the campaign proposes and "
+            "implements but parks anything requiring authority. Selecting a profile is "
+            "explicit operator authorization for exactly the actions it encodes -- the "
+            "campaign cannot select or expand its own profile. On --resume, an unexpired "
+            "existing envelope is reused automatically; passing this flag again on resume "
+            "creates a fresh explicit reauthorization (required once the prior one expires)."
+        ),
+    )
+    p_dogfood.add_argument("--target-repo", default=".", help="Repository root for real git/GitHub integration")
+    p_dogfood.add_argument("--repo-slug", help="owner/repo for GitHub integration (auto-detected from origin remote if omitted)")
+
+    # authority (read-only authority profile inspection, #59 Phase 26)
+    p_authority = subparsers.add_parser("authority", help="Inspect delegated authority profiles (read-only)", **kwargs)
+    authority_sub = p_authority.add_subparsers(dest="authority_action", required=True)
+    p_authority_show = authority_sub.add_parser("show", help="Show a canonical authority profile's exact permissions")
+    p_authority_show.add_argument("profile_id", choices=["strict", "overnight-safe"])
+    p_authority_show.add_argument("--json", action="store_true", help="Output JSON result")
 
     # local (local Ollama model setup/health check, #58 Phase 3)
     p_local = subparsers.add_parser("local", help="Local (Ollama) model utilities", **kwargs)
@@ -753,13 +774,18 @@ def cmd_dogfood(args: argparse.Namespace) -> int:
     resume_id = getattr(args, "resume", None)
     ledger = EvidenceLedger(args.ledger_file) if getattr(args, "ledger_file", None) else None
 
-    engine = MarathonDogfoodEngine(base_output_dir=out_base, ledger=ledger, campaign_dir=campaign_dir)
+    engine = MarathonDogfoodEngine(
+        base_output_dir=out_base, ledger=ledger, campaign_dir=campaign_dir,
+        target_repo=getattr(args, "target_repo", None) or ".",
+        repo_slug=getattr(args, "repo_slug", None),
+    )
     report = engine.run_marathon(
         benchmarks=benchmarks,
         max_iterations=max_iters,
         until_providers_exhausted=getattr(args, "until_providers_exhausted", False),
         avoid_provider=avoid,
         resume_campaign_id=resume_id,
+        authority_profile_id=getattr(args, "authority_profile", None),
     )
 
     if getattr(args, "json", False):
@@ -769,6 +795,46 @@ def cmd_dogfood(args: argparse.Namespace) -> int:
         print(report.render_markdown())
 
     return 0 if report.iterations_failed == 0 else 1
+
+
+def cmd_authority(args: argparse.Namespace) -> int:
+    """
+    Read-only authority profile inspection (#59 Phase 26). Prints a
+    canonical profile's exact permissions, TTL, budgets, and local-resource
+    limits. Invokes no AI, constructs no provider pool or engine, and
+    performs no writes -- mirrors the read-only contract of
+    `ai dogfood --status`.
+    """
+    from src.control_plane.authority_profile import get_profile
+
+    if getattr(args, "authority_action", None) != "show":
+        print("Usage: ai authority show <strict|overnight-safe>")
+        return 1
+
+    profile = get_profile(args.profile_id)
+    if getattr(args, "json", False):
+        import json
+        print(json.dumps(profile.to_dict(), indent=2))
+        return 0
+
+    print(f"# Authority Profile: `{profile.profile_id}` (v{profile.version})")
+    print()
+    print(f"- **TTL:** {profile.ttl_hours} hours")
+    print(f"- **Max autonomous merges:** {profile.max_merges}")
+    print(f"- **External spend budget:** ${profile.external_spend_usd_limit}")
+    print(f"- **Authorized repositories:** {', '.join(profile.authorized_repositories) or 'none'}")
+    print(f"- **Local RAM threshold:** {profile.local_ram_threshold_gib} GiB")
+    print(f"- **Local keep_alive:** {profile.local_keep_alive}")
+    print(f"- **Local-only iteration limit:** {profile.local_only_iteration_limit}")
+    print()
+    print("## Allowed action classes")
+    for a in profile.allowed_action_classes or ["(none)"]:
+        print(f"- {a}")
+    print()
+    print("## Denied action classes (never auto-authorized, envelope cannot override)")
+    for a in profile.denied_action_classes or ["(none)"]:
+        print(f"- {a}")
+    return 0
 
 
 def cmd_local(args: argparse.Namespace) -> int:
@@ -906,6 +972,7 @@ def main(args: Optional[List[str]] = None) -> int:
         "create": cmd_create,
         "run": cmd_run_product,
         "dogfood": cmd_dogfood,
+        "authority": cmd_authority,
         "local": cmd_local,
     }
 

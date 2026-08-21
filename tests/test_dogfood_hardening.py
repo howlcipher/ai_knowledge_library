@@ -16,7 +16,6 @@ Comprehensive hardening test suite for Milestone #57:
 11. Durable campaign state persistence and --resume <campaign-id>
 """
 
-import json
 from pathlib import Path
 import pytest
 import time
@@ -29,7 +28,8 @@ from src.control_plane.agent_execution import (
     FakeAgentBackend,
 )
 from src.control_plane.evidence_ledger import EvidenceLedger
-from src.control_plane.synthesis.campaign_state import DurableCampaignState
+from src.control_plane.git_integration import GitIntegrationExecutor
+from src.control_plane.synthesis.campaign_state import DurableCampaignState, GitIntegrationRecord
 from src.control_plane.synthesis.capability_negotiator import CapabilityNegotiator, FrameworkGap
 from src.control_plane.synthesis.engine import ProductSynthesizer, SynthesisResult
 from src.control_plane.synthesis.marathon import (
@@ -42,6 +42,7 @@ from src.control_plane.synthesis.provider_pool import (
     ProviderExhaustionEvent,
     ProviderPoolManager,
 )
+from tests._dogfood_test_helpers import FakeOrchestrator, ScriptedRunner, build_full_merge_flow
 
 
 def _seed_valid_howl_files(task, cwd: Path, prompt: str):
@@ -313,15 +314,41 @@ def test_scenario_9_closed_loop_self_improvement_flywheel(tmp_path: Path):
     ledger = EvidenceLedger(tmp_path / "flywheel_ledger.jsonl")
 
     synth = FlywheelSynthesizer(provider_pool=pool, ledger=ledger, synthesis_mode="deterministic_baseline")
+
+    # #59: real git/GitHub integration, faked ONLY at the git/gh subprocess
+    # boundary (production GitIntegrationExecutor/marathon logic under test
+    # is real) plus a faked GovernedTaskOrchestrator (its own lifecycle is
+    # covered by test_closed_loop_orchestrator.py / test_operational_resilience.py).
+    repo_slug = "howlcipher/howlplane"
+    task_id = "ENG-NOTES-01"
+    run_dir = tmp_path / "fake_run" / task_id
+
+    git_runner = ScriptedRunner()
+    gh_runner = ScriptedRunner()
+    build_full_merge_flow(
+        git_runner, gh_runner, task_id=task_id, repo_slug=repo_slug, pr_number=77,
+        commit_message="fix(notes): resolve HOWLFRAME_RUNTIME_GAP found during marathon dogfooding",
+        pr_title="fix(notes): HOWLFRAME_RUNTIME_GAP",
+        pr_body="Automated marathon dogfooding fix.\n\nGap: HOWLFRAME_RUNTIME_GAP\natomic store flush missing",
+        modified_path="src/control_plane/howlframe_runtime.py",
+        commit_sha="realcommitsha1", merge_sha="realmergesha1",
+    )
+
     engine = MarathonDogfoodEngine(
         synthesizer=synth,
         provider_pool=pool,
         ledger=ledger,
         base_output_dir=tmp_path / "dogfood_flywheel",
         campaign_dir=tmp_path / "campaigns",
+        target_repo=tmp_path,
+        repo_slug=repo_slug,
+        orchestrator_factory=lambda config: FakeOrchestrator(run_dir, "src/control_plane/howlframe_runtime.py"),
+        git_executor_factory=lambda envelope, merges_so_far: GitIntegrationExecutor(
+            tmp_path, repo_slug, envelope, git_runner=git_runner, gh_runner=gh_runner, merges_so_far=merges_so_far,
+        ),
     )
 
-    report = engine.run_marathon(benchmarks=["notes"], max_iterations=1)
+    report = engine.run_marathon(benchmarks=["notes"], max_iterations=1, authority_profile_id="overnight-safe")
 
     assert report.iterations_succeeded == 1
     assert len(report.benchmark_results) == 1
@@ -329,7 +356,15 @@ def test_scenario_9_closed_loop_self_improvement_flywheel(tmp_path: Path):
     assert report.benchmark_results[0].retried_after_fix is True
     assert len(report.completed_engineering_tasks) == 1
     assert len(report.git_records) == 1
-    assert report.git_records[0]["merged"] is True
+
+    rec = GitIntegrationRecord.from_dict(report.git_records[0])
+    assert rec.integration_mode == "real"
+    assert rec.is_fully_integrated() is True
+    assert rec.branch_observed and rec.commit_observed and rec.push_observed
+    assert rec.pr_observed and rec.required_checks_green and rec.merge_observed
+    assert rec.remote_main_contains_merge is True
+    assert rec.merge_sha == "realmergesha1"
+    assert rec.commit_sha == "realcommitsha1"
 
 
 def test_scenario_10_until_providers_exhausted_semantics(tmp_path: Path):
