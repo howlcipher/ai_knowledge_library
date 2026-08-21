@@ -76,6 +76,7 @@ docs/_config.yml
 /logs/
 /.task_runs/
 /task_*.yaml
+/output/
 
 # Ignore personal user profile and PII
 USER_PROFILE.md

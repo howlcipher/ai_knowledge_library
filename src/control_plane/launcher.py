@@ -32,6 +32,10 @@ from src.control_plane.cli import (
     cmd_reject as cp_cmd_reject,
     cmd_resume as cp_cmd_resume,
     cmd_cancel as cp_cmd_cancel,
+    cmd_create as cp_cmd_create,
+    cmd_run_product as cp_cmd_run_product,
+    cmd_dogfood as cp_cmd_dogfood,
+    register_synthesis_subparsers,
 )
 from src.control_plane.evidence_ledger import EvidenceEntry, EvidenceLedger
 from src.control_plane.locking import get_repo_lock_path, is_process_alive
@@ -811,6 +815,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_ha.add_argument("--task-id", help="Task ID")
     p_ha.add_argument("--json", action="store_true", help="Output JSON result")
 
+    # create, run, dogfood (Prompt-to-Product Synthesis)
+    register_synthesis_subparsers(subparsers, parents=[common_parser])
+
     return parser
 
 
@@ -832,6 +839,9 @@ def main(args: Optional[List[str]] = None) -> int:
         "cancel": cmd_cancel,
         "verify": cmd_verify,
         "howlframe-audit": cmd_howlframe_audit,
+        "create": cp_cmd_create,
+        "run": cp_cmd_run_product,
+        "dogfood": cp_cmd_dogfood,
     }
     fn = actions.get(opts.subcommand)
     if not fn:
