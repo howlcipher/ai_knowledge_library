@@ -326,15 +326,21 @@ def test_local_setup_reports_fail_when_ollama_missing(monkeypatch, capsys):
 
 # --- Phase 16: resume rechecks cloud availability ---------------------------
 
-def test_resume_rechecks_cloud_provider_availability(tmp_path):
+def test_resume_rechecks_cloud_provider_availability(tmp_path, monkeypatch):
+    # `reset_transient_exhaustion()` re-probes live binary presence on resume;
+    # simulate codex's CLI becoming reachable again (e.g. re-authenticated)
+    # independent of whether it happens to be on THIS machine's PATH.
+    import shutil as real_shutil
+    real_which = real_shutil.which
+    monkeypatch.setattr(real_shutil, "which", lambda name: "/usr/bin/codex" if name == "codex" else real_which(name))
+
     pool = ProviderPoolManager()
     pool.set_status("codex", ProviderAvailabilityStatus.SESSION_EXHAUSTED)
     engine = MarathonDogfoodEngine(provider_pool=pool, base_output_dir=tmp_path / "dogfood", campaign_dir=tmp_path / "runs")
     first = engine.run_marathon(benchmarks=["notes"], max_iterations=1)
 
-    # Simulate quota reset between sessions by resetting the SAME pool instance,
-    # mirroring reset_transient_exhaustion() being invoked internally on resume.
-    pool.set_status("codex", ProviderAvailabilityStatus.AVAILABLE)
+    # Quota reset between sessions: resume must re-probe live provider
+    # availability (#58 Phase 16), not stay pinned to the prior exhausted state.
     second = engine.run_marathon(resume_campaign_id=first.campaign_id, benchmarks=["todo"], max_iterations=5)
     assert pool.get_status("codex") == ProviderAvailabilityStatus.AVAILABLE
     assert second.benchmark_results[0].benchmark_id == "todo"

@@ -257,8 +257,16 @@ class MarathonDogfoodEngine:
                 preferred_agent=preferred_agent,
                 task=benchmark_task_probe,
             )
-            cloud_exhausted = self.provider_pool.is_all_cloud_exhausted()
-            if cloud_exhausted or (not available_candidates and self.synthesizer.synthesis_mode != "deterministic_baseline"):
+            # `is_all_exhausted()` (true SESSION_EXHAUSTED/RATE_LIMITED quota
+            # exhaustion) always stops, even in deterministic-baseline mode, same
+            # as before #58. Local Ollama can never reach that state, so this
+            # branch is unaffected by its presence. Lack of any *candidate*
+            # (e.g. no real provider binaries installed) only stops real runs;
+            # deterministic-baseline mode (used in CI/tests) synthesizes
+            # regardless of provider availability, exactly as before #58.
+            if self.provider_pool.is_all_exhausted() or (
+                not available_candidates and self.synthesizer.synthesis_mode != "deterministic_baseline"
+            ):
                 stop_reason = "all_providers_exhausted"
                 break
 
