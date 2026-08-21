@@ -162,12 +162,7 @@ class ProductSynthesizer:
             preferred_agent=preferred_agent,
         )
         if not candidates and not self.custom_backend:
-            all_statuses = list(self.provider_pool.get_all_statuses().values())
-            all_exhausted = bool(all_statuses) and all(
-                st in (ProviderAvailabilityStatus.SESSION_EXHAUSTED, ProviderAvailabilityStatus.RATE_LIMITED)
-                for st in all_statuses
-            )
-            if all_exhausted and self.synthesis_mode != "deterministic_baseline":
+            if self.provider_pool.is_all_exhausted() and self.synthesis_mode != "deterministic_baseline":
                 return self._exhausted_result(spec, neg_res, t0, "All configured providers are currently exhausted or unavailable")
             candidates = ["deterministic_baseline"]
 

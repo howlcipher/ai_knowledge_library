@@ -236,6 +236,14 @@ class ProviderPoolManager:
         # Do NOT mark provider as exhausted!
         return None
 
+    def is_all_exhausted(self) -> bool:
+        """Returns True if all configured providers are in an exhausted or rate-limited status."""
+        statuses = list(self._provider_statuses.values())
+        return bool(statuses) and all(
+            st in (ProviderAvailabilityStatus.SESSION_EXHAUSTED, ProviderAvailabilityStatus.RATE_LIMITED)
+            for st in statuses
+        )
+
     def select_candidates(
         self,
         task_category: str = "code_heavy",
