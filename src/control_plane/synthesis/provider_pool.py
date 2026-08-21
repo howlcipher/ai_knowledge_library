@@ -238,7 +238,7 @@ class ProviderPoolManager:
 
     def is_all_exhausted(self) -> bool:
         """Returns True if all configured providers are in an exhausted or rate-limited status."""
-        statuses = list(self._provider_statuses.values())
+        statuses = [ps.status for ps in self._provider_states.values()]
         return bool(statuses) and all(
             st in (ProviderAvailabilityStatus.SESSION_EXHAUSTED, ProviderAvailabilityStatus.RATE_LIMITED)
             for st in statuses
