@@ -31,6 +31,9 @@ Scores apply to Pending rows only; Done, Closed, and Merged rows show `—`.
 
 | # | Improvement | Status | Score (V×D÷E) | Claude model | Gemini model | ROI rationale |
 | --- | --- | --- | --- | --- | --- | --- |
+| 57 | [Prompt-to-Product Synthesis: Natural Language to runnable HowlFrame products, capability negotiation, provider pool, black-box acceptance, and marathon dogfooding](#57-prompt-to-product-synthesis-natural-language-to-runnable-howlframe-products-capability-negotiation-provider-pool-black-box-acceptance-and-marathon-dogfooding) | Done (2026-08-20) | — | Sonnet 5 | Gemini 3.7 Flash | Prompt-to-Product North Star fulfillment: AI orchestrator translating free-form outcome descriptions into validated, runnable HowlFrame software products with black-box acceptance, restart persistence, quota routing, and marathon dogfooding |
+| 56 | [Operational resilience: crash recovery, durable resume, repository locking, cancellation, and exactly-once execution](#56-operational-resilience-crash-recovery-durable-resume-repository-locking-cancellation-and-exactly-once-execution) | Done (2026-08-20) | — | Sonnet 5 | Gemini 3.7 Flash | Comprehensive operational resilience: durable stage checkpoints, process tracking, repo mutation lock, task lock, safe retry classification, crash recovery, cancellation without rollback, drift invalidation, and HowlChangeOps replay prevention |
+| 55 | [HowlChangeOps bounded execution handoff](#55-howlchangeops-bounded-execution-handoff) | Done (2026-08-20) | — | Sonnet 5 | Gemini 3 Pro | Canonical integration with HowlChangeOps for policy evaluation, HMAC-signed approval linkage, bounded execution, and immutable receipt validation |
 | 1 | [Rebuild the vector index](#1-rebuild-the-vector-index) | Done (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Minutes of work; unblocks semantic search over the newly refined skills |
 | 2 | [Ignore build artifacts and local state in git](#2-ignore-build-artifacts-and-local-state-in-git) | Done (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Minutes of work; clears permanent noise from git status and prevents accidental commits |
 | 3 | [Purge tracked scratch files from the repo root](#3-purge-tracked-scratch-files-from-the-repo-root) | Done (2026-07-18) | — | Haiku 4.5 | Gemini 3 Flash | Minutes of work; stops one-off scratch files traveling with every clone |
@@ -656,7 +659,69 @@ Canonical guidance for building, modifying, debugging, testing, and reviewing fu
 
 **Done 2026-08-20:** Created `.agents/skills/howlframe-app-development/SKILL.md` (Tier 2), updated skills manifest (41 skills indexed) and Claude Code symlinks via `scripts/generate_skills_manifest.py`. Integrated automatic skill assignment in `ProjectAdapter.discover` for HowlFrame projects. Wired skill context into reviewer briefs via `ReviewRunner` and implementation prompts via `GovernedTaskOrchestrator._build_implementation_prompt`. Added 6 deterministic skill tests in `tests/test_howlframe_app_skill.py`. Added deterministic bytecode compilation reproducibility test in `tests/test_howlframe_dogfood.py` proving byte-for-byte SHA256 match (`e68847a7f6...`) with pinned compiler. Verified end-to-end against live HowlNotes repository. All 493 Python tests and Go tests pass clean.
 
+### 55. HowlChangeOps Bounded Execution Handoff
+Establish the canonical integration boundary between HowlPlane (discovery, proposal, review, remediation, verification) and HowlChangeOps (evidence evaluation, HMAC-authorized approval, bounded execution, post-action verification, and rollback receipts). HowlPlane delegates consequential actions (such as release candidate creation and tagged mutations) to HowlChangeOps rather than running arbitrary commands through unrestricted implementation agents. Resumption requires valid HowlChangeOps execution receipts (`howlchangeops.execution_receipt/v1`), failing closed if no trusted executor is configured or if evidence is stale.
+
+**Done 2026-08-20:**
+- Created `ProposedAction` dataclass in `src/control_plane/proposed_action.py` and action inference rules for consequential authority boundaries.
+- Created `HowlChangeOpsExecutor` and `ExecutorRegistry` in `src/control_plane/executor.py` implementing the `AuthorityExecutor` interface (`evaluate`, `approve`, `execute`, `verify_receipt`), binary discovery, HMAC approval linkage, structured receipt verification (`howlplane.execution_receipt/v1`), and rollback support.
+- Updated `HumanBoundaryGate.evaluate_pre_execution` and `GovernedTaskOrchestrator`: pre-execution gating halts consequential tasks at `AWAITING_HUMAN` (exit code 2) before launching any general-purpose implementation backend.
+- Updated `HumanLifecycleManager.approve` and `HumanLifecycleManager.resume` in `src/control_plane/human_boundary.py`:
+  - Enforced that approval alone does not equal task completion.
+  - Linked approvals to HowlChangeOps decisions.
+  - Executed authorized actions through registered bounded executors upon resumption.
+  - Required validated execution receipts before transitioning to `COMPLETE`.
+  - Enforced closed-failure with `UnsupportedActionError` ("AUTHORIZED ACTION CANNOT EXECUTE") when unsupported actions (e.g. `infrastructure_apply`, `terraform apply`) are attempted.
+- Added comprehensive unit and end-to-end integration tests in `tests/test_authority_execution_gap.py`.
+- Refactored token logging and query formatting across `src/infrastructure/telemetry_logger.py`, maintaining `python_src` clone ceiling at 14 and reducing `python_tests` clone count to 29.
+- Verified all 499 tests pass 100% cleanly in `pytest`.
+
+### 56. Operational Resilience: Crash Recovery, Durable Resume, Repository Locking, Cancellation, and Exactly-Once Execution
+Make HowlPlane operationally trustworthy under process interruption, session/laptop crashes, killed implementation or reviewer processes, repeated resume/approve commands, concurrent task runs targeting the same repository, duplicate execution attempts, Ctrl+C / cancellation, stale repository state, and partially-written artifacts.
+
+**Governing Invariant:**
+No interruption may silently lose task history, repeat consequential execution, overwrite another task's work, trust partial/corrupt artifacts, bypass review or verification, or incorrectly transition to COMPLETE.
+
+**Scope:**
+- **Durable Orchestration Checkpoints:** Explicit `interrupted` and `cancelled` states, stage checkpoints with repository fingerprints, artifact hashes, and process identity.
+- **Crash Recovery:** `ai resume <task-id>` inspects durable artifacts, reconciles repository deltas for interrupted implementations without duplicate blind reruns, preserves completed reviewer work and reruns only incomplete reviewers, and resumes verification.
+- **Safe-Retry Classification:** Deterministic classification (`SAFE_TO_RETRY`, `RECONCILE_FIRST`, `NEVER_AUTO_RETRY`, `ALREADY_COMPLETE`, `HUMAN_DECISION_REQUIRED`).
+- **Repository Mutation Lock:** Local filesystem lock (`.git/howlplane.lock` / `.task_runs/.repo.lock`) with PID and process identity validation to prevent concurrent mutation workflows.
+- **Task-Run Lock:** Atomic lock on `.task_runs/<task_id>/.task.lock` protecting lifecycle commands (`approve`, `reject`, `resume`, `cancel`, `execute`).
+- **Task Cancellation:** `ai cancel <task-id>` stops in-flight processes gracefully, records cancellation in ledger, preserves repository changes, releases locks, and marks task CANCELLED.
+- **Process Management:** Persist child process metadata (PID, create time, command, backend) to reliably detect running vs crashed tasks.
+- **Atomic Artifact Writes:** Atomic file writes (`.tmp` + `os.replace`) for critical artifacts (`task.yaml`, `route.json`, `human_decision.json`, `execution_receipt.json`, etc.) with fail-closed validation.
+- **Repository Drift Invalidation:** Invalidate review, verification, or approval when repository drifts prior to subsequent stages.
+- **Exactly-Once Consequential Execution:** Never replay HowlChangeOps actions blindly. Reconcile native HowlChangeOps receipts if local receipts are missing after a crash. Ambiguous states fail closed.
+- **Status UX:** Enhanced `ai status` displaying active lock, process, reviewer progress, and actionable recovery commands.
+- **Failure Injection & Test Harness:** Comprehensive test suite covering all 20 required failure scenarios.
+
+**Value/Effort/Decay/Score:** Value 8 (operational resilience & data integrity), Effort 3, Decay 1.0. Score = 8×1.0÷3 = 2.67.
+
+### 57. Prompt-to-Product Synthesis: Natural Language to runnable HowlFrame products, capability negotiation, provider pool, black-box acceptance, and marathon dogfooding
+
+**Objective:**
+Realize the fundamental Howl North Star:
+> "The goal of Howl is NOT to create another programming language that humans are expected to manually author. The product goal is: `PROMPT` -> `CREATE` -> `VERIFY / REPAIR` -> `USABLE PRODUCT` ('Describe what you want. Howl creates it.')."
+
+**Scope:**
+- **ProductSpec / AppSpec Definition (`src/control_plane/synthesis/product_spec.py`):** Schema modeling machine-checkable entities, fields, behaviors, validation rules, persistence contracts, and acceptance criteria with validation and YAML/JSON serialization.
+- **Natural Language Synthesis (`src/control_plane/synthesis/spec_synthesizer.py`):** Translates unstructured user outcome descriptions into unambiguous `ProductSpec` models.
+- **Capability Negotiation & Gap Detection (`src/control_plane/synthesis/capability_negotiator.py`):** Evaluates feasibility against HowlFrame capability model; halts with `PRODUCT_BLOCKED` and structured `FrameworkGap` objects when infeasible features are requested.
+- **Black-box Acceptance & Restart Persistence Runner (`src/control_plane/synthesis/acceptance_runner.py`):** Executes compilation checks, browser asset verification, HTTP health probes, REST API CRUD checks, input validation rejection (HTTP 400), and restart persistence validation across process reboot.
+- **Multi-Agent Provider Pool & Quota Routing (`src/control_plane/synthesis/provider_pool.py`):** Tracks availability across `codex`, `agy`, `claude_code`, and `devin_cli`; pattern-matches rate limits (429) and session/monthly quota exhaustion; distinguishes provider exhaustion from engineering failures (compiler errors, test failures, and reviewer findings); enforces avoid/fallback provider policies and independent cross-provider review.
+- **Synthesis Engine & Bounded Repair Loop (`src/control_plane/synthesis/engine.py`):** Assembles complete runnable bundles (`app/backend.howl`, `app/frontend.howl`, `static/index.html`, `static/app.js`, `scripts/build.sh`, `scripts/run.sh`, `manifest.json`, `product_spec.yaml`, `verification_summary.json`); executes bounded repair cycles (up to 3) on compiler or acceptance failure.
+- **Marathon Dogfooding Engine (`src/control_plane/synthesis/marathon.py`):** Executes automated marathon dogfooding loops across benchmark suites (`notes`, `todo`, `status_api`, `inventory`, `json_transform`), logging immutable evidence entries to `.control_plane/evidence_ledger.jsonl`.
+- **CLI Commands (`bin/ai create`, `bin/ai run`, `bin/ai dogfood`):** Exposes product creation, verified execution, and marathon dogfooding directly in HowlPlane CLI.
+- **HFIR Evaluation:** Documented AST vs graph-based HFIR trade-offs in `documentation/PROMPT_TO_PRODUCT_SYNTHESIS.md`.
+
+**Value/Effort/Decay/Score:** Value 8 (Product North Star realization), Effort 3, Decay 1.0. Score = 8×1.0÷3 = 2.67.
+
 ## ✅ Completed
+
+- **Prompt-to-Product Synthesis (done 2026-08-20):** realized the fundamental Howl North Star ("Describe what you want. Howl creates it.") by establishing HowlPlane as the synthesis and orchestration control plane on top of the HowlFrame VM. Implemented `ProductSpec` data model (`src/control_plane/synthesis/product_spec.py`), natural language intent synthesizer (`src/control_plane/synthesis/spec_synthesizer.py`), capability negotiator and `PRODUCT_BLOCKED` framework gap detection (`src/control_plane/synthesis/capability_negotiator.py`), black-box acceptance and restart persistence runner (`src/control_plane/synthesis/acceptance_runner.py`), multi-agent provider pool with exhaustion detection and cross-provider review (`src/control_plane/synthesis/provider_pool.py`), synthesis engine with bounded repair loop (`src/control_plane/synthesis/engine.py`), marathon dogfooding engine (`src/control_plane/synthesis/marathon.py`), and CLI commands `ai create`, `ai run`, `ai dogfood` in `src/control_plane/cli.py` and `src/control_plane/launcher.py`. Live-verified all 5 canonical benchmark products (`notes`, `todo`, `status_api`, `inventory`, `json_transform`) compiling to bytecode, passing 100% of black-box acceptance and restart persistence checks in 1.548s. Documented architecture and HFIR evaluation in `documentation/PROMPT_TO_PRODUCT_SYNTHESIS.md`. All 548 pytest tests passing with zero regressions and zero slopslint duplication ceiling violations.
+- **Operational resilience: crash recovery, durable resume, repository locking, cancellation, and exactly-once execution (done 2026-08-20):** implemented comprehensive operational resilience under process interruption, crashes, repeated `ai resume` / `ai approve`, concurrent runs, and cancellation. Delivered durable stage checkpoints (`src/control_plane/checkpoints.py`), atomic file persistence (`src/control_plane/atomic_io.py`), repository mutation locks (`RepoLock`) with stale PID reclamation via OS start-time checks (`src/control_plane/locking.py`), task lifecycle locks (`TaskLock`), child process tracking and safe cancellation (`ai cancel <task_id>` in `src/control_plane/process_manager.py`) that terminates processes without destroying uncommitted workspace code, stage-aware crash recovery engine (`src/control_plane/recovery.py`), reviewer cache resumption, repository drift invalidation, exactly-once HowlChangeOps execution reconciliation that queries native receipts before executing to avoid replay hazards, upgraded `ai status` diagnostics, and comprehensive 20-scenario operational resilience test suite in `tests/test_operational_resilience.py` passing with 0 duplication ceiling violations.
+- **HowlChangeOps bounded execution handoff (done 2026-08-20):** established canonical integration with HowlChangeOps for policy evaluation, HMAC-signed approval linkage, bounded execution, and immutable receipt validation.
 
 - **Harden the legacy loop and standalone LLM call sites (done 2026-07-23):** wired up `call_with_transport_retry`, `preflight`, and global `llm_timeout` across the default `payload_pipeline.enabled: false` orchestrator loop and other standalone generation sites to prevent test suite flakes and handle transient provider errors gracefully.
 - **Detect concurrent fresh-item selection (done 2026-07-23):** updated `work_next_item.md` and `resume_task.md` to run `git fetch` and check `/proc/<pid>/cwd` when making any item selection, not just when resuming journals or worktrees.

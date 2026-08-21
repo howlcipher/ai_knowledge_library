@@ -60,10 +60,10 @@ def _create_awaiting_human_task_run(
     spec = TaskSpec(
         task_id=task_id,
         repository=repo_path.name,
-        objective="Deploy critical infrastructure update",
-        task_class="infrastructure",
-        risk_level="critical",
-        human_approval_requirements=boundaries or ["infrastructure_apply"],
+        objective="Accept temporary debt tombstone for refactoring",
+        task_class="refactor",
+        risk_level="medium",
+        human_approval_requirements=boundaries or ["slop_debt_acceptance"],
         current_state="awaiting_human",
     )
     spec.save_to_file(str(run_dir / "task.yaml"))
@@ -84,10 +84,11 @@ def _create_awaiting_human_task_run(
     else:
         (run_dir / "diff.patch").write_text(diff_content, encoding="utf-8")
 
+    trigger_name = (boundaries or ["slop_debt_acceptance"])[0]
     (run_dir / "decision_packet.md").write_text(
         f"# 🛑 Human Authority Decision Packet: Task `{task_id}`\n\n"
-        f"## Objective\nDeploy critical infrastructure update\n\n"
-        f"## Boundary Triggers\n- ⚠️ **infrastructure_apply**: Infrastructure-as-code apply\n",
+        f"## Objective\nAccept temporary debt tombstone for refactoring\n\n"
+        f"## Boundary Triggers\n- ⚠️ **{trigger_name}**: Human authority boundary\n",
         encoding="utf-8",
     )
     (run_dir / "verification_result.json").write_text(

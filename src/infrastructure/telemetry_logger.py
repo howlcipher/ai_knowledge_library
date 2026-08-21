@@ -7,6 +7,7 @@ Stores data in a SQLite database.
 import os
 import sqlite3
 from datetime import datetime
+from typing import Any, Optional
 
 
 def get_telemetry_db_path() -> str:
@@ -103,6 +104,44 @@ def log_telemetry(
     conn.close()
 
 
+def extract_cached_tokens(usage: Any) -> int:
+    """Extracts cached tokens count from API usage object."""
+    if not usage:
+        return 0
+    cached = getattr(usage, "cache_read_input_tokens", 0)
+    if not isinstance(cached, (int, float)):
+        cached = 0
+    if not cached and hasattr(usage, "prompt_tokens_details"):
+        details = getattr(usage, "prompt_tokens_details", {})
+        if isinstance(details, dict):
+            cached = details.get("cached_tokens", 0)
+        elif hasattr(details, "cached_tokens"):
+            cached = getattr(details, "cached_tokens", 0)
+    if not isinstance(cached, (int, float)):
+        cached = 0
+    return int(cached)
+
+
+def log_response_telemetry(response: Any, cost: float, latency: float, model: Optional[str] = None) -> None:
+    """Convenience helper to record telemetry directly from an LLM response object."""
+    usage = getattr(response, "usage", None)
+    cached = extract_cached_tokens(usage)
+    eff_model = str(model or getattr(response, "model", "unknown"))
+    pt = getattr(usage, "prompt_tokens", 0) if usage else 0
+    ct = getattr(usage, "completion_tokens", 0) if usage else 0
+    tt = getattr(usage, "total_tokens", 0) if usage else 0
+
+    log_telemetry(
+        model=eff_model,
+        prompt_tokens=int(pt) if isinstance(pt, (int, float)) else 0,
+        completion_tokens=int(ct) if isinstance(ct, (int, float)) else 0,
+        total_tokens=int(tt) if isinstance(tt, (int, float)) else 0,
+        cost=float(cost) if isinstance(cost, (int, float)) else 0.0,
+        latency=float(latency) if isinstance(latency, (int, float)) else 0.0,
+        cached_tokens=cached,
+    )
+
+
 def log_gate_failure(
     model: str,
     pass_number: int,
@@ -146,9 +185,11 @@ def get_gate_failure_data():
     )
     rows = cursor.fetchall()
     columns = ["timestamp", "model", "pass_number", "attempt", "stage", "error_message"]
-
     conn.close()
+    return _format_query_results(rows, columns)
 
+
+def _format_query_results(rows: list, columns: list):
     try:
         import pandas as pd
 
@@ -184,18 +225,8 @@ def get_telemetry_data():
         "latency_seconds",
         "cached_tokens",
     ]
-
     conn.close()
-
-    try:
-        import pandas as pd
-
-        df = pd.DataFrame(rows, columns=columns)
-        if not df.empty:
-            df["timestamp"] = pd.to_datetime(df["timestamp"])
-        return df
-    except ImportError:
-        return [dict(zip(columns, row)) for row in rows]
+    return _format_query_results(rows, columns)
 
 
 def main():

@@ -46,14 +46,19 @@ async def test_tui_select_changed(mock_config):
                 data = yaml.safe_load(f)
                 assert data["llm_model"] == "openai/gpt-4o"
 
-@pytest.mark.asyncio
-async def test_tui_input_submitted(mock_config, monkeypatch):
+@pytest.fixture
+def mock_acompletion(monkeypatch):
     import litellm
     from unittest.mock import AsyncMock, MagicMock
+
     mock_response = MagicMock()
     mock_response.choices = [MagicMock(message=MagicMock(content="Mocked response"))]
     monkeypatch.setattr(litellm, "acompletion", AsyncMock(return_value=mock_response))
-    
+    return mock_response
+
+
+@pytest.mark.asyncio
+async def test_tui_input_submitted(mock_config, mock_acompletion):
     app = AILibraryTUI()
     async with app.run_test() as pilot:
         input_box = app.query_one("#input-box", Input)
@@ -70,13 +75,7 @@ async def test_tui_input_submitted(mock_config, monkeypatch):
         assert len(container.children) >= 2
 
 @pytest.mark.asyncio
-async def test_tui_action_clear_chat(mock_config, monkeypatch):
-    import litellm
-    from unittest.mock import AsyncMock, MagicMock
-    mock_response = MagicMock()
-    mock_response.choices = [MagicMock(message=MagicMock(content="Mocked response"))]
-    monkeypatch.setattr(litellm, "acompletion", AsyncMock(return_value=mock_response))
-    
+async def test_tui_action_clear_chat(mock_config, mock_acompletion):
     app = AILibraryTUI()
     async with app.run_test() as pilot:
         input_box = app.query_one("#input-box", Input)

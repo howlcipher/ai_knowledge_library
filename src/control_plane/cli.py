@@ -8,7 +8,7 @@ Deterministic command-line interface for the multi-agent engineering control pla
 import argparse
 from pathlib import Path
 import sys
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from src.control_plane.agent_registry import AgentRegistry
 from src.control_plane.evidence_ledger import EvidenceEntry, EvidenceLedger
@@ -48,18 +48,7 @@ def cmd_route_task(args: argparse.Namespace) -> int:
     spec = TaskSpec.load_from_file(args.task_file)
     router = TaskRouter()
     decision = router.route(spec)
-
-    print("=" * 60)
-    print(f"TASK ROUTING DECISION: {spec.task_id}")
-    print("=" * 60)
-    print(f"Selected Agent: {decision.selected_agent_name} (`{decision.selected_agent_id}`)")
-    print(f"Reasoning Tier: {decision.reasoning_tier}")
-    print(f"Is Override:    {decision.is_override}")
-    print(f"Rationale:      {decision.rationale}")
-    print(f"Reviewers:      {', '.join(decision.recommended_reviewers)}")
-    if decision.alternatives:
-        print(f"Alternatives:   {', '.join(decision.alternatives)}")
-    print("=" * 60)
+    print(decision.render_text(spec.task_id))
     return 0
 
 
@@ -488,7 +477,45 @@ def build_parser() -> argparse.ArgumentParser:
     p_res.add_argument("--ledger-file", help="Ledger file path")
     p_res.add_argument("--json", action="store_true", help="Output JSON result")
 
+    # cancel
+    p_can = subparsers.add_parser("cancel", help="Cancel an active or interrupted task run")
+    p_can.add_argument("task_id", help="Task ID to cancel")
+    p_can.add_argument("--repo-dir", default=".", help="Target project root directory")
+    p_can.add_argument("--reason", help="Optional reason for cancellation")
+    p_can.add_argument("--ledger-file", help="Ledger file path")
+    p_can.add_argument("--json", action="store_true", help="Output JSON result")
+
+    register_synthesis_subparsers(subparsers)
+
     return parser
+
+
+def register_synthesis_subparsers(subparsers: Any, parents: Optional[List[Any]] = None) -> None:
+    kwargs = {"parents": parents} if parents else {}
+    # create (Prompt-to-Product Synthesis)
+    p_create = subparsers.add_parser("create", help="Create a runnable software product from natural language", **kwargs)
+    p_create.add_argument("prompt", help="Natural language description of desired software outcome")
+    p_create.add_argument("--output-dir", "-o", help="Target output product directory")
+    p_create.add_argument("--avoid-provider", help="Avoid using specified provider if alternatives exist")
+    p_create.add_argument("--agent", help="Preferred agent override")
+    p_create.add_argument("--port", type=int, default=8088, help="Default HTTP server port")
+    p_create.add_argument("--ledger-file", help="Ledger file path")
+    p_create.add_argument("--json", action="store_true", help="Output JSON result")
+
+    # run (Run verified product bundle)
+    p_run = subparsers.add_parser("run", help="Run a verified product bundle", **kwargs)
+    p_run.add_argument("product_dir", help="Path to product bundle directory")
+    p_run.add_argument("--port", type=int, help="Override HTTP server port")
+
+    # dogfood (Marathon dogfooding loop)
+    p_dogfood = subparsers.add_parser("dogfood", help="Run automated marathon dogfooding benchmarks", **kwargs)
+    p_dogfood.add_argument("--benchmarks", help="Comma-separated list of benchmarks to run (notes,todo,status_api,inventory,json_transform)")
+    p_dogfood.add_argument("--max-iterations", type=int, default=5, help="Maximum benchmark iterations")
+    p_dogfood.add_argument("--until-providers-exhausted", action="store_true", help="Run until all external providers are exhausted")
+    p_dogfood.add_argument("--avoid-provider", help="Avoid using specified provider if alternatives exist")
+    p_dogfood.add_argument("--output-dir", default="output", help="Base output directory for generated products")
+    p_dogfood.add_argument("--ledger-file", help="Ledger file path")
+    p_dogfood.add_argument("--json", action="store_true", help="Output JSON result")
 
 
 def _handle_decision(args: argparse.Namespace, decision: str) -> int:
@@ -546,6 +573,152 @@ def cmd_resume(args: argparse.Namespace) -> int:
     return res.exit_code
 
 
+def cmd_cancel(args: argparse.Namespace) -> int:
+    ledger = EvidenceLedger(args.ledger_file) if getattr(args, "ledger_file", None) else None
+    res = HumanLifecycleManager.cancel(
+        target_repo=args.repo_dir,
+        task_id=args.task_id,
+        reason=getattr(args, "reason", None),
+        ledger=ledger,
+    )
+    if getattr(args, "json", False):
+        import json
+        print(json.dumps(res.to_dict(), indent=2))
+    else:
+        print(f"Task '{res.task_id}' CANCELLED safely. Code changes preserved in working tree.")
+    return res.exit_code
+
+
+def cmd_create(args: argparse.Namespace) -> int:
+    """Creates a runnable software product from natural language intent."""
+    import re
+    from src.control_plane.synthesis import (
+        NaturalLanguageSynthesizer,
+        ProductSynthesizer,
+    )
+    prompt = args.prompt
+    out_dir = args.output_dir or f"output/{re.sub(r'[^a-z0-9_-]', '-', prompt[:30].lower()).strip('-') or 'app'}"
+    avoid = getattr(args, "avoid_provider", None)
+    agent = getattr(args, "agent", None)
+    port = getattr(args, "port", 8088)
+    ledger = EvidenceLedger(args.ledger_file) if getattr(args, "ledger_file", None) else None
+
+    is_json = getattr(args, "json", False)
+    if not is_json:
+        print("=" * 60)
+        print("HOWLPLANE PROMPT-TO-PRODUCT SYNTHESIS")
+        print("=" * 60)
+        print("Understanding product...")
+    synthesizer = NaturalLanguageSynthesizer()
+    spec = synthesizer.synthesize(prompt)
+
+    if not is_json:
+        print("")
+        print("Product:")
+        print(f"  {spec.title}")
+        print("")
+        print("Features:")
+        if "browser_ui" in spec.interfaces:
+            print("  - Browser UI")
+        if "http_api" in spec.interfaces:
+            print("  - JSON HTTP API")
+        print("  - CRUD Operations")
+        if spec.persistence.type == "local_store":
+            print(f"  - Persistent Storage ({spec.persistence.storage_path})")
+        print("")
+        print("Synthesizing...")
+
+    engine = ProductSynthesizer(ledger=ledger)
+    res = engine.create_from_prompt(
+        prompt=prompt,
+        output_dir=out_dir,
+        avoid_provider=avoid,
+        preferred_agent=agent,
+        port=port,
+    )
+
+    if getattr(args, "json", False):
+        import json
+        print(json.dumps(res.to_dict(), indent=2))
+        return 0 if res.success else 1
+
+    if res.success and res.product_bundle and res.acceptance_report:
+        print("Checking...")
+        if res.repair_cycles > 0:
+            print(f"Repairing ({res.repair_cycles} cycles)...")
+        print("")
+        print("Verification:")
+        print(f"  {res.acceptance_report.passed_count}/{res.acceptance_report.total_count} acceptance checks passed")
+        print("")
+        print("PRODUCT READY")
+        print(f"  Bundle: {res.product_bundle.directory}")
+        print("")
+        print("Run:")
+        print(f"  ai run {res.product_bundle.directory}")
+        print("=" * 60)
+        return 0
+    else:
+        print("")
+        print(f"SYNTHESIS FAILED: {res.status}")
+        if res.error_message:
+            print(f"Error: {res.error_message}")
+        if res.framework_gaps:
+            print("Framework Gaps:")
+            for g in res.framework_gaps:
+                print(f"  - {g.code}: {g.required_behavior} ({g.current_support})")
+        print("=" * 60)
+        return 1
+
+
+def cmd_run_product(args: argparse.Namespace) -> int:
+    """Executes a verified product bundle."""
+    import subprocess
+    product_dir = Path(args.product_dir).resolve()
+    port = getattr(args, "port", None)
+    run_script = product_dir / "scripts" / "run.sh"
+    if not run_script.exists():
+        print(f"ERROR: scripts/run.sh not found in {product_dir}", file=sys.stderr)
+        return 1
+
+    cmd = ["bash", str(run_script)]
+    if port:
+        cmd.append(str(port))
+
+    print(f"Launching verified product in {product_dir}...")
+    try:
+        res = subprocess.run(cmd, cwd=str(product_dir))
+        return res.returncode
+    except KeyboardInterrupt:
+        print("\nServer stopped.")
+        return 0
+
+
+def cmd_dogfood(args: argparse.Namespace) -> int:
+    """Executes marathon dogfooding loop across product benchmarks."""
+    from src.control_plane.synthesis import MarathonDogfoodEngine
+    benchmarks = [b.strip() for b in args.benchmarks.split(",")] if getattr(args, "benchmarks", None) else None
+    max_iters = getattr(args, "max_iterations", 5)
+    avoid = getattr(args, "avoid_provider", None)
+    out_base = getattr(args, "output_dir", "output")
+    ledger = EvidenceLedger(args.ledger_file) if getattr(args, "ledger_file", None) else None
+
+    engine = MarathonDogfoodEngine(base_output_dir=out_base, ledger=ledger)
+    report = engine.run_marathon(
+        benchmarks=benchmarks,
+        max_iterations=max_iters,
+        until_providers_exhausted=getattr(args, "until_providers_exhausted", False),
+        avoid_provider=avoid,
+    )
+
+    if getattr(args, "json", False):
+        import json
+        print(json.dumps(report.to_dict(), indent=2))
+    else:
+        print(report.render_markdown())
+
+    return 0 if report.iterations_failed == 0 else 1
+
+
 def main(args: Optional[List[str]] = None) -> int:
     if args is None:
         args = sys.argv[1:]
@@ -572,15 +745,20 @@ def main(args: Optional[List[str]] = None) -> int:
         "approve": cmd_approve,
         "reject": cmd_reject,
         "resume": cmd_resume,
+        "cancel": cmd_cancel,
+        "create": cmd_create,
+        "run": cmd_run_product,
+        "dogfood": cmd_dogfood,
     }
 
     handler = handlers.get(parsed_args.subcommand)
-    if handler:
-        return handler(parsed_args)
-    parser.print_help()
-    return 1
+    if not handler:
+        parser.print_help()
+        return 1
+    return handler(parsed_args)
 
 
 if __name__ == "__main__":
     sys.exit(main())
+
 

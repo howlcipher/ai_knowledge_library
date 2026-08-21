@@ -217,9 +217,11 @@ class ReviewRunner:
         cycle_index: int = 1,
         reviewer_agent_mapping: Optional[Dict[str, str]] = None,
         custom_reviewer_fn: Optional[Callable[[str, str, TaskSpec], str]] = None,
+        run_dir: Optional[Union[str, Path]] = None,
     ) -> ReviewCycleResult:
         """
         Executes each specified reviewer independently against the actual implementation diff.
+        Preserves already-completed reviewer artifacts from previous interrupted runs.
         """
         target_cwd = Path(cwd).resolve()
         reviewer_results: Dict[str, SingleReviewResult] = {}
@@ -228,9 +230,55 @@ class ReviewRunner:
 
         skill_context = build_skill_context(task)
 
+        # Establish cycle directory for incremental checkpointing
+        cycle_dir: Optional[Path] = None
+        if run_dir:
+            r_path = Path(run_dir).resolve()
+            if cycle_index == 1:
+                cycle_dir = r_path / "reviews"
+            else:
+                cycle_dir = r_path / "remediation" / f"cycle-{cycle_index - 1:02d}" / "re_review"
+            cycle_dir.mkdir(parents=True, exist_ok=True)
+
         for role_id in reviewer_roles:
             role = get_reviewer_role(role_id)
             role_name = role.name if role else role_id
+
+            # Check if this reviewer already completed in a previous interrupted run
+            cached_result: Optional[SingleReviewResult] = None
+            if cycle_dir:
+                cached_md = cycle_dir / f"{role_id}.md"
+                cached_yaml = cycle_dir / f"{role_id}_findings.yaml"
+                if cached_md.is_file() and cached_yaml.is_file():
+                    try:
+                        c_raw = cached_md.read_text(encoding="utf-8")
+                        raw_data = yaml.safe_load(cached_yaml.read_text(encoding="utf-8")) or []
+                        if isinstance(raw_data, dict):
+                            c_findings_data = raw_data.get("findings", [])
+                        elif isinstance(raw_data, list):
+                            c_findings_data = raw_data
+                        else:
+                            c_findings_data = []
+                        c_findings = [
+                            ReviewFinding.from_dict(f) if isinstance(f, dict) else f
+                            for f in c_findings_data
+                        ]
+                        cached_result = SingleReviewResult(
+                            reviewer_role=role_id,
+                            reviewer_name=role_name,
+                            status="findings_detected" if c_findings else "clean",
+                            findings=c_findings,
+                            raw_output=c_raw,
+                            error_message=None,
+                            duration_seconds=0.0,
+                        )
+                    except Exception:
+                        cached_result = None
+
+            if cached_result is not None:
+                reviewer_results[role_id] = cached_result
+                all_findings.extend(cached_result.findings)
+                continue
 
             # Render brief with the REAL implementation diff and skill context
             brief = (
@@ -289,6 +337,19 @@ class ReviewRunner:
             )
             reviewer_results[role_id] = single_res
             all_findings.extend(findings)
+
+            # Persist individual reviewer artifact incrementally
+            if cycle_dir:
+                try:
+                    from src.control_plane.atomic_io import atomic_write_text, atomic_write_yaml
+                    atomic_write_text(cycle_dir / f"{role_id}.md", raw_output)
+                    atomic_write_yaml(
+                        cycle_dir / f"{role_id}_findings.yaml",
+                        [f.to_dict() for f in findings],
+                        sort_keys=False,
+                    )
+                except Exception:
+                    pass
 
         # Run reconciliation across all gathered findings
         reconciliation = ReviewReconciler.reconcile(all_findings) if all_findings else None

@@ -30,8 +30,7 @@ EXPECTED_EXAMPLE_COUNT = 4
 
 
 def _load_json(path: Path) -> dict:
-    with open(path, "r", encoding="utf-8") as handle:
-        return json.load(handle)
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def example_manifest_paths() -> list:

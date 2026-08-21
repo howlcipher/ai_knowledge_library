@@ -31,8 +31,15 @@ from src.control_plane.cli import (
     cmd_approve as cp_cmd_approve,
     cmd_reject as cp_cmd_reject,
     cmd_resume as cp_cmd_resume,
+    cmd_cancel as cp_cmd_cancel,
+    cmd_create as cp_cmd_create,
+    cmd_run_product as cp_cmd_run_product,
+    cmd_dogfood as cp_cmd_dogfood,
+    register_synthesis_subparsers,
 )
 from src.control_plane.evidence_ledger import EvidenceEntry, EvidenceLedger
+from src.control_plane.locking import get_repo_lock_path, is_process_alive
+from src.control_plane.recovery import CrashRecoveryEngine
 from src.control_plane.howlframe_runner import (
     HowlFrameAuditRunner,
     find_howlframe_binary,
@@ -476,20 +483,8 @@ def cmd_route(args: argparse.Namespace) -> int:
     target_repo = find_git_repo_root(args.repo)
     ctx = ProjectAdapter.discover(target_repo)
     spec, decision = create_task_plan(ctx, target_repo, None, args)
-
-    print("=" * 60)
-    print(f"TASK ROUTING DECISION: {spec.task_id}")
-    print("=" * 60)
-    print(f"Target Repository: {target_repo} ({ctx.name})")
-    print(f"Objective:         {spec.objective}")
-    print(f"Selected Agent:    {decision.selected_agent_name} (`{decision.selected_agent_id}`)")
-    print(f"Reasoning Tier:    {decision.reasoning_tier}")
-    print(f"Is Override:       {decision.is_override}")
-    print(f"Rationale:         {decision.rationale}")
-    print(f"Reviewers:         {', '.join(decision.recommended_reviewers)}")
-    if decision.alternatives:
-        print(f"Alternatives:      {', '.join(decision.alternatives)}")
-    print("=" * 60)
+    print(f"Target Repository: {target_repo} ({ctx.name})\nObjective:         {spec.objective}")
+    print(decision.render_text(spec.task_id))
     return 0
 
 
@@ -517,7 +512,7 @@ def cmd_howlframe_audit(args: argparse.Namespace) -> int:
 
 
 def cmd_status(args: argparse.Namespace) -> int:
-    """Displays project status, active task runs, and hygiene metrics for the target repository."""
+    """Displays project status, active task runs, lock status, and crash recovery diagnostics."""
     target_repo = find_git_repo_root(args.repo)
     cp_root = find_control_plane_root(args.control_plane_dir)
     ctx = ProjectAdapter.discover(target_repo)
@@ -530,6 +525,20 @@ def cmd_status(args: argparse.Namespace) -> int:
     print(f"Project Stack:      {', '.join(ctx.project_types) or 'generic'}")
     print(f"Project AGENTS.md:  {'Present' if ctx.has_agents_md else 'Not found'}")
     print(f"Hygiene Status:     {ctx.hygiene_status}")
+
+    # Inspect Repository Lock
+    repo_lock_file = get_repo_lock_path(target_repo)
+    if repo_lock_file.exists():
+        try:
+            l_data = json.loads(repo_lock_file.read_text(encoding="utf-8"))
+            alive, _ = is_process_alive(l_data.get("pid", 0), l_data.get("hostname", ""))
+            status_str = "ACTIVE" if alive else "STALE (Reclaimable)"
+            print(f"Repository Lock:    {status_str} — Task: {l_data.get('task_id')}, PID: {l_data.get('pid')}, Command: '{l_data.get('command')}'")
+        except Exception:
+            print("Repository Lock:    Present (Unparseable)")
+    else:
+        print("Repository Lock:    Unlocked (Available)")
+
     print("-" * 60)
     print("VERIFICATION COMMANDS DISCOVERED:")
     plan = ProjectAdapter.create_verification_plan(ctx, task_id="STATUS-CHECK")
@@ -570,6 +579,7 @@ def cmd_status(args: argparse.Namespace) -> int:
             t_dir = task_runs_dir / r
             t_file = t_dir / "task.yaml"
             try:
+                rec_diag = CrashRecoveryEngine.inspect_task(target_repo, r)
                 t_spec = TaskSpec.load_from_file(str(t_file))
                 rec_file = t_dir / "reconciliation.json"
                 blockers = 0
@@ -602,10 +612,21 @@ def cmd_status(args: argparse.Namespace) -> int:
                     current_fp = compute_repository_fingerprint(target_repo, t_dir)
                     boundaries_list = t_spec.human_approval_requirements or ["human_authority_boundary"]
                     boundaries_str = ", ".join(boundaries_list)
+                    receipt_file = t_dir / "execution_receipt.json"
 
                     print(f"  Task:               {t_spec.task_id}")
-                    print(f"  State:              AWAITING_HUMAN")
+                    print(f"  State:              AWAITING_HUMAN (Stage: {rec_diag.get('last_stage', 'awaiting_human')})")
                     print(f"  Verification:       {ver_status.upper()}")
+                    if dec_record and dec_record.changeops_decision_id:
+                        print(f"  ChangeOps Decision: {dec_record.changeops_decision_id}")
+                    if receipt_file.is_file():
+                        try:
+                            rc_data = json.loads(receipt_file.read_text(encoding="utf-8"))
+                            print(f"  Execution Receipt:  {rc_data.get('status', 'unknown').upper()} (Verification: {rc_data.get('verification_status', 'PASS')})")
+                        except Exception:
+                            pass
+                    elif rec_diag.get("native_receipt_found"):
+                        print("  Execution Receipt:  PENDING_RECONCILIATION (Found in HowlChangeOps native receipts)")
 
                     if not dec_record:
                         print(f"  Repository State:   CURRENT")
@@ -640,6 +661,19 @@ def cmd_status(args: argparse.Namespace) -> int:
                         if dec_record.reason:
                             print(f"  Reason:             {dec_record.reason}")
                         print("  Terminal state:     FAILED (Rejected)")
+                    print("-" * 40)
+                elif t_spec.current_state in ("interrupted", "cancelled", "implementing", "reviewing", "remediating", "verifying"):
+                    print(f"  Task:               {t_spec.task_id}")
+                    print(f"  State:              {t_spec.current_state.upper()} (Last Stage: {rec_diag.get('last_stage')})")
+                    print(f"  Classification:     {rec_diag.get('classification', 'RECONCILE_FIRST')}")
+                    if rec_diag.get("is_process_running"):
+                        p_info = rec_diag.get("process_info") or {}
+                        print(f"  Process:            RUNNING (PID: {p_info.get('pid')}, Backend: {p_info.get('backend')})")
+                    if rec_diag.get("completed_reviewers"):
+                        print(f"  Completed Reviews:  {', '.join(rec_diag.get('completed_reviewers'))}")
+                    if rec_diag.get("incomplete_reviewers"):
+                        print(f"  Pending Reviews:    {', '.join(rec_diag.get('incomplete_reviewers'))}")
+                    print(f"  Recommendation:     {rec_diag.get('recommendation')}")
                     print("-" * 40)
                 else:
                     print(f"  - {r}: [{t_spec.current_state.upper()}] {t_spec.objective} (Risk: {t_spec.risk_level.upper()}, Agent: {t_spec.actual_agent or t_spec.recommended_agent or 'N/A'}, Blockers: {blockers}, Highs: {highs}, Verification: {ver_status})")
@@ -682,12 +716,21 @@ def cmd_reject(args: argparse.Namespace) -> int:
 
 
 def cmd_resume(args: argparse.Namespace) -> int:
-    """Resumes task execution following human authorization."""
+    """Resumes task execution following human authorization or crash recovery."""
     target_repo = find_git_repo_root(args.repo)
     cp_root = find_control_plane_root(args.control_plane_dir)
     args.repo_dir = str(target_repo)
     args.ledger_file = str(cp_root / "logs" / "control_plane" / "evidence_ledger.jsonl")
     return cp_cmd_resume(args)
+
+
+def cmd_cancel(args: argparse.Namespace) -> int:
+    """Cancels an active or interrupted task run safely."""
+    target_repo = find_git_repo_root(args.repo)
+    cp_root = find_control_plane_root(args.control_plane_dir)
+    args.repo_dir = str(target_repo)
+    args.ledger_file = str(cp_root / "logs" / "control_plane" / "evidence_ledger.jsonl")
+    return cp_cmd_cancel(args)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -758,6 +801,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_res.add_argument("task_id", help="Task ID to resume")
     p_res.add_argument("--json", action="store_true", help="Output JSON result")
 
+    # cancel
+    p_can = subparsers.add_parser("cancel", parents=[common_parser], help="Cancel an active or interrupted task run")
+    p_can.add_argument("task_id", help="Task ID to cancel")
+    p_can.add_argument("--reason", help="Optional reason for cancellation")
+    p_can.add_argument("--json", action="store_true", help="Output JSON result")
+
     p_ver = subparsers.add_parser("verify", parents=[common_parser], help="Execute deterministic verification plan")
     p_ver.add_argument("--task-id", help="Task ID")
 
@@ -765,6 +814,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_ha.add_argument("--max-instructions", type=int, default=DEFAULT_INSTRUCTION_BUDGET, help="Instruction budget limit")
     p_ha.add_argument("--task-id", help="Task ID")
     p_ha.add_argument("--json", action="store_true", help="Output JSON result")
+
+    # create, run, dogfood (Prompt-to-Product Synthesis)
+    register_synthesis_subparsers(subparsers, parents=[common_parser])
 
     return parser
 
@@ -784,8 +836,12 @@ def main(args: Optional[List[str]] = None) -> int:
         "approve": cmd_approve,
         "reject": cmd_reject,
         "resume": cmd_resume,
+        "cancel": cmd_cancel,
         "verify": cmd_verify,
         "howlframe-audit": cmd_howlframe_audit,
+        "create": cp_cmd_create,
+        "run": cp_cmd_run_product,
+        "dogfood": cp_cmd_dogfood,
     }
     fn = actions.get(opts.subcommand)
     if not fn:

@@ -9,13 +9,14 @@ from actual engineering history recorded in the evidence ledger.
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, List, Optional
 from src.control_plane.evidence_ledger import EvidenceEntry
+from src.control_plane.task_spec import DataClassSerializationMixin
 
 # Minimum observations required before historical performance can inform automated routing
 MIN_ROUTING_SAMPLE_SIZE = 10
 
 
 @dataclass
-class ReviewerMetricSummary:
+class ReviewerMetricSummary(DataClassSerializationMixin):
     """Observable statistics for a specialized reviewer role."""
 
     role_id: str
@@ -42,12 +43,9 @@ class ReviewerMetricSummary:
     def false_positive_rate(self) -> float:
         return round(self.false_positives / self.findings_total, 2) if self.findings_total > 0 else 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
-
 
 @dataclass
-class AgentMetricSummary:
+class AgentMetricSummary(DataClassSerializationMixin):
     """Observable statistics for an individual agent type."""
 
     agent_id: str
@@ -75,9 +73,6 @@ class AgentMetricSummary:
     @property
     def first_pass_success_rate(self) -> float:
         return round(self.first_pass_successes / self.tasks_worked, 2) if self.tasks_worked > 0 else 0.0
-
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
 
 
 @dataclass

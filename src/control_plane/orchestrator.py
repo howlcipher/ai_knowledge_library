@@ -18,15 +18,27 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 import yaml
 
 from src.control_plane.agent_execution import AgentBackend, AgentBackendRegistry, AgentExecutionResult, AgentUnavailableError
+from src.control_plane.atomic_io import (
+    atomic_write_json,
+    atomic_write_text,
+    atomic_write_yaml,
+    safe_load_json,
+    safe_load_yaml,
+)
+from src.control_plane.checkpoints import CheckpointManager, StageCheckpoint
 from src.control_plane.evidence_ledger import EvidenceEntry, EvidenceLedger
 from src.control_plane.git_baseline import GitBaseline, RepositoryDelta, capture_baseline, capture_delta
 from src.control_plane.howlframe_runner import HowlFrameAuditRunner, get_dogfood_mode, DEFAULT_INSTRUCTION_BUDGET
 from src.control_plane.human_boundary import HumanBoundaryGate, BoundaryCheckResult, HumanDecisionPacket
+from src.control_plane.locking import RepoLock, TaskLock, RepositoryLockedError, TaskLockedError
+from src.control_plane.process_manager import ProcessTracker
 from src.control_plane.project_adapter import ProjectAdapter, ProjectContext
 from src.control_plane.reconciliation import ReviewFinding, ReconciliationResult, ReviewReconciler
+from src.control_plane.recovery import CrashRecoveryEngine
 from src.control_plane.review_runner import ReviewRunner, ReviewCycleResult, SingleReviewResult
 from src.control_plane.reviewers import get_reviewer_role, build_skill_context
 from src.control_plane.router import TaskRouter, RoutingDecision
+from src.control_plane.proposed_action import ProposedAction, infer_proposed_actions
 from src.control_plane.task_spec import TaskSpec
 from src.control_plane.verification import VerificationPlan, VerificationStep
 
@@ -46,6 +58,8 @@ class OrchestrationConfig:
     stop_on_verification_failure: bool = True
     force: bool = False
     skip_doctor: bool = False
+    acquire_locks: bool = True
+    failure_injection_hook: Optional[Callable[[str, Path, TaskSpec], None]] = None
     custom_backend: Optional[AgentBackend] = None
     custom_reviewer_fn: Optional[Callable[[str, str, TaskSpec], str]] = None
     custom_remediation_fn: Optional[Callable[[TaskSpec, Path, List[ReviewFinding]], None]] = None
@@ -209,7 +223,33 @@ class GovernedTaskOrchestrator:
             except Exception:
                 pass
 
+        # Check pre-execution human authority boundary and bind HowlChangeOps decision if applicable
+        pre_b = HumanBoundaryGate.evaluate_pre_execution(
+            task=task_spec,
+            planned_actions=planned_actions,
+            target_repo=self.target_repo,
+        )
+        self._bind_decision_packet(pre_b, run_dir)
+        if pre_b.requires_human_approval and pre_b.decision_packet:
+            (run_dir / "decision_packet.md").write_text(pre_b.decision_packet.render_markdown(), encoding="utf-8")
+
         return ctx, routing, verif_plan, run_dir, hf_res
+
+    def _bind_decision_packet(self, boundary_res: Any, run_dir: Path) -> None:
+        """Binds bounded executor decision ID to human decision packet if required."""
+        if not boundary_res.requires_human_approval or not boundary_res.decision_packet:
+            return
+        if not boundary_res.decision_packet.proposed_actions:
+            return
+        act_dict = boundary_res.decision_packet.proposed_actions[0]
+        action_obj = ProposedAction.from_dict(act_dict)
+        from src.control_plane.executor import ExecutorRegistry
+        executor = ExecutorRegistry.get_executor_for_action(action_obj.action_type)
+        if executor and executor.is_available():
+            verdict, dec_id, _ = executor.evaluate(action_obj, self.target_repo, run_dir)
+            if dec_id:
+                boundary_res.decision_packet.changeops_decision_id = dec_id
+                boundary_res.decision_packet.executor_id = executor.name
 
     def run(
         self,
@@ -217,14 +257,66 @@ class GovernedTaskOrchestrator:
         planned_actions: Optional[List[str]] = None,
     ) -> OrchestrationResult:
         """
-        Executes the complete governed control-plane loop for the task.
+        Executes the complete governed control-plane loop for the task under
+        mutual-exclusion locks and durable checkpoint guarantees.
         """
         start_time = time.time()
+
+        # Acquire Locks if enabled
+        repo_lock = (
+            RepoLock(self.target_repo, task_spec.task_id, command=f"ai work {task_spec.task_id} --execute")
+            if self.config.acquire_locks
+            else None
+        )
+        task_lock = (
+            TaskLock(self.target_repo, task_spec.task_id, operation="orchestrate")
+            if self.config.acquire_locks
+            else None
+        )
+
+        if repo_lock:
+            repo_lock.acquire()
+        if task_lock:
+            task_lock.acquire()
+
+        try:
+            return self._run_governed_loop(task_spec, planned_actions, start_time)
+        except Exception as exc:
+            run_dir = self.target_repo / ".task_runs" / task_spec.task_id
+            if run_dir.is_dir():
+                try:
+                    CheckpointManager.record_interrupted(
+                        run_dir, stage=task_spec.current_state, reason=str(exc)
+                    )
+                except Exception:
+                    pass
+            raise
+        finally:
+            if task_lock:
+                task_lock.release()
+            if repo_lock:
+                repo_lock.release()
+
+    def _run_governed_loop(
+        self,
+        task_spec: TaskSpec,
+        planned_actions: Optional[List[str]] = None,
+        start_time: Optional[float] = None,
+    ) -> OrchestrationResult:
+        start_time = start_time or time.time()
         ctx, routing, verif_plan, run_dir, hf_res = self.prepare_task_plan(task_spec, planned_actions)
         reviews_dir = run_dir / "reviews"
         remediation_base_dir = run_dir / "remediation"
         hf_audit_status = hf_res.status if hf_res else None
         hf_audit_match = (hf_res.status == "MATCH") if hf_res else True
+
+        CheckpointManager.start_stage(
+            run_dir,
+            task_spec.task_id,
+            "planned",
+            repo_path=self.target_repo,
+            input_artifacts=[str(run_dir / "route.json"), str(run_dir / "verification_plan.json")],
+        )
 
         self._record_event(
             task_id=task_spec.task_id,
@@ -251,27 +343,75 @@ class GovernedTaskOrchestrator:
                 "is_override": routing.is_override,
             },
         )
+        CheckpointManager.complete_stage(run_dir, "planned")
 
         # --------------------------------------------------------------------
-        # Stage 3: Baseline Capture
+        # Stage 2.5: Pre-Execution Human Authority Gating
         # --------------------------------------------------------------------
-        baseline = capture_baseline(self.target_repo)
-        (run_dir / "baseline.json").write_text(baseline.to_json(), encoding="utf-8")
-
-        # --------------------------------------------------------------------
-        # Stage 4: Implementation (implementing)
-        # --------------------------------------------------------------------
-        task_spec.transition_to("implementing", f"Launching implementation agent: {routing.selected_agent_id}")
-        task_spec.save_to_file(str(run_dir / "task.yaml"))
-
-        self._record_event(
-            task_id=task_spec.task_id,
-            agent_id=routing.selected_agent_id,
-            action="implementation_started",
-            spec=task_spec,
+        pre_boundary = HumanBoundaryGate.evaluate_pre_execution(
+            task=task_spec,
+            planned_actions=planned_actions,
+            target_repo=self.target_repo,
         )
+        self._bind_decision_packet(pre_boundary, run_dir)
 
-        # Select backend for implementation
+        if pre_boundary.requires_human_approval:
+
+            CheckpointManager.start_stage(
+                run_dir,
+                task_spec.task_id,
+                "awaiting_human",
+                repo_path=self.target_repo,
+                metadata={"boundary_triggers": pre_boundary.triggered_boundaries},
+            )
+            task_spec.transition_to(
+                "awaiting_human",
+                f"Pre-execution human authority boundary triggered: {pre_boundary.triggered_boundaries}",
+            )
+            task_spec.save_to_file(str(run_dir / "task.yaml"))
+
+            if pre_boundary.decision_packet:
+                (run_dir / "decision_packet.md").write_text(
+                    pre_boundary.decision_packet.render_markdown(), encoding="utf-8"
+                )
+
+            self._record_human_boundary_events(
+                task_spec, run_dir, boundaries=pre_boundary.triggered_boundaries, reason="Pre-execution boundary triggered"
+            )
+
+            stage_kwargs = dict(
+                start_time=start_time,
+                run_dir=run_dir,
+                routing=routing,
+                initial_delta=None,
+                current_delta=None,
+                review_cycles=[],
+                reconciliation=None,
+                verif_plan=verif_plan,
+                boundary_res=pre_boundary,
+                hf_status=hf_audit_status,
+                hf_match=hf_audit_match,
+                remediation_count=0,
+            )
+            return self._make_result(task_spec, "awaiting_human", 2, **stage_kwargs)
+
+        # --------------------------------------------------------------------
+        # Stage 3: Baseline Capture / Baseline Recovery
+        # --------------------------------------------------------------------
+        baseline_file = run_dir / "baseline.json"
+        if baseline_file.is_file():
+            try:
+                baseline = GitBaseline.from_dict(safe_load_json(baseline_file))
+            except Exception:
+                baseline = capture_baseline(self.target_repo)
+                (run_dir / "baseline.json").write_text(baseline.to_json(), encoding="utf-8")
+        else:
+            baseline = capture_baseline(self.target_repo)
+            (run_dir / "baseline.json").write_text(baseline.to_json(), encoding="utf-8")
+
+        # --------------------------------------------------------------------
+        # Stage 4: Implementation (implementing) / Reconcile on Recovery
+        # --------------------------------------------------------------------
         impl_backend = self.config.custom_backend or AgentBackendRegistry.get_backend(routing.selected_agent_id)
         if not impl_backend.is_available() and not self.config.custom_backend:
             err_msg = f"Selected agent '{routing.selected_agent_id}' is not installed or available on PATH."
@@ -287,79 +427,120 @@ class GovernedTaskOrchestrator:
                 hf_match=hf_audit_match,
             )
 
-        impl_prompt = self._build_implementation_prompt(task_spec, ctx)
-        impl_res = impl_backend.execute(
-            task=task_spec,
-            cwd=self.target_repo,
-            role="implementation",
-            prompt_override=impl_prompt,
-            timeout_seconds=self.config.timeout_seconds,
+        has_existing_delta, rec_delta, rec_msg = CrashRecoveryEngine.reconcile_interrupted_implementation(
+            self.target_repo, run_dir, task_spec
         )
 
         impl_dir = run_dir / "implementation"
         impl_dir.mkdir(parents=True, exist_ok=True)
-        (impl_dir / "result.json").write_text(impl_res.to_json(), encoding="utf-8")
 
-        if not impl_res.success:
-            err_msg = (
-                impl_res.stderr.strip()
-                if impl_res.stderr and impl_res.stderr.strip()
-                else (impl_res.error_message or f"Implementation failed with exit code {impl_res.exit_code}")
+        if has_existing_delta and rec_delta:
+            current_delta = rec_delta
+            initial_delta = rec_delta
+            self._record_event(
+                task_id=task_spec.task_id,
+                agent_id="control_plane",
+                action="implementation_recovered",
+                spec=task_spec,
+                metadata={"files_changed": len(current_delta.files_modified) + len(current_delta.files_added)},
             )
+        else:
+            CheckpointManager.start_stage(
+                run_dir,
+                task_spec.task_id,
+                "implementing",
+                agent_id=routing.selected_agent_id,
+                repo_path=self.target_repo,
+            )
+
+            if self.config.failure_injection_hook:
+                self.config.failure_injection_hook("implementing", run_dir, task_spec)
+
+            if task_spec.current_state != "implementing":
+                task_spec.transition_to("implementing", f"Launching implementation agent: {routing.selected_agent_id}")
+                task_spec.save_to_file(str(run_dir / "task.yaml"))
+
+            self._record_event(
+                task_id=task_spec.task_id,
+                agent_id=routing.selected_agent_id,
+                action="implementation_started",
+                spec=task_spec,
+            )
+
+            impl_prompt = self._build_implementation_prompt(task_spec, ctx)
+            impl_res = impl_backend.execute(
+                task=task_spec,
+                cwd=self.target_repo,
+                role="implementation",
+                prompt_override=impl_prompt,
+                timeout_seconds=self.config.timeout_seconds,
+            )
+
+            (impl_dir / "result.json").write_text(impl_res.to_json(), encoding="utf-8")
+
+            if not impl_res.success:
+                err_msg = (
+                    impl_res.stderr.strip()
+                    if impl_res.stderr and impl_res.stderr.strip()
+                    else (impl_res.error_message or f"Implementation failed with exit code {impl_res.exit_code}")
+                )
+                self._record_event(
+                    task_id=task_spec.task_id,
+                    agent_id=routing.selected_agent_id,
+                    action="implementation_completed",
+                    result="failure",
+                    spec=task_spec,
+                    metadata={"exit_code": impl_res.exit_code, "error": err_msg},
+                )
+                return self._fail_task(
+                    task_spec,
+                    run_dir,
+                    err_msg,
+                    start_time,
+                    exit_code=impl_res.exit_code if impl_res.exit_code != 0 else 1,
+                    agent_id="control_plane",
+                    routing=routing,
+                    hf_status=hf_audit_status,
+                    hf_match=hf_audit_match,
+                )
+
+            current_delta = capture_delta(self.target_repo, baseline)
+            (impl_dir / "diff.patch").write_text(current_delta.diff_content, encoding="utf-8")
+            (run_dir / "diff.patch").write_text(current_delta.diff_content, encoding="utf-8")
+
             self._record_event(
                 task_id=task_spec.task_id,
                 agent_id=routing.selected_agent_id,
                 action="implementation_completed",
-                result="failure",
+                result="success",
                 spec=task_spec,
-                metadata={"exit_code": impl_res.exit_code, "error": err_msg},
+                metadata={"files_changed": len(current_delta.files_modified) + len(current_delta.files_added)},
             )
-            return self._fail_task(
-                task_spec,
-                run_dir,
-                err_msg,
-                start_time,
-                exit_code=impl_res.exit_code if impl_res.exit_code != 0 else 1,
+            self._record_event(
+                task_id=task_spec.task_id,
                 agent_id="control_plane",
-                routing=routing,
-                hf_status=hf_audit_status,
-                hf_match=hf_audit_match,
+                action="repository_delta_captured",
+                spec=task_spec,
+                metadata={
+                    "files_added": current_delta.files_added,
+                    "files_modified": current_delta.files_modified,
+                    "files_deleted": current_delta.files_deleted,
+                    "insertions": current_delta.insertions,
+                    "deletions": current_delta.deletions,
+                },
             )
+            initial_delta = current_delta
+            CheckpointManager.complete_stage(run_dir, "implementing", output_artifacts=[str(run_dir / "diff.patch")])
 
-        # Capture actual repository delta attributable to the task
-        current_delta = capture_delta(self.target_repo, baseline)
-        (impl_dir / "diff.patch").write_text(current_delta.diff_content, encoding="utf-8")
-        (run_dir / "diff.patch").write_text(current_delta.diff_content, encoding="utf-8")
-
-        self._record_event(
-            task_id=task_spec.task_id,
-            agent_id=routing.selected_agent_id,
-            action="implementation_completed",
-            result="success",
-            spec=task_spec,
-            metadata={"files_changed": len(current_delta.files_modified) + len(current_delta.files_added)},
-        )
-        self._record_event(
-            task_id=task_spec.task_id,
-            agent_id="control_plane",
-            action="repository_delta_captured",
-            spec=task_spec,
-            metadata={
-                "files_added": current_delta.files_added,
-                "files_modified": current_delta.files_modified,
-                "files_deleted": current_delta.files_deleted,
-                "insertions": current_delta.insertions,
-                "deletions": current_delta.deletions,
-            },
-        )
-
-        initial_delta = current_delta
+            if self.config.failure_injection_hook:
+                self.config.failure_injection_hook("post_implementation", run_dir, task_spec)
 
         # --------------------------------------------------------------------
         # Stage 5: Independent Adversarial Reviews & Remediation Loop
         # --------------------------------------------------------------------
-        task_spec.transition_to("reviewing", "Initiating independent reviewer analysis on actual implementation diff")
-        task_spec.save_to_file(str(run_dir / "task.yaml"))
+        if task_spec.current_state != "reviewing":
+            task_spec.transition_to("reviewing", "Initiating independent reviewer analysis on actual implementation diff")
+            task_spec.save_to_file(str(run_dir / "task.yaml"))
 
         review_cycles: List[ReviewCycleResult] = []
         latest_reconciliation: Optional[ReconciliationResult] = None
@@ -368,6 +549,17 @@ class GovernedTaskOrchestrator:
 
         while True:
             cycle_idx = len(review_cycles) + 1
+            CheckpointManager.start_stage(
+                run_dir,
+                task_spec.task_id,
+                "reviewing",
+                repo_path=self.target_repo,
+                metadata={"cycle": cycle_idx, "reviewers": current_reviewers},
+            )
+
+            if self.config.failure_injection_hook:
+                self.config.failure_injection_hook("reviewing", run_dir, task_spec)
+
             self._record_event(
                 task_id=task_spec.task_id,
                 agent_id="control_plane",
@@ -385,6 +577,7 @@ class GovernedTaskOrchestrator:
                 cycle_index=cycle_idx,
                 reviewer_agent_mapping=self.config.reviewer_agent_mapping,
                 custom_reviewer_fn=self.config.custom_reviewer_fn,
+                run_dir=run_dir,
             )
             review_cycles.append(cycle_res)
             latest_reconciliation = cycle_res.reconciliation
@@ -419,10 +612,18 @@ class GovernedTaskOrchestrator:
                 findings_summary=findings_summary,
                 metadata={"status": cycle_res.status, "cycle": cycle_idx},
             )
+            CheckpointManager.complete_stage(
+                run_dir,
+                "reviewing",
+                output_artifacts=[str(run_dir / "reconciliation.json")],
+                result_summary=findings_summary,
+            )
+
+            if self.config.failure_injection_hook:
+                self.config.failure_injection_hook("post_review", run_dir, task_spec)
 
             # Check if any findings require remediation
             if not cycle_res.requires_remediation:
-                # Review stage satisfied cleanly
                 break
 
             # If remediation required, check cycle bounds
@@ -434,7 +635,6 @@ class GovernedTaskOrchestrator:
                 task_spec.transition_to("awaiting_human", f"Max remediation cycles exceeded: {err_msg}")
                 task_spec.save_to_file(str(run_dir / "task.yaml"))
 
-                # Create human decision packet for unresolved findings
                 decision_pkt = HumanDecisionPacket(
                     task_id=task_spec.task_id,
                     objective=task_spec.objective,
@@ -464,8 +664,18 @@ class GovernedTaskOrchestrator:
                     err_msg=err_msg,
                 )
 
-            # Trigger remediation cycle
             remediation_count += 1
+            CheckpointManager.start_stage(
+                run_dir,
+                task_spec.task_id,
+                "remediating",
+                repo_path=self.target_repo,
+                metadata={"cycle": remediation_count},
+            )
+
+            if self.config.failure_injection_hook:
+                self.config.failure_injection_hook("remediating", run_dir, task_spec)
+
             task_spec.transition_to(
                 "remediating",
                 f"Remediation cycle {remediation_count}: resolving {len(cycle_res.all_findings)} review findings",
@@ -480,7 +690,6 @@ class GovernedTaskOrchestrator:
                 metadata={"cycle": remediation_count, "findings_count": len(cycle_res.all_findings)},
             )
 
-            # Execute remediation
             rem_cycle_dir = remediation_base_dir / f"cycle-{remediation_count:02d}"
             rem_cycle_dir.mkdir(parents=True, exist_ok=True)
 
@@ -497,7 +706,6 @@ class GovernedTaskOrchestrator:
                 )
                 (rem_cycle_dir / "result.json").write_text(rem_res.to_json(), encoding="utf-8")
 
-            # Capture updated repository delta
             current_delta = capture_delta(self.target_repo, baseline)
             (rem_cycle_dir / "diff.patch").write_text(current_delta.diff_content, encoding="utf-8")
             (run_dir / "diff.patch").write_text(current_delta.diff_content, encoding="utf-8")
@@ -515,8 +723,15 @@ class GovernedTaskOrchestrator:
                 action="repository_delta_captured",
                 spec=task_spec,
             )
+            CheckpointManager.complete_stage(
+                run_dir,
+                "remediating",
+                output_artifacts=[str(rem_cycle_dir / "diff.patch")],
+            )
 
-            # Determine targeted re-reviewers
+            if self.config.failure_injection_hook:
+                self.config.failure_injection_hook("post_remediation", run_dir, task_spec)
+
             current_reviewers = ReviewRunner.determine_re_review_roles(
                 cycle_res.all_findings,
                 routing.recommended_reviewers,
@@ -527,6 +742,17 @@ class GovernedTaskOrchestrator:
         # --------------------------------------------------------------------
         # Stage 6: Deterministic Verification Gate (verifying)
         # --------------------------------------------------------------------
+        CheckpointManager.start_stage(
+            run_dir,
+            task_spec.task_id,
+            "verifying",
+            repo_path=self.target_repo,
+            input_artifacts=[str(run_dir / "diff.patch")],
+        )
+
+        if self.config.failure_injection_hook:
+            self.config.failure_injection_hook("verifying", run_dir, task_spec)
+
         task_spec.transition_to("verifying", "Executing deterministic verification plan")
         task_spec.save_to_file(str(run_dir / "task.yaml"))
 
@@ -553,8 +779,13 @@ class GovernedTaskOrchestrator:
             result=verif_status,
             verification_summary=verif_summary,
         )
+        CheckpointManager.complete_stage(
+            run_dir,
+            "verifying",
+            output_artifacts=[str(run_dir / "verification_result.json")],
+            result_summary=verif_summary,
+        )
 
-        # Enforce deterministic verification gate
         if verif_status != "passed":
             failed_steps = [s.name for s in verif_plan.steps if s.status == "failed" and s.required]
             err_msg = f"Deterministic verification failed on required steps: {', '.join(failed_steps)}"
@@ -606,6 +837,13 @@ class GovernedTaskOrchestrator:
         )
 
         if boundary_res.requires_human_approval:
+            CheckpointManager.start_stage(
+                run_dir,
+                task_spec.task_id,
+                "awaiting_human",
+                repo_path=self.target_repo,
+                metadata={"boundary_triggers": boundary_res.triggered_boundaries},
+            )
             task_spec.transition_to("awaiting_human", f"Human authority boundary triggered: {boundary_res.triggered_boundaries}")
             task_spec.save_to_file(str(run_dir / "task.yaml"))
 
@@ -621,6 +859,12 @@ class GovernedTaskOrchestrator:
         # --------------------------------------------------------------------
         # Stage 8: Governed Completion (complete)
         # --------------------------------------------------------------------
+        CheckpointManager.start_stage(
+            run_dir,
+            task_spec.task_id,
+            "complete",
+            repo_path=self.target_repo,
+        )
         task_spec.transition_to("complete", "All reviews, reconciliations, deterministic verifications, and policies passed.")
         task_spec.save_to_file(str(run_dir / "task.yaml"))
 
@@ -646,6 +890,11 @@ class GovernedTaskOrchestrator:
                 "verification_status": verif_status,
                 "files_changed": len(current_delta.files_modified) + len(current_delta.files_added),
             },
+        )
+        CheckpointManager.complete_stage(
+            run_dir,
+            "complete",
+            output_artifacts=[str(run_dir / "summary.md")],
         )
 
         return self._make_result(task_spec, "complete", 0, **stage_kwargs)

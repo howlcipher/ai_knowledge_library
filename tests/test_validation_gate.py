@@ -105,6 +105,19 @@ def make_pass3(pass2):
     return payload
 
 
+def _setup_test_orchestrator(monkeypatch, cfg, query="Write a runbook."):
+    monkeypatch.setattr("src.core.orchestrator.load_config", lambda: cfg)
+    from src.core.orchestrator import Orchestrator
+
+    orchestrator = Orchestrator()
+    orchestrator.skill_router = None
+    initial = make_initial(query)
+    pass1 = make_pass1(initial)
+    pass2 = make_pass2(pass1)
+    pass3 = make_pass3(pass2)
+    return orchestrator, [make_llm_response(json.dumps(p)) for p in (pass1, pass2, pass3)]
+
+
 def test_parse_rejects_fenced_output(gate):
     result = gate.check("```json\n{}\n```")
     assert not result.ok
@@ -461,19 +474,8 @@ def test_orchestrator_uses_per_tier_models(tmp_path, monkeypatch):
             },
         },
     }
-    monkeypatch.setattr("src.core.orchestrator.load_config", lambda: cfg)
-
-    from src.core.orchestrator import Orchestrator
-
-    orchestrator = Orchestrator()
-    orchestrator.skill_router = None
-
     query = "Write a runbook."
-    initial = make_initial(query)
-    pass1 = make_pass1(initial)
-    pass2 = make_pass2(pass1)
-    pass3 = make_pass3(pass2)
-    responses = [make_llm_response(json.dumps(p)) for p in (pass1, pass2, pass3)]
+    orchestrator, responses = _setup_test_orchestrator(monkeypatch, cfg, query)
 
     with (
         patch("litellm.completion", side_effect=responses) as mock_completion,
@@ -648,19 +650,8 @@ def test_orchestrator_uses_per_tier_timeouts(tmp_path, monkeypatch):
             "tier_timeouts": {"tier_1": 0, "tier_2": 0, "tier_3": 1800.0},
         },
     }
-    monkeypatch.setattr("src.core.orchestrator.load_config", lambda: cfg)
-
-    from src.core.orchestrator import Orchestrator
-
-    orchestrator = Orchestrator()
-    orchestrator.skill_router = None
-
     query = "Write a runbook."
-    initial = make_initial(query)
-    pass1 = make_pass1(initial)
-    pass2 = make_pass2(pass1)
-    pass3 = make_pass3(pass2)
-    responses = [make_llm_response(json.dumps(p)) for p in (pass1, pass2, pass3)]
+    orchestrator, responses = _setup_test_orchestrator(monkeypatch, cfg, query)
 
     with (
         patch("litellm.completion", side_effect=responses) as mock_completion,

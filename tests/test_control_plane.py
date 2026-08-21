@@ -139,7 +139,10 @@ def test_task_spec_invalid_lifecycle_transitions():
 
     spec.transition_to("planned")
     with pytest.raises(InvalidStateTransitionError):
-        spec.transition_to("awaiting_human")
+        spec.transition_to("complete")
+
+    with pytest.raises(InvalidStateTransitionError):
+        spec.transition_to("remediating")
 
 
 def test_task_spec_serialization_roundtrip():

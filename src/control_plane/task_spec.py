@@ -8,7 +8,7 @@ Canonical machine-readable representation of an engineering task and its lifecyc
 from dataclasses import dataclass, field, asdict, fields
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 import yaml
 
 TASK_SPEC_SCHEMA_VERSION = "ai.task_spec/v1"
@@ -24,6 +24,8 @@ VALID_TASK_STATES = {
     "complete",
     "failed",
     "blocked",
+    "interrupted",
+    "cancelled",
 }
 
 VALID_RISK_LEVELS = {"low", "medium", "high", "critical"}
@@ -40,31 +42,20 @@ VALID_TASK_CLASSES = {
     "other",
 }
 
+_CORE_STAGES = {"discovered", "planned", "implementing", "reviewing", "remediating", "verifying"}
+
 STATE_TRANSITIONS: Dict[str, Set[str]] = {
-    "discovered": {"planned", "blocked", "failed"},
-    "planned": {"implementing", "blocked", "failed"},
-    "implementing": {"reviewing", "verifying", "blocked", "failed"},
-    "reviewing": {"remediating", "verifying", "awaiting_human", "blocked", "failed"},
-    "remediating": {"reviewing", "verifying", "blocked", "failed"},
-    "verifying": {"awaiting_human", "complete", "remediating", "blocked", "failed"},
-    "awaiting_human": {
-        "complete",
-        "implementing",
-        "remediating",
-        "verifying",
-        "blocked",
-        "failed",
-    },
-    "blocked": {
-        "discovered",
-        "planned",
-        "implementing",
-        "reviewing",
-        "remediating",
-        "verifying",
-        "failed",
-    },
-    "failed": {"discovered", "planned"},
+    "discovered": {"planned", "awaiting_human", "blocked", "failed", "interrupted", "cancelled"},
+    "planned": {"implementing", "awaiting_human", "blocked", "failed", "interrupted", "cancelled"},
+    "implementing": {"reviewing", "verifying", "awaiting_human", "blocked", "failed", "interrupted", "cancelled"},
+    "reviewing": {"remediating", "verifying", "awaiting_human", "blocked", "failed", "interrupted", "cancelled"},
+    "remediating": {"reviewing", "verifying", "awaiting_human", "blocked", "failed", "interrupted", "cancelled"},
+    "verifying": {"awaiting_human", "complete", "remediating", "blocked", "failed", "interrupted", "cancelled"},
+    "awaiting_human": {"complete", "implementing", "remediating", "verifying", "blocked", "failed", "interrupted", "cancelled"},
+    "interrupted": _CORE_STAGES | {"awaiting_human", "complete", "failed", "cancelled"},
+    "cancelled": _CORE_STAGES | {"failed"},
+    "blocked": _CORE_STAGES | {"failed", "cancelled", "interrupted"},
+    "failed": {"discovered", "planned", "cancelled", "interrupted"},
     "complete": {"discovered"},  # Can reopen if a regression is discovered
 }
 
@@ -88,6 +79,31 @@ class DataClassSerializationMixin:
     @classmethod
     def from_json(cls, json_str: str):
         return cls.from_dict(json.loads(json_str))
+
+    def to_yaml(self) -> str:
+        return yaml.dump(self.to_dict(), sort_keys=False)
+
+    @classmethod
+    def from_yaml(cls, yaml_str: str):
+        return cls.from_dict(yaml.safe_load(yaml_str))
+
+    def save_to_file(self, file_path: Union[str, Path]) -> None:
+        from src.control_plane.atomic_io import atomic_write_yaml, atomic_write_json
+        p = Path(file_path)
+        if p.suffix in (".yaml", ".yml"):
+            atomic_write_yaml(p, self.to_dict())
+        else:
+            atomic_write_json(p, self.to_dict())
+
+    @classmethod
+    def load_from_file(cls, file_path: Union[str, Path]):
+        from src.control_plane.atomic_io import safe_load_yaml, safe_load_json
+        p = Path(file_path)
+        if p.suffix in (".yaml", ".yml"):
+            data = safe_load_yaml(p)
+        else:
+            data = safe_load_json(p)
+        return cls.from_dict(data)
 
 
 class InvalidStateTransitionError(ValueError):
@@ -204,33 +220,3 @@ class TaskSpec(DataClassSerializationMixin):
         """Deserializes TaskSpec from JSON string."""
         data = json.loads(json_str)
         return cls.from_dict(data)
-
-    def to_yaml(self) -> str:
-        """Serializes TaskSpec to YAML string."""
-        return yaml.dump(self.to_dict(), sort_keys=False)
-
-    @classmethod
-    def from_yaml(cls, yaml_str: str) -> "TaskSpec":
-        """Deserializes TaskSpec from YAML string."""
-        data = yaml.safe_load(yaml_str)
-        return cls.from_dict(data)
-
-    def save_to_file(self, file_path: str) -> None:
-        """Saves the specification to a file based on file extension (.json, .yaml, .yml)."""
-        p = Path(file_path)
-        p.parent.mkdir(parents=True, exist_ok=True)
-        if p.suffix in (".yaml", ".yml"):
-            p.write_text(self.to_yaml(), encoding="utf-8")
-        else:
-            p.write_text(self.to_json(), encoding="utf-8")
-
-    @classmethod
-    def load_from_file(cls, file_path: str) -> "TaskSpec":
-        """Loads a specification from a .json or .yaml file."""
-        p = Path(file_path)
-        if not p.exists():
-            raise FileNotFoundError(f"Task specification file not found: {file_path}")
-        text = p.read_text(encoding="utf-8")
-        if p.suffix in (".yaml", ".yml"):
-            return cls.from_yaml(text)
-        return cls.from_json(text)
