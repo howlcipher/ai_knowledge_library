@@ -209,6 +209,7 @@ The `ai` launcher locates the HowlPlane control plane using the following order:
 
 - [Control Plane Architecture](documentation/CONTROL_PLANE.md)
 - [User Guide & Operator Reference](documentation/USER_GUIDE.md)
+- [Local AI Worker (Ollama) & Bounded Dogfooding](documentation/LOCAL_MODEL.md)
 - [Data Flows & Network Egress Reference](documentation/data_flows.md)
 - [Coding Standards & Hygiene](documentation/coding_standards.md)
 - [AI Framework Blueprint](documentation/AI_FRAMEWORK_BLUEPRINT.md)
