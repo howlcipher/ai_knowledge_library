@@ -162,7 +162,14 @@ class ProductSynthesizer:
             preferred_agent=preferred_agent,
         )
         if not candidates and not self.custom_backend:
-            return self._exhausted_result(spec, neg_res, t0, "All configured providers are currently exhausted or unavailable")
+            all_statuses = list(self.provider_pool.get_all_statuses().values())
+            all_exhausted = bool(all_statuses) and all(
+                st in (ProviderAvailabilityStatus.SESSION_EXHAUSTED, ProviderAvailabilityStatus.RATE_LIMITED)
+                for st in all_statuses
+            )
+            if all_exhausted and self.synthesis_mode != "deterministic_baseline":
+                return self._exhausted_result(spec, neg_res, t0, "All configured providers are currently exhausted or unavailable")
+            candidates = ["deterministic_baseline"]
 
         if not candidates and self.custom_backend:
             candidates = ["fake_agent"]
@@ -171,7 +178,7 @@ class ProductSynthesizer:
         selected_provider: Optional[str] = None
         synthesis_prompt = self._build_synthesis_prompt(spec, out_path)
 
-        if self.synthesis_mode == "deterministic_baseline":
+        if self.synthesis_mode == "deterministic_baseline" or candidates == ["deterministic_baseline"]:
             selected_provider = candidates[0] if candidates else "deterministic_baseline"
             self._synthesize_product_files(out_path, spec, repair_iteration=0)
         else:
@@ -403,6 +410,10 @@ class ProductSynthesizer:
         Falls back to next available provider if current provider exhausts.
         """
         repair_prompt = self._build_repair_prompt(spec, failure_stage, error_details, out_path)
+        if self.synthesis_mode == "deterministic_baseline" or current_provider == "deterministic_baseline":
+            self._synthesize_product_files(out_path, spec, repair_iteration=1)
+            return "deterministic_baseline"
+
         candidates = self.provider_pool.select_candidates(
             task_category="code_heavy",
             avoid_provider=avoid_provider,
