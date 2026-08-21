@@ -54,9 +54,25 @@ alters boot/kernel configuration, and never pulls a second model.
 | Context window | 8192 tokens |
 | Max concurrent local inference | 1 (machine-wide lock) |
 | Max loaded local models | 1 |
-| Minimum available RAM before inference | 8 GiB |
+| Minimum available RAM before inference | 8 GiB (interactive) / **9 GiB (overnight-safe, #59)** |
 | Local attempts per engineering problem | 1 implementation + 1 targeted repair |
-| Consecutive local-only campaign iterations after cloud exhaustion | 10 |
+| Consecutive local-only campaign iterations after cloud exhaustion | 10 (fixed; delegated authority can never raise this) |
+| `keep_alive` sent to Ollama | `"5m"` (interactive, matches Ollama's own default) / **`0` (overnight-safe: unload immediately after each inference)** |
+
+Overnight-safe campaigns (`ai dogfood --authority-profile overnight-safe`, see
+[`OVERNIGHT_AUTHORITY.md`](OVERNIGHT_AUTHORITY.md)) register a more
+conservative `OllamaLocalBackend` instance for the process's lifetime: a 9 GiB
+launch floor instead of the interactive 8 GiB, and `keep_alive=0` so the model
+unloads immediately after each response rather than lingering for Ollama's
+default 5-minute idle window. RAM is measured before inference, immediately
+after the response, and (when `keep_alive=0`) again after the requested
+unload — recorded in `AgentExecutionResult.metadata` as `ram_before_gib`,
+`ram_after_gib`, `ram_after_unload_gib`. If available memory remains
+dangerously low even after unload, the campaign stops routing to local Ollama
+for the rest of that session (`campaign_state.local_model["overnight_ram_exhausted"]`)
+rather than repeatedly reloading the model against an already-thin margin. No
+process is ever killed — only Ollama's own supported `keep_alive` behavior is
+used.
 
 Recommended conservative Ollama environment (not required, but documented for
 operators who want it): `OLLAMA_NUM_PARALLEL=1`, `OLLAMA_MAX_LOADED_MODELS=1`.
@@ -177,5 +193,13 @@ Only after local unit tests, a real Ollama smoke test, and a short bounded
 multi-provider campaign have all been verified green:
 
 ```bash
-ai dogfood --until-providers-exhausted
+ai dogfood --until-providers-exhausted --authority-profile overnight-safe
 ```
+
+See [`OVERNIGHT_AUTHORITY.md`](OVERNIGHT_AUTHORITY.md) (#59) for the full
+delegated-authority model this flag binds: exact permissions, denied actions,
+TTL, merge budget, repository allowlist, parked-task/decision-queue behavior,
+and resume semantics. Real git/GitHub integration (branch → commit → push →
+PR → CI → merge) is only ever performed for real, and only within that
+envelope's scope — anything outside it parks for the operator's morning
+review rather than either fabricating success or freezing the whole campaign.
