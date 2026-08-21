@@ -10,13 +10,135 @@ and deterministic mock/fake backends for testing and CI.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
-import json, os, shlex, shutil, subprocess, time
+import hashlib, json, os, shlex, shutil, subprocess, time
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
+from src.control_plane.locking import LocalInferenceLock, LockError
 from src.control_plane.task_spec import TaskSpec, DataClassSerializationMixin
 
 AGENT_EXECUTION_SCHEMA_VERSION = "howlplane.agent_execution/v1"
+
+# Local Ollama defaults (milestone #58). Intentionally conservative: a single
+# 7B-instruct model, a bounded 8K context window, and one inference at a time
+# on modest consumer hardware. See documentation/LOCAL_MODEL.md.
+OLLAMA_DEFAULT_MODEL = "qwen2.5-coder:7b-instruct"
+OLLAMA_DEFAULT_CONTEXT_LENGTH = 8192
+OLLAMA_DEFAULT_MIN_AVAILABLE_RAM_GIB = 8.0
+OLLAMA_DEFAULT_HOST = "http://127.0.0.1:11434"
+OLLAMA_DEFAULT_TIMEOUT_SECONDS = 300
+
+
+class OllamaAvailabilityReason:
+    """Fine-grained local Ollama availability reasons (#58 Phase 2)."""
+
+    NOT_INSTALLED = "OLLAMA_NOT_INSTALLED"
+    SERVICE_UNAVAILABLE = "OLLAMA_SERVICE_UNAVAILABLE"
+    MODEL_NOT_INSTALLED = "MODEL_NOT_INSTALLED"
+    RESOURCE_CONSTRAINED = "RESOURCE_CONSTRAINED"
+    AVAILABLE = "AVAILABLE"
+
+
+def read_available_memory_gib(meminfo_path: Union[str, Path] = "/proc/meminfo") -> Optional[float]:
+    """
+    Reads currently available system memory from /proc/meminfo (Linux-native,
+    no extra dependency). Returns None if unavailable (e.g. non-Linux host).
+    """
+    try:
+        with open(meminfo_path, "r", encoding="utf-8") as fh:
+            for line in fh:
+                if line.startswith("MemAvailable:"):
+                    kb = int(line.split()[1])
+                    return round(kb / (1024 * 1024), 3)
+    except Exception:
+        return None
+    return None
+
+
+@dataclass
+class OllamaDiagnostics:
+    """Result of a local Ollama availability probe."""
+
+    reason: str
+    available: bool
+    available_ram_gib: Optional[float] = None
+    detail: str = ""
+
+
+def _default_ollama_binary_present() -> bool:
+    return shutil.which("ollama") is not None
+
+
+def _default_ollama_service_health(host: str = OLLAMA_DEFAULT_HOST, timeout: float = 2.0) -> bool:
+    try:
+        req = urllib.request.Request(f"{host}/api/tags", method="GET")
+        with urllib.request.urlopen(req, timeout=timeout) as resp:  # nosec B310 - fixed local Ollama endpoint
+            return 200 <= resp.status < 300
+    except Exception:
+        return False
+
+
+def _default_ollama_model_installed(
+    model: str = OLLAMA_DEFAULT_MODEL, host: str = OLLAMA_DEFAULT_HOST, timeout: float = 3.0
+) -> Optional[bool]:
+    """Returns True/False if determinable, or None if the service could not be queried."""
+    try:
+        req = urllib.request.Request(f"{host}/api/tags", method="GET")
+        with urllib.request.urlopen(req, timeout=timeout) as resp:  # nosec B310 - fixed local Ollama endpoint
+            data = json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        return None
+    names = {m.get("name") for m in data.get("models", []) if isinstance(m, dict)}
+    if model in names:
+        return True
+    base = model.split(":")[0]
+    return any(n and n.split(":")[0] == base for n in names)
+
+
+def diagnose_ollama(
+    model: str = OLLAMA_DEFAULT_MODEL,
+    min_available_ram_gib: float = OLLAMA_DEFAULT_MIN_AVAILABLE_RAM_GIB,
+    host: str = OLLAMA_DEFAULT_HOST,
+    binary_check: Callable[[], bool] = _default_ollama_binary_present,
+    service_check: Callable[[str], bool] = _default_ollama_service_health,
+    model_check: Callable[[str, str], Optional[bool]] = _default_ollama_model_installed,
+    memory_reader: Callable[[], Optional[float]] = read_available_memory_gib,
+) -> OllamaDiagnostics:
+    """
+    Deterministically diagnoses local Ollama availability without ever launching
+    inference. Distinguishes "binary missing" from "service down" from "model not
+    pulled" from "not enough RAM right now" (#58 Phase 2 / Phase 5).
+    """
+    if not binary_check():
+        return OllamaDiagnostics(
+            reason=OllamaAvailabilityReason.NOT_INSTALLED,
+            available=False,
+            detail="'ollama' binary not found on PATH.",
+        )
+    if not service_check(host):
+        return OllamaDiagnostics(
+            reason=OllamaAvailabilityReason.SERVICE_UNAVAILABLE,
+            available=False,
+            detail=f"Ollama service did not respond at {host}.",
+        )
+    installed = model_check(model, host)
+    if installed is not True:
+        return OllamaDiagnostics(
+            reason=OllamaAvailabilityReason.MODEL_NOT_INSTALLED,
+            available=False,
+            detail=f"Model '{model}' is not pulled. Run: ollama pull {model}",
+        )
+    ram_gib = memory_reader()
+    if ram_gib is not None and ram_gib < min_available_ram_gib:
+        return OllamaDiagnostics(
+            reason=OllamaAvailabilityReason.RESOURCE_CONSTRAINED,
+            available=False,
+            available_ram_gib=ram_gib,
+            detail=f"Available RAM {ram_gib} GiB is below the required minimum {min_available_ram_gib} GiB.",
+        )
+    return OllamaDiagnostics(reason=OllamaAvailabilityReason.AVAILABLE, available=True, available_ram_gib=ram_gib)
 
 
 class AgentExecutionError(RuntimeError):
@@ -203,9 +325,176 @@ class DevinCLIBackend(SubprocessAgentBackend):
         super().__init__("devin_cli", "devin", _devin_cmd)
 
 
-class LocalOllamaBackend(SubprocessAgentBackend):
-    def __init__(self, model: str = "qwen2.5-coder:32b"):
-        super().__init__("local_ollama", "ollama", lambda t, c, r, p: ["ollama", "run", model, p])
+class OllamaLocalBackend(AgentBackend):
+    """
+    Real local inference backend for the canonical Tier-3 local model
+    (qwen2.5-coder:7b-instruct) via Ollama's HTTP API (#58 Phase 4).
+
+    Truthful attribution: this backend only reports `implementing_provider =
+    local_ollama` when actual local inference executed. Unavailability,
+    resource constraints, and concurrency contention are returned as
+    distinct, non-exhaustion failure classifications (see provider_pool.py's
+    `detect_exhaustion` special-casing of local providers).
+    """
+
+    agent_id = "local_ollama"
+
+    def __init__(
+        self,
+        model: str = OLLAMA_DEFAULT_MODEL,
+        context_length: int = OLLAMA_DEFAULT_CONTEXT_LENGTH,
+        min_available_ram_gib: float = OLLAMA_DEFAULT_MIN_AVAILABLE_RAM_GIB,
+        host: str = OLLAMA_DEFAULT_HOST,
+        repo_root: Union[str, Path] = ".",
+        diagnostics_fn: Optional[Callable[[], "OllamaDiagnostics"]] = None,
+        http_generate: Optional[Callable[[Dict[str, Any], float], Dict[str, Any]]] = None,
+        memory_reader: Callable[[], Optional[float]] = read_available_memory_gib,
+    ):
+        self.model = model
+        self.context_length = context_length
+        self.min_available_ram_gib = min_available_ram_gib
+        self.host = host
+        self.repo_root = Path(repo_root).resolve()
+        self._memory_reader = memory_reader
+        self._diagnostics_fn = diagnostics_fn or (
+            lambda: diagnose_ollama(
+                model=self.model,
+                min_available_ram_gib=self.min_available_ram_gib,
+                host=self.host,
+                memory_reader=self._memory_reader,
+            )
+        )
+        self._http_generate = http_generate or self._default_http_generate
+
+    def diagnose(self) -> OllamaDiagnostics:
+        return self._diagnostics_fn()
+
+    def is_available(self) -> bool:
+        return self.diagnose().available
+
+    def _default_http_generate(self, payload: Dict[str, Any], timeout: float) -> Dict[str, Any]:
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            f"{self.host}/api/generate", data=data,
+            headers={"Content-Type": "application/json"}, method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:  # nosec B310 - fixed local Ollama endpoint
+            return json.loads(resp.read().decode("utf-8"))
+
+    def execute(
+        self,
+        task: TaskSpec,
+        cwd: Union[str, Path],
+        role: str = "implementation",
+        prompt_override: Optional[str] = None,
+        timeout_seconds: int = OLLAMA_DEFAULT_TIMEOUT_SECONDS,
+        env_vars: Optional[Dict[str, str]] = None,
+        **kwargs,
+    ) -> AgentExecutionResult:
+        start_iso = datetime.now(timezone.utc).isoformat()
+        task_id = task.task_id if task else "unknown"
+        command_repr = f"ollama_local:{self.model}"
+
+        # 1. Memory safety FIRST: never launch inference before confirming headroom.
+        diag = self.diagnose()
+        if not diag.available:
+            return AgentExecutionResult(
+                agent_id=self.agent_id, role=role, command=command_repr,
+                exit_code=-2, stdout="", stderr=diag.detail,
+                duration_seconds=0.0, success=False,
+                error_message=diag.reason,
+                metadata={
+                    "provider": self.agent_id, "model": self.model, "task_id": task_id,
+                    "availability_reason": diag.reason, "available_ram_gib": diag.available_ram_gib,
+                    "start_time": start_iso,
+                },
+            )
+
+        prompt = prompt_override or f"Task {task_id}: {task.objective if task else ''}"
+
+        # 2. Context budget: curated prompts only, never silently widened (#58 Phase 8).
+        approx_tokens = len(prompt) // 4
+        if approx_tokens > self.context_length:
+            return AgentExecutionResult(
+                agent_id=self.agent_id, role=role, command=command_repr,
+                exit_code=-3, stdout="", stderr=(
+                    f"Prompt (~{approx_tokens} tokens) exceeds the local context budget "
+                    f"({self.context_length} tokens)."
+                ),
+                duration_seconds=0.0, success=False,
+                error_message="LOCAL_CONTEXT_INSUFFICIENT",
+                metadata={"provider": self.agent_id, "model": self.model, "task_id": task_id, "start_time": start_iso},
+            )
+
+        # 3. Single-flight concurrency: one local inference at a time, machine-wide.
+        lock = LocalInferenceLock(self.repo_root, task_id, command=command_repr)
+        try:
+            lock.acquire()
+        except LockError as exc:
+            return AgentExecutionResult(
+                agent_id=self.agent_id, role=role, command=command_repr,
+                exit_code=-4, stdout="", stderr=str(exc),
+                duration_seconds=0.0, success=False,
+                error_message="LOCAL_PROVIDER_BUSY",
+                metadata={"provider": self.agent_id, "model": self.model, "task_id": task_id, "start_time": start_iso},
+            )
+
+        ram_before = self._memory_reader()
+        t0 = time.time()
+        try:
+            try:
+                result = self._http_generate(
+                    {
+                        "model": self.model,
+                        "prompt": prompt,
+                        "stream": False,
+                        "options": {"num_ctx": self.context_length},
+                    },
+                    timeout_seconds,
+                )
+            except Exception as exc:
+                elapsed = round(time.time() - t0, 3)
+                ram_after = self._memory_reader()
+                return AgentExecutionResult(
+                    agent_id=self.agent_id, role=role, command=command_repr,
+                    exit_code=-1, stdout="", stderr=str(exc),
+                    duration_seconds=elapsed, success=False,
+                    error_message="LOCAL_PROVIDER_UNAVAILABLE",
+                    metadata={
+                        "provider": self.agent_id, "model": self.model, "task_id": task_id,
+                        "start_time": start_iso, "finish_time": datetime.now(timezone.utc).isoformat(),
+                        "ram_before_gib": ram_before, "ram_after_gib": ram_after,
+                    },
+                )
+
+            elapsed = round(time.time() - t0, 3)
+            ram_after = self._memory_reader()
+            output_text = result.get("response", "") if isinstance(result, dict) else ""
+            done = bool(result.get("done", True)) if isinstance(result, dict) else False
+            success = done and bool(output_text.strip())
+
+            return AgentExecutionResult(
+                agent_id=self.agent_id, role=role, command=command_repr,
+                exit_code=0 if success else 1,
+                stdout=output_text,
+                stderr="" if success else "Local model returned an empty or incomplete response.",
+                duration_seconds=elapsed, success=success,
+                error_message=None if success else "ENGINEERING_FAILURE",
+                metadata={
+                    "provider": self.agent_id, "model": self.model, "task_id": task_id,
+                    "task_class": getattr(task, "task_class", None) if task else None,
+                    "start_time": start_iso, "finish_time": datetime.now(timezone.utc).isoformat(),
+                    "context_length": self.context_length,
+                    "ram_before_gib": ram_before, "ram_after_gib": ram_after,
+                    "output_sha256": hashlib.sha256(output_text.encode("utf-8")).hexdigest() if output_text else None,
+                },
+            )
+        finally:
+            lock.release()
+
+
+# Backward-compatible alias: earlier scaffolding referred to this class by this name.
+LocalOllamaBackend = OllamaLocalBackend
 
 
 class FakeAgentBackend(AgentBackend):
@@ -289,7 +578,7 @@ class AgentBackendRegistry:
         "gemini_cli": GeminiCLIBackend(),
         "agy": AgyBackend(),
         "devin_cli": DevinCLIBackend(),
-        "local_ollama": LocalOllamaBackend(),
+        "local_ollama": OllamaLocalBackend(),
     }
 
     _ALIASES: Dict[str, str] = {
@@ -297,6 +586,7 @@ class AgentBackendRegistry:
         "devin": "devin_cli",
         "gemini": "gemini_cli",
         "ollama": "local_ollama",
+        "ollama_local": "local_ollama",
     }
 
     @classmethod

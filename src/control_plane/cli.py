@@ -6,9 +6,10 @@ Deterministic command-line interface for the multi-agent engineering control pla
 """
 
 import argparse
+import os
 from pathlib import Path
 import sys
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from src.control_plane.agent_registry import AgentRegistry
 from src.control_plane.evidence_ledger import EvidenceEntry, EvidenceLedger
@@ -513,10 +514,22 @@ def register_synthesis_subparsers(subparsers: Any, parents: Optional[List[Any]] 
     p_dogfood.add_argument("--max-iterations", type=int, default=5, help="Maximum benchmark iterations")
     p_dogfood.add_argument("--until-providers-exhausted", action="store_true", help="Run until all external providers are exhausted")
     p_dogfood.add_argument("--avoid-provider", help="Avoid using specified provider if alternatives exist")
-    p_dogfood.add_argument("--resume", help="Resume an existing dogfood campaign by campaign ID")
+    p_dogfood.add_argument("--resume", help="Resume an existing dogfood campaign by campaign ID, preserving its persisted benchmark scope")
+    p_dogfood.add_argument(
+        "--status", metavar="CAMPAIGN_ID",
+        help="Read-only: report a campaign's durable state and exit. Never invokes a provider, "
+             "never synthesizes products, never changes campaign scope, consumes zero quota.",
+    )
+    p_dogfood.add_argument("--campaign-dir", default=".dogfood_runs", help="Base directory for durable campaign state")
     p_dogfood.add_argument("--output-dir", default="output", help="Base output directory for generated products")
     p_dogfood.add_argument("--ledger-file", help="Ledger file path")
     p_dogfood.add_argument("--json", action="store_true", help="Output JSON result")
+
+    # local (local Ollama model setup/health check, #58 Phase 3)
+    p_local = subparsers.add_parser("local", help="Local (Ollama) model utilities", **kwargs)
+    p_local.add_argument("local_action", choices=["setup"], help="Action to perform")
+    p_local.add_argument("--model", default="qwen2.5-coder:7b-instruct", help="Model to pull/verify")
+    p_local.add_argument("--json", action="store_true", help="Output JSON result")
 
 
 def _handle_decision(args: argparse.Namespace, decision: str) -> int:
@@ -694,17 +707,53 @@ def cmd_run_product(args: argparse.Namespace) -> int:
         return 0
 
 
+def cmd_dogfood_status(args: argparse.Namespace) -> int:
+    """
+    Read-only dogfood campaign inspection (#58 Phase 1). Loads durable campaign
+    state directly from disk and reports it. Never constructs a provider pool,
+    never probes agent binaries/services, never invokes a provider, never
+    synthesizes a product, and never mutates the persisted campaign scope.
+    """
+    from src.control_plane.synthesis.campaign_state import DurableCampaignState
+
+    campaign_id = args.status
+    campaign_dir = Path(getattr(args, "campaign_dir", ".dogfood_runs") or ".dogfood_runs") / campaign_id
+    try:
+        state = DurableCampaignState.load(campaign_dir)
+    except FileNotFoundError:
+        print(f"No durable campaign state found for '{campaign_id}' at {campaign_dir}.")
+        return 1
+
+    if getattr(args, "json", False):
+        import json
+        print(json.dumps(state.to_dict(), indent=2))
+    else:
+        print(state.render_markdown())
+        pending = [
+            b for b in state.requested_benchmarks
+            if b not in {h.get("benchmark_id") for h in state.benchmark_history if h.get("success")}
+        ]
+        print("\n## Status Inspection (read-only; no provider invoked)\n")
+        print(f"- Pending benchmarks in scope: {', '.join(pending) or 'none'}")
+        print(f"- Next action: {state.next_action}")
+    return 0
+
+
 def cmd_dogfood(args: argparse.Namespace) -> int:
     """Executes marathon dogfooding loop across product benchmarks."""
+    if getattr(args, "status", None):
+        return cmd_dogfood_status(args)
+
     from src.control_plane.synthesis import MarathonDogfoodEngine
     benchmarks = [b.strip() for b in args.benchmarks.split(",")] if getattr(args, "benchmarks", None) else None
     max_iters = getattr(args, "max_iterations", 5)
     avoid = getattr(args, "avoid_provider", None)
     out_base = getattr(args, "output_dir", "output")
+    campaign_dir = getattr(args, "campaign_dir", None)
     resume_id = getattr(args, "resume", None)
     ledger = EvidenceLedger(args.ledger_file) if getattr(args, "ledger_file", None) else None
 
-    engine = MarathonDogfoodEngine(base_output_dir=out_base, ledger=ledger)
+    engine = MarathonDogfoodEngine(base_output_dir=out_base, ledger=ledger, campaign_dir=campaign_dir)
     report = engine.run_marathon(
         benchmarks=benchmarks,
         max_iterations=max_iters,
@@ -720,6 +769,111 @@ def cmd_dogfood(args: argparse.Namespace) -> int:
         print(report.render_markdown())
 
     return 0 if report.iterations_failed == 0 else 1
+
+
+def cmd_local(args: argparse.Namespace) -> int:
+    """
+    Local (Ollama) model utilities (#58 Phase 3). `ai local setup`:
+      1. checks whether Ollama is installed
+      2. installs it via the official installer if missing and the operator
+         confirms (or if HOWLPLANE_LOCAL_AUTO_INSTALL=1 is set)
+      3. pulls the canonical model
+      4. verifies with `ollama list`
+      5. performs a tiny real inference ("Respond only with LOCAL_OK")
+      6. reports PASS/FAIL with duration and observed details
+
+    Never pulls any model other than the one requested (default:
+    qwen2.5-coder:7b-instruct), and never installs anything beyond the
+    official Ollama runtime.
+    """
+    import shutil as _shutil
+    import subprocess as _subprocess
+    import time as _time
+
+    from src.control_plane.agent_execution import OllamaLocalBackend, diagnose_ollama
+    from src.control_plane.task_spec import TaskSpec
+
+    model = getattr(args, "model", "qwen2.5-coder:7b-instruct")
+    report: Dict[str, Any] = {"model": model, "steps": []}
+
+    def _step(name: str, ok: bool, detail: str = "") -> None:
+        report["steps"].append({"name": name, "ok": ok, "detail": detail})
+        symbol = "OK" if ok else "FAIL"
+        print(f"[{symbol}] {name}{': ' + detail if detail else ''}")
+
+    if not _shutil.which("ollama"):
+        auto_install = os.environ.get("HOWLPLANE_LOCAL_AUTO_INSTALL") == "1"
+        if not auto_install:
+            _step(
+                "ollama_installed", False,
+                "Ollama is not installed. Re-run with HOWLPLANE_LOCAL_AUTO_INSTALL=1 to "
+                "install it via the official installer (curl -fsSL https://ollama.com/install.sh | sh), "
+                "or install it yourself first.",
+            )
+            report["result"] = "FAIL"
+            _print_local_report(args, report)
+            return 1
+        try:
+            _subprocess.run(  # nosec B602 - fixed official install command, no shell interpolation of user input
+                ["bash", "-c", "curl -fsSL https://ollama.com/install.sh | sh"],
+                check=True, timeout=600,
+            )
+            _step("ollama_installed", True, "Installed via official installer")
+        except Exception as exc:
+            _step("ollama_installed", False, f"Install failed: {exc}")
+            report["result"] = "FAIL"
+            _print_local_report(args, report)
+            return 1
+    else:
+        _step("ollama_installed", True, "Already on PATH")
+
+    diag = diagnose_ollama(model=model)
+    if diag.reason == "OLLAMA_SERVICE_UNAVAILABLE":
+        _step("ollama_service", False, diag.detail)
+        report["result"] = "FAIL"
+        _print_local_report(args, report)
+        return 1
+    _step("ollama_service", diag.reason != "OLLAMA_SERVICE_UNAVAILABLE", diag.detail)
+
+    if diag.reason == "MODEL_NOT_INSTALLED":
+        try:
+            _subprocess.run(["ollama", "pull", model], check=True, timeout=3600)
+            _step("model_pulled", True, f"Pulled {model}")
+        except Exception as exc:
+            _step("model_pulled", False, str(exc))
+            report["result"] = "FAIL"
+            _print_local_report(args, report)
+            return 1
+    else:
+        _step("model_pulled", True, "Already installed")
+
+    try:
+        listing = _subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=30)
+        model_listed = model.split(":")[0] in listing.stdout
+        _step("ollama_list", model_listed, listing.stdout.strip().splitlines()[-1] if listing.stdout.strip() else "")
+    except Exception as exc:
+        _step("ollama_list", False, str(exc))
+
+    backend = OllamaLocalBackend(model=model)
+    probe_task = TaskSpec(task_id="LOCAL-SETUP-PROBE", repository="howlplane", objective="local setup smoke test", risk_level="low", task_class="docs")
+    t0 = _time.time()
+    result = backend.execute(probe_task, cwd=".", prompt_override="Respond only with LOCAL_OK", timeout_seconds=120)
+    elapsed = round(_time.time() - t0, 3)
+    inference_ok = result.success and "LOCAL_OK" in result.stdout
+    _step("inference_smoke_test", inference_ok, f"stdout={result.stdout.strip()!r} duration={elapsed}s")
+
+    report["result"] = "PASS" if inference_ok else "FAIL"
+    report["duration_seconds"] = elapsed
+    _print_local_report(args, report)
+    return 0 if inference_ok else 1
+
+
+def _print_local_report(args: argparse.Namespace, report: Dict[str, Any]) -> None:
+    if getattr(args, "json", False):
+        import json
+        print(json.dumps(report, indent=2))
+    else:
+        print(f"\nResult: {report.get('result')}")
 
 
 def main(args: Optional[List[str]] = None) -> int:
@@ -752,6 +906,7 @@ def main(args: Optional[List[str]] = None) -> int:
         "create": cmd_create,
         "run": cmd_run_product,
         "dogfood": cmd_dogfood,
+        "local": cmd_local,
     }
 
     handler = handlers.get(parsed_args.subcommand)
