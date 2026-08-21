@@ -35,6 +35,7 @@ from src.control_plane.cli import (
     cmd_create as cp_cmd_create,
     cmd_run_product as cp_cmd_run_product,
     cmd_dogfood as cp_cmd_dogfood,
+    cmd_local as cp_cmd_local,
     register_synthesis_subparsers,
 )
 from src.control_plane.evidence_ledger import EvidenceEntry, EvidenceLedger
@@ -842,6 +843,7 @@ def main(args: Optional[List[str]] = None) -> int:
         "create": cp_cmd_create,
         "run": cp_cmd_run_product,
         "dogfood": cp_cmd_dogfood,
+        "local": cp_cmd_local,
     }
     fn = actions.get(opts.subcommand)
     if not fn:

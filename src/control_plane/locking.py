@@ -271,3 +271,37 @@ class TaskLock(_BaseFileLock):
     ):
         path = get_task_lock_path(repo_root, task_id)
         super().__init__(repo_root, task_id, path, command, operation)
+
+
+class LocalInferenceBusyError(LockError):
+    """Raised when a second local model inference is attempted while one is already running."""
+    pass
+
+
+def get_local_inference_lock_path(repo_root: Union[str, Path]) -> Path:
+    """Canonical machine-wide lock path enforcing a single concurrent local inference."""
+    root = Path(repo_root).resolve()
+    task_runs = root / ".task_runs"
+    task_runs.mkdir(parents=True, exist_ok=True)
+    return task_runs / ".local_inference.lock"
+
+
+class LocalInferenceLock(_BaseFileLock):
+    """
+    Machine-wide mutual-exclusion lock enforcing exactly one concurrent local
+    (Ollama) model inference at a time, regardless of how many HowlPlane
+    processes are running (#58 Phase 7). HowlPlane's own lock is authoritative
+    and does not rely solely on Ollama's own internal queuing behavior.
+    """
+
+    lock_type = "local_inference"
+    error_cls = LocalInferenceBusyError
+
+    def __init__(
+        self,
+        repo_root: Union[str, Path],
+        task_id: str,
+        command: str = "ollama_local",
+    ):
+        path = get_local_inference_lock_path(repo_root)
+        super().__init__(repo_root, task_id, path, command, "local_inference")

@@ -155,14 +155,28 @@ class ProductSynthesizer:
                 error_message=f"HowlFrame framework gaps block product: {neg_res.framework_gaps[0].required_behavior}",
             )
 
-        # 3. Provider Selection with Fallback
+        # 3. Provider Selection with Fallback. Full product synthesis is a broad,
+        # non-mechanical task and is never local-eligible (#58 Phase 9): gate via a
+        # medium-risk probe task so `local_ollama` is excluded even when AVAILABLE,
+        # keeping campaigns finite once cloud providers are exhausted.
+        synthesis_task_probe = TaskSpec(
+            task_id=f"SYNTH-{spec.name.upper()}",
+            repository=spec.name,
+            objective=f"Synthesize {spec.title} HowlFrame product",
+            task_class="feature",
+            risk_level="medium",
+        )
         candidates = self.provider_pool.select_candidates(
             task_category="code_heavy",
             avoid_provider=avoid_provider,
             preferred_agent=preferred_agent,
+            task=synthesis_task_probe,
         )
         if not candidates and not self.custom_backend:
-            if self.provider_pool.is_all_exhausted() and self.synthesis_mode != "deterministic_baseline":
+            # Local Ollama has no subscription quota and is never eligible for full
+            # product synthesis (see probe task above), so it must not keep this
+            # perpetually "not exhausted" -- gate on cloud providers specifically.
+            if self.provider_pool.is_all_cloud_exhausted() and self.synthesis_mode != "deterministic_baseline":
                 return self._exhausted_result(spec, neg_res, t0, "All configured providers are currently exhausted or unavailable")
             candidates = ["deterministic_baseline"]
 
@@ -409,10 +423,18 @@ class ProductSynthesizer:
             self._synthesize_product_files(out_path, spec, repair_iteration=1)
             return "deterministic_baseline"
 
+        repair_task_probe = TaskSpec(
+            task_id=f"REPAIR-{spec.name.upper()}",
+            repository=spec.name,
+            objective=f"Repair {spec.title} after {failure_stage} failure",
+            task_class="bug_fix",
+            risk_level="medium",
+        )
         candidates = self.provider_pool.select_candidates(
             task_category="code_heavy",
             avoid_provider=avoid_provider,
             preferred_agent=current_provider,
+            task=repair_task_probe,
         )
 
         for candidate in candidates:

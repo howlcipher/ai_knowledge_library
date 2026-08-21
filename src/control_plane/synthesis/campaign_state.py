@@ -20,6 +20,27 @@ from src.control_plane.task_spec import DataClassSerializationMixin
 
 CAMPAIGN_STATE_SCHEMA_VERSION = "howlplane.marathon_dogfood_state/v1"
 
+# Default local-only continuation budget: after all cloud providers are
+# exhausted, at most this many consecutive local-eligible iterations run
+# before the campaign stops cleanly (#58 Phase 13).
+DEFAULT_LOCAL_ONLY_ITERATION_LIMIT = 10
+
+
+def default_local_model_state() -> Dict[str, Any]:
+    return {
+        "provider": "local_ollama",
+        "model": "qwen2.5-coder:7b-instruct",
+        "context_length": 8192,
+        "local_only_iterations": 0,
+        "local_only_iteration_limit": DEFAULT_LOCAL_ONLY_ITERATION_LIMIT,
+        "resource_guard_min_ram_gib": 8.0,
+        "last_available_ram_gib": None,
+        "success_count": 0,
+        "failure_count": 0,
+        "escalations": 0,
+        "current_availability": "UNKNOWN",
+    }
+
 
 @dataclass
 class GitIntegrationRecord(DataClassSerializationMixin):
@@ -51,6 +72,13 @@ class DurableCampaignState(DataClassSerializationMixin):
     north_star_objective: str = "Prompt -> Create -> Verify/Repair -> Usable Product"
     active_benchmark: Optional[str] = None
     active_engineering_task: Optional[str] = None
+    # Persisted benchmark/task scope this campaign was actually asked to run.
+    # `ai dogfood --resume <id>` restores exactly this scope rather than
+    # silently expanding to the full default benchmark suite (#58 Phase 1).
+    requested_benchmarks: List[str] = field(default_factory=list)
+    scope_extensions: List[Dict[str, Any]] = field(default_factory=list)
+    # Local (quota-free) model participation state (#58 Phase 15).
+    local_model: Dict[str, Any] = field(default_factory=dict)
     benchmark_history: List[Dict[str, Any]] = field(default_factory=list)
     provider_states: Dict[str, str] = field(default_factory=dict)
     provider_invocations: Dict[str, int] = field(default_factory=dict)
@@ -70,6 +98,65 @@ class DurableCampaignState(DataClassSerializationMixin):
 
     def update_timestamp(self) -> None:
         self.updated_at = datetime.now(timezone.utc).isoformat()
+
+    def ensure_local_model_defaults(self) -> Dict[str, Any]:
+        """Lazily populates `local_model` for campaigns created before #58."""
+        if not self.local_model:
+            self.local_model = default_local_model_state()
+        return self.local_model
+
+    def extend_benchmark_scope(self, additional_benchmarks: List[str]) -> List[str]:
+        """
+        Explicitly adds benchmarks to the persisted campaign scope. Returns the
+        list of benchmarks actually added (already-present ones are no-ops).
+        Recorded as a distinct scope-extension event so it's clear this was an
+        explicit operator widening rather than an implicit resume expansion.
+        """
+        added = [b for b in additional_benchmarks if b not in self.requested_benchmarks]
+        if added:
+            self.requested_benchmarks = self.requested_benchmarks + added
+            self.scope_extensions.append({
+                "added": added,
+                "at": datetime.now(timezone.utc).isoformat(),
+            })
+            self.update_timestamp()
+        return added
+
+    def record_local_success(self, ram_gib: Optional[float] = None) -> None:
+        lm = self.ensure_local_model_defaults()
+        lm["success_count"] = lm.get("success_count", 0) + 1
+        if ram_gib is not None:
+            lm["last_available_ram_gib"] = ram_gib
+        self.update_timestamp()
+
+    def record_local_failure(self, ram_gib: Optional[float] = None) -> None:
+        lm = self.ensure_local_model_defaults()
+        lm["failure_count"] = lm.get("failure_count", 0) + 1
+        if ram_gib is not None:
+            lm["last_available_ram_gib"] = ram_gib
+        self.update_timestamp()
+
+    def record_local_escalation(self) -> None:
+        lm = self.ensure_local_model_defaults()
+        lm["escalations"] = lm.get("escalations", 0) + 1
+        self.update_timestamp()
+
+    def increment_local_only_iteration(self) -> int:
+        """Increments and returns the consecutive local-only continuation counter."""
+        lm = self.ensure_local_model_defaults()
+        lm["local_only_iterations"] = lm.get("local_only_iterations", 0) + 1
+        self.update_timestamp()
+        return lm["local_only_iterations"]
+
+    def reset_local_only_iterations(self) -> None:
+        """Resets the counter once cloud capacity is available again (not on local success)."""
+        lm = self.ensure_local_model_defaults()
+        lm["local_only_iterations"] = 0
+        self.update_timestamp()
+
+    def local_only_budget_reached(self) -> bool:
+        lm = self.ensure_local_model_defaults()
+        return lm.get("local_only_iterations", 0) >= lm.get("local_only_iteration_limit", DEFAULT_LOCAL_ONLY_ITERATION_LIMIT)
 
     def record_provider_invocation(self, agent_id: str) -> None:
         self.provider_invocations[agent_id] = self.provider_invocations.get(agent_id, 0) + 1
@@ -134,6 +221,7 @@ class DurableCampaignState(DataClassSerializationMixin):
             f"- **Iterations:** {self.iterations_succeeded}/{self.iterations_attempted} succeeded ({self.iterations_failed} failed)",
             f"- **Total Repair Cycles:** {self.repair_cycles_total}",
             f"- **Next Action:** `{self.next_action}`",
+            f"- **Requested Benchmark Scope:** `{', '.join(self.requested_benchmarks) or 'N/A'}`",
             "",
             "## Provider Status & Invocations",
             "",
@@ -162,6 +250,21 @@ class DurableCampaignState(DataClassSerializationMixin):
                 f"{b.get('repair_cycles', 0)} | {b.get('duration_seconds', 0)}s | "
                 f"`{b.get('implementing_provider', 'unknown')}` | `{bpath}` |"
             )
+
+        if self.local_model:
+            lm = self.local_model
+            lines.extend([
+                "",
+                "## Local Model Participation",
+                "",
+                f"- **Provider/Model:** `{lm.get('provider')}` / `{lm.get('model')}`",
+                f"- **Context Length:** {lm.get('context_length')}",
+                f"- **Local Success/Failure:** {lm.get('success_count', 0)}/{lm.get('failure_count', 0)}",
+                f"- **Escalations to Cloud:** {lm.get('escalations', 0)}",
+                f"- **Local-Only Continuation:** {lm.get('local_only_iterations', 0)}/{lm.get('local_only_iteration_limit')}",
+                f"- **Last Observed Available RAM:** {lm.get('last_available_ram_gib')} GiB",
+                f"- **Current Availability:** `{lm.get('current_availability')}`",
+            ])
 
         if self.framework_gaps:
             lines.extend([

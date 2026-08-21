@@ -77,8 +77,9 @@ def test_scenario_1_codex_succeeds_and_executes(tmp_path: Path):
 
 
 class ProgrammableDispatcherBackend(AgentBackend):
-    def __init__(self, outcomes: Dict[str, Tuple[int, str, str]]):
+    def __init__(self, outcomes: Dict[str, Tuple[int, str, str]], error_messages: Dict[str, str] = None):
         self.outcomes = outcomes
+        self.error_messages = error_messages or {}
         self.invocations: List[str] = []
 
     def is_available(self) -> bool:
@@ -98,6 +99,7 @@ class ProgrammableDispatcherBackend(AgentBackend):
             stderr=stderr,
             duration_seconds=0.02,
             success=(code == 0),
+            error_message=self.error_messages.get(task.actual_agent),
         )
 
 
@@ -147,11 +149,20 @@ def test_scenario_3_and_4_devin_and_claude_fallback_chain(tmp_path: Path):
 
 
 def test_scenario_5_all_providers_exhausted_clean_stop(tmp_path: Path):
-    """Scenario 5: All providers return exhaustion -> campaign stops cleanly with PROVIDER_POOL_EXHAUSTED."""
-    dispatcher = ProgrammableDispatcherBackend({
-        p: (1, "", "Quota exceeded. Usage limit reached for account.")
-        for p in ["codex", "agy", "devin_cli", "claude_code", "gemini_cli", "local_ollama"]
-    })
+    """Scenario 5: All providers return exhaustion/unavailability -> campaign stops cleanly with PROVIDER_POOL_EXHAUSTED.
+
+    `local_ollama` has no subscription quota (#58), so it cannot be classified
+    SESSION_EXHAUSTED/RATE_LIMITED; it is simulated here as genuinely unavailable
+    (e.g. Ollama not installed on the CI runner) via an explicit error_message,
+    matching how the real backend classifies that failure.
+    """
+    dispatcher = ProgrammableDispatcherBackend(
+        {
+            p: (1, "", "Quota exceeded. Usage limit reached for account.")
+            for p in ["codex", "agy", "devin_cli", "claude_code", "gemini_cli"]
+        } | {"local_ollama": (1, "", "ollama: command not found")},
+        error_messages={"local_ollama": "OLLAMA_NOT_INSTALLED"},
+    )
     pool = ProviderPoolManager()
     for p in ["codex", "agy", "devin_cli", "claude_code", "gemini_cli", "local_ollama"]:
         pool.set_status(p, ProviderAvailabilityStatus.AVAILABLE)
@@ -162,6 +173,10 @@ def test_scenario_5_all_providers_exhausted_clean_stop(tmp_path: Path):
     assert res.success is False
     assert res.status == "PROVIDER_POOL_EXHAUSTED"
     assert pool.get_status("codex") in (ProviderAvailabilityStatus.SESSION_EXHAUSTED, ProviderAvailabilityStatus.RATE_LIMITED)
+    # Full product synthesis is medium risk and never local-eligible (#58 Phase 9):
+    # local_ollama must not even be attempted merely because cloud is exhausted.
+    assert "local_ollama" not in dispatcher.invocations
+    assert pool.get_status("local_ollama") == ProviderAvailabilityStatus.AVAILABLE
 
 
 def test_scenario_6_engineering_failure_does_not_exhaust_provider(tmp_path: Path):

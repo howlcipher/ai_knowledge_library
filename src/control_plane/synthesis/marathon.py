@@ -17,6 +17,7 @@ from pathlib import Path
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+from src.control_plane.agent_execution import AgentBackendRegistry, read_available_memory_gib
 from src.control_plane.evidence_ledger import EvidenceEntry, EvidenceLedger
 from src.control_plane.orchestrator import GovernedTaskOrchestrator, OrchestrationConfig
 from src.control_plane.synthesis.campaign_state import (
@@ -29,6 +30,7 @@ from src.control_plane.synthesis.engine import ProductSynthesizer, SynthesisResu
 from src.control_plane.synthesis.provider_pool import (
     ProviderAvailabilityStatus,
     ProviderPoolManager,
+    is_task_local_eligible,
 )
 from src.control_plane.task_spec import DataClassSerializationMixin, TaskSpec
 
@@ -179,16 +181,38 @@ class MarathonDogfoodEngine:
         state_dir = self.campaign_base_dir / campaign_id
         state_dir.mkdir(parents=True, exist_ok=True)
 
+        scope_extended: List[str] = []
         if resume_campaign_id and (state_dir / "campaign_state.json").is_file():
             campaign_state = DurableCampaignState.load(state_dir)
-            # Re-check provider availability upon resume (quotas may have refreshed)
+            # Re-check LIVE provider availability upon resume: previously exhausted
+            # cloud providers may have refreshed quota (#58 Phase 16).
             self.provider_pool.reset_transient_exhaustion()
+
+            # Restore the campaign's PERSISTED benchmark scope. A resume must NOT
+            # silently expand into the full default benchmark suite (#58 Phase 1).
+            # Campaigns persisted before #58 have no `requested_benchmarks`; fall
+            # back to the full default suite once, for backward compatibility.
+            persisted_scope = campaign_state.requested_benchmarks or list(STANDARD_BENCHMARKS.keys())
+            if benchmarks:
+                # Explicit --benchmarks on a resume is treated as an operator-driven
+                # scope EXTENSION, not a silent expansion or an override.
+                scope_extended = campaign_state.extend_benchmark_scope(benchmarks)
+                benchmark_keys_scope = campaign_state.requested_benchmarks
+            else:
+                benchmark_keys_scope = persisted_scope
+            campaign_state.requested_benchmarks = benchmark_keys_scope
+
+            # Skip benchmarks already verified successful in a prior session; retry
+            # any that previously failed, plus anything newly added to scope.
+            already_succeeded = {
+                b.get("benchmark_id") for b in campaign_state.benchmark_history if b.get("success")
+            }
+            benchmark_keys = [b for b in benchmark_keys_scope if b not in already_succeeded]
         else:
             campaign_state = DurableCampaignState(campaign_id=campaign_id)
+            benchmark_keys = benchmarks or list(STANDARD_BENCHMARKS.keys())
+            campaign_state.requested_benchmarks = list(benchmark_keys)
 
-        # 2. Determine iteration ceilings & benchmarks
-        benchmark_keys = benchmarks or list(STANDARD_BENCHMARKS.keys())
-        
         # When --until-providers-exhausted is True, do not silently cap at 5;
         # set high safety ceiling (e.g. 100) to allow long autonomous campaigns
         if until_providers_exhausted:
@@ -218,13 +242,31 @@ class MarathonDogfoodEngine:
             campaign_state.provider_states = self.provider_pool.get_all_statuses()
             campaign_state.save(state_dir)
 
-            # Check provider pool capacity
+            # Check provider pool capacity. Full-app benchmark synthesis is a broad
+            # task and never local-eligible (#58 Phase 9), so probe with a
+            # medium-risk task to correctly exclude the quota-free local model from
+            # this capacity check -- otherwise a machine with Ollama installed would
+            # never observe "exhausted" and the campaign could run indefinitely.
+            benchmark_task_probe = TaskSpec(
+                task_id=f"BENCH-{b_key.upper()}", repository="dogfood",
+                objective=prompt, task_class="feature", risk_level="medium",
+            )
             available_candidates = self.provider_pool.select_candidates(
                 task_category="code_heavy",
                 avoid_provider=avoid_provider,
                 preferred_agent=preferred_agent,
+                task=benchmark_task_probe,
             )
-            if self.provider_pool.is_all_exhausted() or (not available_candidates and self.synthesizer.synthesis_mode != "deterministic_baseline"):
+            # `is_all_exhausted()` (true SESSION_EXHAUSTED/RATE_LIMITED quota
+            # exhaustion) always stops, even in deterministic-baseline mode, same
+            # as before #58. Local Ollama can never reach that state, so this
+            # branch is unaffected by its presence. Lack of any *candidate*
+            # (e.g. no real provider binaries installed) only stops real runs;
+            # deterministic-baseline mode (used in CI/tests) synthesizes
+            # regardless of provider availability, exactly as before #58.
+            if self.provider_pool.is_all_exhausted() or (
+                not available_candidates and self.synthesizer.synthesis_mode != "deterministic_baseline"
+            ):
                 stop_reason = "all_providers_exhausted"
                 break
 
@@ -326,6 +368,17 @@ class MarathonDogfoodEngine:
         if iteration_idx >= effective_max_iterations and stop_reason == "completed_all_benchmarks" and len(results) < len(benchmark_keys):
             stop_reason = "campaign_safety_ceiling_reached"
 
+        # Cloud exhausted: before stopping, use bounded LOCAL_ONLY_CONTINUATION to
+        # mop up any outstanding, evidence-backed, local-eligible engineering gaps
+        # rather than declaring the campaign done with unresolved fixable gaps
+        # (#58 Phase 13). This never runs unbounded: capped by the durable
+        # `local_only_iteration_limit` counter, and it never re-attempts full
+        # benchmark synthesis (not local-eligible; see capacity probe above).
+        if stop_reason == "all_providers_exhausted":
+            local_backend = AgentBackendRegistry.get_backend("local_ollama")
+            if local_backend.is_available():
+                stop_reason = self._run_local_only_continuation(campaign_state, avoid_provider)
+
         total_elapsed = round(time.time() - t0, 3)
         succeeded = sum(1 for r in results if r.success)
         failed = len(results) - succeeded
@@ -351,6 +404,74 @@ class MarathonDogfoodEngine:
             next_action=campaign_state.next_action,
             state_dir=str(state_dir),
         )
+
+    def _run_local_only_continuation(self, campaign_state: DurableCampaignState, avoid_provider: Optional[str]) -> str:
+        """
+        Bounded local-only engineering continuation, entered only once every cloud
+        provider is exhausted/unavailable (#58 Phase 13). Attempts to resolve
+        outstanding, evidence-backed framework gaps (recorded during this
+        campaign) using the quota-free local model, one gap per iteration, up to
+        `local_only_iteration_limit` consecutive iterations. Never retried
+        indefinitely: a local failure on a gap escalates immediately rather than
+        looping, since no cloud provider remains available to escalate to right
+        now -- that gap is simply left unresolved for a future resumed session.
+        Returns the final stop_reason.
+        """
+        lm = campaign_state.ensure_local_model_defaults()
+        resolved_codes = {t.get("gap_type_resolved") for t in campaign_state.completed_tasks if t.get("gap_type_resolved")}
+        pending_gaps = [g for g in campaign_state.framework_gaps if g.get("code") not in resolved_codes]
+
+        for gap in pending_gaps:
+            if campaign_state.local_only_budget_reached():
+                campaign_state.save(self.campaign_base_dir / campaign_state.campaign_id)
+                return "local_only_budget_reached"
+
+            ram_before = read_available_memory_gib()
+            lm["last_available_ram_gib"] = ram_before
+            iteration_no = campaign_state.increment_local_only_iteration()
+
+            task_id = f"LOCAL-{gap.get('code', 'GAP')}-{iteration_no:02d}"
+            task_success, git_rec = self._execute_governed_engineering_improvement(
+                task_id=task_id,
+                benchmark_key=gap.get("code", "unknown"),
+                gap_type=gap.get("code", "UNKNOWN_GAP"),
+                gap_desc=gap.get("required_behavior", ""),
+                avoid_provider=avoid_provider,
+                risk_level="low",
+            )
+
+            if task_success and git_rec and git_rec.get("provider") == "local_ollama":
+                campaign_state.record_local_success(ram_before)
+                git_rec["gap_type_resolved"] = gap.get("code")
+                campaign_state.record_task_completed({
+                    "task_id": task_id,
+                    "objective": f"[local_ollama] Resolve {gap.get('code')}",
+                    "provider": "local_ollama",
+                    "remediations": 0,
+                    "gap_type_resolved": gap.get("code"),
+                })
+                campaign_state.record_git_integration(git_rec)
+            elif task_success and git_rec:
+                # A cloud provider became available mid-continuation; that's fine,
+                # but it means local-only continuation is no longer necessary.
+                campaign_state.record_task_completed({
+                    "task_id": task_id, "objective": f"Resolve {gap.get('code')}",
+                    "provider": git_rec.get("provider"), "remediations": 0,
+                })
+                campaign_state.record_git_integration(git_rec)
+                campaign_state.reset_local_only_iterations()
+            else:
+                campaign_state.record_local_failure(ram_before)
+                campaign_state.record_local_escalation()
+                campaign_state.record_task_failed({
+                    "task_id": task_id, "objective": f"Resolve {gap.get('code')}",
+                    "provider": "local_ollama", "error": "LOCAL_CAPABILITY_INSUFFICIENT: no eligible provider remained",
+                })
+
+            campaign_state.save(self.campaign_base_dir / campaign_state.campaign_id)
+
+        lm["current_availability"] = "AVAILABLE"
+        return "all_providers_exhausted"
 
     def _execute_synthesis(
         self,
@@ -389,14 +510,26 @@ class MarathonDogfoodEngine:
         gap_type: str,
         gap_desc: str,
         avoid_provider: Optional[str] = None,
+        risk_level: str = "medium",
     ) -> Tuple[bool, Optional[Dict[str, Any]]]:
         """
         Executes a bounded engineering task through the governed lifecycle:
         task branch -> provider implementation -> independent review -> verification -> commit/PR/merge.
+
+        `risk_level="low"` (used by bounded LOCAL_ONLY_CONTINUATION) makes the
+        quota-free local model an eligible candidate for this specific fix;
+        the default "medium" keeps normal in-campaign gap fixes on cloud
+        providers, consistent with Tier-3 local eligibility rules (#58 Phase 9).
         """
+        gap_probe = TaskSpec(
+            task_id=task_id, repository="howlplane",
+            objective=f"Resolve {gap_type} for {benchmark_key}: {gap_desc}",
+            task_class="bug_fix", risk_level=risk_level,
+        )
         candidates = self.provider_pool.select_candidates(
             task_category="code_heavy",
             avoid_provider=avoid_provider,
+            task=gap_probe,
         )
         if not candidates:
             return False, None

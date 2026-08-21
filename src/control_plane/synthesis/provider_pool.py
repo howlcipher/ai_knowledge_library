@@ -21,9 +21,40 @@ from src.control_plane.agent_execution import (
     AgentExecutionResult,
 )
 from src.control_plane.agent_registry import AgentProfile, AgentRegistry
-from src.control_plane.task_spec import DataClassSerializationMixin
+from src.control_plane.task_spec import DataClassSerializationMixin, TaskSpec
 
 PROVIDER_POOL_SCHEMA_VERSION = "howlplane.provider_pool/v1"
+
+LOCAL_PROVIDER_IDS = {"local_ollama", "ollama_local"}
+
+# Task classes/skills that must never be routed to a local Tier-3 model merely
+# because cloud providers are exhausted. See milestone #58 Phase 9.
+LOCAL_INELIGIBLE_TASK_CLASSES = {"security_patch", "infrastructure"}
+LOCAL_INELIGIBLE_SKILLS = {
+    "cyber_security", "blue_team", "red_team", "bug_bounty_hunter",
+    "database_management", "devops_sre", "network_engineering",
+}
+
+
+def is_task_local_eligible(task: Optional[TaskSpec]) -> bool:
+    """
+    Determines whether a task is an appropriate Tier-3 / low-risk candidate for
+    the local (quota-free, weaker) Ollama model, per milestone #58 Phase 9.
+
+    Local-eligible: low risk_level and not touching a disallowed task_class/skill.
+    Everything else (medium/high/critical risk, security/authority/infra work,
+    or when no task is given) defaults to ineligible so local participation
+    never silently expands to consequential or ambiguous work.
+    """
+    if task is None:
+        return False
+    if task.risk_level != "low":
+        return False
+    if task.task_class in LOCAL_INELIGIBLE_TASK_CLASSES:
+        return False
+    if set(task.required_skills or []).intersection(LOCAL_INELIGIBLE_SKILLS):
+        return False
+    return True
 
 
 class ProviderAvailabilityStatus(str, Enum):
@@ -31,6 +62,7 @@ class ProviderAvailabilityStatus(str, Enum):
     RATE_LIMITED = "RATE_LIMITED"
     SESSION_EXHAUSTED = "SESSION_EXHAUSTED"
     UNAVAILABLE = "UNAVAILABLE"
+    RESOURCE_CONSTRAINED = "RESOURCE_CONSTRAINED"
     UNKNOWN = "UNKNOWN"
 
 
@@ -107,6 +139,7 @@ class ProviderStatus(DataClassSerializationMixin):
     exhaustion_event: Optional[ProviderExhaustionEvent] = None
     success_count: int = 0
     total_duration_seconds: float = 0.0
+    unavailable_reason: Optional[str] = None
 
 
 class ProviderPoolManager:
@@ -129,14 +162,34 @@ class ProviderPoolManager:
 
     def _initialize_states(self) -> None:
         for p in self.registry.list_agents():
-            # Check binary presence on PATH
             backend = AgentBackendRegistry.get_backend(p.agent_id)
-            initial_status = ProviderAvailabilityStatus.AVAILABLE if backend.is_available() else ProviderAvailabilityStatus.UNAVAILABLE
+            status, reason = self._probe_backend(backend)
             self._provider_states[p.agent_id] = ProviderStatus(
                 agent_id=p.agent_id,
                 name=p.name,
-                status=initial_status,
+                status=status,
+                unavailable_reason=reason,
             )
+
+    @staticmethod
+    def _probe_backend(backend: AgentBackend) -> Tuple[ProviderAvailabilityStatus, Optional[str]]:
+        """
+        Probes a backend's live availability. Backends exposing a `diagnose()`
+        method (e.g. the local Ollama backend) provide a fine-grained reason
+        distinguishing "not installed" / "service unavailable" / "model not
+        installed" / "resource constrained" from a simple boolean.
+        """
+        diagnose = getattr(backend, "diagnose", None)
+        if callable(diagnose):
+            diag = diagnose()
+            if diag.available:
+                return ProviderAvailabilityStatus.AVAILABLE, None
+            if diag.reason == "RESOURCE_CONSTRAINED":
+                return ProviderAvailabilityStatus.RESOURCE_CONSTRAINED, diag.reason
+            return ProviderAvailabilityStatus.UNAVAILABLE, diag.reason
+        if backend.is_available():
+            return ProviderAvailabilityStatus.AVAILABLE, None
+        return ProviderAvailabilityStatus.UNAVAILABLE, None
 
     def _normalize(self, agent_id: str) -> str:
         return AgentBackendRegistry.normalize_agent_id(agent_id)
@@ -160,11 +213,11 @@ class ProviderPoolManager:
         """Resets transient rate-limited and session-exhausted states on new or resumed campaigns."""
         for agent_id, status_obj in self._provider_states.items():
             backend = AgentBackendRegistry.get_backend(agent_id)
-            if backend.is_available():
-                status_obj.status = ProviderAvailabilityStatus.AVAILABLE
+            status, reason = self._probe_backend(backend)
+            status_obj.status = status
+            status_obj.unavailable_reason = reason
+            if status == ProviderAvailabilityStatus.AVAILABLE:
                 status_obj.exhaustion_event = None
-            else:
-                status_obj.status = ProviderAvailabilityStatus.UNAVAILABLE
 
     def get_all_statuses(self) -> Dict[str, str]:
         """Returns snapshot of current provider statuses."""
@@ -177,6 +230,28 @@ class ProviderPoolManager:
             for s in self._provider_states.values()
         )
 
+    def is_all_cloud_exhausted(self) -> bool:
+        """
+        Returns True when every non-local (cloud) provider is exhausted, rate-limited,
+        or unavailable. Local Ollama is quota-free and intentionally excluded from this
+        check: its presence must never keep this returning False forever, but it also
+        must never count as "cloud capacity" for exhaustion purposes (see #58 Phase 13).
+        """
+        cloud_statuses = [
+            ps.status for aid, ps in self._provider_states.items()
+            if aid not in LOCAL_PROVIDER_IDS
+        ]
+        if not cloud_statuses:
+            return True
+        return all(
+            st in (
+                ProviderAvailabilityStatus.SESSION_EXHAUSTED,
+                ProviderAvailabilityStatus.RATE_LIMITED,
+                ProviderAvailabilityStatus.UNAVAILABLE,
+            )
+            for st in cloud_statuses
+        )
+
     def detect_exhaustion(self, agent_id: str, result: AgentExecutionResult, task_id: Optional[str] = None) -> Optional[ProviderExhaustionEvent]:
         """
         Distinguishes provider availability failures from normal engineering failures.
@@ -187,6 +262,29 @@ class ProviderPoolManager:
                 self._provider_states[nid].status = ProviderAvailabilityStatus.AVAILABLE
                 self._provider_states[nid].success_count += 1
                 self._provider_states[nid].total_duration_seconds += result.duration_seconds
+            return None
+
+        # Local Ollama has no subscription quota: it can never be "exhausted" in the
+        # RATE_LIMITED/SESSION_EXHAUSTED sense. Classify its failures explicitly instead
+        # of pattern-matching model output text (#58 Phase 11).
+        if nid in LOCAL_PROVIDER_IDS:
+            reason = (result.error_message or "").upper()
+            if reason == "RESOURCE_CONSTRAINED":
+                event = ProviderExhaustionEvent(
+                    agent_id=nid, failure_type="unavailable",
+                    raw_error=result.stderr.strip() or "Insufficient available RAM", task_id=task_id,
+                )
+                self.set_status(nid, ProviderAvailabilityStatus.RESOURCE_CONSTRAINED, event)
+                return event
+            if reason in ("OLLAMA_NOT_INSTALLED", "OLLAMA_SERVICE_UNAVAILABLE", "MODEL_NOT_INSTALLED", "LOCAL_PROVIDER_UNAVAILABLE", "LOCAL_PROVIDER_BUSY"):
+                event = ProviderExhaustionEvent(
+                    agent_id=nid, failure_type="unavailable",
+                    raw_error=result.stderr.strip() or reason, task_id=task_id,
+                )
+                self.set_status(nid, ProviderAvailabilityStatus.UNAVAILABLE, event)
+                return event
+            # ENGINEERING_FAILURE / LOCAL_CAPABILITY_INSUFFICIENT / LOCAL_CONTEXT_INSUFFICIENT:
+            # the model ran and produced a wrong/incomplete answer. Not an exhaustion event.
             return None
 
         combined_output = (result.stderr + "\n" + result.stdout).lower()
@@ -249,10 +347,17 @@ class ProviderPoolManager:
         task_category: str = "code_heavy",
         avoid_provider: Optional[str] = None,
         preferred_agent: Optional[str] = None,
+        task: Optional[TaskSpec] = None,
     ) -> List[str]:
         """
         Ranks candidate agents by task suitability and availability,
         placing avoided/fallback providers last.
+
+        `task`, when provided, gates local (quota-free) providers by Tier-3
+        eligibility (#58 Phase 9): local models are never selected for
+        medium/high/critical risk or disallowed task classes merely because
+        cloud providers ran out of quota. When `task` is omitted, local
+        eligibility is not evaluated and existing (pre-#58) behavior applies.
         """
         avoid_norm = self._normalize(avoid_provider) if avoid_provider else (
             self._normalize(self.avoid_provider) if self.avoid_provider else None
@@ -260,11 +365,15 @@ class ProviderPoolManager:
         pref_agent_norm = self._normalize(preferred_agent) if preferred_agent else None
         pref_list = [self._normalize(a) for a in TASK_SUITABILITY_PREFERENCES.get(task_category, TASK_SUITABILITY_PREFERENCES["code_heavy"])]
 
+        if task is not None and not is_task_local_eligible(task):
+            pref_list = [a for a in pref_list if a not in LOCAL_PROVIDER_IDS]
+
         candidates: List[str] = []
 
         # If user specified preferred agent and it's available, place first
         if pref_agent_norm and self.get_status(pref_agent_norm) == ProviderAvailabilityStatus.AVAILABLE:
-            candidates.append(pref_agent_norm)
+            if pref_agent_norm not in LOCAL_PROVIDER_IDS or task is None or is_task_local_eligible(task):
+                candidates.append(pref_agent_norm)
 
         for agent_id in pref_list:
             if agent_id not in candidates and self.get_status(agent_id) == ProviderAvailabilityStatus.AVAILABLE:
