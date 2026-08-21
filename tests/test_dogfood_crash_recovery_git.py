@@ -11,45 +11,24 @@ is grounded in that remote truth rather than local assumptions, so a crash
 at any point never causes duplicate branches/commits/PRs or a double merge.
 """
 
-import subprocess
-
 from src.control_plane.authority_envelope import create_envelope
 from src.control_plane.authority_profile import get_profile
 from src.control_plane.decision_queue import already_parked
 from src.control_plane.git_integration import GitIntegrationExecutor
 from src.control_plane.proposed_action import ProposedAction
 from src.control_plane.synthesis.campaign_state import DurableCampaignState
+from tests._dogfood_test_helpers import ScriptedRunner
 
 REPO_SLUG = "howlcipher/howlplane"
 TASK_ID = "ENG-CRASH-01"
 BRANCH = f"fix/{TASK_ID}"
 
 
-class _ScriptedRunner:
-    def __init__(self):
-        self.responses = {}
-        self.calls = []
-
-    def on(self, args, returncode=0, stdout="", stderr=""):
-        self.responses.setdefault(tuple(args), []).append(
-            subprocess.CompletedProcess(args=list(args), returncode=returncode, stdout=stdout, stderr=stderr)
-        )
-        return self
-
-    def __call__(self, repo_root, args, timeout=60):
-        key = tuple(args)
-        self.calls.append(key)
-        q = self.responses.get(key)
-        if q:
-            return q[0] if len(q) == 1 else q.pop(0)
-        return subprocess.CompletedProcess(args=list(args), returncode=0, stdout="", stderr="")
-
-
 def _executor(git_runner=None, gh_runner=None):
     envelope = create_envelope(get_profile("overnight-safe"), "DOGFOOD-CRASH", "cli:test@host")
     return GitIntegrationExecutor(
         "/fake/repo", REPO_SLUG, envelope,
-        git_runner=git_runner or _ScriptedRunner(), gh_runner=gh_runner or _ScriptedRunner(),
+        git_runner=git_runner or ScriptedRunner(), gh_runner=gh_runner or ScriptedRunner(),
     )
 
 
@@ -62,7 +41,7 @@ def _action(action_type, **arguments):
 def test_crash_before_commit_reports_not_executed():
     """No remote branch yet -- resume must treat branch/commit/push as
     not-yet-done rather than assuming a crash mid-write already landed them."""
-    git = _ScriptedRunner()
+    git = ScriptedRunner()
     git.on(["ls-remote", "origin", BRANCH], returncode=0, stdout="")
     executor = _executor(git_runner=git)
 
@@ -81,7 +60,7 @@ def test_crash_after_local_commit_before_push_still_not_executed_remotely():
     re-attempts push against the same local commit rather than re-committing
     (stage_and_commit's baseline_sha check independently prevents a
     redundant empty commit if resume re-enters commit_task_changes)."""
-    git = _ScriptedRunner()
+    git = ScriptedRunner()
     git.on(["ls-remote", "origin", BRANCH], returncode=0, stdout="")  # nothing pushed yet
     executor = _executor(git_runner=git)
 
@@ -94,7 +73,7 @@ def test_crash_after_local_commit_before_push_still_not_executed_remotely():
 def test_push_already_observed_on_remote_reports_already_executed():
     """Once the branch genuinely exists on the remote, recovery must
     recognize it and not re-push/re-create."""
-    git = _ScriptedRunner()
+    git = ScriptedRunner()
     git.on(["ls-remote", "origin", BRANCH], returncode=0, stdout=f"sha1\trefs/heads/{BRANCH}\n")
     executor = _executor(git_runner=git)
 
@@ -109,7 +88,7 @@ def test_push_already_observed_on_remote_reports_already_executed():
 # --- 3/4: crash after push before PR / after PR before CI --------------------
 
 def test_crash_after_push_before_pr_discovers_no_duplicate_needed():
-    gh = _ScriptedRunner()
+    gh = ScriptedRunner()
     gh.on(["pr", "list", "--head", BRANCH, "--json", "number,url,state"], returncode=0, stdout="[]")
     executor = _executor(gh_runner=gh)
 
@@ -122,7 +101,7 @@ def test_crash_after_push_before_pr_discovers_no_duplicate_needed():
 def test_crash_after_pr_created_before_ci_discovers_existing_pr_no_duplicate():
     """An existing PR for this branch must be discovered so resume never
     calls `gh pr create` a second time for the same task."""
-    gh = _ScriptedRunner()
+    gh = ScriptedRunner()
     gh.on(
         ["pr", "list", "--head", BRANCH, "--json", "number,url,state"],
         returncode=0, stdout='[{"number": 12, "url": "https://x/pull/12", "state": "OPEN"}]',
@@ -142,7 +121,7 @@ def test_crash_after_ci_green_before_merge_not_yet_merged():
     """CI having gone green before the crash does not itself constitute a
     merge -- resume must revalidate the merge gate (repo drift, budget,
     envelope) rather than assuming the merge already happened."""
-    gh = _ScriptedRunner()
+    gh = ScriptedRunner()
     gh.on(["pr", "view", "12", "--json", "state,merged"], returncode=0, stdout='{"state": "OPEN", "merged": false}')
     executor = _executor(gh_runner=gh)
 
@@ -158,7 +137,7 @@ def test_crash_after_merge_before_local_record_discovers_already_merged():
     """The PR is already merged on GitHub even though the local
     campaign_state.json update never landed before the crash -- resume must
     discover this from GitHub reality and NOT call `gh pr merge` again."""
-    gh = _ScriptedRunner()
+    gh = ScriptedRunner()
     gh.on(["pr", "view", "12", "--json", "state,merged"], returncode=0, stdout='{"state": "MERGED", "merged": true}')
     executor = _executor(gh_runner=gh)
 

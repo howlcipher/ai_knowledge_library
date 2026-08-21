@@ -746,6 +746,31 @@ class MarathonDogfoodEngine:
             return None
         return result.metadata
 
+    def _run_step_or_bail(
+        self,
+        action_type: str,
+        arguments: Dict[str, Any],
+        task_id: str,
+        run_dir: Path,
+        git_rec: "GitIntegrationRecord",
+        campaign_state: Optional[DurableCampaignState],
+        state_dir: Optional[Path],
+        apply_metadata: Callable[[Dict[str, Any]], None],
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Runs one real git/GitHub step, applies its metadata to `git_rec` on
+        success, and incrementally persists either way. Every step in the
+        real integration sequence shares this exact bail-and-persist shape
+        (#59 Phase 2/22); centralizing it here means the sequence in
+        _execute_governed_engineering_improvement is a series of one-line
+        calls rather than repeated boilerplate per step.
+        """
+        meta = self._authorize_and_execute_git_step(action_type, arguments, task_id, run_dir, git_rec)
+        if meta is not None:
+            apply_metadata(meta)
+        self._persist_git_record(git_rec, campaign_state, state_dir)
+        return meta
+
     def _execute_governed_engineering_improvement(
         self,
         task_id: str,
@@ -863,51 +888,50 @@ class MarathonDogfoodEngine:
             except (json.JSONDecodeError, OSError):
                 baseline_sha = None
 
-        branch_meta = self._authorize_and_execute_git_step("create_task_branch", {}, task_id, run_dir, git_rec)
-        if branch_meta is None:
-            self._persist_git_record(git_rec, campaign_state, state_dir)
-            return False, git_rec.to_dict()
-        git_rec.branch = branch_meta.get("branch")
-        git_rec.branch_observed = True
-        self._persist_git_record(git_rec, campaign_state, state_dir)
+        def _apply_branch(meta: Dict[str, Any]) -> None:
+            git_rec.branch = meta.get("branch")
+            git_rec.branch_observed = True
 
-        commit_meta = self._authorize_and_execute_git_step(
+        def _apply_commit(meta: Dict[str, Any]) -> None:
+            git_rec.commit_sha = meta.get("commit_sha")
+            git_rec.commit_observed = True
+
+        def _apply_push(_meta: Dict[str, Any]) -> None:
+            git_rec.push_observed = True
+
+        def _apply_pr(meta: Dict[str, Any]) -> None:
+            git_rec.pr_number = meta.get("pr_number")
+            git_rec.pr_url = meta.get("pr_url")
+            git_rec.pr_observed = True
+
+        if self._run_step_or_bail(
+            "create_task_branch", {}, task_id, run_dir, git_rec, campaign_state, state_dir, _apply_branch,
+        ) is None:
+            return False, git_rec.to_dict()
+
+        if self._run_step_or_bail(
             "commit_task_changes",
             {"paths": paths, "message": commit_message, "baseline_sha": baseline_sha},
-            task_id, run_dir, git_rec,
-        )
-        if commit_meta is None:
-            self._persist_git_record(git_rec, campaign_state, state_dir)
+            task_id, run_dir, git_rec, campaign_state, state_dir, _apply_commit,
+        ) is None:
             return False, git_rec.to_dict()
-        git_rec.commit_sha = commit_meta.get("commit_sha")
-        git_rec.commit_observed = True
-        self._persist_git_record(git_rec, campaign_state, state_dir)
 
-        push_meta = self._authorize_and_execute_git_step(
-            "push_task_branch", {"branch": git_rec.branch}, task_id, run_dir, git_rec,
-        )
-        if push_meta is None:
-            self._persist_git_record(git_rec, campaign_state, state_dir)
+        if self._run_step_or_bail(
+            "push_task_branch", {"branch": git_rec.branch},
+            task_id, run_dir, git_rec, campaign_state, state_dir, _apply_push,
+        ) is None:
             return False, git_rec.to_dict()
-        git_rec.push_observed = True
-        self._persist_git_record(git_rec, campaign_state, state_dir)
 
-        pr_meta = self._authorize_and_execute_git_step(
+        if self._run_step_or_bail(
             "create_pull_request",
             {
                 "branch": git_rec.branch,
                 "title": f"fix({benchmark_key}): {gap_type}",
                 "body": f"Automated marathon dogfooding fix.\n\nGap: {gap_type}\n{gap_desc}",
             },
-            task_id, run_dir, git_rec,
-        )
-        if pr_meta is None:
-            self._persist_git_record(git_rec, campaign_state, state_dir)
+            task_id, run_dir, git_rec, campaign_state, state_dir, _apply_pr,
+        ) is None:
             return False, git_rec.to_dict()
-        git_rec.pr_number = pr_meta.get("pr_number")
-        git_rec.pr_url = pr_meta.get("pr_url")
-        git_rec.pr_observed = True
-        self._persist_git_record(git_rec, campaign_state, state_dir)
 
         ci_obs = self.git_executor.observe_required_checks(git_rec.pr_number)
         git_rec.required_checks = ci_obs.checks
@@ -923,15 +947,15 @@ class MarathonDogfoodEngine:
             self._persist_git_record(git_rec, campaign_state, state_dir)
             return False, git_rec.to_dict()
 
-        merge_meta = self._authorize_and_execute_git_step(
-            "merge_pull_request", {"pr_number": git_rec.pr_number}, task_id, run_dir, git_rec,
-        )
-        if merge_meta is None:
-            self._persist_git_record(git_rec, campaign_state, state_dir)
+        def _apply_merge(meta: Dict[str, Any]) -> None:
+            git_rec.merge_sha = meta.get("merge_sha")
+            git_rec.merge_observed = True
+
+        if self._run_step_or_bail(
+            "merge_pull_request", {"pr_number": git_rec.pr_number},
+            task_id, run_dir, git_rec, campaign_state, state_dir, _apply_merge,
+        ) is None:
             return False, git_rec.to_dict()
-        git_rec.merge_sha = merge_meta.get("merge_sha")
-        git_rec.merge_observed = True
-        self._persist_git_record(git_rec, campaign_state, state_dir)
         if campaign_state is not None:
             campaign_state.increment_merge_count()
 

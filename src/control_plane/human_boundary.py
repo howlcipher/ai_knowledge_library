@@ -216,17 +216,42 @@ class BoundaryCheckResult:
     requires_human_approval: bool
     triggered_boundaries: List[str] = field(default_factory=list)
     decision_packet: Optional[HumanDecisionPacket] = None
-    # True only when evaluate_with_delegated_authority() found every
-    # triggered boundary satisfied by a verified, unexpired
-    # AuthorityEnvelope (#59 Phase 11). requires_human_approval is False in
-    # that case, but this flag distinguishes "no boundary was triggered at
-    # all" from "a boundary was triggered and delegated authority covered
-    # it" for audit purposes.
-    delegated_authority_used: bool = False
 
 
 class HumanBoundaryGate:
     """Evaluates task intent, actions, and risk against human authority policies."""
+
+    @classmethod
+    def _build_pre_execution_packet(
+        cls,
+        task: TaskSpec,
+        triggers: List[str],
+        actions: List[ProposedAction],
+        change_summary: str,
+        evidence: List[str],
+        risk_prefix: str = "Pre-execution boundary",
+    ) -> BoundaryCheckResult:
+        """
+        Shared decision-packet construction for the pre-implementation
+        boundary paths (evaluate_pre_execution and the non-delegated
+        fallback of evaluate_with_delegated_authority), which otherwise
+        differ only in change_summary/evidence text.
+        """
+        risks = [f"{risk_prefix} '{t}': {HUMAN_BOUNDARY_TRIGGERS.get(t, t)}" for t in triggers]
+        packet = HumanDecisionPacket(
+            task_id=task.task_id,
+            objective=task.objective,
+            change_summary=change_summary,
+            boundary_triggers=triggers,
+            evidence=evidence,
+            risks=risks,
+            review_findings_summary={"total": 0, "blocker": 0, "high": 0},
+            verification_status="pre_execution",
+            recommended_action="Review requested consequential action and authorize or reject execution.",
+            proposed_actions=[a.to_dict() for a in actions],
+            executor_id=actions[0].executor_id if actions and actions[0].executor_id else None,
+        )
+        return BoundaryCheckResult(requires_human_approval=True, triggered_boundaries=triggers, decision_packet=packet)
 
     @classmethod
     def evaluate_pre_execution(
@@ -259,27 +284,10 @@ class HumanBoundaryGate:
         if not triggers:
             return BoundaryCheckResult(requires_human_approval=False)
 
-        risks = [f"Pre-execution boundary '{t}': {HUMAN_BOUNDARY_TRIGGERS.get(t, t)}" for t in triggers]
-        executor_id = actions[0].executor_id if actions and actions[0].executor_id else None
-
-        packet = HumanDecisionPacket(
-            task_id=task.task_id,
-            objective=task.objective,
+        return cls._build_pre_execution_packet(
+            task, triggers, actions,
             change_summary="Consequential action requested prior to implementation agent launch.",
-            boundary_triggers=triggers,
             evidence=["Pre-execution authority evaluation"],
-            risks=risks,
-            review_findings_summary={"total": 0, "blocker": 0, "high": 0},
-            verification_status="pre_execution",
-            recommended_action="Review requested consequential action and authorize or reject execution.",
-            proposed_actions=[a.to_dict() for a in actions],
-            executor_id=executor_id,
-        )
-
-        return BoundaryCheckResult(
-            requires_human_approval=True,
-            triggered_boundaries=triggers,
-            decision_packet=packet,
         )
 
     @classmethod
@@ -460,35 +468,18 @@ class HumanBoundaryGate:
             reasons.append(reason)
 
         if all_delegated:
-            return BoundaryCheckResult(
-                requires_human_approval=False,
-                triggered_boundaries=triggers,
-                delegated_authority_used=True,
-            )
+            return BoundaryCheckResult(requires_human_approval=False, triggered_boundaries=triggers)
 
         # Not fully delegated: build the human decision packet directly from
         # the triggers already computed above (which may include diff-based
         # self-modification triggers that evaluate_pre_execution()'s own
         # text-only inference would never see) rather than re-deriving
         # triggers from scratch and silently losing them.
-        risks = [f"Boundary '{t}': {HUMAN_BOUNDARY_TRIGGERS.get(t, t)}" for t in triggers]
-        packet = HumanDecisionPacket(
-            task_id=task.task_id,
-            objective=task.objective,
+        return cls._build_pre_execution_packet(
+            task, triggers, actions,
             change_summary="Consequential action requested; delegated authority did not fully cover it.",
-            boundary_triggers=triggers,
             evidence=["Delegated authority evaluation: " + "; ".join(reasons)],
-            risks=risks,
-            review_findings_summary={"total": 0, "blocker": 0, "high": 0},
-            verification_status="pre_execution",
-            recommended_action="Review requested consequential action and authorize or reject execution.",
-            proposed_actions=[a.to_dict() for a in actions],
-            executor_id=actions[0].executor_id if actions and actions[0].executor_id else None,
-        )
-        return BoundaryCheckResult(
-            requires_human_approval=True,
-            triggered_boundaries=triggers,
-            decision_packet=packet,
+            risk_prefix="Boundary",
         )
 
 

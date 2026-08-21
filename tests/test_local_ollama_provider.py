@@ -26,10 +26,8 @@ from src.control_plane.agent_execution import (
 )
 from src.control_plane.authority_envelope import create_envelope
 from src.control_plane.authority_profile import get_profile
-from src.control_plane.git_baseline import RepositoryDelta
 from src.control_plane.git_integration import GitIntegrationExecutor
 from src.control_plane.locking import LocalInferenceLock
-from src.control_plane.orchestrator import OrchestrationResult
 from src.control_plane.synthesis.campaign_state import DurableCampaignState
 from src.control_plane.synthesis.marathon import MarathonDogfoodEngine
 from src.control_plane.synthesis.provider_pool import (
@@ -38,6 +36,7 @@ from src.control_plane.synthesis.provider_pool import (
     is_task_local_eligible,
 )
 from src.control_plane.task_spec import TaskSpec
+from tests._dogfood_test_helpers import FakeOrchestrator
 
 
 class _AlwaysSucceedGitRunner:
@@ -86,34 +85,6 @@ class _AlwaysSucceedGhRunner:
                 args, 0, stdout='{"required_status_checks": {"contexts": ["test-python"]}}', stderr=""
             )
         return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
-
-
-class _FakeSuccessfulOrchestrator:
-    """
-    Fakes GovernedTaskOrchestrator at the boundary marathon.py actually calls
-    through `orchestrator_factory` (#59 Phase 20) -- always reports a
-    complete governed implementation with a non-empty delta. The
-    orchestrator's own lifecycle is exhaustively covered elsewhere
-    (test_closed_loop_orchestrator.py / test_operational_resilience.py).
-    """
-
-    def __init__(self, run_dir):
-        self.run_dir = run_dir
-
-    def run(self, task_spec, planned_actions=None):
-        return OrchestrationResult(
-            task_id=task_spec.task_id,
-            task_spec=task_spec,
-            final_state="complete",
-            exit_code=0,
-            final_delta=RepositoryDelta(
-                files_modified=["src/control_plane/howlframe_runtime.py"],
-                diff_content="--- a/x\n+++ b/x\n",
-                insertions=1,
-                is_empty=False,
-            ),
-            run_dir=str(self.run_dir),
-        )
 
 
 def _task(risk_level="low", task_class="bug_fix", skills=None, task_id="T-1"):
@@ -530,7 +501,7 @@ def _local_only_engine(tmp_path, monkeypatch, *, succeed: bool = True) -> Marath
         campaign_dir=tmp_path / "runs",
         target_repo=tmp_path,
         repo_slug="howlcipher/howlplane",
-        orchestrator_factory=lambda config: _FakeSuccessfulOrchestrator(tmp_path / "fake_run"),
+        orchestrator_factory=lambda config: FakeOrchestrator(tmp_path / "fake_run", "src/control_plane/howlframe_runtime.py"),
     )
     # These tests call _run_local_only_continuation() directly, bypassing
     # run_marathon()'s envelope-binding/git-executor construction step, so

@@ -11,10 +11,6 @@ no fabricated success record is ever produced when a real-world step did not
 actually happen.
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Tuple
-import subprocess
-
 import pytest
 
 from src.control_plane.authority_envelope import create_envelope
@@ -26,40 +22,10 @@ from src.control_plane.git_integration import (
 )
 from src.control_plane.proposed_action import ProposedAction
 from src.control_plane.synthesis.campaign_state import GitIntegrationRecord
+from tests._dogfood_test_helpers import ScriptedRunner, build_full_merge_flow
 
 
 REPO_SLUG = "howlcipher/howlplane"
-
-
-@dataclass
-class ScriptedRunner:
-    """
-    Stands in for `run_git`/`run_gh`. Responses are registered per exact
-    argument list; each registration may be consumed once (FIFO) if
-    registered multiple times for the same args, letting a test express
-    "the Nth call to X returns Y, the N+1th call returns Z".
-    """
-
-    responses: Dict[Tuple[str, ...], List[subprocess.CompletedProcess]] = field(default_factory=dict)
-    calls: List[Tuple[str, ...]] = field(default_factory=list)
-    default_returncode: int = 0
-
-    def on(self, args: List[str], returncode: int = 0, stdout: str = "", stderr: str = "") -> "ScriptedRunner":
-        key = tuple(args)
-        self.responses.setdefault(key, []).append(
-            subprocess.CompletedProcess(args=list(args), returncode=returncode, stdout=stdout, stderr=stderr)
-        )
-        return self
-
-    def __call__(self, repo_root, args, timeout=60) -> subprocess.CompletedProcess:
-        key = tuple(args)
-        self.calls.append(key)
-        queue = self.responses.get(key)
-        if queue:
-            if len(queue) > 1:
-                return queue.pop(0)
-            return queue[0]
-        return subprocess.CompletedProcess(args=list(args), returncode=self.default_returncode, stdout="", stderr="")
 
 
 def make_envelope(profile_id="overnight-safe", campaign_id="DOGFOOD-TEST-GIT"):
@@ -270,32 +236,11 @@ def test_merge_pull_request_success_path_returns_merge_sha():
 
 def test_real_lifecycle_calls_occur_in_order():
     git = ScriptedRunner()
-    git.on(["fetch", "origin", "main"], returncode=0)
-    git.on(["switch", "-c", "fix/T1", "origin/main"], returncode=0)
-    git.on(["rev-parse", "--verify", "fix/T1"], returncode=0, stdout="branchsha\n")
-    git.on(["add", "--", "src/foo.py"], returncode=0)
-    git.on(["commit", "-m", "fix: T1"], returncode=0)
-    git.on(["rev-parse", "HEAD"], returncode=0, stdout="commitsha1\n")
-    git.on(["push", "-u", "origin", "fix/T1"], returncode=0)
-    git.on(["rev-parse", "fix/T1"], returncode=0, stdout="commitsha1\n")
-    git.on(["ls-remote", "origin", "fix/T1"], returncode=0, stdout="commitsha1\trefs/heads/fix/T1\n")
-
     gh = ScriptedRunner()
-    gh.on(
-        ["pr", "create", "--repo", REPO_SLUG, "--base", "main", "--head", "fix/T1", "--title", "t", "--body", "b"],
-        returncode=0,
-    )
-    gh.on(
-        ["pr", "list", "--repo", REPO_SLUG, "--head", "fix/T1", "--json", "number,url"],
-        returncode=0, stdout='[{"number": 42, "url": "https://github.com/howlcipher/howlplane/pull/42"}]',
-    )
-    gh.on(["pr", "view", "42", "--json", "number"], returncode=0, stdout='{"number": 42}')
-    gh.on(["pr", "view", "42", "--json", "headRefName"], returncode=0, stdout='{"headRefName": "fix/T1"}')
-    gh.on(["pr", "merge", "42", "--repo", REPO_SLUG, "--squash", "--delete-branch"], returncode=0)
-    gh.on(
-        ["pr", "view", "42", "--repo", REPO_SLUG, "--json", "state,merged,mergeCommit"],
-        returncode=0,
-        stdout='{"state": "MERGED", "merged": true, "mergeCommit": {"oid": "mergesha1"}}',
+    build_full_merge_flow(
+        git, gh, task_id="T1", repo_slug=REPO_SLUG, pr_number=42,
+        commit_message="fix: T1", pr_title="t", pr_body="b",
+        modified_path="src/foo.py", commit_sha="commitsha1", merge_sha="mergesha1",
     )
 
     executor = make_executor(git_runner=git, gh_runner=gh)
@@ -314,7 +259,6 @@ def test_real_lifecycle_calls_occur_in_order():
     merge_sha = executor.merge_pull_request(pr_number)
     assert merge_sha == "mergesha1"
 
-    git.on(["merge-base", "--is-ancestor", "mergesha1", "origin/main"], returncode=0)
     assert executor.verify_remote_main_contains(merge_sha) is True
 
     # Verify call ordering: branch -> add/commit -> push -> PR create/list/view -> merge -> verify

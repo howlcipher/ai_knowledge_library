@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+"""
+tests/_dogfood_test_helpers.py
+
+Shared subprocess-boundary and orchestrator fakes for #59 real-integration
+tests (test_git_integration.py, test_dogfood_hardening.py,
+test_authority_profile.py, test_dogfood_crash_recovery_git.py,
+test_dogfood_parking.py). Not itself a test module -- pytest only collects
+`test_*.py`/`*_test.py` files, so this is never collected directly.
+
+Fakes live ONLY at the external boundary (git/gh subprocess calls, the
+GovernedTaskOrchestrator seam) -- the production GitIntegrationExecutor/
+marathon.py logic exercised through them is real (#59 Phase 20).
+"""
+
+from dataclasses import dataclass, field
+from pathlib import Path
+import subprocess
+from typing import Dict, List, Tuple, Union
+
+from src.control_plane.git_baseline import RepositoryDelta
+from src.control_plane.orchestrator import OrchestrationResult
+
+
+@dataclass
+class ScriptedRunner:
+    """
+    Stands in for `run_git`/`run_gh`. Responses are registered per exact
+    argument list; each registration may be consumed once (FIFO) if
+    registered multiple times for the same args, letting a test express
+    "the Nth call to X returns Y, the N+1th call returns Z".
+    """
+
+    responses: Dict[Tuple[str, ...], List[subprocess.CompletedProcess]] = field(default_factory=dict)
+    calls: List[Tuple[str, ...]] = field(default_factory=list)
+    default_returncode: int = 0
+
+    def on(self, args: List[str], returncode: int = 0, stdout: str = "", stderr: str = "") -> "ScriptedRunner":
+        key = tuple(args)
+        self.responses.setdefault(key, []).append(
+            subprocess.CompletedProcess(args=list(args), returncode=returncode, stdout=stdout, stderr=stderr)
+        )
+        return self
+
+    def __call__(self, repo_root, args, timeout=60) -> subprocess.CompletedProcess:
+        key = tuple(args)
+        self.calls.append(key)
+        queue = self.responses.get(key)
+        if queue:
+            return queue[0] if len(queue) == 1 else queue.pop(0)
+        return subprocess.CompletedProcess(args=list(args), returncode=self.default_returncode, stdout="", stderr="")
+
+
+def build_full_merge_flow(
+    git: ScriptedRunner,
+    gh: ScriptedRunner,
+    *,
+    task_id: str,
+    repo_slug: str,
+    pr_number: int,
+    commit_message: str,
+    pr_title: str,
+    pr_body: str,
+    modified_path: str = "src/x.py",
+    base_branch: str = "main",
+    final_sha: str = "finalsha",
+    merge_sha: str = "mergesha",
+    commit_sha: str = "",
+    ci_green: bool = True,
+) -> str:
+    """
+    Registers the standard branch->commit->push->PR->CI-observed sequence on
+    `git`/`gh` (#59) -- the same call shape every real-lifecycle test needs,
+    differing only in these identifiers. When `ci_green` is True, also
+    registers the merge->remote-verify->local-sync tail; when False, CI
+    reports a failing check and no merge step is registered (a merge call
+    would be a test bug, not something to silently accept). Returns the
+    branch name.
+    """
+    branch = f"fix/{task_id}"
+    commit_sha = commit_sha or f"{task_id}-csha"
+
+    git.on(["fetch", "origin", base_branch], returncode=0)
+    git.on(["switch", "-c", branch, f"origin/{base_branch}"], returncode=0)
+    git.on(["rev-parse", "--verify", branch], returncode=0, stdout="bsha\n")
+    git.on(["add", "--", modified_path], returncode=0)
+    git.on(["commit", "-m", commit_message], returncode=0)
+    git.on(["rev-parse", "HEAD"], returncode=0, stdout=f"{commit_sha}\n")
+    git.on(["push", "-u", "origin", branch], returncode=0)
+    git.on(["rev-parse", branch], returncode=0, stdout=f"{commit_sha}\n")
+    git.on(["ls-remote", "origin", branch], returncode=0, stdout=f"{commit_sha}\trefs/heads/{branch}\n")
+
+    gh.on(
+        ["pr", "create", "--repo", repo_slug, "--base", base_branch, "--head", branch,
+         "--title", pr_title, "--body", pr_body],
+        returncode=0,
+    )
+    gh.on(
+        ["pr", "list", "--repo", repo_slug, "--head", branch, "--json", "number,url"],
+        returncode=0, stdout=f'[{{"number": {pr_number}, "url": "https://github.com/{repo_slug}/pull/{pr_number}"}}]',
+    )
+    gh.on(["pr", "view", str(pr_number), "--json", "number"], returncode=0, stdout=f'{{"number": {pr_number}}}')
+    gh.on(
+        ["api", f"repos/{repo_slug}/branches/{base_branch}/protection"],
+        returncode=0, stdout='{"required_status_checks": {"contexts": ["test-python"]}}',
+    )
+    check_state = "SUCCESS" if ci_green else "FAILURE"
+    check_bucket = "pass" if ci_green else "fail"
+    gh.on(
+        ["pr", "checks", str(pr_number), "--json", "name,state,bucket,link"],
+        returncode=0, stdout=f'[{{"name": "test-python", "state": "{check_state}", "bucket": "{check_bucket}"}}]',
+    )
+
+    if not ci_green:
+        return branch
+
+    git.on(["merge-base", "--is-ancestor", merge_sha, f"origin/{base_branch}"], returncode=0)
+    git.on(["switch", base_branch], returncode=0)
+    git.on(["merge", "--ff-only", f"origin/{base_branch}"], returncode=0)
+    git.on(["status", "--porcelain"], returncode=0, stdout="")
+    git.on(["rev-parse", "HEAD"], returncode=0, stdout=f"{final_sha}\n")
+    git.on(["rev-parse", f"origin/{base_branch}"], returncode=0, stdout=f"{final_sha}\n")
+
+    gh.on(["pr", "view", str(pr_number), "--json", "headRefName"], returncode=0, stdout=f'{{"headRefName": "{branch}"}}')
+    gh.on(["pr", "merge", str(pr_number), "--repo", repo_slug, "--squash", "--delete-branch"], returncode=0)
+    gh.on(
+        ["pr", "view", str(pr_number), "--repo", repo_slug, "--json", "state,merged,mergeCommit"],
+        returncode=0, stdout=f'{{"state": "MERGED", "merged": true, "mergeCommit": {{"oid": "{merge_sha}"}}}}',
+    )
+    return branch
+
+
+class FakeOrchestrator:
+    """
+    Fakes GovernedTaskOrchestrator at the boundary marathon.py actually
+    calls through `orchestrator_factory`. Always reports a complete governed
+    implementation with a non-empty delta. The orchestrator's own lifecycle
+    is exhaustively covered elsewhere (test_closed_loop_orchestrator.py,
+    test_operational_resilience.py).
+    """
+
+    def __init__(self, run_dir: Union[str, Path], modified_files: Union[str, List[str]] = "src/x.py"):
+        self.run_dir = run_dir
+        self.modified_files = [modified_files] if isinstance(modified_files, str) else list(modified_files)
+
+    def run(self, task_spec, planned_actions=None) -> OrchestrationResult:
+        return OrchestrationResult(
+            task_id=task_spec.task_id, task_spec=task_spec, final_state="complete", exit_code=0,
+            final_delta=RepositoryDelta(
+                files_modified=list(self.modified_files), diff_content="--- a/x\n+++ b/x\n",
+                insertions=1, is_empty=False,
+            ),
+            run_dir=str(self.run_dir),
+        )

@@ -11,7 +11,6 @@ Modeled on the numbered-scenario convention of test_human_approval_lifecycle.py.
 from datetime import datetime, timedelta, timezone
 import inspect
 import json
-import subprocess
 
 import pytest
 
@@ -40,46 +39,13 @@ from src.control_plane.decision_queue import (
 )
 from src.control_plane.git_integration import GitIntegrationExecutor
 from src.control_plane.human_boundary import HumanBoundaryGate
-from src.control_plane.orchestrator import OrchestrationResult
-from src.control_plane.git_baseline import RepositoryDelta
 from src.control_plane.synthesis.campaign_state import DurableCampaignState, GitIntegrationRecord
 from src.control_plane.synthesis.marathon import MarathonDogfoodEngine
 from src.control_plane.synthesis.provider_pool import ProviderAvailabilityStatus, ProviderPoolManager
 from src.control_plane.task_spec import TaskSpec
+from tests._dogfood_test_helpers import FakeOrchestrator, ScriptedRunner, build_full_merge_flow
 
 REPO_SLUG = "howlcipher/howlplane"
-
-
-class _ScriptedRunner:
-    def __init__(self):
-        self.responses = {}
-        self.calls = []
-
-    def on(self, args, returncode=0, stdout="", stderr=""):
-        self.responses.setdefault(tuple(args), []).append(
-            subprocess.CompletedProcess(args=list(args), returncode=returncode, stdout=stdout, stderr=stderr)
-        )
-        return self
-
-    def __call__(self, repo_root, args, timeout=60):
-        key = tuple(args)
-        self.calls.append(key)
-        q = self.responses.get(key)
-        if q:
-            return q[0] if len(q) == 1 else q.pop(0)
-        return subprocess.CompletedProcess(args=list(args), returncode=0, stdout="", stderr="")
-
-
-class _FakeOrchestrator:
-    def __init__(self, run_dir):
-        self.run_dir = run_dir
-
-    def run(self, task_spec, planned_actions=None):
-        return OrchestrationResult(
-            task_id=task_spec.task_id, task_spec=task_spec, final_state="complete", exit_code=0,
-            final_delta=RepositoryDelta(files_modified=["src/x.py"], diff_content="x", insertions=1, is_empty=False),
-            run_dir=str(self.run_dir),
-        )
 
 
 def _fresh_envelope(now=None, ttl_hours=12.0, campaign_id="DOGFOOD-AUTH-TEST"):
@@ -101,54 +67,20 @@ def _task(risk_level="low"):
 
 def _marathon_engine_for_git_flow(tmp_path, ci_green: bool, envelope):
     task_id = "ENG-X-01"
-    branch = f"fix/{task_id}"
-    git = _ScriptedRunner()
-    git.on(["fetch", "origin", "main"], returncode=0)
-    git.on(["switch", "-c", branch, "origin/main"], returncode=0)
-    git.on(["rev-parse", "--verify", branch], returncode=0, stdout="bsha\n")
-    git.on(["add", "--", "src/x.py"], returncode=0)
-    git.on(["commit", "-m", "fix(x): resolve X_GAP found during marathon dogfooding"], returncode=0)
-    git.on(["rev-parse", "HEAD"], returncode=0, stdout="csha\n")
-    git.on(["push", "-u", "origin", branch], returncode=0)
-    git.on(["rev-parse", branch], returncode=0, stdout="csha\n")
-    git.on(["ls-remote", "origin", branch], returncode=0, stdout=f"csha\trefs/heads/{branch}\n")
-
-    gh = _ScriptedRunner()
-    gh.on(
-        ["pr", "create", "--repo", REPO_SLUG, "--base", "main", "--head", branch,
-         "--title", "fix(x): X_GAP", "--body", "Automated marathon dogfooding fix.\n\nGap: X_GAP\ndesc"],
-        returncode=0,
+    git = ScriptedRunner()
+    gh = ScriptedRunner()
+    build_full_merge_flow(
+        git, gh, task_id=task_id, repo_slug=REPO_SLUG, pr_number=9,
+        commit_message="fix(x): resolve X_GAP found during marathon dogfooding",
+        pr_title="fix(x): X_GAP", pr_body="Automated marathon dogfooding fix.\n\nGap: X_GAP\ndesc",
+        merge_sha="msha9", ci_green=ci_green,
     )
-    gh.on(["pr", "list", "--repo", REPO_SLUG, "--head", branch, "--json", "number,url"],
-          returncode=0, stdout='[{"number": 9, "url": "https://x/pull/9"}]')
-    gh.on(["pr", "view", "9", "--json", "number"], returncode=0, stdout='{"number": 9}')
-    gh.on(
-        ["api", f"repos/{REPO_SLUG}/branches/main/protection"],
-        returncode=0, stdout='{"required_status_checks": {"contexts": ["test-python"]}}',
-    )
-    bucket = "pass" if ci_green else "fail"
-    state = "SUCCESS" if ci_green else "FAILURE"
-    gh.on(["pr", "checks", "9", "--json", "name,state,bucket,link"], returncode=0,
-          stdout=f'[{{"name": "test-python", "state": "{state}", "bucket": "{bucket}"}}]')
-    if ci_green:
-        gh.on(["pr", "view", "9", "--json", "headRefName"], returncode=0, stdout=f'{{"headRefName": "{branch}"}}')
-        gh.on(["pr", "merge", "9", "--repo", REPO_SLUG, "--squash", "--delete-branch"], returncode=0)
-        gh.on(
-            ["pr", "view", "9", "--repo", REPO_SLUG, "--json", "state,merged,mergeCommit"],
-            returncode=0, stdout='{"state": "MERGED", "merged": true, "mergeCommit": {"oid": "msha9"}}',
-        )
-        git.on(["merge-base", "--is-ancestor", "msha9", "origin/main"], returncode=0)
-        git.on(["switch", "main"], returncode=0)
-        git.on(["merge", "--ff-only", "origin/main"], returncode=0)
-        git.on(["status", "--porcelain"], returncode=0, stdout="")
-        git.on(["rev-parse", "HEAD"], returncode=0, stdout="finalsha\n")
-        git.on(["rev-parse", "origin/main"], returncode=0, stdout="finalsha\n")
 
     engine = MarathonDogfoodEngine(
         provider_pool=_pool_with_codex(),
         base_output_dir=tmp_path / "out", campaign_dir=tmp_path / "campaigns",
         target_repo=tmp_path, repo_slug=REPO_SLUG,
-        orchestrator_factory=lambda config: _FakeOrchestrator(tmp_path / "run"),
+        orchestrator_factory=lambda config: FakeOrchestrator(tmp_path / "run", "src/x.py"),
         git_executor_factory=lambda env, merges: GitIntegrationExecutor(
             tmp_path, REPO_SLUG, env, git_runner=git, gh_runner=gh, merges_so_far=merges,
         ),
