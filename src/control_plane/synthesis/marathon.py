@@ -10,16 +10,37 @@ and persists durable campaign state across process boundaries.
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+import getpass
 import hashlib
 import json
 import os
 from pathlib import Path
+import socket
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from src.control_plane.agent_execution import AgentBackendRegistry, read_available_memory_gib
+from src.control_plane.authority_envelope import (
+    AuthorityEnvelope,
+    EnvelopeNotFoundError,
+    TamperedEnvelopeError,
+    create_envelope,
+    is_expired,
+    load_envelope,
+    save_envelope,
+    ENVELOPE_FILENAME,
+)
+from src.control_plane.authority_profile import get_profile
+from src.control_plane.decision_queue import (
+    ParkedTaskRecord,
+    already_parked,
+    compute_blocks_other_work,
+)
 from src.control_plane.evidence_ledger import EvidenceEntry, EvidenceLedger
+from src.control_plane.git_integration import GitIntegrationExecutor, detect_repo_slug
+from src.control_plane.human_boundary import HumanBoundaryGate
 from src.control_plane.orchestrator import GovernedTaskOrchestrator, OrchestrationConfig
+from src.control_plane.proposed_action import ProposedAction
 from src.control_plane.synthesis.campaign_state import (
     CAMPAIGN_STATE_SCHEMA_VERSION,
     DurableCampaignState,
@@ -142,6 +163,10 @@ class MarathonDogfoodEngine:
         ledger: Optional[EvidenceLedger] = None,
         base_output_dir: Union[str, Path] = "output",
         campaign_dir: Optional[Union[str, Path]] = None,
+        target_repo: Union[str, Path] = ".",
+        repo_slug: Optional[str] = None,
+        git_executor_factory: Optional[Callable[..., GitIntegrationExecutor]] = None,
+        orchestrator_factory: Optional[Callable[[OrchestrationConfig], GovernedTaskOrchestrator]] = None,
     ):
         self.provider_pool = provider_pool or ProviderPoolManager()
         self.ledger = ledger
@@ -152,11 +177,86 @@ class MarathonDogfoodEngine:
             if campaign_dir
             else Path(".dogfood_runs").resolve()
         )
+        # Real git/GitHub integration target (#59). Defaults to the current
+        # working directory (the howlplane repo itself, for self-improvement
+        # tasks). `repo_slug` is auto-detected from the `origin` remote when
+        # not explicitly provided.
+        self.target_repo = Path(target_repo).resolve()
+        self.repo_slug = repo_slug or detect_repo_slug(self.target_repo) or ""
+        self.authority_envelope: Optional[AuthorityEnvelope] = None
+        # Injectable for tests; defaults to the real GitIntegrationExecutor.
+        self._git_executor_factory = git_executor_factory or (
+            lambda envelope, merges_so_far: GitIntegrationExecutor(
+                self.target_repo, self.repo_slug, envelope, merges_so_far=merges_so_far
+            )
+        )
+        self.git_executor: Optional[GitIntegrationExecutor] = None
+        # Injectable for tests (mirrors GovernedTaskOrchestrator's own
+        # custom_backend seam); defaults to constructing the real
+        # orchestrator against self.target_repo. The orchestrator's own
+        # lifecycle (locks, routing, review, verification) is exhaustively
+        # covered by its dedicated test suite -- this seam lets marathon-
+        # level tests exercise the real git/GitHub continuation logic
+        # without re-driving that whole subsystem end-to-end.
+        self._orchestrator_factory = orchestrator_factory or (
+            lambda config: GovernedTaskOrchestrator(target_repo=self.target_repo, config=config)
+        )
 
     def _generate_campaign_id(self) -> str:
         ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         rand = hashlib.sha256(os.urandom(8)).hexdigest()[:6]
         return f"DOGFOOD-{ts}-{rand}"
+
+    def _bind_authority_envelope(
+        self,
+        state_dir: Path,
+        campaign_id: str,
+        authority_profile_id: Optional[str],
+        is_resume: bool,
+    ) -> Optional[AuthorityEnvelope]:
+        """
+        Binds delegated overnight authority for this campaign run (#59
+        Phases 8/15). `create_envelope`/`save_envelope` are only ever
+        invoked from here, driven by the `authority_profile_id` value that
+        arrived from the operator's CLI invocation -- never from AI-
+        generated text or task output.
+        """
+        operator_origin = f"cli:{getpass.getuser()}@{socket.gethostname()}"
+
+        if not is_resume:
+            if not authority_profile_id:
+                return None
+            envelope = create_envelope(get_profile(authority_profile_id), campaign_id, operator_origin)
+            save_envelope(envelope, state_dir)
+            return envelope
+
+        try:
+            existing = load_envelope(state_dir)
+        except EnvelopeNotFoundError:
+            existing = None
+        except TamperedEnvelopeError:
+            # Fail closed: a tampered envelope grants nothing, regardless of
+            # whether an explicit profile was also passed this call.
+            return None
+
+        if authority_profile_id:
+            # Explicit operator reauthorization on resume (#59 Phase 15).
+            # This is the one legitimate, explicit-operator-driven overwrite
+            # this module anticipates -- save_envelope() otherwise refuses
+            # to overwrite an existing envelope file.
+            envelope_path = state_dir / ENVELOPE_FILENAME
+            if envelope_path.is_file():
+                envelope_path.unlink()
+            envelope = create_envelope(get_profile(authority_profile_id), campaign_id, operator_origin)
+            save_envelope(envelope, state_dir)
+            return envelope
+
+        if existing is None or is_expired(existing):
+            # Expired (or never authorized) and no explicit reauthorization
+            # on this resume call: never silently renew. The campaign
+            # proceeds read/propose-only -- envelope-gated tasks will park.
+            return None
+        return existing
 
     def run_marathon(
         self,
@@ -166,6 +266,7 @@ class MarathonDogfoodEngine:
         avoid_provider: Optional[str] = None,
         preferred_agent: Optional[str] = None,
         resume_campaign_id: Optional[str] = None,
+        authority_profile_id: Optional[str] = None,
     ) -> MarathonSummaryReport:
         """
         Executes evidence-driven marathon dogfooding.
@@ -212,6 +313,31 @@ class MarathonDogfoodEngine:
             campaign_state = DurableCampaignState(campaign_id=campaign_id)
             benchmark_keys = benchmarks or list(STANDARD_BENCHMARKS.keys())
             campaign_state.requested_benchmarks = list(benchmark_keys)
+
+        is_resume = bool(resume_campaign_id and (state_dir / "campaign_state.json").is_file())
+        self.authority_envelope = self._bind_authority_envelope(
+            state_dir, campaign_id, authority_profile_id, is_resume
+        )
+        campaign_state.authority_envelope = self.authority_envelope.to_dict() if self.authority_envelope else None
+        self.git_executor = self._git_executor_factory(self.authority_envelope, campaign_state.merges_this_campaign)
+
+        if self.authority_envelope is not None:
+            # Overnight-safe envelope bound: use its (more conservative)
+            # local RAM threshold and keep_alive behavior for local Ollama
+            # inference rather than the interactive default (#59 Phases
+            # 16/17). Registered for the lifetime of this process; a fresh
+            # process picks the interactive default again unless it too
+            # binds an envelope.
+            from src.control_plane.agent_execution import OllamaLocalBackend
+            AgentBackendRegistry.register_backend(
+                "local_ollama",
+                OllamaLocalBackend(
+                    min_available_ram_gib=self.authority_envelope.local_ram_threshold_gib,
+                    keep_alive=self.authority_envelope.local_keep_alive,
+                ),
+            )
+            lm = campaign_state.ensure_local_model_defaults()
+            lm["resource_guard_min_ram_gib"] = self.authority_envelope.local_ram_threshold_gib
 
         # When --until-providers-exhausted is True, do not silently cap at 5;
         # set high safety ceiling (e.g. 100) to allow long autonomous campaigns
@@ -305,7 +431,12 @@ class MarathonDogfoodEngine:
                 # Create concrete, bounded engineering task
                 eng_task_id = f"ENG-{b_key.upper()}-{iteration_idx:02d}"
                 campaign_state.active_engineering_task = eng_task_id
-                
+
+                if already_parked(campaign_state.parked_tasks, eng_task_id):
+                    # Never repeatedly re-select an already-parked task (#59 Phase 13).
+                    campaign_state.save(state_dir)
+                    continue
+
                 # Execute governed engineering task to resolve gap
                 task_success, git_rec = self._execute_governed_engineering_improvement(
                     task_id=eng_task_id,
@@ -313,6 +444,8 @@ class MarathonDogfoodEngine:
                     gap_type=gap_type,
                     gap_desc=gap_desc,
                     avoid_provider=avoid_provider,
+                    campaign_state=campaign_state,
+                    state_dir=state_dir,
                 )
 
                 if task_success and git_rec:
@@ -331,6 +464,33 @@ class MarathonDogfoodEngine:
                         acc_passed = synth_res.acceptance_report.passed_count if synth_res.acceptance_report else 0
                         acc_total = synth_res.acceptance_report.total_count if synth_res.acceptance_report else 0
                         retried = True
+                elif git_rec and git_rec.get("integration_mode") == "parked":
+                    # Parked awaiting human authority: not a capability
+                    # failure. Preserve state and continue with other
+                    # independent work unless this park blocks everything
+                    # meaningful remaining (#59 Phases 12/13).
+                    already_succeeded_benchmarks = [
+                        b.get("benchmark_id") for b in campaign_state.benchmark_history if b.get("success")
+                    ]
+                    resolved_gap_codes = [
+                        t.get("gap_type_resolved") for t in campaign_state.completed_tasks if t.get("gap_type_resolved")
+                    ]
+                    blocks_all = compute_blocks_other_work(
+                        eng_task_id,
+                        campaign_state.framework_gaps,
+                        campaign_state.requested_benchmarks,
+                        already_succeeded_benchmarks,
+                        resolved_gap_codes,
+                        campaign_state.parked_tasks,
+                        current_gap_code=gap_code,
+                    )
+                    parked_record = git_rec.get("parked_record", {})
+                    parked_record["blocks_other_work"] = blocks_all
+                    campaign_state.record_park(parked_record)
+                    campaign_state.save(state_dir)
+                    if blocks_all:
+                        stop_reason = "AWAITING_HUMAN"
+                        break
                 else:
                     campaign_state.record_task_failed({
                         "task_id": eng_task_id,
@@ -421,10 +581,23 @@ class MarathonDogfoodEngine:
         resolved_codes = {t.get("gap_type_resolved") for t in campaign_state.completed_tasks if t.get("gap_type_resolved")}
         pending_gaps = [g for g in campaign_state.framework_gaps if g.get("code") not in resolved_codes]
 
+        state_dir = self.campaign_base_dir / campaign_state.campaign_id
+
         for gap in pending_gaps:
             if campaign_state.local_only_budget_reached():
-                campaign_state.save(self.campaign_base_dir / campaign_state.campaign_id)
+                campaign_state.save(state_dir)
                 return "local_only_budget_reached"
+
+            if lm.get("overnight_ram_exhausted"):
+                # #59 Phase 17: RAM remained dangerously low after a prior
+                # unload this session -- stop attempting further local work
+                # rather than repeatedly reloading the model.
+                campaign_state.save(state_dir)
+                return "local_resource_constrained"
+
+            gap_task_id = f"LOCAL-{gap.get('code', 'GAP')}"
+            if already_parked(campaign_state.parked_tasks, gap_task_id):
+                continue
 
             ram_before = read_available_memory_gib()
             lm["last_available_ram_gib"] = ram_before
@@ -438,7 +611,34 @@ class MarathonDogfoodEngine:
                 gap_desc=gap.get("required_behavior", ""),
                 avoid_provider=avoid_provider,
                 risk_level="low",
+                campaign_state=campaign_state,
+                state_dir=state_dir,
             )
+
+            if (
+                self.authority_envelope is not None and git_rec
+                and git_rec.get("provider") == "local_ollama"
+                and git_rec.get("integration_mode") != "parked"
+            ):
+                # #59 Phase 17: if available memory remains dangerously low
+                # after this local inference's (possible) unload, stop
+                # attempting further local work for the rest of this
+                # session's local-only continuation rather than repeatedly
+                # reloading the model against an already-thin margin.
+                ram_after = read_available_memory_gib()
+                lm["last_available_ram_gib"] = ram_after
+                if ram_after is not None and ram_after < self.authority_envelope.local_ram_threshold_gib:
+                    lm["overnight_ram_exhausted"] = True
+
+            if not task_success and git_rec and git_rec.get("integration_mode") == "parked":
+                # Parked awaiting human authority: not a local-capability
+                # failure -- don't count it against the local-only budget's
+                # failure/escalation accounting. Continue with other gaps.
+                parked_record = git_rec.get("parked_record", {})
+                parked_record["task_id"] = gap_task_id
+                campaign_state.record_park(parked_record)
+                campaign_state.save(state_dir)
+                continue
 
             if task_success and git_rec and git_rec.get("provider") == "local_ollama":
                 campaign_state.record_local_success(ram_before)
@@ -468,7 +668,7 @@ class MarathonDogfoodEngine:
                     "provider": "local_ollama", "error": "LOCAL_CAPABILITY_INSUFFICIENT: no eligible provider remained",
                 })
 
-            campaign_state.save(self.campaign_base_dir / campaign_state.campaign_id)
+            campaign_state.save(state_dir)
 
         lm["current_availability"] = "AVAILABLE"
         return "all_providers_exhausted"
@@ -503,6 +703,49 @@ class MarathonDogfoodEngine:
             return "SYNTHESIS_REPAIR_FAIL", synth_res.error_message
         return "HOWLPLANE_ORCHESTRATION_GAP", synth_res.error_message or f"General synthesis failure on {benchmark_key}"
 
+    def _persist_git_record(
+        self,
+        git_rec: "GitIntegrationRecord",
+        campaign_state: Optional[DurableCampaignState],
+        state_dir: Optional[Path],
+    ) -> None:
+        """
+        Incrementally persists a GitIntegrationRecord's current state
+        (#59 Phase 2/22): saved after each real step, not just once at the
+        end, so crash-resume reconciliation has an accurate last-known
+        state to check against observable remote truth.
+        """
+        if campaign_state is None or state_dir is None:
+            return
+        campaign_state.record_git_integration(git_rec.to_dict())
+        campaign_state.save(state_dir)
+
+    def _authorize_and_execute_git_step(
+        self,
+        action_type: str,
+        arguments: Dict[str, Any],
+        task_id: str,
+        run_dir: Path,
+        git_rec: "GitIntegrationRecord",
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Evaluates then executes a single real git/GitHub step via
+        self.git_executor. Returns the step's metadata dict on success, or
+        None (with git_rec.failure_reason set) on denial/failure -- never
+        fabricates a success record for a step that did not actually
+        complete.
+        """
+        action = ProposedAction(action_type=action_type, target_repo=self.repo_slug or "howlplane", arguments=arguments)
+        verdict, decision_id, reason = self.git_executor.evaluate(action, self.target_repo, run_dir)
+        if verdict != "ALLOW":
+            git_rec.failure_reason = f"{action_type}: {reason or verdict}"
+            return None
+        result = self.git_executor.execute(decision_id, self.target_repo, run_dir, action, task_id)
+        if result.status != "success":
+            git_rec.failure_reason = f"{action_type}: {result.error_message}"
+            return None
+        return result.metadata
+
     def _execute_governed_engineering_improvement(
         self,
         task_id: str,
@@ -511,20 +754,32 @@ class MarathonDogfoodEngine:
         gap_desc: str,
         avoid_provider: Optional[str] = None,
         risk_level: str = "medium",
+        campaign_state: Optional[DurableCampaignState] = None,
+        state_dir: Optional[Path] = None,
     ) -> Tuple[bool, Optional[Dict[str, Any]]]:
         """
-        Executes a bounded engineering task through the governed lifecycle:
-        task branch -> provider implementation -> independent review -> verification -> commit/PR/merge.
+        Executes a bounded engineering task through the REAL governed
+        lifecycle (#59 Phase 2): task branch -> real provider implementation
+        via GovernedTaskOrchestrator -> independent review -> deterministic
+        verification -> real commit/push/PR/CI-observe/merge via
+        GitIntegrationExecutor -> independent remote verification.
+
+        No fabricated Git values are ever produced. Returns (True, git_rec)
+        only after the full real lifecycle -- through remote-verified
+        merge -- has completed. Returns (False, git_rec_with_integration_mode_parked)
+        when a boundary requires human authority the campaign's envelope
+        does not delegate; the caller records the park and continues with
+        other independent work rather than treating it as a failure.
 
         `risk_level="low"` (used by bounded LOCAL_ONLY_CONTINUATION) makes the
         quota-free local model an eligible candidate for this specific fix;
         the default "medium" keeps normal in-campaign gap fixes on cloud
         providers, consistent with Tier-3 local eligibility rules (#58 Phase 9).
         """
+        objective = f"Resolve {gap_type} for {benchmark_key}: {gap_desc}"
         gap_probe = TaskSpec(
             task_id=task_id, repository="howlplane",
-            objective=f"Resolve {gap_type} for {benchmark_key}: {gap_desc}",
-            task_class="bug_fix", risk_level=risk_level,
+            objective=objective, task_class="bug_fix", risk_level=risk_level,
         )
         candidates = self.provider_pool.select_candidates(
             task_category="code_heavy",
@@ -535,35 +790,179 @@ class MarathonDogfoodEngine:
             return False, None
 
         provider = candidates[0]
-        branch_name = f"dogfood/fix-{benchmark_key.lower()}-{int(time.time())}"
-        commit_sha = hashlib.sha256(f"{task_id}:{time.time()}".encode("utf-8")).hexdigest()[:12]
+        gap_probe.preferred_agent = provider
+        commit_message = f"fix({benchmark_key}): resolve {gap_type} found during marathon dogfooding"
 
-        git_rec = {
-            "task_id": task_id,
-            "target_repo": "howlplane",
-            "branch": branch_name,
-            "commit_sha": commit_sha,
-            "commit_message": f"fix({benchmark_key}): resolve {gap_type} found during marathon dogfooding",
-            "pr_number": 100 + (hash(task_id) % 899),
-            "ci_status": "passed",
-            "merged": True,
-            "provider": provider,
-            "merged_at": datetime.now(timezone.utc).isoformat(),
-        }
+        git_rec = GitIntegrationRecord(
+            task_id=task_id, target_repo="howlplane", provider=provider, commit_message=commit_message,
+        )
+
+        planned_actions = [
+            f"create branch fix/{task_id}", "commit task-owned files", "push branch",
+            "open pull request", "merge when required checks green",
+        ]
+
+        boundary = HumanBoundaryGate.evaluate_with_delegated_authority(
+            gap_probe, planned_actions, self.authority_envelope, self.target_repo, repo_slug=self.repo_slug,
+        )
+        if boundary.requires_human_approval:
+            packet = boundary.decision_packet
+            parked = ParkedTaskRecord(
+                task_id=task_id,
+                objective=objective,
+                boundary_type=boundary.triggered_boundaries[0] if boundary.triggered_boundaries else "unknown",
+                requested_action="governed_engineering_improvement",
+                repository=self.repo_slug or "howlplane",
+                evidence=list(packet.evidence) if packet else [],
+                risks=list(packet.risks) if packet else [],
+                verification_state="not_reached",
+                why_delegated_authority_did_not_apply="; ".join(boundary.triggered_boundaries),
+                decision_packet=packet.to_dict() if packet else {},
+            )
+            git_rec.failure_reason = "AWAITING_HUMAN"
+            return False, {
+                "task_id": task_id, "target_repo": "howlplane", "integration_mode": "parked",
+                "provider": provider, "parked_record": parked.to_dict(),
+            }
+
+        if self.git_executor is None:
+            git_rec.failure_reason = "NO_GIT_EXECUTOR_CONFIGURED"
+            self._persist_git_record(git_rec, campaign_state, state_dir)
+            return False, git_rec.to_dict()
+
+        orch_config = OrchestrationConfig(acquire_locks=True, record_evidence=bool(self.ledger))
+        orchestrator = self._orchestrator_factory(orch_config)
+        try:
+            result = orchestrator.run(gap_probe, planned_actions)
+        except Exception as exc:  # noqa: BLE001 - real provider/orchestrator failures must not crash the campaign
+            git_rec.failure_reason = f"orchestrator_exception: {exc}"
+            self._persist_git_record(git_rec, campaign_state, state_dir)
+            return False, git_rec.to_dict()
+
+        if result.final_state != "complete":
+            # Orchestrator's own HumanBoundaryGate/verification/review gates
+            # already handled awaiting_human/failed/blocked outcomes.
+            git_rec.failure_reason = f"orchestrator_final_state:{result.final_state}"
+            self._persist_git_record(git_rec, campaign_state, state_dir)
+            return False, git_rec.to_dict()
+
+        delta = result.final_delta
+        if delta is None or delta.is_empty:
+            git_rec.failure_reason = "EMPTY_DELTA: governed implementation produced no changes to integrate"
+            self._persist_git_record(git_rec, campaign_state, state_dir)
+            return False, git_rec.to_dict()
+
+        run_dir = Path(result.run_dir) if result.run_dir else (self.target_repo / ".task_runs" / task_id)
+        paths = list(delta.files_added) + list(delta.files_modified) + list(delta.files_deleted)
+
+        baseline_sha: Optional[str] = None
+        baseline_file = run_dir / "baseline.json"
+        if baseline_file.is_file():
+            try:
+                baseline_sha = json.loads(baseline_file.read_text(encoding="utf-8")).get("initial_commit_sha")
+            except (json.JSONDecodeError, OSError):
+                baseline_sha = None
+
+        branch_meta = self._authorize_and_execute_git_step("create_task_branch", {}, task_id, run_dir, git_rec)
+        if branch_meta is None:
+            self._persist_git_record(git_rec, campaign_state, state_dir)
+            return False, git_rec.to_dict()
+        git_rec.branch = branch_meta.get("branch")
+        git_rec.branch_observed = True
+        self._persist_git_record(git_rec, campaign_state, state_dir)
+
+        commit_meta = self._authorize_and_execute_git_step(
+            "commit_task_changes",
+            {"paths": paths, "message": commit_message, "baseline_sha": baseline_sha},
+            task_id, run_dir, git_rec,
+        )
+        if commit_meta is None:
+            self._persist_git_record(git_rec, campaign_state, state_dir)
+            return False, git_rec.to_dict()
+        git_rec.commit_sha = commit_meta.get("commit_sha")
+        git_rec.commit_observed = True
+        self._persist_git_record(git_rec, campaign_state, state_dir)
+
+        push_meta = self._authorize_and_execute_git_step(
+            "push_task_branch", {"branch": git_rec.branch}, task_id, run_dir, git_rec,
+        )
+        if push_meta is None:
+            self._persist_git_record(git_rec, campaign_state, state_dir)
+            return False, git_rec.to_dict()
+        git_rec.push_observed = True
+        self._persist_git_record(git_rec, campaign_state, state_dir)
+
+        pr_meta = self._authorize_and_execute_git_step(
+            "create_pull_request",
+            {
+                "branch": git_rec.branch,
+                "title": f"fix({benchmark_key}): {gap_type}",
+                "body": f"Automated marathon dogfooding fix.\n\nGap: {gap_type}\n{gap_desc}",
+            },
+            task_id, run_dir, git_rec,
+        )
+        if pr_meta is None:
+            self._persist_git_record(git_rec, campaign_state, state_dir)
+            return False, git_rec.to_dict()
+        git_rec.pr_number = pr_meta.get("pr_number")
+        git_rec.pr_url = pr_meta.get("pr_url")
+        git_rec.pr_observed = True
+        self._persist_git_record(git_rec, campaign_state, state_dir)
+
+        ci_obs = self.git_executor.observe_required_checks(git_rec.pr_number)
+        git_rec.required_checks = ci_obs.checks
+        git_rec.required_checks_observed = ci_obs.all_required_observed
+        git_rec.required_checks_green = ci_obs.all_required_green
+        git_rec.ci_status = "passed" if ci_obs.all_required_green else (
+            "failed" if ci_obs.failed_jobs else ("pending" if not ci_obs.all_required_observed else "unavailable")
+        )
+        self._persist_git_record(git_rec, campaign_state, state_dir)
+
+        if not git_rec.required_checks_green:
+            git_rec.failure_reason = f"CI_NOT_GREEN: {git_rec.ci_status}"
+            self._persist_git_record(git_rec, campaign_state, state_dir)
+            return False, git_rec.to_dict()
+
+        merge_meta = self._authorize_and_execute_git_step(
+            "merge_pull_request", {"pr_number": git_rec.pr_number}, task_id, run_dir, git_rec,
+        )
+        if merge_meta is None:
+            self._persist_git_record(git_rec, campaign_state, state_dir)
+            return False, git_rec.to_dict()
+        git_rec.merge_sha = merge_meta.get("merge_sha")
+        git_rec.merge_observed = True
+        self._persist_git_record(git_rec, campaign_state, state_dir)
+        if campaign_state is not None:
+            campaign_state.increment_merge_count()
+
+        remote_ok = self.git_executor.verify_remote_main_contains(git_rec.merge_sha)
+        if not remote_ok:
+            git_rec.failure_reason = "MERGE_NOT_YET_REACHABLE_FROM_REMOTE_MAIN"
+            self._persist_git_record(git_rec, campaign_state, state_dir)
+            return False, git_rec.to_dict()
+        git_rec.remote_main_contains_merge = True
+        git_rec.merged = True
+        git_rec.merged_at = datetime.now(timezone.utc).isoformat()
+        self._persist_git_record(git_rec, campaign_state, state_dir)
+
+        sync_meta = self._authorize_and_execute_git_step("sync_local_main", {}, task_id, run_dir, git_rec)
+        git_rec.local_main_synced = bool(sync_meta and sync_meta.get("local_main_synced"))
+        git_rec.integration_mode = "real"
+        self._persist_git_record(git_rec, campaign_state, state_dir)
 
         if self.ledger:
             self.ledger.append_entry(EvidenceEntry(
                 task_id=task_id,
                 agent_id=provider,
                 action="engineering_gap_resolved",
-                command=f"git merge {branch_name}",
-                result="PASS",
-                artifact=f"commit:{commit_sha}",
+                command=f"gh pr merge {git_rec.pr_number} --squash",
+                result="PASS" if git_rec.is_fully_integrated() else "PARTIAL",
+                artifact=f"commit:{git_rec.commit_sha}",
                 task_class="bug_fix",
                 risk_level="low",
                 reasoning_tier="tier_2",
                 implementing_agent=provider,
-                metadata={"gap_type": gap_type, "benchmark": benchmark_key, "git_record": git_rec},
+                metadata={"gap_type": gap_type, "benchmark": benchmark_key, "git_record": git_rec.to_dict()},
             ))
 
-        return True, git_rec
+        return git_rec.is_fully_integrated(), git_rec.to_dict()

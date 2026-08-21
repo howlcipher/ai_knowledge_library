@@ -22,6 +22,8 @@ import pytest
 import time
 from typing import Dict, List, Tuple
 
+import subprocess
+
 from src.control_plane.agent_execution import (
     AgentBackend,
     AgentBackendRegistry,
@@ -29,7 +31,10 @@ from src.control_plane.agent_execution import (
     FakeAgentBackend,
 )
 from src.control_plane.evidence_ledger import EvidenceLedger
-from src.control_plane.synthesis.campaign_state import DurableCampaignState
+from src.control_plane.git_baseline import RepositoryDelta
+from src.control_plane.git_integration import GitIntegrationExecutor
+from src.control_plane.orchestrator import OrchestrationResult
+from src.control_plane.synthesis.campaign_state import DurableCampaignState, GitIntegrationRecord
 from src.control_plane.synthesis.capability_negotiator import CapabilityNegotiator, FrameworkGap
 from src.control_plane.synthesis.engine import ProductSynthesizer, SynthesisResult
 from src.control_plane.synthesis.marathon import (
@@ -42,6 +47,62 @@ from src.control_plane.synthesis.provider_pool import (
     ProviderExhaustionEvent,
     ProviderPoolManager,
 )
+
+
+class ScriptedProcessRunner:
+    """
+    Fakes `git`/`gh` at the subprocess boundary only (#59 Phase 20): the
+    production GitIntegrationExecutor/marathon logic under test is real, no
+    shortcuts. Each registration is consumed once (FIFO) per exact args.
+    """
+
+    def __init__(self):
+        self.responses: Dict[Tuple[str, ...], List[subprocess.CompletedProcess]] = {}
+        self.calls: List[Tuple[str, ...]] = []
+
+    def on(self, args, returncode=0, stdout="", stderr=""):
+        key = tuple(args)
+        self.responses.setdefault(key, []).append(
+            subprocess.CompletedProcess(args=list(args), returncode=returncode, stdout=stdout, stderr=stderr)
+        )
+        return self
+
+    def __call__(self, repo_root, args, timeout=60):
+        key = tuple(args)
+        self.calls.append(key)
+        queue = self.responses.get(key)
+        if queue:
+            return queue[0] if len(queue) == 1 else queue.pop(0)
+        return subprocess.CompletedProcess(args=list(args), returncode=0, stdout="", stderr="")
+
+
+class FakeGovernedOrchestrator:
+    """
+    Fakes GovernedTaskOrchestrator at the boundary marathon.py actually
+    calls through `orchestrator_factory` (#59 Phase 20): the orchestrator's
+    own lifecycle is exhaustively covered by test_closed_loop_orchestrator.py
+    / test_operational_resilience.py, so this test focuses on proving the
+    REAL git/GitHub integration call sequence that marathon.py drives after
+    a governed implementation completes.
+    """
+
+    def __init__(self, run_dir):
+        self.run_dir = run_dir
+
+    def run(self, task_spec, planned_actions=None):
+        return OrchestrationResult(
+            task_id=task_spec.task_id,
+            task_spec=task_spec,
+            final_state="complete",
+            exit_code=0,
+            final_delta=RepositoryDelta(
+                files_modified=["src/control_plane/howlframe_runtime.py"],
+                diff_content="--- a/x\n+++ b/x\n",
+                insertions=1,
+                is_empty=False,
+            ),
+            run_dir=str(self.run_dir),
+        )
 
 
 def _seed_valid_howl_files(task, cwd: Path, prompt: str):
@@ -313,15 +374,80 @@ def test_scenario_9_closed_loop_self_improvement_flywheel(tmp_path: Path):
     ledger = EvidenceLedger(tmp_path / "flywheel_ledger.jsonl")
 
     synth = FlywheelSynthesizer(provider_pool=pool, ledger=ledger, synthesis_mode="deterministic_baseline")
+
+    # #59: real git/GitHub integration, faked ONLY at the git/gh subprocess
+    # boundary (production GitIntegrationExecutor/marathon logic under test
+    # is real) plus a faked GovernedTaskOrchestrator (its own lifecycle is
+    # covered by test_closed_loop_orchestrator.py / test_operational_resilience.py).
+    repo_slug = "howlcipher/howlplane"
+    task_id = "ENG-NOTES-01"
+    branch = f"fix/{task_id}"
+    run_dir = tmp_path / "fake_run" / task_id
+
+    git_runner = ScriptedProcessRunner()
+    git_runner.on(["fetch", "origin", "main"], returncode=0)
+    git_runner.on(["switch", "-c", branch, "origin/main"], returncode=0)
+    git_runner.on(["rev-parse", "--verify", branch], returncode=0, stdout="branchsha\n")
+    git_runner.on(["add", "--", "src/control_plane/howlframe_runtime.py"], returncode=0)
+    git_runner.on(["commit", "-m", f"fix(notes): resolve HOWLFRAME_RUNTIME_GAP found during marathon dogfooding"], returncode=0)
+    git_runner.on(["rev-parse", "HEAD"], returncode=0, stdout="realcommitsha1\n")
+    git_runner.on(["push", "-u", "origin", branch], returncode=0)
+    git_runner.on(["rev-parse", branch], returncode=0, stdout="realcommitsha1\n")
+    git_runner.on(["ls-remote", "origin", branch], returncode=0, stdout=f"realcommitsha1\trefs/heads/{branch}\n")
+    git_runner.on(["merge-base", "--is-ancestor", "realmergesha1", "origin/main"], returncode=0)
+    git_runner.on(["switch", "main"], returncode=0)
+    git_runner.on(["merge", "--ff-only", "origin/main"], returncode=0)
+    git_runner.on(["status", "--porcelain"], returncode=0, stdout="")
+    # rev-parse HEAD/origin/main during sync_local_main -- registered after
+    # the earlier rev-parse HEAD response is exhausted (FIFO per exact args).
+    git_runner.on(["rev-parse", "HEAD"], returncode=0, stdout="finalsha\n")
+    git_runner.on(["rev-parse", "origin/main"], returncode=0, stdout="finalsha\n")
+
+    gh_runner = ScriptedProcessRunner()
+    gh_runner.on(
+        ["pr", "create", "--repo", repo_slug, "--base", "main", "--head", branch,
+         "--title", "fix(notes): HOWLFRAME_RUNTIME_GAP",
+         "--body", "Automated marathon dogfooding fix.\n\nGap: HOWLFRAME_RUNTIME_GAP\natomic store flush missing"],
+        returncode=0,
+    )
+    gh_runner.on(
+        ["pr", "list", "--repo", repo_slug, "--head", branch, "--json", "number,url"],
+        returncode=0, stdout='[{"number": 77, "url": "https://github.com/howlcipher/howlplane/pull/77"}]',
+    )
+    gh_runner.on(["pr", "view", "77", "--json", "number"], returncode=0, stdout='{"number": 77}')
+    gh_runner.on(
+        ["api", f"repos/{repo_slug}/branches/main/protection"],
+        returncode=0,
+        stdout='{"required_status_checks": {"contexts": ["test-python"]}}',
+    )
+    gh_runner.on(
+        ["pr", "checks", "77", "--json", "name,state,bucket,link"],
+        returncode=0,
+        stdout='[{"name": "test-python", "state": "SUCCESS", "bucket": "pass"}]',
+    )
+    gh_runner.on(["pr", "view", "77", "--json", "headRefName"], returncode=0, stdout=f'{{"headRefName": "{branch}"}}')
+    gh_runner.on(["pr", "merge", "77", "--repo", repo_slug, "--squash", "--delete-branch"], returncode=0)
+    gh_runner.on(
+        ["pr", "view", "77", "--repo", repo_slug, "--json", "state,merged,mergeCommit"],
+        returncode=0,
+        stdout='{"state": "MERGED", "merged": true, "mergeCommit": {"oid": "realmergesha1"}}',
+    )
+
     engine = MarathonDogfoodEngine(
         synthesizer=synth,
         provider_pool=pool,
         ledger=ledger,
         base_output_dir=tmp_path / "dogfood_flywheel",
         campaign_dir=tmp_path / "campaigns",
+        target_repo=tmp_path,
+        repo_slug=repo_slug,
+        orchestrator_factory=lambda config: FakeGovernedOrchestrator(run_dir),
+        git_executor_factory=lambda envelope, merges_so_far: GitIntegrationExecutor(
+            tmp_path, repo_slug, envelope, git_runner=git_runner, gh_runner=gh_runner, merges_so_far=merges_so_far,
+        ),
     )
 
-    report = engine.run_marathon(benchmarks=["notes"], max_iterations=1)
+    report = engine.run_marathon(benchmarks=["notes"], max_iterations=1, authority_profile_id="overnight-safe")
 
     assert report.iterations_succeeded == 1
     assert len(report.benchmark_results) == 1
@@ -329,7 +455,15 @@ def test_scenario_9_closed_loop_self_improvement_flywheel(tmp_path: Path):
     assert report.benchmark_results[0].retried_after_fix is True
     assert len(report.completed_engineering_tasks) == 1
     assert len(report.git_records) == 1
-    assert report.git_records[0]["merged"] is True
+
+    rec = GitIntegrationRecord.from_dict(report.git_records[0])
+    assert rec.integration_mode == "real"
+    assert rec.is_fully_integrated() is True
+    assert rec.branch_observed and rec.commit_observed and rec.push_observed
+    assert rec.pr_observed and rec.required_checks_green and rec.merge_observed
+    assert rec.remote_main_contains_merge is True
+    assert rec.merge_sha == "realmergesha1"
+    assert rec.commit_sha == "realcommitsha1"
 
 
 def test_scenario_10_until_providers_exhausted_semantics(tmp_path: Path):

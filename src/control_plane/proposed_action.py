@@ -56,7 +56,71 @@ CONSEQUENTIAL_RULES: List[Tuple[Tuple[str, ...], str, str, str, Optional[str]]] 
         "production_deployment",
         None,
     ),
+    (
+        ("force push", "push --force", "push -f", "git push -f"),
+        "force_push",
+        "critical",
+        "force_push",
+        None,
+    ),
+    (
+        ("filter-branch", "reset --hard.*origin", "rebase -i.*origin", "history rewrite", "rewrite history"),
+        "history_rewrite",
+        "critical",
+        "history_rewrite",
+        None,
+    ),
+    (
+        ("bypass required check", "bypass ci", "skip required status check", "--admin merge"),
+        "bypass_required_checks",
+        "critical",
+        "bypass_required_checks",
+        None,
+    ),
+    (
+        ("weaken branch protection", "disable branch protection", "remove required status check"),
+        "branch_protection_weakening",
+        "critical",
+        "branch_protection_weakening",
+        None,
+    ),
 ]
+
+# Paths whose modification always requires human authority (#59 Phase 10),
+# regardless of any AuthorityEnvelope: these files define or enforce the
+# authority system itself. A campaign must never be able to rewrite the
+# rules controlling its own authority and use the new rules in the same
+# unattended run.
+SELF_MODIFICATION_PATHS: Tuple[str, ...] = (
+    "src/control_plane/authority_profile.py",
+    "src/control_plane/authority_envelope.py",
+    "src/control_plane/human_boundary.py",
+    "src/control_plane/executor.py",
+)
+
+
+def infer_proposed_actions_from_diff(files_changed: List[str], repo_name: str = "") -> List["ProposedAction"]:
+    """
+    Detects attempted self-modification of the authority enforcement system
+    from a list of changed file paths (#59 Phase 10/13). Always
+    risk_level="critical" with no executor_id -- permanently human-only, not
+    executable-via-approval by any bounded executor.
+    """
+    for f in files_changed or []:
+        normalized = f.replace("\\", "/")
+        if any(normalized.endswith(p) for p in SELF_MODIFICATION_PATHS):
+            return [
+                ProposedAction(
+                    action_type="authority_enforcement_modification",
+                    target_repo=repo_name,
+                    risk_level="critical",
+                    requires_bounded_execution=True,
+                    authority_boundary="authority_enforcement_modification",
+                    executor_id=None,
+                    arguments={"changed_path": f},
+                )
+            ]
+    return []
 
 
 @dataclass

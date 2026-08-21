@@ -98,6 +98,15 @@ HUMAN_BOUNDARY_TRIGGERS = {
     "hygiene_policy_violation": (
         "Prohibited repository hygiene policy violation (ceiling increase or configuration deletion)"
     ),
+    "force_push": "Force push to a shared branch, overwriting remote history",
+    "history_rewrite": "Rewriting committed git history (filter-branch, rebase over pushed commits, hard reset of shared refs)",
+    "bypass_required_checks": "Merging or landing a change while bypassing required GitHub status checks",
+    "branch_protection_weakening": "Weakening or removing GitHub branch protection / required status checks",
+    "authority_profile_modification": "Modifying an AuthorityProfile definition (allowed/denied actions, TTL, limits)",
+    "authority_enforcement_modification": (
+        "Modifying the code that enforces delegated authority itself "
+        "(human_boundary.py, authority_profile.py, authority_envelope.py, executor.py)"
+    ),
 }
 
 EXECUTABLE_BOUNDARIES = {
@@ -108,6 +117,31 @@ EXECUTABLE_BOUNDARIES = {
     "credential_provisioning",
     "external_messaging",
     "create_release_candidate",
+}
+
+# Boundaries that can NEVER be satisfied by delegated authority, no matter
+# what an AuthorityEnvelope's allowed_action_classes contains (#59 Phase 10).
+# Checked before any envelope lookup in evaluate_with_delegated_authority();
+# an envelope cannot override this set by construction.
+NEVER_DELEGATABLE_BOUNDARIES = {
+    "force_push",
+    "history_rewrite",
+    "bypass_required_checks",
+    "branch_protection_weakening",
+    "production_deployment",
+    "infrastructure_apply",
+    "destructive_database_change",
+    "credential_provisioning",
+    "package_publishing",
+    "external_messaging",
+    "job_submission",
+    "paid_service_usage",
+    "external_dependency_addition",
+    "security_policy_exception",
+    "hygiene_policy_weakening",
+    "slop_debt_acceptance",
+    "authority_profile_modification",
+    "authority_enforcement_modification",
 }
 
 
@@ -182,6 +216,13 @@ class BoundaryCheckResult:
     requires_human_approval: bool
     triggered_boundaries: List[str] = field(default_factory=list)
     decision_packet: Optional[HumanDecisionPacket] = None
+    # True only when evaluate_with_delegated_authority() found every
+    # triggered boundary satisfied by a verified, unexpired
+    # AuthorityEnvelope (#59 Phase 11). requires_human_approval is False in
+    # that case, but this flag distinguishes "no boundary was triggered at
+    # all" from "a boundary was triggered and delegated authority covered
+    # it" for audit purposes.
+    delegated_authority_used: bool = False
 
 
 class HumanBoundaryGate:
@@ -348,6 +389,102 @@ class HumanBoundaryGate:
             executor_id=executor_id,
         )
 
+        return BoundaryCheckResult(
+            requires_human_approval=True,
+            triggered_boundaries=triggers,
+            decision_packet=packet,
+        )
+
+    @classmethod
+    def evaluate_with_delegated_authority(
+        cls,
+        task: TaskSpec,
+        planned_actions: List[str],
+        envelope: Optional[Any] = None,
+        target_repo: Optional[Union[str, Path]] = None,
+        repo_slug: Optional[str] = None,
+        files_changed: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> BoundaryCheckResult:
+        """
+        Delegated-authority pre-check (#59 Phase 11): ProposedAction ->
+        identify authority class -> does the campaign's AuthorityEnvelope
+        contain exact permission? If every triggered boundary resolves to
+        DELEGATED_AUTHORITY_ALLOW, autonomous continuation is permitted
+        without asking a human. Otherwise this falls through to today's
+        evaluate_pre_execution()/evaluate() behavior unchanged -- this
+        method never weakens or replaces existing human-boundary protection,
+        it only adds a policy-driven allow path in front of it.
+
+        The model never answers "am I allowed?" here: the only inputs that
+        matter are the envelope (operator-created, tamper-verified) and the
+        NEVER_DELEGATABLE_BOUNDARIES set (code-defined, not campaign data).
+        """
+        # Local imports to avoid a hard import-time dependency from
+        # human_boundary.py (a foundational, widely-imported module) on the
+        # newer authority modules, and to keep this delegated-authority path
+        # entirely optional for callers that don't pass an envelope.
+        from src.control_plane.authority_envelope import (
+            AuthorityDecision,
+            evaluate_action_against_envelope,
+        )
+        from src.control_plane.proposed_action import infer_proposed_actions_from_diff
+
+        repo_name = task.repository or (Path(target_repo).name if target_repo else "")
+        actions = infer_proposed_actions(
+            objective=task.objective,
+            repo_name=repo_name,
+            planned_actions=planned_actions,
+            human_approval_requirements=task.human_approval_requirements,
+        )
+        actions = actions + infer_proposed_actions_from_diff(files_changed or [], repo_name=repo_name)
+
+        triggers = [a.authority_boundary for a in actions if a.authority_boundary]
+        if task.risk_level == "critical" and "production_deployment" not in triggers:
+            triggers.append("production_deployment")
+
+        if not triggers:
+            return BoundaryCheckResult(requires_human_approval=False)
+
+        slug = repo_slug or repo_name
+        all_delegated = True
+        reasons: List[str] = []
+        for trigger in triggers:
+            if trigger in NEVER_DELEGATABLE_BOUNDARIES:
+                all_delegated = False
+                reasons.append(f"'{trigger}' is never delegatable regardless of envelope contents.")
+                continue
+            decision, reason = evaluate_action_against_envelope(envelope, trigger, slug)
+            if decision != AuthorityDecision.DELEGATED_AUTHORITY_ALLOW:
+                all_delegated = False
+            reasons.append(reason)
+
+        if all_delegated:
+            return BoundaryCheckResult(
+                requires_human_approval=False,
+                triggered_boundaries=triggers,
+                delegated_authority_used=True,
+            )
+
+        # Not fully delegated: build the human decision packet directly from
+        # the triggers already computed above (which may include diff-based
+        # self-modification triggers that evaluate_pre_execution()'s own
+        # text-only inference would never see) rather than re-deriving
+        # triggers from scratch and silently losing them.
+        risks = [f"Boundary '{t}': {HUMAN_BOUNDARY_TRIGGERS.get(t, t)}" for t in triggers]
+        packet = HumanDecisionPacket(
+            task_id=task.task_id,
+            objective=task.objective,
+            change_summary="Consequential action requested; delegated authority did not fully cover it.",
+            boundary_triggers=triggers,
+            evidence=["Delegated authority evaluation: " + "; ".join(reasons)],
+            risks=risks,
+            review_findings_summary={"total": 0, "blocker": 0, "high": 0},
+            verification_status="pre_execution",
+            recommended_action="Review requested consequential action and authorize or reject execution.",
+            proposed_actions=[a.to_dict() for a in actions],
+            executor_id=actions[0].executor_id if actions and actions[0].executor_id else None,
+        )
         return BoundaryCheckResult(
             requires_human_approval=True,
             triggered_boundaries=triggers,
