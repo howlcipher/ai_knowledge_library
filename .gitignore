@@ -75,6 +75,7 @@ docs/_config.yml
 /*.zip
 /logs/
 /.task_runs/
+/.dogfood_runs/
 /task_*.yaml
 /output/
 

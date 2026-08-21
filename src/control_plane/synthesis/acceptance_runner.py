@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 import json
 import os
 from pathlib import Path
+import shutil
 import socket
 import subprocess
 import time
@@ -311,8 +312,9 @@ class ProductAcceptanceRunner:
         if run_script.exists():
             cmd = ["bash", str(run_script), str(port)]
         else:
+            howlframe_bin = os.environ.get("HOWLFRAME_BIN") or shutil.which("howlframe") or "howlframe"
             bc_file = prod_path / "build" / "backend.hfbc"
-            cmd = ["howlframe", "-run-bc", "-allow-caps", "network,database,filesystem", str(bc_file)]
+            cmd = [howlframe_bin, "-run-bc", "-allow-caps", "network,database,filesystem", str(bc_file)]
 
         try:
             proc = subprocess.Popen(

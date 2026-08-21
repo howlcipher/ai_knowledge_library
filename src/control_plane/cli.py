@@ -513,6 +513,7 @@ def register_synthesis_subparsers(subparsers: Any, parents: Optional[List[Any]] 
     p_dogfood.add_argument("--max-iterations", type=int, default=5, help="Maximum benchmark iterations")
     p_dogfood.add_argument("--until-providers-exhausted", action="store_true", help="Run until all external providers are exhausted")
     p_dogfood.add_argument("--avoid-provider", help="Avoid using specified provider if alternatives exist")
+    p_dogfood.add_argument("--resume", help="Resume an existing dogfood campaign by campaign ID")
     p_dogfood.add_argument("--output-dir", default="output", help="Base output directory for generated products")
     p_dogfood.add_argument("--ledger-file", help="Ledger file path")
     p_dogfood.add_argument("--json", action="store_true", help="Output JSON result")
@@ -700,6 +701,7 @@ def cmd_dogfood(args: argparse.Namespace) -> int:
     max_iters = getattr(args, "max_iterations", 5)
     avoid = getattr(args, "avoid_provider", None)
     out_base = getattr(args, "output_dir", "output")
+    resume_id = getattr(args, "resume", None)
     ledger = EvidenceLedger(args.ledger_file) if getattr(args, "ledger_file", None) else None
 
     engine = MarathonDogfoodEngine(base_output_dir=out_base, ledger=ledger)
@@ -708,6 +710,7 @@ def cmd_dogfood(args: argparse.Namespace) -> int:
         max_iterations=max_iters,
         until_providers_exhausted=getattr(args, "until_providers_exhausted", False),
         avoid_provider=avoid,
+        resume_campaign_id=resume_id,
     )
 
     if getattr(args, "json", False):
