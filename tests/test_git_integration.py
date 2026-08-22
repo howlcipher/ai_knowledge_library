@@ -19,6 +19,7 @@ from src.control_plane.git_integration import (
     GitIntegrationError,
     GitIntegrationExecutor,
     GitHubCIObserver,
+    classify_check,
 )
 from src.control_plane.proposed_action import ProposedAction
 from src.control_plane.synthesis.campaign_state import GitIntegrationRecord
@@ -44,6 +45,43 @@ def make_executor(git_runner=None, gh_runner=None, envelope=_UNSET):
         git_runner=git_runner or ScriptedRunner(),
         gh_runner=gh_runner or ScriptedRunner(),
     )
+
+
+def _ruleset_json(contexts):
+    """
+    The live shape of `gh api repos/{slug}/rules/branches/main` on this
+    repository, including the neighbouring rules the parser must skip.
+    """
+    checks = ", ".join(f'{{"context": "{c}"}}' for c in contexts)
+    return (
+        '[{"type": "deletion"}, {"type": "non_fast_forward"}, '
+        '{"type": "pull_request", "parameters": {"required_approving_review_count": 0}}, '
+        '{"type": "required_status_checks", "parameters": '
+        f'{{"strict_required_status_checks_policy": true, "required_status_checks": [{checks}]}}}}]'
+    )
+
+
+def _gh_with_ruleset(contexts, base_branch="main"):
+    """A repo protected by a ruleset: legacy branch protection 404s, as live."""
+    gh = ScriptedRunner()
+    gh.on(
+        ["api", f"repos/{REPO_SLUG}/rules/branches/{base_branch}"],
+        returncode=0, stdout=_ruleset_json(contexts),
+    )
+    gh.on(
+        ["api", f"repos/{REPO_SLUG}/branches/{base_branch}/protection"],
+        returncode=1, stderr="gh: Branch not protected (HTTP 404)",
+    )
+    return gh
+
+
+def _checks_json(*pairs):
+    """(name, bucket, state) triples as `gh pr checks --json` would report them."""
+    entries = ", ".join(
+        f'{{"name": "{name}", "bucket": "{bucket}", "state": "{state}"}}'
+        for name, bucket, state in pairs
+    )
+    return f"[{entries}]"
 
 
 # ---------------------------------------------------------------------------
@@ -119,58 +157,46 @@ def test_pr_create_reports_success_but_not_listed_fails_closed():
         executor.open_pull_request("fix/T1", "t", "b")
 
 
-def test_ci_pending_blocks_merge():
-    """CI checks not yet observed as terminal must report all_required_green=False."""
-    gh = ScriptedRunner()
-    gh.on(["api", f"repos/{REPO_SLUG}/branches/main/protection"], returncode=404, stderr="Branch not protected")
+def _observe(*checks, contexts=None):
+    """One `observe_once` against a ruleset-protected repo with these checks."""
+    gh = _gh_with_ruleset(list(contexts or [c[0] for c in checks]))
     gh.on(
         ["pr", "checks", "5", "--json", "name,state,bucket,link"],
-        returncode=0,
-        stdout='[{"name": "test-python", "state": "PENDING", "bucket": "pending"}]',
+        returncode=0, stdout=_checks_json(*checks),
     )
     observer = GitHubCIObserver(gh_runner=gh, git_runner=ScriptedRunner())
-    obs = observer.observe_once("/fake/repo", 5, REPO_SLUG)
+    return observer.observe_once("/fake/repo", 5, REPO_SLUG)
+
+
+def test_ci_pending_blocks_merge():
+    """A required check that is observed but still pending must not be green."""
+    obs = _observe(("test-python", "pending", "PENDING"))
+
     assert obs.all_required_green is False
+    assert obs.authorizes_merge() is False
 
 
 def test_ci_failed_check_reported_not_green():
-    gh = ScriptedRunner()
-    gh.on(["api", f"repos/{REPO_SLUG}/branches/main/protection"], returncode=404)
-    gh.on(
-        ["pr", "checks", "5", "--json", "name,state,bucket,link"],
-        returncode=0,
-        stdout=(
-            '[{"name": "test-python", "state": "SUCCESS", "bucket": "pass"}, '
-            '{"name": "test-go", "state": "FAILURE", "bucket": "fail"}, '
-            '{"name": "lint", "state": "SUCCESS", "bucket": "pass"}]'
-        ),
+    obs = _observe(
+        ("test-python", "pass", "SUCCESS"),
+        ("test-go", "fail", "FAILURE"),
+        ("lint", "pass", "SUCCESS"),
     )
-    observer = GitHubCIObserver(gh_runner=gh, git_runner=ScriptedRunner())
-    obs = observer.observe_once("/fake/repo", 5, REPO_SLUG)
+
     assert obs.all_required_green is False
     assert any(f["name"] == "test-go" for f in obs.failed_jobs)
 
 
 def test_ci_all_green_reports_true():
-    gh = ScriptedRunner()
-    gh.on(
-        ["api", f"repos/{REPO_SLUG}/branches/main/protection"],
-        returncode=0,
-        stdout='{"required_status_checks": {"contexts": ["test-python", "test-go", "lint"]}}',
+    obs = _observe(
+        ("test-python", "pass", "SUCCESS"),
+        ("test-go", "pass", "SUCCESS"),
+        ("lint", "pass", "SUCCESS"),
     )
-    gh.on(
-        ["pr", "checks", "5", "--json", "name,state,bucket,link"],
-        returncode=0,
-        stdout=(
-            '[{"name": "test-python", "state": "SUCCESS", "bucket": "pass"}, '
-            '{"name": "test-go", "state": "SUCCESS", "bucket": "pass"}, '
-            '{"name": "lint", "state": "SUCCESS", "bucket": "pass"}]'
-        ),
-    )
-    observer = GitHubCIObserver(gh_runner=gh, git_runner=ScriptedRunner())
-    obs = observer.observe_once("/fake/repo", 5, REPO_SLUG)
+
     assert obs.all_required_green is True
     assert obs.all_required_observed is True
+    assert obs.authorizes_merge() is True
 
 
 def test_simulated_ci_evidence_rejected_in_overnight_mode():
@@ -288,3 +314,216 @@ def test_evaluate_requires_approval_with_no_envelope():
     action = ProposedAction(action_type="merge_pull_request", target_repo=REPO_SLUG)
     verdict, decision_id, reason = executor.evaluate(action, "/fake/repo", "/fake/run")
     assert verdict == "REQUIRE_APPROVAL"
+
+
+# ---------------------------------------------------------------------------
+# #59.1 Blocker 3: required-check discovery reads LIVE policy, never a
+# hard-coded list. The five contexts below are the ones actually enforced on
+# howlcipher/howlplane's `main` ruleset at the time of writing -- but the
+# point of these tests is that nothing in production encodes them.
+# ---------------------------------------------------------------------------
+
+LIVE_CONTEXTS = ["test-python", "test-go", "lint", "SlopsLint Duplication & Ceiling Ratchet", "Analyze"]
+
+
+def test_14_ruleset_required_checks_discovered_when_legacy_protection_404s():
+    """
+    `main` is protected by a GitHub Ruleset, so repos/{slug}/branches/main/
+    protection returns 404. Discovery must read the ruleset instead of
+    silently substituting a stale internal list.
+    """
+    observer = GitHubCIObserver(gh_runner=_gh_with_ruleset(LIVE_CONTEXTS), git_runner=ScriptedRunner())
+    policy = observer.required_check_policy("/fake/repo", REPO_SLUG)
+
+    assert policy.available is True
+    assert policy.source == "ruleset"
+    assert policy.contexts == LIVE_CONTEXTS
+    assert policy.authorizes_merge_gate() is True
+
+
+def test_15_legacy_branch_protection_still_discovered():
+    """Repositories still using classic branch protection keep working."""
+    gh = ScriptedRunner()
+    gh.on(["api", f"repos/{REPO_SLUG}/rules/branches/main"], returncode=1, stderr="not found")
+    gh.on(
+        ["api", f"repos/{REPO_SLUG}/branches/main/protection"],
+        returncode=0,
+        stdout='{"required_status_checks": {"contexts": ["test-python", "test-go"]}}',
+    )
+    observer = GitHubCIObserver(gh_runner=gh, git_runner=ScriptedRunner())
+    policy = observer.required_check_policy("/fake/repo", REPO_SLUG)
+
+    assert policy.available is True
+    assert policy.source == "branch_protection"
+    assert policy.contexts == ["test-python", "test-go"]
+
+
+def test_16_unreadable_policy_fails_closed_and_never_authorizes_merge():
+    """
+    If neither policy source can be read, an unattended merge must not happen.
+    Previously this silently fell back to ["test-python","test-go","lint"].
+    """
+    gh = ScriptedRunner()
+    gh.on(["api", f"repos/{REPO_SLUG}/rules/branches/main"], returncode=1, stderr="API rate limited")
+    gh.on(["api", f"repos/{REPO_SLUG}/branches/main/protection"], returncode=1, stderr="404")
+    gh.on(
+        ["pr", "checks", "5", "--json", "name,state,bucket,link"],
+        returncode=0, stdout=_checks_json(("test-python", "pass", "SUCCESS")),
+    )
+    observer = GitHubCIObserver(gh_runner=gh, git_runner=ScriptedRunner())
+    policy = observer.required_check_policy("/fake/repo", REPO_SLUG)
+
+    assert policy.available is False
+    assert policy.reason == "CI_POLICY_UNAVAILABLE"
+    assert policy.authorizes_merge_gate() is False
+    # Even with every observed check green, an unknown policy blocks the merge.
+    assert observer.observe_once("/fake/repo", 5, REPO_SLUG).authorizes_merge() is False
+
+
+def test_readable_policy_enforcing_zero_checks_fails_closed():
+    """
+    A ruleset that protects the branch but enforces no status checks is a
+    *known* policy with no CI evidence gate. Delegated merge authority is
+    premised on green required checks, so this fails closed too -- and is
+    reported distinctly from an unreadable policy.
+    """
+    observer = GitHubCIObserver(gh_runner=_gh_with_ruleset([]), git_runner=ScriptedRunner())
+    policy = observer.required_check_policy("/fake/repo", REPO_SLUG)
+
+    assert policy.available is True
+    assert policy.contexts == []
+    assert policy.reason == "NO_REQUIRED_CHECKS_ENFORCED"
+    assert policy.authorizes_merge_gate() is False
+
+
+def test_22_new_ruleset_context_is_observed_without_code_changes():
+    """
+    Discovery re-reads live policy every call, so a check added to the ruleset
+    is picked up with no HowlPlane change. Same observer, same code, extra
+    required context.
+    """
+    observer = GitHubCIObserver(
+        gh_runner=_gh_with_ruleset(LIVE_CONTEXTS + ["brand-new-required-check"]),
+        git_runner=ScriptedRunner(),
+    )
+    policy = observer.required_check_policy("/fake/repo", REPO_SLUG)
+
+    assert "brand-new-required-check" in policy.contexts
+    assert len(policy.contexts) == len(LIVE_CONTEXTS) + 1
+
+
+# ---------------------------------------------------------------------------
+# #59.1 Blocker 4: polling must wait for TERMINAL required checks, not merely
+# for their names to appear.
+# ---------------------------------------------------------------------------
+
+def _poll(check_sequence, timeout_seconds=100, contexts=("test-python", "test-go")):
+    """
+    Polls an observer whose `gh pr checks` responses advance one step per poll,
+    on a clock that ticks once per read. Returns (observation, gh) so a test
+    can also assert how many polls a given CI progression required.
+    """
+    gh = _gh_with_ruleset(list(contexts))
+    for payload in check_sequence:
+        gh.on(["pr", "checks", "5", "--json", "name,state,bucket,link"], returncode=0, stdout=payload)
+    observer = GitHubCIObserver(gh_runner=gh, git_runner=ScriptedRunner())
+    obs = observer.poll_until_terminal(
+        "/fake/repo", 5, REPO_SLUG, timeout_seconds=timeout_seconds, poll_interval=1,
+        sleep_fn=lambda _s: None, clock_fn=_ticking_clock(),
+    )
+    return obs, gh
+
+
+CHECK_CALL = ("pr", "checks", "5", "--json", "name,state,bucket,link")
+
+
+def test_17_all_names_present_but_one_queued_keeps_polling():
+    """
+    The old loop returned as soon as every required NAME appeared -- a QUEUED
+    job already has a name, so it could finish before CI had run at all.
+    """
+    queued = _checks_json(("test-python", "pass", "SUCCESS"), ("test-go", "pending", "QUEUED"))
+    green = _checks_json(("test-python", "pass", "SUCCESS"), ("test-go", "pass", "SUCCESS"))
+    obs, gh = _poll([queued, green])
+
+    assert obs.all_required_green is True
+    assert obs.authorizes_merge() is True
+    # It did not stop at the first (queued) observation.
+    assert gh.calls.count(CHECK_CALL) >= 2
+
+
+def test_18_in_progress_check_keeps_polling():
+    running = _checks_json(("test-python", "pass", "SUCCESS"), ("test-go", "pending", "IN_PROGRESS"))
+    green = _checks_json(("test-python", "pass", "SUCCESS"), ("test-go", "pass", "SUCCESS"))
+    obs, _ = _poll([running, green])
+
+    assert obs.all_required_terminal is True
+    assert obs.authorizes_merge() is True
+
+
+def test_19_all_terminal_green_authorizes_merge():
+    green = _checks_json(("test-python", "pass", "SUCCESS"), ("test-go", "skipping", "SKIPPED"))
+    obs, _ = _poll([green])
+
+    assert obs.all_required_green is True
+    assert obs.pending_jobs == []
+    assert obs.authorizes_merge() is True
+
+
+def test_20_terminal_failure_blocks_merge_and_returns_promptly():
+    failed = _checks_json(("test-python", "pass", "SUCCESS"), ("test-go", "fail", "FAILURE"))
+    obs, gh = _poll([failed])
+
+    assert obs.authorizes_merge() is False
+    assert [f["name"] for f in obs.failed_jobs] == ["test-go"]
+    # Returned on the first observation rather than polling out the deadline.
+    assert gh.calls.count(CHECK_CALL) == 1
+
+
+def test_21_poll_timeout_with_pending_check_blocks_merge():
+    pending = _checks_json(("test-python", "pass", "SUCCESS"), ("test-go", "pending", "QUEUED"))
+    obs, _ = _poll([pending], timeout_seconds=3)
+
+    assert obs.timed_out is True
+    assert obs.all_required_terminal is False
+    assert obs.authorizes_merge() is False
+    # Pending work must never be reported as a failure.
+    assert obs.failed_jobs == []
+    assert [c["name"] for c in obs.pending_jobs] == ["test-go"]
+
+
+def test_pending_checks_are_never_bucketed_as_failures():
+    """
+    The previous observer classified anything not pass/skipping as a failed
+    job, so a merely queued check was reported as a CI failure.
+    """
+    gh = _gh_with_ruleset(["test-python"])
+    gh.on(
+        ["pr", "checks", "5", "--json", "name,state,bucket,link"],
+        returncode=0, stdout=_checks_json(("test-python", "pending", "QUEUED")),
+    )
+    observer = GitHubCIObserver(gh_runner=gh, git_runner=ScriptedRunner())
+    obs = observer.observe_once("/fake/repo", 5, REPO_SLUG)
+
+    assert obs.failed_jobs == []
+    assert [c["name"] for c in obs.pending_jobs] == ["test-python"]
+    assert obs.all_required_observed is True
+    assert obs.all_required_terminal is False
+
+
+def test_unknown_check_state_is_treated_as_pending_not_green():
+    """An unrecognized state must never be read as permission to merge."""
+    assert classify_check({"name": "x", "bucket": "", "state": "SOMETHING_NEW"}) == "pending"
+    assert classify_check({"name": "x", "bucket": "pass", "state": "SUCCESS"}) == "green"
+    assert classify_check({"name": "x", "bucket": "cancel", "state": "CANCELLED"}) == "failed"
+
+
+def _ticking_clock(step=1.0):
+    """Monotonic clock that advances a fixed step on every read."""
+    state = {"t": 0.0}
+
+    def _clock():
+        state["t"] += step
+        return state["t"]
+
+    return _clock

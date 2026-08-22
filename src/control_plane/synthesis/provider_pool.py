@@ -100,6 +100,12 @@ EXHAUSTION_PATTERNS: Dict[str, List[str]] = {
         "resource_exhausted",
         "token limit",
         "exceeded your current quota",
+        # Observed live during campaign DOGFOOD-20260822-005043-16adca (#59.1):
+        # "Error: Individual quota reached. Please upgrade your subscription to
+        # increase your limits. Resets in 89h21m16s." matched no pattern above,
+        # so a genuine subscription exhaustion was misread as a normal
+        # engineering failure and no failover could occur.
+        "individual quota reached",
     ],
     "devin_cli": [
         "session limit",
@@ -314,6 +320,12 @@ class ProviderPoolManager:
             "resource exhausted",
             "out of capacity",
             "session exhausted",
+            # Provider-agnostic phrasings of subscription exhaustion. "quota
+            # reached" generalizes the live agy wording above; "upgrade your
+            # subscription" is only ever emitted by a billing/limit refusal,
+            # never by a compiler or test failure (#59.1).
+            "quota reached",
+            "upgrade your subscription",
         ]
         all_patterns = patterns + generic_exhaustion
 

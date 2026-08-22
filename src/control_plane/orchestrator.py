@@ -44,6 +44,18 @@ from src.control_plane.verification import VerificationPlan, VerificationStep
 
 ORCHESTRATOR_SCHEMA_VERSION = "howlplane.orchestrator/v1"
 
+# Structured reasons a governed task did not reach "complete" (#59.1 Phase 1).
+# The orchestrator assigns only the classes it can prove from its own gates.
+# PROVIDER_EXHAUSTED / PROVIDER_UNAVAILABLE are assigned by the caller after it
+# runs the observed AgentExecutionResult through ProviderPoolManager
+# .detect_exhaustion() -- the orchestrator holds no provider pool, and wiring one
+# in would duplicate an abstraction that already exists one layer up.
+FAILURE_CLASS_ENGINEERING = "ENGINEERING_FAILURE"
+FAILURE_CLASS_AUTHORITY_BLOCKED = "AUTHORITY_BLOCKED"
+FAILURE_CLASS_VERIFICATION = "VERIFICATION_FAILURE"
+FAILURE_CLASS_PROVIDER_EXHAUSTED = "PROVIDER_EXHAUSTED"
+FAILURE_CLASS_PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
+
 
 @dataclass
 class OrchestrationConfig:
@@ -87,7 +99,21 @@ class OrchestrationResult:
     duration_seconds: float = 0.0
     error_message: Optional[str] = None
     run_dir: Optional[str] = None
+    # Structured provider evidence (#59.1 Phase 1). `provider_execution` is the
+    # verbatim implementation-role AgentExecutionResult -- exactly the type
+    # ProviderPoolManager.detect_exhaustion() consumes -- so a caller can tell a
+    # quota/session failure apart from bad generated code without parsing any
+    # human-readable summary text.
+    provider_execution: Optional[AgentExecutionResult] = None
+    failure_class: Optional[str] = None
     schema: str = ORCHESTRATOR_SCHEMA_VERSION
+
+    @property
+    def executing_provider(self) -> Optional[str]:
+        """The provider that actually executed, from observed evidence."""
+        if self.provider_execution is not None:
+            return self.provider_execution.agent_id
+        return self.routing_decision.selected_agent_id if self.routing_decision else None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -106,6 +132,9 @@ class OrchestrationResult:
             "duration_seconds": self.duration_seconds,
             "error_message": self.error_message,
             "run_dir": self.run_dir,
+            "provider_execution": self.provider_execution.to_dict() if self.provider_execution else None,
+            "executing_provider": self.executing_provider,
+            "failure_class": self.failure_class,
             "schema": self.schema,
         }
 
@@ -434,6 +463,11 @@ class GovernedTaskOrchestrator:
         impl_dir = run_dir / "implementation"
         impl_dir.mkdir(parents=True, exist_ok=True)
 
+        # Stays None on the crash-recovery path, where an interrupted
+        # implementation's delta is reconciled rather than re-run: there is no
+        # provider execution in *this* process to report (#59.1 Phase 1).
+        impl_res: Optional[AgentExecutionResult] = None
+
         if has_existing_delta and rec_delta:
             current_delta = rec_delta
             initial_delta = rec_delta
@@ -502,6 +536,12 @@ class GovernedTaskOrchestrator:
                     routing=routing,
                     hf_status=hf_audit_status,
                     hf_match=hf_audit_match,
+                    # Propagate the provider's own execution evidence verbatim
+                    # (#59.1 Phase 1). The caller re-classifies this through
+                    # detect_exhaustion(); ENGINEERING_FAILURE is only the
+                    # default when no provider-availability signal is found.
+                    provider_execution=impl_res,
+                    failure_class=FAILURE_CLASS_ENGINEERING,
                 )
 
             current_delta = capture_delta(self.target_repo, baseline)
@@ -662,6 +702,8 @@ class GovernedTaskOrchestrator:
                     verif_plan=verif_plan,
                     remediation_count=remediation_count,
                     err_msg=err_msg,
+                    provider_execution=impl_res,
+                    failure_class=FAILURE_CLASS_AUTHORITY_BLOCKED,
                 )
 
             remediation_count += 1
@@ -804,6 +846,8 @@ class GovernedTaskOrchestrator:
                 hf_status=hf_audit_status,
                 hf_match=hf_audit_match,
                 remediation_count=remediation_count,
+                provider_execution=impl_res,
+                failure_class=FAILURE_CLASS_VERIFICATION,
             )
 
         # --------------------------------------------------------------------
@@ -834,6 +878,7 @@ class GovernedTaskOrchestrator:
             hf_status=hf_audit_status,
             hf_match=hf_audit_match,
             remediation_count=remediation_count,
+            provider_execution=impl_res,
         )
 
         if boundary_res.requires_human_approval:
@@ -854,7 +899,10 @@ class GovernedTaskOrchestrator:
                 task_spec, run_dir, boundaries=boundary_res.triggered_boundaries
             )
 
-            return self._make_result(task_spec, "awaiting_human", 2, **stage_kwargs)
+            return self._make_result(
+                task_spec, "awaiting_human", 2,
+                failure_class=FAILURE_CLASS_AUTHORITY_BLOCKED, **stage_kwargs,
+            )
 
         # --------------------------------------------------------------------
         # Stage 8: Governed Completion (complete)
@@ -941,6 +989,8 @@ class GovernedTaskOrchestrator:
         hf_match: Optional[bool] = None,
         remediation_count: int = 0,
         err_msg: Optional[str] = None,
+        provider_execution: Optional[AgentExecutionResult] = None,
+        failure_class: Optional[str] = None,
     ) -> OrchestrationResult:
         return OrchestrationResult(
             task_id=task_spec.task_id,
@@ -960,6 +1010,8 @@ class GovernedTaskOrchestrator:
             duration_seconds=round(time.time() - start_time, 3),
             error_message=err_msg,
             run_dir=str(run_dir),
+            provider_execution=provider_execution,
+            failure_class=failure_class,
         )
 
     def _fail_task(

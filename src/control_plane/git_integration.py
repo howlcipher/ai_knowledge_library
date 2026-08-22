@@ -43,13 +43,15 @@ from src.control_plane.proposed_action import ProposedAction
 
 GIT_INTEGRATION_EXECUTOR_VERSION = "1.0"
 
-# Used only when the target repository has no GitHub-native branch
-# protection configured (no formally "required" status checks to discover).
-# This is a HowlPlane-side fallback, not a substitute for real branch
-# protection -- Sub-branch B's acceptance criteria is to configure real
-# branch protection on the live repo; this list exists so the code behaves
-# correctly (and conservatively) even before/without that.
-FALLBACK_REQUIRED_CHECKS = ["test-python", "test-go", "lint"]
+# Why the required-check policy could not authorize an unattended merge.
+# A stale hard-coded list must never stand in for live policy (#59.1
+# Blocker 3): there is deliberately no fallback constant here any more.
+CI_POLICY_UNAVAILABLE = "CI_POLICY_UNAVAILABLE"
+NO_REQUIRED_CHECKS_ENFORCED = "NO_REQUIRED_CHECKS_ENFORCED"
+
+POLICY_SOURCE_RULESET = "ruleset"
+POLICY_SOURCE_BRANCH_PROTECTION = "branch_protection"
+POLICY_SOURCE_UNAVAILABLE = "unavailable"
 
 # Branch-name pattern for campaign/task-owned branches. Anything not
 # matching this is never eligible for the automated merge gate.
@@ -202,48 +204,224 @@ def run_preflight(
 
 
 @dataclass
+class RequiredCheckPolicy:
+    """
+    The repository's live required-status-check policy for a branch (#59.1
+    Blocker 3). `available` records whether the policy was actually observed
+    -- never whether HowlPlane could guess at it. An unattended merge requires
+    `authorizes_merge_gate()`; anything else parks.
+    """
+
+    available: bool
+    contexts: List[str] = field(default_factory=list)
+    source: str = POLICY_SOURCE_UNAVAILABLE
+    reason: str = ""
+    detail: str = ""
+
+    def authorizes_merge_gate(self) -> bool:
+        """
+        True only when live policy was read AND it enforces at least one
+        required check. A readable policy enforcing zero checks is a known
+        policy with no CI evidence gate -- delegated merge authority is
+        premised on green required checks, so that fails closed too.
+        """
+        return self.available and bool(self.contexts)
+
+
+@dataclass
 class CIObservation:
     all_required_observed: bool
     all_required_green: bool
+    # A required check must be OBSERVED *and* TERMINAL before polling may
+    # finish normally -- a queued job satisfies "observed" but proves nothing
+    # (#59.1 Blocker 4).
+    all_required_terminal: bool = False
     checks: List[Dict[str, str]] = field(default_factory=list)
+    # Terminal and definitively not green. Pending work belongs in
+    # pending_jobs, never here.
     failed_jobs: List[Dict[str, str]] = field(default_factory=list)
+    pending_jobs: List[Dict[str, str]] = field(default_factory=list)
+    policy: Optional[RequiredCheckPolicy] = None
+    timed_out: bool = False
     raw: Dict[str, Any] = field(default_factory=dict)
 
+    def authorizes_merge(self) -> bool:
+        """Every gate an unattended merge depends on, in one place."""
+        return (
+            self.policy is not None
+            and self.policy.authorizes_merge_gate()
+            and self.all_required_observed
+            and self.all_required_terminal
+            and self.all_required_green
+            and not self.failed_jobs
+            and not self.pending_jobs
+            and not self.timed_out
+        )
 
-_TERMINAL_STATES = {"SUCCESS", "FAILURE", "CANCELLED", "TIMED_OUT", "SKIPPED", "NEUTRAL", "ACTION_REQUIRED"}
-_GREEN_STATES = {"SUCCESS", "NEUTRAL", "SKIPPED"}
+
+# `gh pr checks --json` reports a normalized `bucket` alongside the raw
+# `state`; `gh pr checks --help` documents the bucket vocabulary as
+# pass | fail | pending | skipping | cancel. Bucket is authoritative when
+# present; the state map covers older `gh` builds that omit it.
+_BUCKET_CLASS = {
+    "pass": "green", "skipping": "green",
+    "fail": "failed", "cancel": "failed",
+    "pending": "pending", "waiting": "pending",
+}
+_STATE_CLASS = {
+    "SUCCESS": "green", "NEUTRAL": "green", "SKIPPED": "green",
+    "FAILURE": "failed", "CANCELLED": "failed", "TIMED_OUT": "failed",
+    "ACTION_REQUIRED": "failed", "STARTUP_FAILURE": "failed", "STALE": "failed",
+    "QUEUED": "pending", "IN_PROGRESS": "pending", "WAITING": "pending",
+    "REQUESTED": "pending", "EXPECTED": "pending", "PENDING": "pending",
+}
+
+
+def classify_check(check: Dict[str, str]) -> str:
+    """
+    Maps one `gh pr checks` entry onto "green", "failed" or "pending".
+
+    Anything unrecognized falls through to "pending" rather than "green": an
+    unknown state must never be read as permission to merge.
+    """
+    bucket = str(check.get("bucket") or "").strip().lower()
+    state = str(check.get("state") or "").strip().upper()
+    return _BUCKET_CLASS.get(bucket) or _STATE_CLASS.get(state) or "pending"
 
 
 class GitHubCIObserver:
     """
     Observes real GitHub CI state for a PR, never assuming local test exit 0
-    means GitHub CI is green (#59 Phase 5). Prefers GitHub-native branch
-    protection's required-status-check list; falls back to a documented
-    internal list (FALLBACK_REQUIRED_CHECKS) only when no branch protection
-    is configured on the target repository.
+    means GitHub CI is green (#59 Phase 5).
+
+    Required-check discovery reads live repository policy on every call, so a
+    ruleset that gains or loses a required check is picked up with no code
+    change (#59.1 Blocker 3). GitHub rulesets are consulted first -- they are
+    what protects `main` on this repository, and the legacy branch-protection
+    endpoint 404s under a ruleset -- with legacy branch protection as the
+    fallback for repositories still using it. When neither can be read the
+    policy is reported unavailable and the caller must fail closed; a
+    hard-coded list must never authorize an unattended merge.
+
+    A deterministic test or fake mode may inject a known policy via
+    `policy_override`; production unattended mode leaves it unset and requires
+    observed policy.
     """
 
-    def __init__(self, gh_runner: CommandRunner = run_gh, git_runner: CommandRunner = run_git):
+    def __init__(
+        self,
+        gh_runner: CommandRunner = run_gh,
+        git_runner: CommandRunner = run_git,
+        policy_override: Optional[RequiredCheckPolicy] = None,
+    ):
         self._gh = gh_runner
         self._git = git_runner
+        self._policy_override = policy_override
 
-    def required_check_names(self, repo_root: Union[str, Path], repo_slug: str) -> List[str]:
-        proc = self._gh(repo_root, ["api", f"repos/{repo_slug}/branches/main/protection"], 30)
-        if proc.returncode == 0:
-            try:
-                data = json.loads(proc.stdout)
-                contexts = (
-                    data.get("required_status_checks", {}).get("contexts")
-                    or []
-                )
-                if contexts:
-                    return list(contexts)
-            except (json.JSONDecodeError, AttributeError):
-                pass
-        return list(FALLBACK_REQUIRED_CHECKS)
+    def required_check_policy(
+        self,
+        repo_root: Union[str, Path],
+        repo_slug: str,
+        branch: str = "main",
+    ) -> RequiredCheckPolicy:
+        if self._policy_override is not None:
+            return self._policy_override
 
-    def observe_once(self, repo_root: Union[str, Path], pr_number: int, repo_slug: str) -> CIObservation:
-        required = set(self.required_check_names(repo_root, repo_slug))
+        contexts = self._contexts_from_rulesets(repo_root, repo_slug, branch)
+        source = POLICY_SOURCE_RULESET
+        if contexts is None:
+            contexts = self._contexts_from_branch_protection(repo_root, repo_slug, branch)
+            source = POLICY_SOURCE_BRANCH_PROTECTION
+        if contexts is None:
+            return RequiredCheckPolicy(
+                available=False,
+                source=POLICY_SOURCE_UNAVAILABLE,
+                reason=CI_POLICY_UNAVAILABLE,
+                detail=(
+                    f"neither rulesets nor branch protection could be read for "
+                    f"{repo_slug}@{branch}"
+                ),
+            )
+        if not contexts:
+            return RequiredCheckPolicy(
+                available=True,
+                contexts=[],
+                source=source,
+                reason=NO_REQUIRED_CHECKS_ENFORCED,
+                detail=f"{source} readable but enforces no required status checks",
+            )
+        return RequiredCheckPolicy(available=True, contexts=contexts, source=source)
+
+    def _gh_json(self, repo_root: Union[str, Path], endpoint: str) -> Optional[Any]:
+        """
+        Reads one `gh api` endpoint as JSON. Returns None when the endpoint
+        could not be read or parsed at all -- which the caller must treat as
+        "policy unknown", never as "policy empty".
+        """
+        proc = self._gh(repo_root, ["api", endpoint], 30)
+        if proc.returncode != 0 or not proc.stdout.strip():
+            return None
+        try:
+            return json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            return None
+
+    def _contexts_from_rulesets(
+        self, repo_root: Union[str, Path], repo_slug: str, branch: str
+    ) -> Optional[List[str]]:
+        """
+        Reads the rules GitHub itself reports as applying to `branch`, so
+        repository- and organization-level rulesets are both covered without
+        HowlPlane re-implementing ruleset applicability. Returns None when the
+        endpoint could not be read at all (so the caller can try legacy
+        protection), and [] when it was read but enforces no status checks.
+
+        Response shape confirmed against this repository's live API:
+          [{"type": "required_status_checks",
+            "parameters": {"required_status_checks": [{"context": "lint"}, ...]}}]
+        """
+        rules = self._gh_json(repo_root, f"repos/{repo_slug}/rules/branches/{branch}")
+        if not isinstance(rules, list):
+            return None
+
+        contexts: List[str] = []
+        for rule in rules:
+            if not isinstance(rule, dict) or rule.get("type") != "required_status_checks":
+                continue
+            params = rule.get("parameters") or {}
+            for entry in params.get("required_status_checks") or []:
+                context = entry.get("context") if isinstance(entry, dict) else entry
+                if context and context not in contexts:
+                    contexts.append(context)
+        return contexts
+
+    def _contexts_from_branch_protection(
+        self, repo_root: Union[str, Path], repo_slug: str, branch: str
+    ) -> Optional[List[str]]:
+        """Legacy branch protection, for repositories not using rulesets."""
+        data = self._gh_json(repo_root, f"repos/{repo_slug}/branches/{branch}/protection")
+        if not isinstance(data, dict):
+            return None
+        required = data.get("required_status_checks") or {}
+        if not isinstance(required, dict):
+            return []
+        return [c for c in (required.get("contexts") or []) if c]
+
+    def required_check_names(
+        self, repo_root: Union[str, Path], repo_slug: str, branch: str = "main"
+    ) -> List[str]:
+        """Convenience wrapper; callers gating a merge must use the policy itself."""
+        return list(self.required_check_policy(repo_root, repo_slug, branch).contexts)
+
+    def observe_once(
+        self,
+        repo_root: Union[str, Path],
+        pr_number: int,
+        repo_slug: str,
+        policy: Optional[RequiredCheckPolicy] = None,
+    ) -> CIObservation:
+        policy = policy or self.required_check_policy(repo_root, repo_slug)
+        required = set(policy.contexts)
         proc = self._gh(
             repo_root,
             ["pr", "checks", str(pr_number), "--json", "name,state,bucket,link"],
@@ -257,25 +435,34 @@ class GitHubCIObserver:
                 checks = []
 
         observed_names = {c.get("name") for c in checks}
-        all_required_observed = required.issubset(observed_names) if required else bool(checks)
+        all_required_observed = bool(required) and required.issubset(observed_names)
 
-        failed_jobs = [
-            c for c in checks
-            if c.get("name") in required and str(c.get("bucket", c.get("state", ""))).lower()
-            not in {"pass", "success", "skipping", "skipped", "neutral"}
-        ]
         required_checks = [c for c in checks if c.get("name") in required]
-        all_required_green = bool(required_checks) and not failed_jobs and all(
-            str(c.get("bucket", c.get("state", ""))).lower() in {"pass", "success", "skipping", "skipped", "neutral"}
-            for c in required_checks
+        failed_jobs = [c for c in required_checks if classify_check(c) == "failed"]
+        pending_jobs = [c for c in required_checks if classify_check(c) == "pending"]
+
+        all_required_terminal = all_required_observed and not pending_jobs
+        all_required_green = (
+            all_required_observed
+            and all_required_terminal
+            and not failed_jobs
+            and all(classify_check(c) == "green" for c in required_checks)
         )
 
         return CIObservation(
             all_required_observed=all_required_observed,
             all_required_green=all_required_green,
+            all_required_terminal=all_required_terminal,
             checks=checks,
             failed_jobs=failed_jobs,
-            raw={"required": sorted(required), "pr_number": pr_number},
+            pending_jobs=pending_jobs,
+            policy=policy,
+            raw={
+                "required": sorted(required),
+                "pr_number": pr_number,
+                "policy_source": policy.source,
+                "policy_reason": policy.reason,
+            },
         )
 
     def poll_until_terminal(
@@ -289,17 +476,33 @@ class GitHubCIObserver:
         clock_fn: Callable[[], float] = time.monotonic,
     ) -> CIObservation:
         """
-        Bounded CI polling (#59 Phase 5): 15 minutes per PR by default. Never
-        spins unbounded -- returns the last observation (which may report
-        all_required_observed=False) once the timeout elapses.
+        Bounded, terminal-aware CI polling (#59 Phase 5, #59.1 Blocker 4).
+
+        Previously this returned as soon as every required check *name* had
+        appeared -- but a QUEUED job already has a name, so polling could
+        finish before CI had actually run. A required check must now be both
+        observed and terminal.
+
+        Returns early on a terminal failure (no point waiting out the rest),
+        returns once every required check is terminal, and otherwise keeps
+        polling until the deadline. On timeout it returns the last observation
+        with timed_out set, which never authorizes a merge.
         """
+        policy = self.required_check_policy(repo_root, repo_slug)
+        observation = self.observe_once(repo_root, pr_number, repo_slug, policy=policy)
+        if not policy.authorizes_merge_gate():
+            # Nothing to wait for: the policy itself is unknown or enforces no
+            # required checks. Either way the merge gate is already closed.
+            return observation
+
         deadline = clock_fn() + timeout_seconds
-        observation = self.observe_once(repo_root, pr_number, repo_slug)
         while clock_fn() < deadline:
-            if observation.all_required_observed:
+            if observation.failed_jobs or observation.all_required_terminal:
                 return observation
             sleep_fn(poll_interval)
-            observation = self.observe_once(repo_root, pr_number, repo_slug)
+            observation = self.observe_once(repo_root, pr_number, repo_slug, policy=policy)
+
+        observation.timed_out = not observation.all_required_terminal
         return observation
 
 

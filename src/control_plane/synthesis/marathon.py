@@ -10,6 +10,7 @@ and persists durable campaign state across process boundaries.
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from enum import Enum
 import getpass
 import hashlib
 import json
@@ -37,18 +38,28 @@ from src.control_plane.decision_queue import (
     compute_blocks_other_work,
 )
 from src.control_plane.evidence_ledger import EvidenceEntry, EvidenceLedger
-from src.control_plane.git_integration import GitIntegrationExecutor, detect_repo_slug
+from src.control_plane.git_baseline import capture_baseline, capture_delta
+from src.control_plane.git_integration import GitIntegrationExecutor, detect_repo_slug, run_git
 from src.control_plane.human_boundary import HumanBoundaryGate
-from src.control_plane.orchestrator import GovernedTaskOrchestrator, OrchestrationConfig
+from src.control_plane.orchestrator import (
+    FAILURE_CLASS_AUTHORITY_BLOCKED,
+    FAILURE_CLASS_ENGINEERING,
+    FAILURE_CLASS_PROVIDER_EXHAUSTED,
+    FAILURE_CLASS_PROVIDER_UNAVAILABLE,
+    GovernedTaskOrchestrator,
+    OrchestrationConfig,
+)
 from src.control_plane.proposed_action import ProposedAction
 from src.control_plane.synthesis.campaign_state import (
     CAMPAIGN_STATE_SCHEMA_VERSION,
     DurableCampaignState,
+    EngineeringAttempt,
     GitIntegrationRecord,
 )
 from src.control_plane.synthesis.capability_negotiator import FrameworkGap
 from src.control_plane.synthesis.engine import ProductSynthesizer, SynthesisResult
 from src.control_plane.synthesis.provider_pool import (
+    LOCAL_PROVIDER_IDS,
     ProviderAvailabilityStatus,
     ProviderPoolManager,
     is_task_local_eligible,
@@ -56,6 +67,45 @@ from src.control_plane.synthesis.provider_pool import (
 from src.control_plane.task_spec import DataClassSerializationMixin, TaskSpec
 
 MARATHON_SCHEMA_VERSION = "howlplane.marathon_dogfood/v1"
+
+
+class FrameworkGapEvidence(str, Enum):
+    """
+    How strong the evidence is that a synthesis failure reflects a defect in
+    HowlPlane/HowlFrame itself rather than one model's bad output (#59.1
+    Phase 5).
+
+    Campaign DOGFOOD-20260822-005043-16adca classified an agy repair-budget
+    exhaustion as the framework gap HF_GAP_NOTES and opened a self-improvement
+    task -- then devin_cli synthesized the same benchmark successfully with no
+    framework change at all. One provider failing to generate working code is
+    not evidence that the framework is broken.
+
+    Deciding "I must modify HowlPlane" therefore requires a strictly higher
+    evidence bar than deciding "this generated application needs another
+    attempt". Only deterministic sources -- the capability negotiator, the
+    compiler, the acceptance runner's own check identity -- can raise the bar.
+    No amount of model opinion can.
+    """
+
+    # A deterministic component proved the framework cannot do what the spec
+    # requires. Sufficient on its own.
+    DETERMINISTIC_FRAMEWORK_PROOF = "DETERMINISTIC_FRAMEWORK_PROOF"
+    # Ambiguous: a model produced output that did not work. Not yet actionable.
+    PROVISIONAL_FAILURE = "PROVISIONAL_FAILURE"
+    # An independent provider succeeded on the same benchmark: the framework
+    # is fine, that provider is not. Never triggers self-modification.
+    PROVIDER_SPECIFIC_FAILURE = "PROVIDER_SPECIFIC_FAILURE"
+    # Independent providers reproduced the same deterministic symptom.
+    VERIFIED_FRAMEWORK_GAP = "VERIFIED_FRAMEWORK_GAP"
+
+
+# Failure classes that may open a governed self-improvement task against
+# HowlPlane itself. Everything else is remediated as generated-application work.
+_GAP_ACTIONABLE_EVIDENCE = frozenset({
+    FrameworkGapEvidence.DETERMINISTIC_FRAMEWORK_PROOF,
+    FrameworkGapEvidence.VERIFIED_FRAMEWORK_GAP,
+})
 
 
 # Canonical suite of prompt-to-product benchmarks
@@ -167,6 +217,8 @@ class MarathonDogfoodEngine:
         repo_slug: Optional[str] = None,
         git_executor_factory: Optional[Callable[..., GitIntegrationExecutor]] = None,
         orchestrator_factory: Optional[Callable[[OrchestrationConfig], GovernedTaskOrchestrator]] = None,
+        git_runner: Optional[Callable[..., Any]] = None,
+        framework_gap_confirmations_required: int = 1,
     ):
         self.provider_pool = provider_pool or ProviderPoolManager()
         self.ledger = ledger
@@ -201,6 +253,14 @@ class MarathonDogfoodEngine:
         self._orchestrator_factory = orchestrator_factory or (
             lambda config: GovernedTaskOrchestrator(target_repo=self.target_repo, config=config)
         )
+        # Raw git seam used only by attempt-state reconciliation (#59.1
+        # Phase 3), kept separate from the authority-gated GitIntegrationExecutor:
+        # reverting a failed attempt's own files is repository hygiene, not a
+        # proposed action against the envelope.
+        self._git_runner = git_runner or run_git
+        # How many *independent* providers must reproduce an ambiguous synthesis
+        # failure before it may be called a framework gap (#59.1 Phase 5).
+        self.framework_gap_confirmations_required = max(0, framework_gap_confirmations_required)
 
     def _generate_campaign_id(self) -> str:
         ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
@@ -406,27 +466,93 @@ class MarathonDogfoodEngine:
             acc_passed = synth_res.acceptance_report.passed_count if synth_res.acceptance_report else 0
             acc_total = synth_res.acceptance_report.total_count if synth_res.acceptance_report else 0
 
-            # Record reviewer diversity
+            # Record reviewer diversity, distinguishing which reviewers were
+            # merely assigned a role from which actually executed (#59.1
+            # Phase 8). Counters only move for real executions.
+            invocations = list(synth_res.reviewer_invocations)
             campaign_state.reviewer_diversity_records.append({
                 "target": b_key,
                 "implementer": synth_res.implementing_provider,
                 "reviewers": synth_res.reviewer_mapping,
                 "diversity_achieved": synth_res.diversity_achieved,
+                "assigned": sorted({i["provider"] for i in invocations}),
+                "invoked": sorted({i["provider"] for i in invocations if i.get("invoked")}),
+                "completed": sorted({i["provider"] for i in invocations if i.get("completed")}),
+                "invocations": invocations,
             })
+            for inv in invocations:
+                if not inv.get("invoked"):
+                    continue
+                campaign_state.record_provider_invocation(inv["provider"], role="review")
+                if inv["provider"] in LOCAL_PROVIDER_IDS:
+                    recorder = (
+                        campaign_state.record_local_success if inv.get("completed")
+                        else campaign_state.record_local_failure
+                    )
+                    recorder(inv.get("ram_after_gib"))
 
             # 3. Check for Framework Gap / Failure -> Trigger Self-Improvement Flywheel
             retried = False
+            bundle_dir = out_dir
             if not synth_res.success:
-                # Classify the observed failure from concrete evidence
-                gap_type, gap_desc = self._classify_failure(synth_res, b_key)
+                # Classify the observed failure from concrete evidence, and
+                # grade that evidence. Only deterministic proof, or a symptom
+                # independently reproduced by another provider, may open a
+                # self-improvement task against HowlPlane itself (#59.1
+                # Phase 5).
+                gap_type, gap_desc, evidence = self._classify_failure(synth_res, b_key)
+                falsification: List[Dict[str, Any]] = []
+                if evidence == FrameworkGapEvidence.PROVISIONAL_FAILURE:
+                    signature = self._failure_signature(synth_res, gap_type)
+                    evidence, rescued, rescued_dir, falsification = self._falsify_framework_gap(
+                        prompt, b_key, out_dir, synth_res.implementing_provider,
+                        signature, iteration_idx,
+                    )
+                    if rescued is not None:
+                        # An independent provider synthesized the same
+                        # benchmark successfully: the framework was never the
+                        # problem. Adopt that result -- and the directory it
+                        # was actually built into -- as the outcome.
+                        synth_res = rescued
+                        bundle_dir = rescued_dir or bundle_dir
+                        acc_passed = rescued.acceptance_report.passed_count if rescued.acceptance_report else 0
+                        acc_total = rescued.acceptance_report.total_count if rescued.acceptance_report else 0
+                        if rescued.implementing_provider:
+                            campaign_state.record_provider_invocation(rescued.implementing_provider)
+
+                campaign_state.record_gap_falsification({
+                    "benchmark": b_key,
+                    "gap_type": gap_type,
+                    "evidence": evidence.value,
+                    "failing_provider": synth_res.implementing_provider,
+                    "attempts": falsification,
+                })
+
+            if not synth_res.success and evidence not in _GAP_ACTIONABLE_EVIDENCE:
+                # Not enough evidence to modify HowlPlane. Record what was
+                # observed for future provider routing and fall through to the
+                # normal iteration result -- no framework gap, no governed
+                # self-improvement task, no self-modification.
+                campaign_state.record_provider_specific_failure({
+                    "benchmark": b_key,
+                    "gap_type": gap_type,
+                    "evidence": evidence.value,
+                    "failing_provider": synth_res.implementing_provider,
+                    "required_behavior": gap_desc,
+                    "falsification_attempts": falsification,
+                })
+                campaign_state.save(state_dir)
+
+            elif not synth_res.success:
                 gap_code = f"HF_GAP_{b_key.upper()}"
-                gap_record = {
+                campaign_state.record_framework_gap({
                     "code": gap_code,
                     "target_component": "howlframe_runtime" if "runtime" in gap_type else "howlplane_synthesis",
                     "required_behavior": gap_desc,
                     "impact": "blocks_product_synthesis",
-                }
-                campaign_state.record_framework_gap(gap_record)
+                    "evidence": evidence.value,
+                    "falsification_attempts": falsification,
+                })
 
                 # Create concrete, bounded engineering task
                 eng_task_id = f"ENG-{b_key.upper()}-{iteration_idx:02d}"
@@ -492,11 +618,20 @@ class MarathonDogfoodEngine:
                         stop_reason = "AWAITING_HUMAN"
                         break
                 else:
+                    # Report the engineering task's own provider and its
+                    # concrete failure reason. Previously this recorded the
+                    # *synthesis* provider and the fixed string "Engineering
+                    # task failed or blocked", discarding the git record's
+                    # failure_reason entirely (#59.1).
+                    attempts = campaign_state.attempts_for_task(eng_task_id)
                     campaign_state.record_task_failed({
                         "task_id": eng_task_id,
                         "objective": f"Resolve {gap_type} for {b_key}",
-                        "provider": synth_res.implementing_provider or "unknown",
-                        "error": "Engineering task failed or blocked",
+                        "provider": (git_rec or {}).get("provider") or "unknown",
+                        "error": (git_rec or {}).get("failure_reason") or "Engineering task failed or blocked",
+                        "attempts": [
+                            {"provider": a.get("provider"), "result": a.get("result")} for a in attempts
+                        ],
                     })
 
             iter_res = DogfoodIterationResult(
@@ -514,7 +649,7 @@ class MarathonDogfoodEngine:
                 diversity_achieved=synth_res.diversity_achieved,
                 framework_gaps_count=len(synth_res.framework_gaps),
                 error_message=synth_res.error_message,
-                bundle_path=str(out_dir) if synth_res.success else None,
+                bundle_path=str(bundle_dir) if synth_res.success else None,
                 retried_after_fix=retried,
             )
             results.append(iter_res)
@@ -689,19 +824,137 @@ class MarathonDogfoodEngine:
             port=8088 + (iteration_idx % 50),
         )
 
-    def _classify_failure(self, synth_res: SynthesisResult, benchmark_key: str) -> Tuple[str, str]:
+    def _classify_failure(
+        self, synth_res: SynthesisResult, benchmark_key: str
+    ) -> Tuple[str, str, FrameworkGapEvidence]:
         """
-        Classifies an observed synthesis failure from concrete evidence.
+        Classifies an observed synthesis failure from concrete evidence, and
+        grades how strong that evidence is (#59.1 Phase 5).
+
+        The three deterministic sources -- the capability negotiator declaring
+        a gap, the negotiator blocking the product outright, and the compiler
+        rejecting required syntax -- prove something about the framework
+        independently of whatever any model generated, so they are actionable
+        immediately. A failing acceptance run or a general orchestration
+        failure only proves that *this attempt* did not work, so it starts out
+        provisional and must survive cross-provider falsification first.
         """
+        proof = FrameworkGapEvidence.DETERMINISTIC_FRAMEWORK_PROOF
+        provisional = FrameworkGapEvidence.PROVISIONAL_FAILURE
         if synth_res.framework_gaps:
-            return "HOWLFRAME_RUNTIME_GAP", synth_res.framework_gaps[0].required_behavior
+            return "HOWLFRAME_RUNTIME_GAP", synth_res.framework_gaps[0].required_behavior, proof
         if synth_res.status == "PRODUCT_BLOCKED":
-            return "HOWLFRAME_CAPABILITY_GAP", synth_res.error_message or "Product blocked by capability negotiator"
+            desc = synth_res.error_message or "Product blocked by capability negotiator"
+            return "HOWLFRAME_CAPABILITY_GAP", desc, proof
         if synth_res.error_message and "Compiler error" in synth_res.error_message:
-            return "HOWLFRAME_COMPILER_GAP", synth_res.error_message
+            return "HOWLFRAME_COMPILER_GAP", synth_res.error_message, proof
         if synth_res.error_message and "Acceptance failure" in synth_res.error_message:
-            return "SYNTHESIS_REPAIR_FAIL", synth_res.error_message
-        return "HOWLPLANE_ORCHESTRATION_GAP", synth_res.error_message or f"General synthesis failure on {benchmark_key}"
+            return "SYNTHESIS_REPAIR_FAIL", synth_res.error_message, provisional
+        desc = synth_res.error_message or f"General synthesis failure on {benchmark_key}"
+        return "HOWLPLANE_ORCHESTRATION_GAP", desc, provisional
+
+    @staticmethod
+    def _failure_signature(synth_res: SynthesisResult, gap_type: str) -> str:
+        """
+        A normalized, deterministic identity for a synthesis failure, used to
+        decide whether two providers failed the *same* way.
+
+        Deliberately built from structural facts -- the classified gap type and
+        the identity of the acceptance check that failed -- rather than
+        free-text message equality, which would vary with model wording,
+        timings and paths.
+        """
+        detail = ""
+        message = synth_res.error_message or ""
+        marker = "Acceptance failure:"
+        if marker in message:
+            # "...Acceptance failure: server_health_probe: Server did not..."
+            remainder = message.split(marker, 1)[1].strip()
+            detail = remainder.split(":", 1)[0].strip()
+        elif synth_res.framework_gaps:
+            detail = synth_res.framework_gaps[0].code
+        return f"{gap_type}|{detail}"
+
+    def _falsify_framework_gap(
+        self,
+        prompt: str,
+        benchmark_key: str,
+        out_dir: Path,
+        failing_provider: Optional[str],
+        signature: str,
+        iteration_idx: int,
+    ) -> Tuple[FrameworkGapEvidence, Optional[SynthesisResult], Optional[Path], List[Dict[str, Any]]]:
+        """
+        Tries to falsify a provisional framework gap by re-synthesizing the
+        same benchmark with independent providers (#59.1 Phase 5).
+
+        Bounded by `framework_gap_confirmations_required` (default 1), so this
+        never becomes an unbounded retry loop, and it runs inside the current
+        benchmark iteration rather than consuming iteration budget.
+
+        Returns (evidence, succeeding_result, its_output_dir, attempt_records):
+          * an independent provider SUCCEEDS -> PROVIDER_SPECIFIC_FAILURE, plus
+            the successful result and the directory it was built into, which
+            the caller uses as the benchmark's outcome and bundle path. No
+            framework gap, no self-modification.
+          * an independent provider reproduces the SAME deterministic
+            signature -> VERIFIED_FRAMEWORK_GAP.
+          * it fails differently, or no independent provider exists ->
+            PROVISIONAL_FAILURE. Still not enough to modify HowlPlane.
+        """
+        attempts: List[Dict[str, Any]] = []
+        confirmations = 0
+        tried = {failing_provider} if failing_provider else set()
+
+        # Falsification re-runs full product synthesis, which is never
+        # local-eligible (#58 Phase 9). Exclude local providers here so the
+        # attempt is attributed to the provider actually asked to do the work
+        # rather than silently reassigned inside the synthesizer.
+        probe = TaskSpec(
+            task_id=f"FALSIFY-{benchmark_key.upper()}", repository="howlplane",
+            objective=f"Independently re-synthesize {benchmark_key}",
+            task_class="feature", risk_level="medium",
+        )
+        while confirmations < self.framework_gap_confirmations_required:
+            candidates = [
+                c for c in self.provider_pool.select_candidates(
+                    task_category="code_heavy", task=probe,
+                )
+                if c not in tried and c not in LOCAL_PROVIDER_IDS
+            ]
+            if not candidates:
+                return FrameworkGapEvidence.PROVISIONAL_FAILURE, None, None, attempts
+
+            provider = candidates[0]
+            tried.add(provider)
+            confirm_dir = out_dir.parent / f"{out_dir.name}_falsify{len(attempts) + 1}"
+            confirm_res = self._execute_synthesis(
+                prompt, confirm_dir, failing_provider, provider, iteration_idx,
+            )
+            if confirm_res.success:
+                attempts.append({"provider": provider, "outcome": "SUCCESS"})
+                return (
+                    FrameworkGapEvidence.PROVIDER_SPECIFIC_FAILURE, confirm_res, confirm_dir, attempts,
+                )
+
+            confirm_type, _desc, confirm_evidence = self._classify_failure(confirm_res, benchmark_key)
+            confirm_signature = self._failure_signature(confirm_res, confirm_type)
+            same_symptom = confirm_signature == signature
+            attempts.append({
+                "provider": provider,
+                "outcome": "FAILED_SAME_SYMPTOM" if same_symptom else "FAILED_DIFFERENT_SYMPTOM",
+                "signature": confirm_signature,
+            })
+            if confirm_evidence == FrameworkGapEvidence.DETERMINISTIC_FRAMEWORK_PROOF:
+                # An independent provider hit a deterministic framework wall.
+                return FrameworkGapEvidence.VERIFIED_FRAMEWORK_GAP, None, None, attempts
+            if not same_symptom:
+                # Two providers failing differently is evidence about the
+                # providers, not about the framework.
+                return FrameworkGapEvidence.PROVIDER_SPECIFIC_FAILURE, None, None, attempts
+            confirmations += 1
+
+        return FrameworkGapEvidence.VERIFIED_FRAMEWORK_GAP, None, None, attempts
 
     def _persist_git_record(
         self,
@@ -771,6 +1024,133 @@ class MarathonDogfoodEngine:
         self._persist_git_record(git_rec, campaign_state, state_dir)
         return meta
 
+    def _persist_provider_states(
+        self,
+        campaign_state: Optional[DurableCampaignState],
+        state_dir: Optional[Path],
+    ) -> None:
+        """
+        Snapshots the pool's live provider statuses into durable campaign
+        state immediately (#59.1 Blocker 5). Previously statuses were only
+        written once per benchmark iteration, so a campaign could report a
+        provider AVAILABLE after that provider had already returned a quota
+        error.
+        """
+        if campaign_state is None:
+            return
+        campaign_state.provider_states = self.provider_pool.get_all_statuses()
+        if state_dir is not None:
+            campaign_state.save(state_dir)
+
+    def _record_attempt(
+        self,
+        campaign_state: Optional[DurableCampaignState],
+        state_dir: Optional[Path],
+        task_id: str,
+        provider: str,
+        attempt_index: int,
+        *,
+        result: str,
+        failure_class: Optional[str],
+        exit_code: Optional[int],
+        error_digest: str,
+        delta_reconciled: bool,
+        duration: float,
+    ) -> None:
+        """Appends and immediately persists one provider attempt (#59.1 Phase 4)."""
+        if campaign_state is None:
+            return
+        attempt = EngineeringAttempt(
+            task_id=task_id,
+            provider=provider,
+            attempt_index=attempt_index,
+            result=result,
+            failure_class=failure_class,
+            exit_code=exit_code,
+            error_digest=EngineeringAttempt.digest(error_digest),
+            delta_reconciled=delta_reconciled,
+            duration_seconds=round(duration, 3),
+        )
+        campaign_state.record_engineering_attempt(attempt.to_dict())
+        if state_dir is not None:
+            campaign_state.save(state_dir)
+
+    def _reconcile_attempt_state(self, baseline: Any, task_id: str, attempt_index: int) -> bool:
+        """
+        Restores the repository to an attempt's baseline before handing it to
+        the next provider (#59.1 Phase 3).
+
+        A provider can exhaust its quota *after* it has already written files.
+        Handing those partial, unreviewed changes to the next provider would
+        make the fallback attempt's delta a mixture of two providers' work.
+        Equally, discarding them wholesale would violate the #56 recovery
+        invariants.
+
+        So: capture the delta, checkpoint it as attempt evidence, then revert
+        *only the paths that delta names*. Tracked paths are restored with
+        `git checkout --`; paths the attempt newly added are removed. Any file
+        the attempt did not touch -- including concurrent user work and
+        unrelated dirty state -- is never inspected and never modified. There
+        is deliberately no `git reset --hard` and no `git clean` anywhere on
+        this path.
+
+        Returns True when there was a task-owned delta that had to be reverted.
+        """
+        try:
+            delta = capture_delta(self.target_repo, baseline)
+        except Exception:  # noqa: BLE001 - reconciliation must never crash the campaign
+            return False
+        if delta is None or delta.is_empty:
+            return False
+
+        attempt_dir = self.target_repo / ".task_runs" / task_id / "attempts" / f"{attempt_index:02d}"
+        try:
+            attempt_dir.mkdir(parents=True, exist_ok=True)
+            (attempt_dir / "delta.json").write_text(json.dumps(delta.to_dict(), indent=2), encoding="utf-8")
+            (attempt_dir / "delta.patch").write_text(delta.diff_content or "", encoding="utf-8")
+        except OSError:
+            pass
+
+        added = list(delta.files_added)
+        restorable = list(delta.files_modified) + list(delta.files_deleted)
+        for rel_path in restorable:
+            self._git_runner(self.target_repo, ["checkout", "--", rel_path], 30)
+        for rel_path in added:
+            candidate = (self.target_repo / rel_path).resolve()
+            # Never step outside the repository, whatever the delta claims.
+            if not str(candidate).startswith(str(self.target_repo.resolve())):
+                continue
+            try:
+                if candidate.is_file():
+                    candidate.unlink()
+            except OSError:
+                pass
+        return True
+
+    @staticmethod
+    def _attempt_result_for(event: Optional[Any], final_state: str) -> Tuple[str, str]:
+        """
+        Maps one attempt's observed outcome onto (attempt_result, failure_class).
+
+        Only a ProviderExhaustionEvent -- produced by detect_exhaustion() from
+        the provider's own execution result -- can yield a provider-availability
+        class. Bad generated code, failing tests and rejected reviews all stay
+        ENGINEERING_FAILURE and must never mark a provider exhausted (#59.1).
+        """
+        if event is not None:
+            status = ProviderAvailabilityStatus.RATE_LIMITED if event.failure_type == "rate_limit" else (
+                ProviderAvailabilityStatus.SESSION_EXHAUSTED if event.failure_type == "session_limit"
+                else ProviderAvailabilityStatus.UNAVAILABLE
+            )
+            failure_class = (
+                FAILURE_CLASS_PROVIDER_UNAVAILABLE if event.failure_type == "unavailable"
+                else FAILURE_CLASS_PROVIDER_EXHAUSTED
+            )
+            return status.value, failure_class
+        if final_state in ("awaiting_human", "blocked"):
+            return "AUTHORITY_BLOCKED", FAILURE_CLASS_AUTHORITY_BLOCKED
+        return "ENGINEERING_FAILURE", FAILURE_CLASS_ENGINEERING
+
     def _execute_governed_engineering_improvement(
         self,
         task_id: str,
@@ -818,6 +1198,7 @@ class MarathonDogfoodEngine:
         gap_probe.preferred_agent = provider
         commit_message = f"fix({benchmark_key}): resolve {gap_type} found during marathon dogfooding"
 
+
         git_rec = GitIntegrationRecord(
             task_id=task_id, target_repo="howlplane", provider=provider, commit_message=commit_message,
         )
@@ -855,21 +1236,110 @@ class MarathonDogfoodEngine:
             self._persist_git_record(git_rec, campaign_state, state_dir)
             return False, git_rec.to_dict()
 
+        # --------------------------------------------------------------------
+        # Bounded provider failover (#59.1 Phase 2).
+        #
+        # A single governed engineering task may be attempted by several
+        # providers in turn. A provider that reports quota/session exhaustion
+        # or unavailability is marked in the pool -- so it is not handed the
+        # next task either -- and the next eligible provider is tried. A
+        # provider that merely produced bad code, failed tests or a rejected
+        # review is NOT marked exhausted and does NOT trigger failover: that is
+        # a normal engineering failure and follows normal remediation policy.
+        #
+        # Attempts are bounded by the finite eligible provider set: `attempted`
+        # only grows, and any provider already tried is filtered out of the
+        # next selection, so the loop cannot spin.
+        # --------------------------------------------------------------------
         orch_config = OrchestrationConfig(acquire_locks=True, record_evidence=bool(self.ledger))
-        orchestrator = self._orchestrator_factory(orch_config)
-        try:
-            result = orchestrator.run(gap_probe, planned_actions)
-        except Exception as exc:  # noqa: BLE001 - real provider/orchestrator failures must not crash the campaign
-            git_rec.failure_reason = f"orchestrator_exception: {exc}"
-            self._persist_git_record(git_rec, campaign_state, state_dir)
-            return False, git_rec.to_dict()
+        attempted: set = set()
+        result = None
+        attempt_index = 0
 
-        if result.final_state != "complete":
-            # Orchestrator's own HumanBoundaryGate/verification/review gates
-            # already handled awaiting_human/failed/blocked outcomes.
-            git_rec.failure_reason = f"orchestrator_final_state:{result.final_state}"
-            self._persist_git_record(git_rec, campaign_state, state_dir)
-            return False, git_rec.to_dict()
+        while True:
+            attempt_index += 1
+            attempted.add(provider)
+            gap_probe.preferred_agent = provider
+            git_rec.provider = provider
+            attempt_started = time.time()
+            attempt_baseline = None
+            try:
+                attempt_baseline = capture_baseline(self.target_repo)
+            except Exception:  # noqa: BLE001 - baseline is best-effort attempt evidence
+                attempt_baseline = None
+
+            orchestrator = self._orchestrator_factory(orch_config)
+            try:
+                result = orchestrator.run(gap_probe, planned_actions)
+            except Exception as exc:  # noqa: BLE001 - real provider/orchestrator failures must not crash the campaign
+                git_rec.failure_reason = f"orchestrator_exception: {exc}"
+                self._record_attempt(
+                    campaign_state, state_dir, task_id, provider, attempt_index,
+                    result="ENGINEERING_FAILURE", failure_class=FAILURE_CLASS_ENGINEERING,
+                    exit_code=None, error_digest=str(exc), delta_reconciled=False,
+                    duration=time.time() - attempt_started,
+                )
+                self._persist_git_record(git_rec, campaign_state, state_dir)
+                return False, git_rec.to_dict()
+
+            exec_res = result.provider_execution
+            if exec_res is not None and campaign_state is not None:
+                campaign_state.record_provider_invocation(provider, role="implementation")
+
+            if result.final_state == "complete":
+                self._record_attempt(
+                    campaign_state, state_dir, task_id, provider, attempt_index,
+                    result="COMPLETE", failure_class=None,
+                    exit_code=exec_res.exit_code if exec_res else 0,
+                    error_digest="", delta_reconciled=False,
+                    duration=time.time() - attempt_started,
+                )
+                break
+
+            # Ask the pool -- from the provider's own execution result, never
+            # from summary text -- whether this was an availability failure.
+            event = None
+            if exec_res is not None:
+                event = self.provider_pool.detect_exhaustion(provider, exec_res, task_id=task_id)
+            attempt_result, failure_class = self._attempt_result_for(event, result.final_state)
+
+            reconciled = False
+            if event is not None and attempt_baseline is not None:
+                reconciled = self._reconcile_attempt_state(attempt_baseline, task_id, attempt_index)
+
+            self._record_attempt(
+                campaign_state, state_dir, task_id, provider, attempt_index,
+                result=attempt_result, failure_class=failure_class,
+                exit_code=exec_res.exit_code if exec_res else None,
+                error_digest=(exec_res.stderr if exec_res else "") or (result.error_message or ""),
+                delta_reconciled=reconciled,
+                duration=time.time() - attempt_started,
+            )
+            # The pool's updated view of provider availability must be durable
+            # before the next selection -- a campaign that crashes here must
+            # not resume believing an exhausted provider is AVAILABLE (#59.1
+            # Blocker 5).
+            self._persist_provider_states(campaign_state, state_dir)
+
+            if event is None:
+                # Engineering failure or authority block: do not fail over.
+                git_rec.failure_reason = f"orchestrator_final_state:{result.final_state}"
+                self._persist_git_record(git_rec, campaign_state, state_dir)
+                return False, git_rec.to_dict()
+
+            next_candidates = [
+                c for c in self.provider_pool.select_candidates(
+                    task_category="code_heavy", avoid_provider=avoid_provider, task=gap_probe,
+                )
+                if c not in attempted
+            ]
+            if not next_candidates:
+                git_rec.failure_reason = (
+                    f"NO_ELIGIBLE_PROVIDER_REMAINING: tried {', '.join(sorted(attempted))}"
+                )
+                self._persist_git_record(git_rec, campaign_state, state_dir)
+                return False, git_rec.to_dict()
+            provider = next_candidates[0]
 
         delta = result.final_delta
         if delta is None or delta.is_empty:
@@ -933,17 +1403,32 @@ class MarathonDogfoodEngine:
         ) is None:
             return False, git_rec.to_dict()
 
+        # An unattended merge requires live CI policy AND terminal green
+        # required checks. Every other outcome -- unreadable policy, a policy
+        # enforcing no checks at all, still-pending jobs, a poll timeout --
+        # fails closed (#59.1 Blockers 3/4).
         ci_obs = self.git_executor.observe_required_checks(git_rec.pr_number)
+        policy = ci_obs.policy
         git_rec.required_checks = ci_obs.checks
         git_rec.required_checks_observed = ci_obs.all_required_observed
         git_rec.required_checks_green = ci_obs.all_required_green
-        git_rec.ci_status = "passed" if ci_obs.all_required_green else (
-            "failed" if ci_obs.failed_jobs else ("pending" if not ci_obs.all_required_observed else "unavailable")
-        )
+        if policy is not None and not policy.available:
+            git_rec.ci_status = "policy_unavailable"
+        elif policy is not None and not policy.contexts:
+            git_rec.ci_status = "no_required_checks"
+        elif ci_obs.failed_jobs:
+            git_rec.ci_status = "failed"
+        elif ci_obs.timed_out:
+            git_rec.ci_status = "timeout"
+        elif not ci_obs.all_required_observed or not ci_obs.all_required_terminal:
+            git_rec.ci_status = "pending"
+        else:
+            git_rec.ci_status = "passed" if ci_obs.all_required_green else "failed"
         self._persist_git_record(git_rec, campaign_state, state_dir)
 
-        if not git_rec.required_checks_green:
-            git_rec.failure_reason = f"CI_NOT_GREEN: {git_rec.ci_status}"
+        if not ci_obs.authorizes_merge():
+            reason = (policy.reason if policy is not None and policy.reason else git_rec.ci_status)
+            git_rec.failure_reason = f"CI_NOT_GREEN: {reason}"
             self._persist_git_record(git_rec, campaign_state, state_dir)
             return False, git_rec.to_dict()
 

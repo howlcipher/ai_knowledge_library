@@ -39,6 +39,7 @@ from src.control_plane.synthesis.capability_negotiator import (
 )
 from src.control_plane.synthesis.product_spec import ProductSpec
 from src.control_plane.synthesis.provider_pool import (
+    LOCAL_PROVIDER_IDS,
     ProviderAvailabilityStatus,
     ProviderPoolManager,
 )
@@ -82,6 +83,9 @@ class SynthesisResult(DataClassSerializationMixin):
     implementing_provider: Optional[str] = None
     reviewing_providers: List[str] = field(default_factory=list)
     reviewer_mapping: Dict[str, str] = field(default_factory=dict)
+    # Per-role records of what actually ran. `reviewing_providers` above is the
+    # role *mapping*; these are executions (#59.1 Phase 8).
+    reviewer_invocations: List[Dict[str, Any]] = field(default_factory=list)
     diversity_achieved: bool = True
     framework_gaps: List[FrameworkGap] = field(default_factory=list)
     error_message: Optional[str] = None
@@ -237,6 +241,7 @@ class ProductSynthesizer:
         last_err: Optional[str] = None
         active_provider = selected_provider
         review_role_map: Dict[str, str] = {}
+        review_invocations: List[Dict[str, Any]] = []
         diversity_achieved = True
 
         while repair_count <= self.max_repair_cycles:
@@ -276,8 +281,10 @@ class ProductSynthesizer:
 
             # Run independent multi-provider review
             reviewer_roles = ["test-falsifier", "security-reviewer", "architecture-reviewer"]
-            review_findings, review_role_map, diversity_achieved = self._run_independent_reviews(
-                out_path, spec, reviewer_roles, implementing_provider=active_provider
+            review_findings, review_role_map, diversity_achieved, review_invocations = (
+                self._run_independent_reviews(
+                    out_path, spec, reviewer_roles, implementing_provider=active_provider
+                )
             )
             reconcile_res = ReviewReconciler.reconcile(review_findings)
             last_reconciliation = reconcile_res
@@ -335,6 +342,7 @@ class ProductSynthesizer:
                 implementing_provider=active_provider,
                 reviewing_providers=list(review_role_map.values()),
                 reviewer_mapping=review_role_map,
+            reviewer_invocations=list(review_invocations),
                 diversity_achieved=diversity_achieved,
             )
 
@@ -353,6 +361,7 @@ class ProductSynthesizer:
             implementing_provider=active_provider,
             reviewing_providers=list(review_role_map.values()),
             reviewer_mapping=review_role_map,
+            reviewer_invocations=list(review_invocations),
             diversity_achieved=diversity_achieved,
             error_message=f"Exhausted repair budget ({self.max_repair_cycles} cycles): {last_err}",
         )
@@ -550,12 +559,17 @@ Make the necessary file edits now.
         spec: ProductSpec,
         roles: List[str],
         implementing_provider: str = "codex",
-    ) -> Tuple[List[ReviewFinding], Dict[str, str], bool]:
+    ) -> Tuple[List[ReviewFinding], Dict[str, str], bool, List[Dict[str, Any]]]:
         """
         Executes independent multi-provider adversarial reviews over synthesized artifacts.
         Distributes reviewer roles across distinct available providers.
+
+        Also returns a per-role invocation record distinguishing assigned from
+        invoked from completed (#59.1 Phase 8) -- the role mapping alone says
+        nothing about whether a reviewer actually ran.
         """
         findings: List[ReviewFinding] = []
+        invocations: List[Dict[str, Any]] = []
         rev_mapping, diversity_achieved = self.provider_pool.select_reviewers(
             implementing_provider, roles, allow_same_provider=True
         )
@@ -605,7 +619,18 @@ Make the necessary file edits now.
                         diff_content=backend_txt[:4000],
                     )
                     rev_backend = self.custom_backend or AgentBackendRegistry.get_backend(rev_provider)
+                    # Assignment is not execution (#59.1 Phase 8): a reviewer
+                    # can be mapped to a role and never run -- the backend may
+                    # be unavailable, or execute() may raise. Record what
+                    # actually happened rather than inferring it from the map.
+                    invocation = {
+                        "role": role_id, "provider": rev_provider,
+                        "assigned": True, "invoked": False, "completed": False,
+                        "duration_seconds": 0.0,
+                    }
+                    invocations.append(invocation)
                     if rev_backend and rev_backend.is_available():
+                        invocation["invoked"] = True
                         try:
                             rev_res = rev_backend.execute(
                                 task=TaskSpec(
@@ -621,13 +646,34 @@ Make the necessary file edits now.
                                 prompt_override=brief,
                                 timeout_seconds=30,
                             )
+                            invocation["completed"] = bool(rev_res.success)
+                            invocation["duration_seconds"] = round(rev_res.duration_seconds, 3)
+                            invocation.update(self._local_review_telemetry(rev_provider, rev_res))
                             if rev_res.success and rev_res.stdout.strip():
                                 parsed_findings, _ = parse_and_validate_findings(rev_res.stdout, role_id)
                                 findings.extend(parsed_findings)
-                        except Exception:
-                            pass
+                        except Exception as exc:  # noqa: BLE001 - a reviewer crash is evidence, not a campaign failure
+                            invocation["error"] = str(exc)[:200]
 
-        return findings, rev_mapping, diversity_achieved
+        return findings, rev_mapping, diversity_achieved, invocations
+
+    @staticmethod
+    def _local_review_telemetry(provider: str, rev_res: AgentExecutionResult) -> Dict[str, Any]:
+        """
+        Captures the Tier-3 local provider's own telemetry for a review that
+        genuinely ran (#59.1 Phase 8) -- model, RAM before/after/after-unload
+        as the local backend reports them. Observability only: nothing here
+        widens what the local model is allowed to do.
+        """
+        if provider not in LOCAL_PROVIDER_IDS:
+            return {}
+        meta = rev_res.metadata or {}
+        return {
+            "model": meta.get("model"),
+            "ram_before_gib": meta.get("ram_before_gib"),
+            "ram_after_gib": meta.get("ram_after_gib"),
+            "ram_after_unload_gib": meta.get("ram_after_unload_gib"),
+        }
 
     def _synthesize_product_files(
         self,
