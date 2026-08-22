@@ -173,6 +173,10 @@ class DurableCampaignState(DataClassSerializationMixin):
     # Ordered per-provider attempt history for governed engineering tasks.
     engineering_attempts: List[Dict[str, Any]] = field(default_factory=list)
     framework_gaps: List[Dict[str, Any]] = field(default_factory=list)
+    # Cross-provider falsification rounds and their verdicts, plus failures
+    # attributed to a provider rather than to the framework (#59.1 Phase 5).
+    gap_falsifications: List[Dict[str, Any]] = field(default_factory=list)
+    provider_specific_failures: List[Dict[str, Any]] = field(default_factory=list)
     git_records: List[Dict[str, Any]] = field(default_factory=list)
     reviewer_diversity_records: List[Dict[str, Any]] = field(default_factory=list)
     repair_cycles_total: int = 0
@@ -293,6 +297,25 @@ class DurableCampaignState(DataClassSerializationMixin):
 
     def record_task_failed(self, task_dict: Dict[str, Any]) -> None:
         self.failed_tasks.append(task_dict)
+        self.update_timestamp()
+
+    def record_gap_falsification(self, record: Dict[str, Any]) -> None:
+        """
+        Records one cross-provider falsification round for an ambiguous
+        synthesis failure (#59.1 Phase 5), whatever its verdict. Kept even
+        when the verdict was "not a framework gap" -- that negative result is
+        the evidence that HowlPlane correctly declined to modify itself.
+        """
+        self.gap_falsifications.append(record)
+        self.update_timestamp()
+
+    def record_provider_specific_failure(self, record: Dict[str, Any]) -> None:
+        """
+        Records a synthesis failure attributed to a provider rather than to
+        the framework. Deliberately NOT a framework gap: nothing here opens a
+        governed self-improvement task.
+        """
+        self.provider_specific_failures.append(record)
         self.update_timestamp()
 
     def record_framework_gap(self, gap_dict: Dict[str, Any]) -> None:
@@ -459,6 +482,26 @@ class DurableCampaignState(DataClassSerializationMixin):
                     f"| `{a.get('task_id')}` | {a.get('attempt_index')} | `{a.get('provider')}` | "
                     f"`{a.get('result')}` | `{a.get('failure_class') or '-'}` | {reconciled} | "
                     f"{a.get('error_digest', '')[:80]} |"
+                )
+
+        if self.gap_falsifications:
+            lines.extend([
+                "",
+                "## Framework-Gap Evidence",
+                "",
+                "Ambiguous synthesis failures are falsified against an independent",
+                "provider before HowlPlane may modify itself.",
+                "",
+                "| Benchmark | Failure | Failing Provider | Verdict | Confirmations |",
+                "| --- | --- | --- | --- | --- |",
+            ])
+            for f in self.gap_falsifications:
+                tried = ", ".join(
+                    f"{a.get('provider')}:{a.get('outcome')}" for a in f.get("attempts", [])
+                ) or "none"
+                lines.append(
+                    f"| {f.get('benchmark')} | `{f.get('gap_type')}` | `{f.get('failing_provider')}` | "
+                    f"`{f.get('evidence')}` | {tried} |"
                 )
 
         if self.provider_role_invocations:

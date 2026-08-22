@@ -341,3 +341,29 @@ def test_provider_invocations_are_recorded_per_role_from_real_executions(tmp_pat
     assert run.state.provider_role_invocations["devin_cli"]["implementation"] == 1
     # A provider that never executed has no row at all.
     assert "local_ollama" not in run.state.provider_role_invocations
+
+
+# ---------------------------------------------------------------------------
+# Reviewer attribution: mapped is not invoked (#59.1 Phase 8).
+# ---------------------------------------------------------------------------
+
+def test_reviewer_assignment_alone_never_counts_as_an_invocation():
+    """
+    In DOGFOOD-20260822-005043-16adca local_ollama was mapped as architecture
+    reviewer while local_model.success_count stayed 0 -- the mapping proved
+    nothing about whether it ran. Counters must move only for real executions.
+    """
+    state = DurableCampaignState(campaign_id="DOGFOOD-REVIEW")
+    invocations = [
+        {"role": "architecture-reviewer", "provider": "local_ollama",
+         "assigned": True, "invoked": False, "completed": False},
+        {"role": "security-reviewer", "provider": "agy",
+         "assigned": True, "invoked": True, "completed": True},
+    ]
+    for inv in invocations:
+        if inv["invoked"]:
+            state.record_provider_invocation(inv["provider"], role="review")
+
+    assert "local_ollama" not in state.provider_role_invocations
+    assert state.provider_role_invocations["agy"]["review"] == 1
+    assert state.local_model.get("success_count", 0) == 0
