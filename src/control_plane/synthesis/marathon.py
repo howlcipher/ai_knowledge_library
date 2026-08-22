@@ -493,6 +493,7 @@ class MarathonDogfoodEngine:
 
             # 3. Check for Framework Gap / Failure -> Trigger Self-Improvement Flywheel
             retried = False
+            bundle_dir = out_dir
             if not synth_res.success:
                 # Classify the observed failure from concrete evidence, and
                 # grade that evidence. Only deterministic proof, or a symptom
@@ -503,15 +504,17 @@ class MarathonDogfoodEngine:
                 falsification: List[Dict[str, Any]] = []
                 if evidence == FrameworkGapEvidence.PROVISIONAL_FAILURE:
                     signature = self._failure_signature(synth_res, gap_type)
-                    evidence, rescued, falsification = self._falsify_framework_gap(
+                    evidence, rescued, rescued_dir, falsification = self._falsify_framework_gap(
                         prompt, b_key, out_dir, synth_res.implementing_provider,
                         signature, iteration_idx,
                     )
                     if rescued is not None:
                         # An independent provider synthesized the same
                         # benchmark successfully: the framework was never the
-                        # problem. Adopt that result as the outcome.
+                        # problem. Adopt that result -- and the directory it
+                        # was actually built into -- as the outcome.
                         synth_res = rescued
+                        bundle_dir = rescued_dir or bundle_dir
                         acc_passed = rescued.acceptance_report.passed_count if rescued.acceptance_report else 0
                         acc_total = rescued.acceptance_report.total_count if rescued.acceptance_report else 0
                         if rescued.implementing_provider:
@@ -646,7 +649,7 @@ class MarathonDogfoodEngine:
                 diversity_achieved=synth_res.diversity_achieved,
                 framework_gaps_count=len(synth_res.framework_gaps),
                 error_message=synth_res.error_message,
-                bundle_path=str(out_dir) if synth_res.success else None,
+                bundle_path=str(bundle_dir) if synth_res.success else None,
                 retried_after_fix=retried,
             )
             results.append(iter_res)
@@ -880,7 +883,7 @@ class MarathonDogfoodEngine:
         failing_provider: Optional[str],
         signature: str,
         iteration_idx: int,
-    ) -> Tuple[FrameworkGapEvidence, Optional[SynthesisResult], List[Dict[str, Any]]]:
+    ) -> Tuple[FrameworkGapEvidence, Optional[SynthesisResult], Optional[Path], List[Dict[str, Any]]]:
         """
         Tries to falsify a provisional framework gap by re-synthesizing the
         same benchmark with independent providers (#59.1 Phase 5).
@@ -889,10 +892,11 @@ class MarathonDogfoodEngine:
         never becomes an unbounded retry loop, and it runs inside the current
         benchmark iteration rather than consuming iteration budget.
 
-        Returns (evidence, succeeding_result, attempt_records):
-          * an independent provider SUCCEEDS -> PROVIDER_SPECIFIC_FAILURE, and
-            the successful result, which the caller uses as the benchmark's
-            outcome. No framework gap, no self-modification.
+        Returns (evidence, succeeding_result, its_output_dir, attempt_records):
+          * an independent provider SUCCEEDS -> PROVIDER_SPECIFIC_FAILURE, plus
+            the successful result and the directory it was built into, which
+            the caller uses as the benchmark's outcome and bundle path. No
+            framework gap, no self-modification.
           * an independent provider reproduces the SAME deterministic
             signature -> VERIFIED_FRAMEWORK_GAP.
           * it fails differently, or no independent provider exists ->
@@ -902,13 +906,24 @@ class MarathonDogfoodEngine:
         confirmations = 0
         tried = {failing_provider} if failing_provider else set()
 
+        # Falsification re-runs full product synthesis, which is never
+        # local-eligible (#58 Phase 9). Exclude local providers here so the
+        # attempt is attributed to the provider actually asked to do the work
+        # rather than silently reassigned inside the synthesizer.
+        probe = TaskSpec(
+            task_id=f"FALSIFY-{benchmark_key.upper()}", repository="howlplane",
+            objective=f"Independently re-synthesize {benchmark_key}",
+            task_class="feature", risk_level="medium",
+        )
         while confirmations < self.framework_gap_confirmations_required:
             candidates = [
-                c for c in self.provider_pool.select_candidates(task_category="code_heavy")
-                if c not in tried
+                c for c in self.provider_pool.select_candidates(
+                    task_category="code_heavy", task=probe,
+                )
+                if c not in tried and c not in LOCAL_PROVIDER_IDS
             ]
             if not candidates:
-                return FrameworkGapEvidence.PROVISIONAL_FAILURE, None, attempts
+                return FrameworkGapEvidence.PROVISIONAL_FAILURE, None, None, attempts
 
             provider = candidates[0]
             tried.add(provider)
@@ -918,7 +933,9 @@ class MarathonDogfoodEngine:
             )
             if confirm_res.success:
                 attempts.append({"provider": provider, "outcome": "SUCCESS"})
-                return FrameworkGapEvidence.PROVIDER_SPECIFIC_FAILURE, confirm_res, attempts
+                return (
+                    FrameworkGapEvidence.PROVIDER_SPECIFIC_FAILURE, confirm_res, confirm_dir, attempts,
+                )
 
             confirm_type, _desc, confirm_evidence = self._classify_failure(confirm_res, benchmark_key)
             confirm_signature = self._failure_signature(confirm_res, confirm_type)
@@ -930,14 +947,14 @@ class MarathonDogfoodEngine:
             })
             if confirm_evidence == FrameworkGapEvidence.DETERMINISTIC_FRAMEWORK_PROOF:
                 # An independent provider hit a deterministic framework wall.
-                return FrameworkGapEvidence.VERIFIED_FRAMEWORK_GAP, None, attempts
+                return FrameworkGapEvidence.VERIFIED_FRAMEWORK_GAP, None, None, attempts
             if not same_symptom:
                 # Two providers failing differently is evidence about the
                 # providers, not about the framework.
-                return FrameworkGapEvidence.PROVIDER_SPECIFIC_FAILURE, None, attempts
+                return FrameworkGapEvidence.PROVIDER_SPECIFIC_FAILURE, None, None, attempts
             confirmations += 1
 
-        return FrameworkGapEvidence.VERIFIED_FRAMEWORK_GAP, None, attempts
+        return FrameworkGapEvidence.VERIFIED_FRAMEWORK_GAP, None, None, attempts
 
     def _persist_git_record(
         self,

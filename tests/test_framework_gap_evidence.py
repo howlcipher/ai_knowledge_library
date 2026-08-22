@@ -101,7 +101,7 @@ def test_9_provider_specific_failure_creates_no_self_modification_task(tmp_path)
     })
     failing = _result(error=ACCEPTANCE_FAILURE, provider="agy")
 
-    evidence, rescued, attempts = _falsify(engine, "agy", failing)
+    evidence, rescued, _dir, attempts = _falsify(engine, "agy", failing)
 
     assert evidence == FrameworkGapEvidence.PROVIDER_SPECIFIC_FAILURE
     assert rescued is not None and rescued.success is True
@@ -133,7 +133,7 @@ def test_10_same_deterministic_symptom_across_providers_verifies_gap(tmp_path):
         "devin_cli": _result(error=ACCEPTANCE_FAILURE, provider="devin_cli"),
     })
 
-    evidence, rescued, attempts = _falsify(engine, "agy", _result(error=ACCEPTANCE_FAILURE))
+    evidence, rescued, _dir, attempts = _falsify(engine, "agy", _result(error=ACCEPTANCE_FAILURE))
 
     assert evidence == FrameworkGapEvidence.VERIFIED_FRAMEWORK_GAP
     assert rescued is None
@@ -150,7 +150,7 @@ def test_10b_different_symptom_is_not_a_framework_gap(tmp_path):
         "devin_cli": _result(error=OTHER_ACCEPTANCE_FAILURE, provider="devin_cli"),
     })
 
-    evidence, _rescued, attempts = _falsify(engine, "agy", _result(error=ACCEPTANCE_FAILURE))
+    evidence, _rescued, _dir, attempts = _falsify(engine, "agy", _result(error=ACCEPTANCE_FAILURE))
 
     assert evidence == FrameworkGapEvidence.PROVIDER_SPECIFIC_FAILURE
     assert [a["outcome"] for a in attempts] == ["FAILED_DIFFERENT_SYMPTOM"]
@@ -196,7 +196,7 @@ def test_11b_independent_provider_hitting_deterministic_wall_verifies_gap(tmp_pa
         "devin_cli": _result(error=COMPILER_FAILURE, provider="devin_cli"),
     })
 
-    evidence, _rescued, _attempts = _falsify(engine, "agy", _result(error=ACCEPTANCE_FAILURE))
+    evidence, _rescued, _dir, _attempts = _falsify(engine, "agy", _result(error=ACCEPTANCE_FAILURE))
 
     assert evidence == FrameworkGapEvidence.VERIFIED_FRAMEWORK_GAP
 
@@ -235,7 +235,7 @@ def test_13_model_consensus_alone_cannot_trigger_self_modification(tmp_path):
         "devin_cli": _result(error=f"Acceptance failure: probe_b: {consensus}", provider="devin_cli"),
     })
 
-    evidence, _rescued, _attempts = _falsify(
+    evidence, _rescued, _dir, _attempts = _falsify(
         engine, "agy", _result(error=f"Acceptance failure: probe_a: {consensus}"),
     )
 
@@ -250,7 +250,7 @@ def test_no_independent_provider_leaves_failure_provisional(tmp_path):
     """
     engine = _engine(tmp_path, available=("agy",), synthesis_script={})
 
-    evidence, rescued, attempts = _falsify(engine, "agy", _result(error=ACCEPTANCE_FAILURE))
+    evidence, rescued, _dir, attempts = _falsify(engine, "agy", _result(error=ACCEPTANCE_FAILURE))
 
     assert evidence == FrameworkGapEvidence.PROVISIONAL_FAILURE
     assert rescued is None
