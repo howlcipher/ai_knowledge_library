@@ -1178,17 +1178,32 @@ class MarathonDogfoodEngine:
         ) is None:
             return False, git_rec.to_dict()
 
+        # An unattended merge requires live CI policy AND terminal green
+        # required checks. Every other outcome -- unreadable policy, a policy
+        # enforcing no checks at all, still-pending jobs, a poll timeout --
+        # fails closed (#59.1 Blockers 3/4).
         ci_obs = self.git_executor.observe_required_checks(git_rec.pr_number)
+        policy = ci_obs.policy
         git_rec.required_checks = ci_obs.checks
         git_rec.required_checks_observed = ci_obs.all_required_observed
         git_rec.required_checks_green = ci_obs.all_required_green
-        git_rec.ci_status = "passed" if ci_obs.all_required_green else (
-            "failed" if ci_obs.failed_jobs else ("pending" if not ci_obs.all_required_observed else "unavailable")
-        )
+        if policy is not None and not policy.available:
+            git_rec.ci_status = "policy_unavailable"
+        elif policy is not None and not policy.contexts:
+            git_rec.ci_status = "no_required_checks"
+        elif ci_obs.failed_jobs:
+            git_rec.ci_status = "failed"
+        elif ci_obs.timed_out:
+            git_rec.ci_status = "timeout"
+        elif not ci_obs.all_required_observed or not ci_obs.all_required_terminal:
+            git_rec.ci_status = "pending"
+        else:
+            git_rec.ci_status = "passed" if ci_obs.all_required_green else "failed"
         self._persist_git_record(git_rec, campaign_state, state_dir)
 
-        if not git_rec.required_checks_green:
-            git_rec.failure_reason = f"CI_NOT_GREEN: {git_rec.ci_status}"
+        if not ci_obs.authorizes_merge():
+            reason = (policy.reason if policy is not None and policy.reason else git_rec.ci_status)
+            git_rec.failure_reason = f"CI_NOT_GREEN: {reason}"
             self._persist_git_record(git_rec, campaign_state, state_dir)
             return False, git_rec.to_dict()
 

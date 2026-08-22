@@ -105,9 +105,17 @@ def build_full_merge_flow(
         returncode=0, stdout=f'[{{"number": {pr_number}, "url": "https://github.com/{repo_slug}/pull/{pr_number}"}}]',
     )
     gh.on(["pr", "view", str(pr_number), "--json", "number"], returncode=0, stdout=f'{{"number": {pr_number}}}')
+    # Rulesets are consulted first in production (#59.1): `main` on the real
+    # repository is protected by a ruleset and the legacy protection endpoint
+    # 404s. Shape matches the live `gh api repos/{slug}/rules/branches/main`
+    # response.
     gh.on(
-        ["api", f"repos/{repo_slug}/branches/{base_branch}/protection"],
-        returncode=0, stdout='{"required_status_checks": {"contexts": ["test-python"]}}',
+        ["api", f"repos/{repo_slug}/rules/branches/{base_branch}"],
+        returncode=0,
+        stdout=(
+            '[{"type": "required_status_checks", "parameters": '
+            '{"required_status_checks": [{"context": "test-python"}]}}]'
+        ),
     )
     check_state = "SUCCESS" if ci_green else "FAILURE"
     check_bucket = "pass" if ci_green else "fail"
@@ -135,6 +143,19 @@ def build_full_merge_flow(
     return branch
 
 
+def complete_result(task_spec, run_dir, modified_files, provider_execution=None) -> OrchestrationResult:
+    """A successful governed implementation with a non-empty task-owned delta."""
+    return OrchestrationResult(
+        task_id=task_spec.task_id, task_spec=task_spec, final_state="complete", exit_code=0,
+        final_delta=RepositoryDelta(
+            files_modified=list(modified_files), diff_content="--- a/x\n+++ b/x\n",
+            insertions=1, is_empty=False,
+        ),
+        run_dir=str(run_dir),
+        provider_execution=provider_execution,
+    )
+
+
 class FakeOrchestrator:
     """
     Fakes GovernedTaskOrchestrator at the boundary marathon.py actually
@@ -149,14 +170,7 @@ class FakeOrchestrator:
         self.modified_files = [modified_files] if isinstance(modified_files, str) else list(modified_files)
 
     def run(self, task_spec, planned_actions=None) -> OrchestrationResult:
-        return OrchestrationResult(
-            task_id=task_spec.task_id, task_spec=task_spec, final_state="complete", exit_code=0,
-            final_delta=RepositoryDelta(
-                files_modified=list(self.modified_files), diff_content="--- a/x\n+++ b/x\n",
-                insertions=1, is_empty=False,
-            ),
-            run_dir=str(self.run_dir),
-        )
+        return complete_result(task_spec, self.run_dir, self.modified_files)
 
 
 class ProviderScriptedOrchestrator:
@@ -204,15 +218,7 @@ class ProviderScriptedOrchestrator:
             )
 
         if outcome == "complete":
-            return OrchestrationResult(
-                task_id=task_spec.task_id, task_spec=task_spec, final_state="complete", exit_code=0,
-                final_delta=RepositoryDelta(
-                    files_modified=list(self.modified_files), diff_content="--- a/x\n+++ b/x\n",
-                    insertions=1, is_empty=False,
-                ),
-                run_dir=str(self.run_dir),
-                provider_execution=_exec(0, "", True),
-            )
+            return complete_result(task_spec, self.run_dir, self.modified_files, _exec(0, "", True))
         if outcome == "blocked":
             return OrchestrationResult(
                 task_id=task_spec.task_id, task_spec=task_spec, final_state="awaiting_human", exit_code=2,
