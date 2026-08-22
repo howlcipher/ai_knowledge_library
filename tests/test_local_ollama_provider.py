@@ -17,6 +17,7 @@ from typing import Dict
 
 import pytest
 
+from src.control_plane.git_integration import PR_MERGE_FIELDS
 from src.control_plane.agent_execution import (
     AgentBackendRegistry,
     OllamaAvailabilityReason,
@@ -68,7 +69,7 @@ class _AlwaysSucceedGhRunner:
             )
         if args[:2] == ["pr", "view"] and "headRefName" in joined:
             return subprocess.CompletedProcess(args, 0, stdout='{"headRefName": "fix/x"}', stderr="")
-        if args[:2] == ["pr", "view"] and "state,merged,mergeCommit" in joined:
+        if args[:2] == ["pr", "view"] and PR_MERGE_FIELDS in joined:
             return subprocess.CompletedProcess(
                 args, 0, stdout='{"state": "MERGED", "merged": true, "mergeCommit": {"oid": "fakemergesha"}}', stderr=""
             )

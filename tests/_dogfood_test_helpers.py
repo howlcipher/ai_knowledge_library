@@ -20,6 +20,7 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from src.control_plane.agent_execution import AgentExecutionResult
 from src.control_plane.git_baseline import RepositoryDelta
+from src.control_plane.git_integration import PR_MERGE_FIELDS
 from src.control_plane.orchestrator import (
     FAILURE_CLASS_AUTHORITY_BLOCKED,
     FAILURE_CLASS_ENGINEERING,
@@ -137,8 +138,9 @@ def build_full_merge_flow(
     gh.on(["pr", "view", str(pr_number), "--json", "headRefName"], returncode=0, stdout=f'{{"headRefName": "{branch}"}}')
     gh.on(["pr", "merge", str(pr_number), "--repo", repo_slug, "--squash", "--delete-branch"], returncode=0)
     gh.on(
-        ["pr", "view", str(pr_number), "--repo", repo_slug, "--json", "state,merged,mergeCommit"],
-        returncode=0, stdout=f'{{"state": "MERGED", "merged": true, "mergeCommit": {{"oid": "{merge_sha}"}}}}',
+        ["pr", "view", str(pr_number), "--repo", repo_slug, "--json", PR_MERGE_FIELDS],
+        returncode=0,
+        stdout=f'{{"state": "MERGED", "mergedAt": "2026-08-22T20:21:08Z", "mergeCommit": {{"oid": "{merge_sha}"}}}}',
     )
     return branch
 

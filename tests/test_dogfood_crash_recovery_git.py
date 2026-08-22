@@ -11,6 +11,7 @@ is grounded in that remote truth rather than local assumptions, so a crash
 at any point never causes duplicate branches/commits/PRs or a double merge.
 """
 
+from src.control_plane.git_integration import PR_MERGE_FIELDS
 from src.control_plane.authority_envelope import create_envelope
 from src.control_plane.authority_profile import get_profile
 from src.control_plane.decision_queue import already_parked
@@ -122,7 +123,7 @@ def test_crash_after_ci_green_before_merge_not_yet_merged():
     merge -- resume must revalidate the merge gate (repo drift, budget,
     envelope) rather than assuming the merge already happened."""
     gh = ScriptedRunner()
-    gh.on(["pr", "view", "12", "--json", "state,merged"], returncode=0, stdout='{"state": "OPEN", "merged": false}')
+    gh.on(["pr", "view", "12", "--json", PR_MERGE_FIELDS], returncode=0, stdout='{"state": "OPEN", "mergedAt": null}')
     executor = _executor(gh_runner=gh)
 
     status, _, _ = executor.query_execution_status(
@@ -138,7 +139,7 @@ def test_crash_after_merge_before_local_record_discovers_already_merged():
     campaign_state.json update never landed before the crash -- resume must
     discover this from GitHub reality and NOT call `gh pr merge` again."""
     gh = ScriptedRunner()
-    gh.on(["pr", "view", "12", "--json", "state,merged"], returncode=0, stdout='{"state": "MERGED", "merged": true}')
+    gh.on(["pr", "view", "12", "--json", PR_MERGE_FIELDS], returncode=0, stdout='{"state": "MERGED", "mergedAt": "2026-08-22T20:21:08Z"}')
     executor = _executor(gh_runner=gh)
 
     status, _, msg = executor.query_execution_status(
