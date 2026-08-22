@@ -16,10 +16,15 @@ marathon.py logic exercised through them is real (#59 Phase 20).
 from dataclasses import dataclass, field
 from pathlib import Path
 import subprocess
-from typing import Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
+from src.control_plane.agent_execution import AgentExecutionResult
 from src.control_plane.git_baseline import RepositoryDelta
-from src.control_plane.orchestrator import OrchestrationResult
+from src.control_plane.orchestrator import (
+    FAILURE_CLASS_AUTHORITY_BLOCKED,
+    FAILURE_CLASS_ENGINEERING,
+    OrchestrationResult,
+)
 
 
 @dataclass
@@ -151,4 +156,73 @@ class FakeOrchestrator:
                 insertions=1, is_empty=False,
             ),
             run_dir=str(self.run_dir),
+        )
+
+
+class ProviderScriptedOrchestrator:
+    """
+    Fakes GovernedTaskOrchestrator with a per-provider script, so a test can
+    say "agy returns this quota stderr, devin_cli succeeds" and then assert
+    which providers were actually attempted, in order (#59.1 Phase 2).
+
+    Each script entry is keyed by the provider the marathon layer selected
+    (`task_spec.preferred_agent`) and is one of:
+      ("exhausted", stderr)   -> failed run whose AgentExecutionResult carries
+                                 provider-availability text
+      ("engineering", stderr) -> failed run that is genuinely bad output
+      ("blocked", reason)     -> orchestrator's own authority gate tripped
+      ("complete", None)      -> successful governed implementation
+
+    A provider with no script entry defaults to ("complete", None).
+    """
+
+    def __init__(
+        self,
+        run_dir: Union[str, Path],
+        script: Dict[str, Tuple[str, Optional[str]]],
+        modified_files: Union[str, List[str]] = "src/x.py",
+        on_attempt: Optional[Callable[[str], None]] = None,
+    ):
+        self.run_dir = run_dir
+        self.script = dict(script)
+        self.modified_files = [modified_files] if isinstance(modified_files, str) else list(modified_files)
+        self.attempted: List[str] = []
+        self.on_attempt = on_attempt
+
+    def run(self, task_spec, planned_actions=None) -> OrchestrationResult:
+        provider = task_spec.preferred_agent or "unknown"
+        self.attempted.append(provider)
+        if self.on_attempt is not None:
+            self.on_attempt(provider)
+        outcome, detail = self.script.get(provider, ("complete", None))
+
+        def _exec(exit_code: int, stderr: str, success: bool) -> AgentExecutionResult:
+            return AgentExecutionResult(
+                agent_id=provider, role="implementation", command=f"{provider} -p '...'",
+                exit_code=exit_code, stdout="", stderr=stderr, duration_seconds=1.0,
+                success=success, error_message=None if success else f"Process exited with code {exit_code}",
+            )
+
+        if outcome == "complete":
+            return OrchestrationResult(
+                task_id=task_spec.task_id, task_spec=task_spec, final_state="complete", exit_code=0,
+                final_delta=RepositoryDelta(
+                    files_modified=list(self.modified_files), diff_content="--- a/x\n+++ b/x\n",
+                    insertions=1, is_empty=False,
+                ),
+                run_dir=str(self.run_dir),
+                provider_execution=_exec(0, "", True),
+            )
+        if outcome == "blocked":
+            return OrchestrationResult(
+                task_id=task_spec.task_id, task_spec=task_spec, final_state="awaiting_human", exit_code=2,
+                run_dir=str(self.run_dir), error_message=detail or "authority boundary",
+                provider_execution=_exec(0, "", True),
+                failure_class=FAILURE_CLASS_AUTHORITY_BLOCKED,
+            )
+        return OrchestrationResult(
+            task_id=task_spec.task_id, task_spec=task_spec, final_state="failed", exit_code=1,
+            run_dir=str(self.run_dir), error_message=detail or "failed",
+            provider_execution=_exec(1, detail or "", False),
+            failure_class=FAILURE_CLASS_ENGINEERING,
         )

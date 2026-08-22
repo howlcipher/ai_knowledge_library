@@ -37,13 +37,22 @@ from src.control_plane.decision_queue import (
     compute_blocks_other_work,
 )
 from src.control_plane.evidence_ledger import EvidenceEntry, EvidenceLedger
-from src.control_plane.git_integration import GitIntegrationExecutor, detect_repo_slug
+from src.control_plane.git_baseline import capture_baseline, capture_delta
+from src.control_plane.git_integration import GitIntegrationExecutor, detect_repo_slug, run_git
 from src.control_plane.human_boundary import HumanBoundaryGate
-from src.control_plane.orchestrator import GovernedTaskOrchestrator, OrchestrationConfig
+from src.control_plane.orchestrator import (
+    FAILURE_CLASS_AUTHORITY_BLOCKED,
+    FAILURE_CLASS_ENGINEERING,
+    FAILURE_CLASS_PROVIDER_EXHAUSTED,
+    FAILURE_CLASS_PROVIDER_UNAVAILABLE,
+    GovernedTaskOrchestrator,
+    OrchestrationConfig,
+)
 from src.control_plane.proposed_action import ProposedAction
 from src.control_plane.synthesis.campaign_state import (
     CAMPAIGN_STATE_SCHEMA_VERSION,
     DurableCampaignState,
+    EngineeringAttempt,
     GitIntegrationRecord,
 )
 from src.control_plane.synthesis.capability_negotiator import FrameworkGap
@@ -167,6 +176,8 @@ class MarathonDogfoodEngine:
         repo_slug: Optional[str] = None,
         git_executor_factory: Optional[Callable[..., GitIntegrationExecutor]] = None,
         orchestrator_factory: Optional[Callable[[OrchestrationConfig], GovernedTaskOrchestrator]] = None,
+        git_runner: Optional[Callable[..., Any]] = None,
+        framework_gap_confirmations_required: int = 1,
     ):
         self.provider_pool = provider_pool or ProviderPoolManager()
         self.ledger = ledger
@@ -201,6 +212,14 @@ class MarathonDogfoodEngine:
         self._orchestrator_factory = orchestrator_factory or (
             lambda config: GovernedTaskOrchestrator(target_repo=self.target_repo, config=config)
         )
+        # Raw git seam used only by attempt-state reconciliation (#59.1
+        # Phase 3), kept separate from the authority-gated GitIntegrationExecutor:
+        # reverting a failed attempt's own files is repository hygiene, not a
+        # proposed action against the envelope.
+        self._git_runner = git_runner or run_git
+        # How many *independent* providers must reproduce an ambiguous synthesis
+        # failure before it may be called a framework gap (#59.1 Phase 5).
+        self.framework_gap_confirmations_required = max(0, framework_gap_confirmations_required)
 
     def _generate_campaign_id(self) -> str:
         ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
@@ -492,11 +511,20 @@ class MarathonDogfoodEngine:
                         stop_reason = "AWAITING_HUMAN"
                         break
                 else:
+                    # Report the engineering task's own provider and its
+                    # concrete failure reason. Previously this recorded the
+                    # *synthesis* provider and the fixed string "Engineering
+                    # task failed or blocked", discarding the git record's
+                    # failure_reason entirely (#59.1).
+                    attempts = campaign_state.attempts_for_task(eng_task_id)
                     campaign_state.record_task_failed({
                         "task_id": eng_task_id,
                         "objective": f"Resolve {gap_type} for {b_key}",
-                        "provider": synth_res.implementing_provider or "unknown",
-                        "error": "Engineering task failed or blocked",
+                        "provider": (git_rec or {}).get("provider") or "unknown",
+                        "error": (git_rec or {}).get("failure_reason") or "Engineering task failed or blocked",
+                        "attempts": [
+                            {"provider": a.get("provider"), "result": a.get("result")} for a in attempts
+                        ],
                     })
 
             iter_res = DogfoodIterationResult(
@@ -771,6 +799,133 @@ class MarathonDogfoodEngine:
         self._persist_git_record(git_rec, campaign_state, state_dir)
         return meta
 
+    def _persist_provider_states(
+        self,
+        campaign_state: Optional[DurableCampaignState],
+        state_dir: Optional[Path],
+    ) -> None:
+        """
+        Snapshots the pool's live provider statuses into durable campaign
+        state immediately (#59.1 Blocker 5). Previously statuses were only
+        written once per benchmark iteration, so a campaign could report a
+        provider AVAILABLE after that provider had already returned a quota
+        error.
+        """
+        if campaign_state is None:
+            return
+        campaign_state.provider_states = self.provider_pool.get_all_statuses()
+        if state_dir is not None:
+            campaign_state.save(state_dir)
+
+    def _record_attempt(
+        self,
+        campaign_state: Optional[DurableCampaignState],
+        state_dir: Optional[Path],
+        task_id: str,
+        provider: str,
+        attempt_index: int,
+        *,
+        result: str,
+        failure_class: Optional[str],
+        exit_code: Optional[int],
+        error_digest: str,
+        delta_reconciled: bool,
+        duration: float,
+    ) -> None:
+        """Appends and immediately persists one provider attempt (#59.1 Phase 4)."""
+        if campaign_state is None:
+            return
+        attempt = EngineeringAttempt(
+            task_id=task_id,
+            provider=provider,
+            attempt_index=attempt_index,
+            result=result,
+            failure_class=failure_class,
+            exit_code=exit_code,
+            error_digest=EngineeringAttempt.digest(error_digest),
+            delta_reconciled=delta_reconciled,
+            duration_seconds=round(duration, 3),
+        )
+        campaign_state.record_engineering_attempt(attempt.to_dict())
+        if state_dir is not None:
+            campaign_state.save(state_dir)
+
+    def _reconcile_attempt_state(self, baseline: Any, task_id: str, attempt_index: int) -> bool:
+        """
+        Restores the repository to an attempt's baseline before handing it to
+        the next provider (#59.1 Phase 3).
+
+        A provider can exhaust its quota *after* it has already written files.
+        Handing those partial, unreviewed changes to the next provider would
+        make the fallback attempt's delta a mixture of two providers' work.
+        Equally, discarding them wholesale would violate the #56 recovery
+        invariants.
+
+        So: capture the delta, checkpoint it as attempt evidence, then revert
+        *only the paths that delta names*. Tracked paths are restored with
+        `git checkout --`; paths the attempt newly added are removed. Any file
+        the attempt did not touch -- including concurrent user work and
+        unrelated dirty state -- is never inspected and never modified. There
+        is deliberately no `git reset --hard` and no `git clean` anywhere on
+        this path.
+
+        Returns True when there was a task-owned delta that had to be reverted.
+        """
+        try:
+            delta = capture_delta(self.target_repo, baseline)
+        except Exception:  # noqa: BLE001 - reconciliation must never crash the campaign
+            return False
+        if delta is None or delta.is_empty:
+            return False
+
+        attempt_dir = self.target_repo / ".task_runs" / task_id / "attempts" / f"{attempt_index:02d}"
+        try:
+            attempt_dir.mkdir(parents=True, exist_ok=True)
+            (attempt_dir / "delta.json").write_text(json.dumps(delta.to_dict(), indent=2), encoding="utf-8")
+            (attempt_dir / "delta.patch").write_text(delta.diff_content or "", encoding="utf-8")
+        except OSError:
+            pass
+
+        added = list(delta.files_added)
+        restorable = list(delta.files_modified) + list(delta.files_deleted)
+        for rel_path in restorable:
+            self._git_runner(self.target_repo, ["checkout", "--", rel_path], 30)
+        for rel_path in added:
+            candidate = (self.target_repo / rel_path).resolve()
+            # Never step outside the repository, whatever the delta claims.
+            if not str(candidate).startswith(str(self.target_repo.resolve())):
+                continue
+            try:
+                if candidate.is_file():
+                    candidate.unlink()
+            except OSError:
+                pass
+        return True
+
+    @staticmethod
+    def _attempt_result_for(event: Optional[Any], final_state: str) -> Tuple[str, str]:
+        """
+        Maps one attempt's observed outcome onto (attempt_result, failure_class).
+
+        Only a ProviderExhaustionEvent -- produced by detect_exhaustion() from
+        the provider's own execution result -- can yield a provider-availability
+        class. Bad generated code, failing tests and rejected reviews all stay
+        ENGINEERING_FAILURE and must never mark a provider exhausted (#59.1).
+        """
+        if event is not None:
+            status = ProviderAvailabilityStatus.RATE_LIMITED if event.failure_type == "rate_limit" else (
+                ProviderAvailabilityStatus.SESSION_EXHAUSTED if event.failure_type == "session_limit"
+                else ProviderAvailabilityStatus.UNAVAILABLE
+            )
+            failure_class = (
+                FAILURE_CLASS_PROVIDER_UNAVAILABLE if event.failure_type == "unavailable"
+                else FAILURE_CLASS_PROVIDER_EXHAUSTED
+            )
+            return status.value, failure_class
+        if final_state in ("awaiting_human", "blocked"):
+            return "AUTHORITY_BLOCKED", FAILURE_CLASS_AUTHORITY_BLOCKED
+        return "ENGINEERING_FAILURE", FAILURE_CLASS_ENGINEERING
+
     def _execute_governed_engineering_improvement(
         self,
         task_id: str,
@@ -818,6 +973,7 @@ class MarathonDogfoodEngine:
         gap_probe.preferred_agent = provider
         commit_message = f"fix({benchmark_key}): resolve {gap_type} found during marathon dogfooding"
 
+
         git_rec = GitIntegrationRecord(
             task_id=task_id, target_repo="howlplane", provider=provider, commit_message=commit_message,
         )
@@ -855,21 +1011,110 @@ class MarathonDogfoodEngine:
             self._persist_git_record(git_rec, campaign_state, state_dir)
             return False, git_rec.to_dict()
 
+        # --------------------------------------------------------------------
+        # Bounded provider failover (#59.1 Phase 2).
+        #
+        # A single governed engineering task may be attempted by several
+        # providers in turn. A provider that reports quota/session exhaustion
+        # or unavailability is marked in the pool -- so it is not handed the
+        # next task either -- and the next eligible provider is tried. A
+        # provider that merely produced bad code, failed tests or a rejected
+        # review is NOT marked exhausted and does NOT trigger failover: that is
+        # a normal engineering failure and follows normal remediation policy.
+        #
+        # Attempts are bounded by the finite eligible provider set: `attempted`
+        # only grows, and any provider already tried is filtered out of the
+        # next selection, so the loop cannot spin.
+        # --------------------------------------------------------------------
         orch_config = OrchestrationConfig(acquire_locks=True, record_evidence=bool(self.ledger))
-        orchestrator = self._orchestrator_factory(orch_config)
-        try:
-            result = orchestrator.run(gap_probe, planned_actions)
-        except Exception as exc:  # noqa: BLE001 - real provider/orchestrator failures must not crash the campaign
-            git_rec.failure_reason = f"orchestrator_exception: {exc}"
-            self._persist_git_record(git_rec, campaign_state, state_dir)
-            return False, git_rec.to_dict()
+        attempted: set = set()
+        result = None
+        attempt_index = 0
 
-        if result.final_state != "complete":
-            # Orchestrator's own HumanBoundaryGate/verification/review gates
-            # already handled awaiting_human/failed/blocked outcomes.
-            git_rec.failure_reason = f"orchestrator_final_state:{result.final_state}"
-            self._persist_git_record(git_rec, campaign_state, state_dir)
-            return False, git_rec.to_dict()
+        while True:
+            attempt_index += 1
+            attempted.add(provider)
+            gap_probe.preferred_agent = provider
+            git_rec.provider = provider
+            attempt_started = time.time()
+            attempt_baseline = None
+            try:
+                attempt_baseline = capture_baseline(self.target_repo)
+            except Exception:  # noqa: BLE001 - baseline is best-effort attempt evidence
+                attempt_baseline = None
+
+            orchestrator = self._orchestrator_factory(orch_config)
+            try:
+                result = orchestrator.run(gap_probe, planned_actions)
+            except Exception as exc:  # noqa: BLE001 - real provider/orchestrator failures must not crash the campaign
+                git_rec.failure_reason = f"orchestrator_exception: {exc}"
+                self._record_attempt(
+                    campaign_state, state_dir, task_id, provider, attempt_index,
+                    result="ENGINEERING_FAILURE", failure_class=FAILURE_CLASS_ENGINEERING,
+                    exit_code=None, error_digest=str(exc), delta_reconciled=False,
+                    duration=time.time() - attempt_started,
+                )
+                self._persist_git_record(git_rec, campaign_state, state_dir)
+                return False, git_rec.to_dict()
+
+            exec_res = result.provider_execution
+            if exec_res is not None and campaign_state is not None:
+                campaign_state.record_provider_invocation(provider, role="implementation")
+
+            if result.final_state == "complete":
+                self._record_attempt(
+                    campaign_state, state_dir, task_id, provider, attempt_index,
+                    result="COMPLETE", failure_class=None,
+                    exit_code=exec_res.exit_code if exec_res else 0,
+                    error_digest="", delta_reconciled=False,
+                    duration=time.time() - attempt_started,
+                )
+                break
+
+            # Ask the pool -- from the provider's own execution result, never
+            # from summary text -- whether this was an availability failure.
+            event = None
+            if exec_res is not None:
+                event = self.provider_pool.detect_exhaustion(provider, exec_res, task_id=task_id)
+            attempt_result, failure_class = self._attempt_result_for(event, result.final_state)
+
+            reconciled = False
+            if event is not None and attempt_baseline is not None:
+                reconciled = self._reconcile_attempt_state(attempt_baseline, task_id, attempt_index)
+
+            self._record_attempt(
+                campaign_state, state_dir, task_id, provider, attempt_index,
+                result=attempt_result, failure_class=failure_class,
+                exit_code=exec_res.exit_code if exec_res else None,
+                error_digest=(exec_res.stderr if exec_res else "") or (result.error_message or ""),
+                delta_reconciled=reconciled,
+                duration=time.time() - attempt_started,
+            )
+            # The pool's updated view of provider availability must be durable
+            # before the next selection -- a campaign that crashes here must
+            # not resume believing an exhausted provider is AVAILABLE (#59.1
+            # Blocker 5).
+            self._persist_provider_states(campaign_state, state_dir)
+
+            if event is None:
+                # Engineering failure or authority block: do not fail over.
+                git_rec.failure_reason = f"orchestrator_final_state:{result.final_state}"
+                self._persist_git_record(git_rec, campaign_state, state_dir)
+                return False, git_rec.to_dict()
+
+            next_candidates = [
+                c for c in self.provider_pool.select_candidates(
+                    task_category="code_heavy", avoid_provider=avoid_provider, task=gap_probe,
+                )
+                if c not in attempted
+            ]
+            if not next_candidates:
+                git_rec.failure_reason = (
+                    f"NO_ELIGIBLE_PROVIDER_REMAINING: tried {', '.join(sorted(attempted))}"
+                )
+                self._persist_git_record(git_rec, campaign_state, state_dir)
+                return False, git_rec.to_dict()
+            provider = next_candidates[0]
 
         delta = result.final_delta
         if delta is None or delta.is_empty:

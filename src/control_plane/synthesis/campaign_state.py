@@ -18,7 +18,12 @@ from typing import Any, Dict, List, Optional, Union
 from src.control_plane.atomic_io import atomic_write_json, atomic_write_text, safe_load_json
 from src.control_plane.task_spec import DataClassSerializationMixin
 
-CAMPAIGN_STATE_SCHEMA_VERSION = "howlplane.marathon_dogfood_state/v1"
+CAMPAIGN_STATE_SCHEMA_VERSION = "howlplane.marathon_dogfood_state/v2"
+
+# Longest provider error text retained per attempt. Enough to identify the
+# failure in a morning report without copying a whole agent transcript into
+# durable campaign state.
+ATTEMPT_ERROR_DIGEST_LIMIT = 400
 
 # Default local-only continuation budget: after all cloud providers are
 # exhausted, at most this many consecutive local-eligible iterations run
@@ -102,6 +107,40 @@ class GitIntegrationRecord(DataClassSerializationMixin):
 
 
 @dataclass
+class EngineeringAttempt(DataClassSerializationMixin):
+    """
+    One provider's attempt at a single governed engineering task (#59.1
+    Phase 2). A task may be attempted by several providers in turn when
+    earlier ones report quota/session exhaustion or unavailability; recording
+    every attempt is what lets the morning report explain *why* the provider
+    changed rather than only naming whichever provider happened to finish.
+    """
+
+    task_id: str
+    provider: str
+    attempt_index: int
+    # COMPLETE | SESSION_EXHAUSTED | RATE_LIMITED | UNAVAILABLE
+    # | RESOURCE_CONSTRAINED | ENGINEERING_FAILURE | AUTHORITY_BLOCKED
+    result: str
+    failure_class: Optional[str] = None
+    exit_code: Optional[int] = None
+    error_digest: str = ""
+    # True when this attempt left task-owned changes behind that were
+    # checkpointed and reverted before the next provider was handed the repo.
+    delta_reconciled: bool = False
+    started_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    duration_seconds: float = 0.0
+
+    @staticmethod
+    def digest(text: Optional[str]) -> str:
+        """Truncates provider error output to a durable, report-sized digest."""
+        collapsed = " ".join((text or "").split())
+        if len(collapsed) <= ATTEMPT_ERROR_DIGEST_LIMIT:
+            return collapsed
+        return collapsed[:ATTEMPT_ERROR_DIGEST_LIMIT] + "..."
+
+
+@dataclass
 class DurableCampaignState(DataClassSerializationMixin):
     """
     Durable, serializable state of an autonomous dogfooding campaign.
@@ -124,8 +163,15 @@ class DurableCampaignState(DataClassSerializationMixin):
     benchmark_history: List[Dict[str, Any]] = field(default_factory=list)
     provider_states: Dict[str, str] = field(default_factory=dict)
     provider_invocations: Dict[str, int] = field(default_factory=dict)
+    # Per-role invocation counts recorded only where an AgentExecutionResult
+    # actually exists (#59.1 Phase 8): {provider: {implementation|remediation|
+    # review: n}}. A provider merely *mapped* to a reviewer role is never
+    # counted here -- assignment is not execution.
+    provider_role_invocations: Dict[str, Dict[str, int]] = field(default_factory=dict)
     completed_tasks: List[Dict[str, Any]] = field(default_factory=list)
     failed_tasks: List[Dict[str, Any]] = field(default_factory=list)
+    # Ordered per-provider attempt history for governed engineering tasks.
+    engineering_attempts: List[Dict[str, Any]] = field(default_factory=list)
     framework_gaps: List[Dict[str, Any]] = field(default_factory=list)
     git_records: List[Dict[str, Any]] = field(default_factory=list)
     reviewer_diversity_records: List[Dict[str, Any]] = field(default_factory=list)
@@ -209,9 +255,29 @@ class DurableCampaignState(DataClassSerializationMixin):
         lm = self.ensure_local_model_defaults()
         return lm.get("local_only_iterations", 0) >= lm.get("local_only_iteration_limit", DEFAULT_LOCAL_ONLY_ITERATION_LIMIT)
 
-    def record_provider_invocation(self, agent_id: str) -> None:
+    def record_provider_invocation(self, agent_id: str, role: str = "implementation") -> None:
+        """
+        Records one *actual* provider execution. `role` is one of
+        "implementation", "remediation", or "review" (#59.1 Phase 8). Callers
+        must only reach here when a real AgentExecutionResult was produced --
+        never merely because a role mapping named this provider.
+        """
         self.provider_invocations[agent_id] = self.provider_invocations.get(agent_id, 0) + 1
+        by_role = self.provider_role_invocations.setdefault(agent_id, {})
+        by_role[role] = by_role.get(role, 0) + 1
         self.update_timestamp()
+
+    def record_engineering_attempt(self, attempt: Dict[str, Any]) -> None:
+        """
+        Appends one provider attempt at a governed engineering task. Attempts
+        are append-only and persisted immediately by the caller so the history
+        survives a crash or restart mid-failover (#59.1 Phase 2/4).
+        """
+        self.engineering_attempts.append(attempt)
+        self.update_timestamp()
+
+    def attempts_for_task(self, task_id: str) -> List[Dict[str, Any]]:
+        return [a for a in self.engineering_attempts if a.get("task_id") == task_id]
 
     def record_benchmark_result(self, result_dict: Dict[str, Any]) -> None:
         self.benchmark_history.append(result_dict)
@@ -375,6 +441,42 @@ class DurableCampaignState(DataClassSerializationMixin):
             for t in self.failed_tasks:
                 lines.append(
                     f"| `{t.get('task_id')}` | ✗ FAILED | {t.get('objective', '')[:50]} | `{t.get('provider')}` | {t.get('error', '')[:30]} |"
+                )
+
+        if self.engineering_attempts:
+            lines.extend([
+                "",
+                "## Engineering Provider Attempts",
+                "",
+                "Why the provider changed, in the order it was tried.",
+                "",
+                "| Task ID | # | Provider | Result | Failure Class | Delta Reconciled | Evidence |",
+                "| --- | --- | --- | --- | --- | --- | --- |",
+            ])
+            for a in self.engineering_attempts:
+                reconciled = "yes" if a.get("delta_reconciled") else "no"
+                lines.append(
+                    f"| `{a.get('task_id')}` | {a.get('attempt_index')} | `{a.get('provider')}` | "
+                    f"`{a.get('result')}` | `{a.get('failure_class') or '-'}` | {reconciled} | "
+                    f"{a.get('error_digest', '')[:80]} |"
+                )
+
+        if self.provider_role_invocations:
+            lines.extend([
+                "",
+                "## Provider Invocations by Role",
+                "",
+                "Counted only where a provider actually executed -- a reviewer",
+                "mapping alone never appears here.",
+                "",
+                "| Provider | Implementation | Remediation | Review | Total |",
+                "| --- | --- | --- | --- | --- |",
+            ])
+            for provider in sorted(self.provider_role_invocations):
+                roles = self.provider_role_invocations[provider]
+                lines.append(
+                    f"| `{provider}` | {roles.get('implementation', 0)} | {roles.get('remediation', 0)} | "
+                    f"{roles.get('review', 0)} | {self.provider_invocations.get(provider, 0)} |"
                 )
 
         if self.git_records:

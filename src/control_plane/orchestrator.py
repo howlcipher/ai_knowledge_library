@@ -463,6 +463,11 @@ class GovernedTaskOrchestrator:
         impl_dir = run_dir / "implementation"
         impl_dir.mkdir(parents=True, exist_ok=True)
 
+        # Stays None on the crash-recovery path, where an interrupted
+        # implementation's delta is reconciled rather than re-run: there is no
+        # provider execution in *this* process to report (#59.1 Phase 1).
+        impl_res: Optional[AgentExecutionResult] = None
+
         if has_existing_delta and rec_delta:
             current_delta = rec_delta
             initial_delta = rec_delta
