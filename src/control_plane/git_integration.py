@@ -49,6 +49,24 @@ GIT_INTEGRATION_EXECUTOR_VERSION = "1.0"
 CI_POLICY_UNAVAILABLE = "CI_POLICY_UNAVAILABLE"
 NO_REQUIRED_CHECKS_ENFORCED = "NO_REQUIRED_CHECKS_ENFORCED"
 
+# Fields requested when independently verifying a merge. `gh pr view` exposes
+# no boolean `merged` field -- asking for one makes gh exit non-zero with
+# "Unknown JSON field", so verification failed *after* a real merge had already
+# happened: the PR was merged but HowlPlane recorded merge_observed=False and
+# the task never reached full integration. Observed live on gh 2.97.0 while
+# merging PR #28 (#59.1).
+PR_MERGE_FIELDS = "state,mergedAt,mergeCommit"
+
+
+def pr_is_merged(data: Dict[str, Any]) -> bool:
+    """
+    Whether `gh pr view` reports a PR as genuinely merged. Requires GitHub's
+    own MERGED state or a mergedAt timestamp -- never inferred from the merge
+    command's exit code alone.
+    """
+    return str(data.get("state") or "").upper() == "MERGED" or bool(data.get("mergedAt"))
+
+
 POLICY_SOURCE_RULESET = "ruleset"
 POLICY_SOURCE_BRANCH_PROTECTION = "branch_protection"
 POLICY_SOURCE_UNAVAILABLE = "unavailable"
@@ -719,13 +737,13 @@ class GitIntegrationExecutor(AuthorityExecutor):
         if action.action_type == "merge_pull_request":
             pr_number = (action.arguments or {}).get("pr_number")
             if pr_number:
-                proc = self._gh(self.repo_root, ["pr", "view", str(pr_number), "--json", "state,merged"], 30)
+                proc = self._gh(self.repo_root, ["pr", "view", str(pr_number), "--json", PR_MERGE_FIELDS], 30)
                 if proc.returncode == 0 and proc.stdout.strip():
                     try:
                         data = json.loads(proc.stdout)
                     except json.JSONDecodeError:
                         data = {}
-                    if data.get("merged"):
+                    if pr_is_merged(data):
                         return "already_executed", None, f"PR #{pr_number} is already merged."
             return "not_executed", None, None
         return "not_executed", None, None
@@ -823,16 +841,18 @@ class GitIntegrationExecutor(AuthorityExecutor):
 
         view_proc = self._gh(
             self.repo_root,
-            ["pr", "view", str(pr_number), "--repo", self.repo_slug, "--json", "state,merged,mergeCommit"],
+            ["pr", "view", str(pr_number), "--repo", self.repo_slug, "--json", PR_MERGE_FIELDS],
             30,
         )
         if view_proc.returncode != 0 or not view_proc.stdout.strip():
-            raise GitIntegrationError(f"could not independently verify merge of PR #{pr_number}")
+            raise GitIntegrationError(
+                f"could not independently verify merge of PR #{pr_number}: {view_proc.stderr.strip()}"
+            )
         try:
             data = json.loads(view_proc.stdout)
         except json.JSONDecodeError as exc:
             raise GitIntegrationError(f"unparseable gh pr view response: {exc}") from exc
-        if not data.get("merged"):
+        if not pr_is_merged(data):
             raise GitIntegrationError(f"gh pr merge exited 0 but PR #{pr_number} is not reported merged")
         merge_sha = (data.get("mergeCommit") or {}).get("oid")
         if not merge_sha:

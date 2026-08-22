@@ -19,7 +19,9 @@ from src.control_plane.git_integration import (
     GitIntegrationError,
     GitIntegrationExecutor,
     GitHubCIObserver,
+    PR_MERGE_FIELDS,
     classify_check,
+    pr_is_merged,
 )
 from src.control_plane.proposed_action import ProposedAction
 from src.control_plane.synthesis.campaign_state import GitIntegrationRecord
@@ -242,16 +244,23 @@ def test_merge_pull_request_gh_merge_failure_raises():
         executor.merge_pull_request(5)
 
 
-def test_merge_pull_request_success_path_returns_merge_sha():
+def _merge_executor(verify_rc=0, verify_stdout="", verify_stderr=""):
+    """An executor whose merge succeeds and whose verification call is scripted."""
     gh = ScriptedRunner()
     gh.on(["pr", "view", "5", "--json", "headRefName"], returncode=0, stdout='{"headRefName": "fix/T1"}')
     gh.on(["pr", "merge", "5", "--repo", REPO_SLUG, "--squash", "--delete-branch"], returncode=0)
     gh.on(
-        ["pr", "view", "5", "--repo", REPO_SLUG, "--json", "state,merged,mergeCommit"],
-        returncode=0,
-        stdout='{"state": "MERGED", "merged": true, "mergeCommit": {"oid": "sha_merge_1"}}',
+        ["pr", "view", "5", "--repo", REPO_SLUG, "--json", PR_MERGE_FIELDS],
+        returncode=verify_rc, stdout=verify_stdout, stderr=verify_stderr,
     )
-    executor = make_executor(gh_runner=gh)
+    return make_executor(gh_runner=gh)
+
+
+def test_merge_pull_request_success_path_returns_merge_sha():
+    executor = _merge_executor(verify_stdout=(
+        '{"state": "MERGED", "mergedAt": "2026-08-22T20:21:08Z", '
+        '"mergeCommit": {"oid": "sha_merge_1"}}'
+    ))
     assert executor.merge_pull_request(5) == "sha_merge_1"
 
 
@@ -527,3 +536,36 @@ def _ticking_clock(step=1.0):
         return state["t"]
 
     return _clock
+
+
+# ---------------------------------------------------------------------------
+# Merge verification field contract (#59.1). Observed live on gh 2.97.0 while
+# merging PR #28: `gh pr view --json state,merged,...` exits non-zero with
+# "Unknown JSON field: merged", so verification failed AFTER the merge had
+# already happened -- the PR was merged while HowlPlane recorded
+# merge_observed=False and the task never reached full integration.
+# ---------------------------------------------------------------------------
+
+def test_merge_verification_never_requests_a_nonexistent_merged_field():
+    """`gh pr view` has no boolean `merged` field; asking for one fails the call."""
+    assert "merged," not in PR_MERGE_FIELDS
+    assert PR_MERGE_FIELDS.split(",") == ["state", "mergedAt", "mergeCommit"]
+
+
+def test_pr_is_merged_reads_github_state_not_command_exit_code():
+    assert pr_is_merged({"state": "MERGED", "mergedAt": "2026-08-22T20:21:08Z"}) is True
+    assert pr_is_merged({"state": "MERGED"}) is True
+    assert pr_is_merged({"state": "OPEN", "mergedAt": "2026-08-22T20:21:08Z"}) is True
+    assert pr_is_merged({"state": "OPEN", "mergedAt": None}) is False
+    assert pr_is_merged({"state": "CLOSED"}) is False
+    assert pr_is_merged({}) is False
+
+
+def test_merge_fails_closed_when_verification_call_is_rejected():
+    """
+    If the verification call itself fails -- exactly what an unknown JSON field
+    caused -- the merge must raise rather than report a merge SHA it never saw.
+    """
+    executor = _merge_executor(verify_rc=1, verify_stderr="Unknown JSON field: merged")
+    with pytest.raises(GitIntegrationError, match="could not independently verify merge"):
+        executor.merge_pull_request(5)
